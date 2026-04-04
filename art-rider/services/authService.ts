@@ -79,7 +79,7 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: 'An unexpected error occurred during sign in. Please try again later.' };
   }
 
-  redirect('/dashboard');
+  redirect('/');
 }
 
 export async function signOut() {
