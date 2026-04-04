@@ -29,6 +29,13 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     if (authData.user) {
+      // Supabase "Prevent Email Enumeration" active: If identities array is empty,
+      // it means the email already exists and Supabase returned a dummy ID.
+      // We block it here to prevent throwing PostgreSQL Foreign Key errors.
+      if (authData.user.identities && authData.user.identities.length === 0) {
+        return { error: 'An account with this email address already exists.' };
+      }
+
       // Insert profile data into "profiles" table to satisfy business logic PRD
       // Uses the Admin client to bypass RLS "WITH CHECK (false)" on "profiles" table inserts
       const supabaseAdmin = createSupabaseAdminClient();
