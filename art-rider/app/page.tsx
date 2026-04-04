@@ -3,9 +3,6 @@ import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/features/home/HeroSection";
 import CategoryCard from "@/components/features/home/CategoryCard";
 import HomepageListingCard from "@/components/features/home/HomepageListingCard";
-import { HowItWorks } from "@/components/features/home/HowItWorks";
-import { BecomeProviderCTA } from "@/components/features/home/BecomeProviderCTA";
-import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -155,13 +152,12 @@ function HorizontalCarousel({ children }: { children: React.ReactNode }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.auth.getUser();
-
+export default function HomePage() {
   return (
     <>
-      <Navbar initialUser={data?.user || null} />      <main>
+      <Navbar />
+
+      <main>
         <HeroSection />
 
         {/* ── Explora por categoría ── */}
@@ -214,9 +210,6 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-
-        <HowItWorks />
-        <BecomeProviderCTA />
 
       </main>
 

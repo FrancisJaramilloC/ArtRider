@@ -29,23 +29,18 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     if (authData.user) {
-      // Supabase "Prevent Email Enumeration" active: If identities array is empty,
-      // it means the email already exists and Supabase returned a dummy ID.
-      // We block it here to prevent throwing PostgreSQL Foreign Key errors.
-      if (authData.user.identities && authData.user.identities.length === 0) {
-        return { error: 'An account with this email address already exists.' };
-      }
-
-      // Insert profile data into "profiles" table to satisfy business logic PRD
-      // Uses the Admin client to bypass RLS "WITH CHECK (false)" on "profiles" table inserts
+      // Insert profile data into "users" table to satisfy business logic PRD
+      // Uses the Admin client to bypass RLS "WITH CHECK (false)" on "users" table inserts
       const supabaseAdmin = createSupabaseAdminClient();
-      const { error: insertError } = await supabaseAdmin.from('profiles').insert({
+      const { error: insertError } = await supabaseAdmin.from('users').insert({
         id: authData.user.id,
-        full_name: `${firstName} ${lastName}`.trim(),
+        email: email,
+        first_name: firstName,
+        last_name: lastName,
       });
 
       if (insertError) {
-        console.error('Profiles Table Insert Error Full (Admin):', insertError);
+        console.error('Users Table Insert Error Full (Admin):', insertError);
         return { error: `Account created but failed to initialize profile: ${insertError.message}` };
       }
     }
@@ -84,7 +79,7 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: 'An unexpected error occurred during sign in. Please try again later.' };
   }
 
-  redirect('/');
+  redirect('/dashboard');
 }
 
 export async function signOut() {
