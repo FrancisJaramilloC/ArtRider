@@ -40,4 +40,3 @@ Para que ArtRider sea "migrable" y escalable, sigan estas reglas de oro:
 **Conclusión:**
 Están eligiendo un stack que les permite **empezar gratis** pero que tiene un **techo altísimo**. Es la misma tecnología que usan las empresas que salen a bolsa en Silicon Valley.
 
-**¿Quieren que les ayude a definir el primer hito de desarrollo?** (Por ejemplo: qué tablas crear primero en Supabase para tener el sistema de usuarios y publicaciones listo).

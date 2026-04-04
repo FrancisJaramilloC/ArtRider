@@ -1,6 +1,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+// WHY: Validating authorization at the Edge/Server level ensures malicious browsers cannot mock tokens natively.
+// We strictly pair this mapping with `next/headers` cookies allowing full session interoperability.
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
 
