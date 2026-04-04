@@ -11,8 +11,10 @@ export async function signUp(prevState: any, formData: FormData) {
   const password = formData.get('password') as string;
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
+  const phone = formData.get('phone') as string;
+  const birthDate = formData.get('birthDate') as string;
 
-  if (!email || !password || !firstName || !lastName) {
+  if (!email || !password || !firstName || !lastName || !phone || !birthDate) {
     return { error: 'All fields are required.' };
   }
 
@@ -42,6 +44,8 @@ export async function signUp(prevState: any, formData: FormData) {
       const { error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: authData.user.id,
         full_name: `${firstName} ${lastName}`.trim(),
+        phone: phone,
+        birth_date: birthDate,
       });
 
       if (insertError) {
