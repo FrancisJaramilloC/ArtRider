@@ -1,0 +1,48 @@
+"use client";
+
+export default function HeroSection() {
+  return (
+    <section className="bg-white px-6 pt-24 pb-28 text-center flex flex-col items-center">
+      <div className="max-w-[800px] w-full relative">
+        {/* ── Main headline ── */}
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-5">
+          Encuentra el equipo perfecto para tu evento
+        </h1>
+
+        {/* ── Subtitle ── */}
+        <p className="text-[1.1rem] text-gray-500 leading-relaxed max-w-[700px] mx-auto mb-10">
+          Audio, iluminación y video profesional. Reserva equipos de alta calidad con propietarios verificados.
+        </p>
+
+        {/* ── Simple Single-Input Search Bar (WP Style) ── */}
+        <div className="mx-auto max-w-[600px] relative">
+          <div className="flex items-center bg-[#f8f9fa] border border-transparent hover:border-gray-200 focus-within:border-gray-300 focus-within:bg-white focus-within:shadow-[0_2px_12px_rgba(0,0,0,0.06)] rounded-full h-[56px] px-6 transition-all duration-300">
+            {/* Search Icon */}
+            <svg 
+              width="22" 
+              height="22" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className="text-gray-500 mr-4 shrink-0"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+
+            {/* Input Field */}
+            <input 
+              type="text" 
+              placeholder="¿Qué equipo o paquete buscas?" 
+              className="bg-transparent border-none outline-none text-[1rem] text-gray-900 placeholder-gray-500 w-full h-full focus:ring-0"
+            />
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}
