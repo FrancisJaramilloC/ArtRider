@@ -1,8 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// WHY: We explicitly evaluate global request paths determining secure token structures BEFORE Next.js execution logic runs.
-// This allows aggressive routing handling eliminating massive duplicated logic checks dynamically inside React layouts.
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request: {
@@ -60,25 +58,15 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthRoute =
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/register");
-
-  // WHY: Utilizing an explicit array ensures scalable route protections.
-  // /listings is specifically excluded to allow public browsing per PRD constraints.
-  // We cannot afford to lock users out of the general inventory.
-  const protectedRoutes = [
-    "/dashboard",
-    "/bookings",
-    "/profile",
-    "/contracts",
-    "/payments"
-  ];
-
+  const protectedRoutes = ["/dashboard", "/listings", "/bookings", "/profile"];
   const isProtectedRoute = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );
 
+  const isAuthRoute =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/register");
+  
   if (!user && isProtectedRoute) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
