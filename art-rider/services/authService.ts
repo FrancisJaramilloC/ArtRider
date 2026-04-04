@@ -1,5 +1,7 @@
 "use server";
 
+// WHY: Separating Business Logic away from generic Route Components prevents code duplication.
+// It explicitly guarantees database mutations execute on the Edge/Server and tokens stay out of explicit browser globals.
 import { createSupabaseServerClient } from '@/lib/supabaseServer';
 import { createSupabaseAdminClient } from '@/lib/supabaseAdmin';
 import { redirect } from 'next/navigation';
@@ -44,7 +46,8 @@ export async function signUp(prevState: any, formData: FormData) {
     }
   } catch (error: any) {
     console.error('Technical Error during signUp Full object:', error);
-    return { error: error.message || 'An unexpected technical error occurred.' };
+    // User Friendly Fallback protecting system traces
+    return { error: 'We could not create your account at this time. Please try again.' };
   }
 
   // Redirect runs outside try-catch to avoid being caught natively by Next.js
@@ -68,11 +71,12 @@ export async function signIn(prevState: any, formData: FormData) {
 
     if (error) {
       console.error('SignIn Error:', error.message);
-      return { error: 'Invalid login credentials.' };
+      return { error: 'Invalid email or password. Please try again.' };
     }
   } catch (error: any) {
     console.error('Technical Error during signIn:', error.message || error);
-    return { error: error.message || 'Unexpected error' };
+    // User Friendly Fallback protecting system traces
+    return { error: 'An unexpected error occurred during sign in. Please try again later.' };
   }
 
   redirect('/dashboard');
