@@ -11,8 +11,10 @@ export async function signUp(prevState: any, formData: FormData) {
   const password = formData.get('password') as string;
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
+  const phone = formData.get('phone') as string;
+  const birthDate = formData.get('birthDate') as string;
 
-  if (!email || !password || !firstName || !lastName) {
+  if (!email || !password || !firstName || !lastName || !phone || !birthDate) {
     return { error: 'All fields are required.' };
   }
 
@@ -29,18 +31,25 @@ export async function signUp(prevState: any, formData: FormData) {
     }
 
     if (authData.user) {
-      // Insert profile data into "users" table to satisfy business logic PRD
-      // Uses the Admin client to bypass RLS "WITH CHECK (false)" on "users" table inserts
+      // Supabase "Prevent Email Enumeration" active: If identities array is empty,
+      // it means the email already exists and Supabase returned a dummy ID.
+      // We block it here to prevent throwing PostgreSQL Foreign Key errors.
+      if (authData.user.identities && authData.user.identities.length === 0) {
+        return { error: 'An account with this email address already exists.' };
+      }
+
+      // Insert profile data into "profiles" table to satisfy business logic PRD
+      // Uses the Admin client to bypass RLS "WITH CHECK (false)" on "profiles" table inserts
       const supabaseAdmin = createSupabaseAdminClient();
-      const { error: insertError } = await supabaseAdmin.from('users').insert({
+      const { error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: authData.user.id,
-        email: email,
-        first_name: firstName,
-        last_name: lastName,
+        full_name: `${firstName} ${lastName}`.trim(),
+        phone: phone,
+        birth_date: birthDate,
       });
 
       if (insertError) {
-        console.error('Users Table Insert Error Full (Admin):', insertError);
+        console.error('Profiles Table Insert Error Full (Admin):', insertError);
         return { error: `Account created but failed to initialize profile: ${insertError.message}` };
       }
     }
@@ -79,7 +88,7 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: 'An unexpected error occurred during sign in. Please try again later.' };
   }
 
-  redirect('/dashboard');
+  redirect('/');
 }
 
 export async function signOut() {
