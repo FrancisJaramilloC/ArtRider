@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useRef, useState, useEffect } from "react";
 import { updateProfile } from "@/services/profileService";
 
 interface ProfileFormProps {
@@ -14,15 +14,35 @@ interface ProfileFormProps {
 }
 
 export default function ProfileForm({ initialData }: ProfileFormProps) {
-  const [state, formAction, isPending] = useActionState(updateProfile, null); // Using state directly
+  const [state, formAction, isPending] = useActionState(updateProfile, null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialData.avatarUrl);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  useEffect(() => {
+    // Cleanup generated object URLs to prevent memory leaks mapping isolated references
+    return () => {
+      if (previewUrl && previewUrl !== initialData.avatarUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    }
+  }, [previewUrl, initialData.avatarUrl]);
 
   return (
-    <div className="space-y-6">
+    <form action={formAction} className="space-y-6">
       {/* ── Avatar Section ── */}
       <div className="flex items-center gap-6 pb-6 border-b border-gray-100">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shadow-md shrink-0 overflow-hidden">
-          {initialData.avatarUrl ? (
-             <img src={initialData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+          {previewUrl ? (
+             <img src={previewUrl} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
              <span className="text-2xl font-bold text-white tracking-widest">
                {initialData.fullName.substring(0, 2).toUpperCase() || "US"}
@@ -30,7 +50,20 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
           )}
         </div>
         <div>
-          <button className="text-[0.95rem] font-semibold text-gray-900 bg-white border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-full transition-colors shadow-sm">
+          <input 
+            type="file" 
+            name="avatarFile"
+            id="avatarFile"
+            ref={fileInputRef} 
+            onChange={handleFileChange}
+            accept="image/png, image/jpeg, image/webp" 
+            className="hidden" 
+          />
+          <button 
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="text-[0.95rem] font-semibold text-gray-900 bg-white border border-gray-200 hover:bg-gray-50 px-4 py-2 rounded-full transition-colors shadow-sm"
+          >
             Cambiar foto
           </button>
           <p className="text-sm text-gray-400 mt-2">JPG o PNG. Máximo 2MB.</p>
@@ -38,7 +71,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
       </div>
 
       {/* ── Form Card: Datos Básicos ── */}
-      <form action={formAction} className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100 bg-gray-50/50">
           <h3 className="text-lg font-semibold text-gray-900">Datos Básicos</h3>
           <p className="text-sm text-gray-500 mt-0.5">La información principal asociada a tu cuenta.</p>
@@ -117,7 +150,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
             {isPending ? 'Guardando...' : 'Guardar cambios'}
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }
