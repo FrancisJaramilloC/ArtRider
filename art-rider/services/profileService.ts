@@ -39,14 +39,45 @@ export async function updateProfile(prevState: any, formData: FormData) {
       return { error: 'Por motivos de seguridad, debes ser mayor de 18 años para utilizar esta plataforma.' };
     }
 
-    // 3. Execution (Natively protected by Postgres RLS policy)
+    // 3. Storage Validation & Upload Pipeline
+    const avatarFile = formData.get('avatarFile') as File | null;
+    let finalAvatarUrl = null;
+
+    if (avatarFile && avatarFile.size > 0) {
+      if (avatarFile.size > 2 * 1024 * 1024) {
+        return { error: 'La foto no puede superar los 2MB permitidos por seguridad.' };
+      }
+      
+      const fileExt = avatarFile.name.split('.').pop() || 'jpg';
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, avatarFile, { upsert: true, contentType: avatarFile.type });
+
+      if (uploadError) {
+        console.error('Storage Upload Error:', uploadError);
+        return { error: 'Error al subir la imagen. Verifica que el Bucket "avatars" exista y sea público en Supabase.' };
+      }
+
+      const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      finalAvatarUrl = publicUrlData.publicUrl;
+    }
+
+    // 4. Execution (Natively protected by Postgres RLS policy)
+    const updatePayload: any = {
+      full_name: fullName.trim(),
+      phone: phone.trim(),
+      birth_date: birthDate,
+    };
+
+    if (finalAvatarUrl) {
+      updatePayload.avatar_url = finalAvatarUrl;
+    }
+
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({
-        full_name: fullName.trim(),
-        phone: phone.trim(),
-        birth_date: birthDate,
-      })
+      .update(updatePayload)
       .eq('id', user.id); // Explicit double-protection ensuring mutation locks to JWT token
 
     if (updateError) {
