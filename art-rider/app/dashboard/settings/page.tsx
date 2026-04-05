@@ -1,12 +1,12 @@
-export default function ProviderProfilePage() {
+export default function DashboardSettingsPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* ── Header ── */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Perfil de Proveedor</h2>
+        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Ajustes de Empresa</h2>
         <p className="text-[0.95rem] text-gray-500 mt-1">
-          Configura cómo te ven otros usuarios al rentar tus equipos.
+          Configura cómo te ven otros usuarios al rentar tus equipos y administra la identidad de tu marca.
         </p>
       </div>
 

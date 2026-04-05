@@ -23,8 +23,8 @@ export default function DashboardLayout({
     <div className="min-h-screen flex flex-col bg-gray-50">
       
       {/* ── Top Navbar ── */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="h-16 px-6 flex items-center justify-between">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
+        <div className="w-full max-w-7xl h-16 px-6 flex items-center justify-between">
           <div className="flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-900 group-hover:bg-[#875B9A] transition-colors text-white text-xs shrink-0">
               🎧
@@ -85,7 +85,7 @@ export default function DashboardLayout({
 
         {/* ── Dashboard Content ── */}
         <main className="flex-1 min-w-0 md:ml-64 p-6 lg:p-10">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-[1240px] mx-auto w-full">
             {children}
           </div>
         </main>
