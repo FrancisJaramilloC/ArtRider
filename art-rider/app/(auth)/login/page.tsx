@@ -29,15 +29,16 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col px-4 py-8">
-      {/* Back link */}
-      <div className="w-full max-w-md mx-auto mb-4">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          Volver al inicio
-        </Link>
-      </div>
+      {/* Back link — absolute top-left */}
+      <Link
+        href="/"
+        className="absolute top-5 left-5 inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors z-10"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Volver al inicio
+      </Link>
 
       <div className="w-full max-w-md mx-auto">
         {/* Logo */}

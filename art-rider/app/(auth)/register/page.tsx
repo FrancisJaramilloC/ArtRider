@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { signUp } from "@/services/authService";
 import Link from "next/link";
 
@@ -74,18 +74,31 @@ const IconLock = () => (
 
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(signUp, null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmRef = useRef<HTMLInputElement>(null);
+
+  const handleConfirmChange = () => {
+    if (confirmRef.current && passwordRef.current) {
+      if (confirmRef.current.value !== passwordRef.current.value) {
+        confirmRef.current.setCustomValidity('Las contraseñas no coinciden.');
+      } else {
+        confirmRef.current.setCustomValidity('');
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col px-4 py-8">
-      {/* Back link */}
-      <div className="w-full max-w-md mx-auto mb-4">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
-          Volver al inicio
-        </Link>
-      </div>
+      {/* Back link — absolute top-left */}
+      <Link
+        href="/"
+        className="absolute top-5 left-5 inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors z-10"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Volver al inicio
+      </Link>
 
       <div className="w-full max-w-md mx-auto">
         {/* Logo */}
@@ -140,8 +153,40 @@ export default function RegisterPage() {
             </div>
 
             {/* Password */}
-            <InputField id="password" name="password" type="password" label="Contraseña"
-              placeholder="••••••••" icon={<IconLock />} required minLength={8} maxLength={72} />
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Contraseña</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <IconLock />
+                </div>
+                <input
+                  id="password" name="password" type="password" required
+                  ref={passwordRef}
+                  onChange={handleConfirmChange}
+                  placeholder="••••••••"
+                  minLength={8} maxLength={72}
+                  className="block w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1.5">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">Confirmar contraseña</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                  <IconLock />
+                </div>
+                <input
+                  id="confirmPassword" name="confirmPassword" type="password" required
+                  ref={confirmRef}
+                  onChange={handleConfirmChange}
+                  placeholder="••••••••"
+                  minLength={8} maxLength={72}
+                  className="block w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
 
             {/* Submit */}
             <button

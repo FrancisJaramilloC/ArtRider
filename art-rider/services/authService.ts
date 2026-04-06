@@ -9,13 +9,18 @@ import { redirect } from 'next/navigation';
 export async function signUp(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const confirmPassword = formData.get('confirmPassword') as string;
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
   const phone = formData.get('phone') as string;
   const birthDate = formData.get('birthDate') as string;
 
-  if (!email || !password || !firstName || !lastName || !phone || !birthDate) {
+  if (!email || !password || !confirmPassword || !firstName || !lastName || !phone || !birthDate) {
     return { error: 'All fields are required.' };
+  }
+
+  if (password !== confirmPassword) {
+    return { error: 'Las contraseñas no coinciden. Por favor verifícalas.' };
   }
 
   // Parameter Constraints: Name Lengths
