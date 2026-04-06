@@ -34,6 +34,8 @@ export default async function PersonalInfoPage() {
     phone: profile.phone || "",
     birthDate: profile.birth_date || "",
     avatarUrl: profile.avatar_url,
+    hasBirthDate: !!profile.birth_date, // Mutability block marker
+    avatarUpdatedAt: profile.avatar_updated_at || null,
   };
 
   return (

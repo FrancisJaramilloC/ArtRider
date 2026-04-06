@@ -10,6 +10,8 @@ interface ProfileFormProps {
     phone: string;
     birthDate: string;
     avatarUrl: string | null;
+    hasBirthDate: boolean;
+    avatarUpdatedAt: string | null;
   };
 }
 
@@ -66,7 +68,12 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
           >
             Cambiar foto
           </button>
-          <p className="text-sm text-gray-400 mt-2">JPG o PNG. Máximo 2MB.</p>
+          <p className="text-sm text-gray-400 mt-2">JPG, PNG, JFIF, JPEG. Máximo 2MB.</p>
+          {initialData.avatarUpdatedAt && (
+            <p className="text-[0.75rem] text-amber-600 font-medium mt-1">
+              Última actualización: {new Date(initialData.avatarUpdatedAt).toLocaleDateString()}
+            </p>
+          )}
         </div>
       </div>
 
@@ -110,6 +117,8 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                 id="phone"
                 name="phone"
                 defaultValue={initialData.phone}
+                pattern="^\+?[0-9\s\-()]{10,15}$"
+                title="Por favor ingresa un formato válido de teléfono."
                 required
                 className="flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all shadow-sm"
               />
@@ -123,8 +132,12 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
                 name="birthDate"
                 defaultValue={initialData.birthDate}
                 required
-                className="flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all shadow-sm"
+                disabled={initialData.hasBirthDate}
+                className="flex h-11 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all shadow-sm disabled:bg-gray-50 disabled:text-gray-500"
               />
+              {initialData.hasBirthDate && (
+                 <p className="text-[0.8rem] text-gray-500">La fecha de nacimiento no puede ser modificada.</p>
+              )}
             </div>
           </div>
 

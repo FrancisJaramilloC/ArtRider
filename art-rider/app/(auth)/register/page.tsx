@@ -37,6 +37,7 @@ export default function RegisterPage() {
                   name="firstName"
                   type="text"
                   required
+                  maxLength={50}
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
                 />
               </div>
@@ -52,6 +53,7 @@ export default function RegisterPage() {
                   name="lastName"
                   type="text"
                   required
+                  maxLength={50}
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
                 />
               </div>
@@ -70,6 +72,9 @@ export default function RegisterPage() {
                   name="phone"
                   type="tel"
                   required
+                  maxLength={15}
+                  pattern="^\+?[0-9\s\-()]{10,15}$"
+                  title="Ingresa un número de teléfono válido (10-15 dígitos)."
                   className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
                 />
               </div>
@@ -102,6 +107,7 @@ export default function RegisterPage() {
                 name="email"
                 type="email"
                 required
+                maxLength={254}
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
               />
             </div>
@@ -118,6 +124,8 @@ export default function RegisterPage() {
                 name="password"
                 type="password"
                 required
+                minLength={8}
+                maxLength={72}
                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary sm:text-sm"
               />
             </div>

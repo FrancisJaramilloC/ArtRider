@@ -18,6 +18,36 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: 'All fields are required.' };
   }
 
+  // Parameter Constraints: Name Lengths
+  if (firstName.length < 2 || firstName.length > 50 || lastName.length < 2 || lastName.length > 50) {
+    return { error: 'Nombres y apellidos deben tener entre 2 y 50 caracteres.' };
+  }
+
+  // Parameter Constraints: Phone Format
+  const phoneRegex = /^\+?[0-9\s\-()]{10,15}$/;
+  if (!phoneRegex.test(phone)) {
+    return { error: 'El formato de teléfono ingresado es inválido.' };
+  }
+
+  // Parameter Constraints: Birth Date Legitimacy
+  const dob = new Date(birthDate);
+  const today = new Date();
+  
+  if (isNaN(dob.getTime()) || dob.getFullYear() < 1900 || dob.getFullYear() > today.getFullYear()) {
+    return { error: 'Por favor ingresa una fecha de nacimiento legítima.' };
+  }
+
+  // Exact 15+ Age Verification
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDifference = today.getMonth() - dob.getMonth();
+  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+
+  if (age < 15) {
+    return { error: 'Debes ser mayor de 15 años para utilizar ArtRider.' };
+  }
+
   try {
     const supabase = await createSupabaseServerClient();
     const { data: authData, error: authError } = await supabase.auth.signUp({

@@ -17,11 +17,28 @@ export async function updateProfile(prevState: any, formData: FormData) {
 
     const fullName = formData.get('fullName') as string;
     const phone = formData.get('phone') as string;
-    const birthDate = formData.get('birthDate') as string;
+    let birthDate = formData.get('birthDate') as string;
 
-    // 1. Basic empty checks
+    // Explicit Data Fetch mapping constraints isolating historical variables cleanly 
+    const { data: currentProfile } = await supabase
+      .from('profiles')
+      .select('birth_date, avatar_updated_at')
+      .eq('id', user.id)
+      .single();
+
+    // Re-inject immutable data if present to bypass false-positive empty checks from disabled DOM inputs
+    if (currentProfile?.birth_date) {
+      birthDate = currentProfile.birth_date;
+    }
+
+    // 1. Basic empty checks and strict parsing mapping
     if (!fullName || !phone || !birthDate) {
       return { error: 'Por favor completa todos los campos requeridos.' };
+    }
+
+    const phoneRegex = /^\+?[0-9\s\-()]{10,15}$/;
+    if (!phoneRegex.test(phone)) {
+      return { error: 'El formato de teléfono ingresado es inválido.' };
     }
 
     // 2. Strict Business Logic Constraint: Absolute Age Minimum 18+
@@ -40,11 +57,21 @@ export async function updateProfile(prevState: any, formData: FormData) {
       return { error: 'Por motivos de seguridad, debes ser mayor de 18 años para utilizar esta plataforma.' };
     }
 
-    // 3. Storage Validation & Upload Pipeline
+    // 3. Storage Validation & Upload Pipeline (24 Hour Cooldown Enforced)
     const avatarFile = formData.get('avatarFile') as File | null;
     let finalAvatarUrl = null;
+    let targetAvatarUpdateTimestamp = null;
 
     if (avatarFile && avatarFile.size > 0) {
+      if (currentProfile?.avatar_updated_at) {
+        const lastUpdated = new Date(currentProfile.avatar_updated_at).getTime();
+        const differenceInHours = (Date.now() - lastUpdated) / (1000 * 60 * 60);
+
+        if (differenceInHours < 24) {
+          return { error: 'Seguridad: Solo puedes cambiar tu foto de perfil una vez cada 24 horas.' };
+        }
+      }
+
       if (avatarFile.size > 2 * 1024 * 1024) {
         return { error: 'La foto no puede superar los 2MB permitidos por seguridad.' };
       }
@@ -65,17 +92,23 @@ export async function updateProfile(prevState: any, formData: FormData) {
 
       const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
       finalAvatarUrl = publicUrlData.publicUrl;
+      targetAvatarUpdateTimestamp = new Date().toISOString();
     }
 
     // 4. Execution (Natively protected by Postgres RLS policy)
     const updatePayload: any = {
       full_name: fullName.trim(),
       phone: phone.trim(),
-      birth_date: birthDate,
     };
 
-    if (finalAvatarUrl) {
+    // Immutable boundary: Only execute birthdate overwrites if it is historically vacant.
+    if (!currentProfile?.birth_date) {
+      updatePayload.birth_date = birthDate;
+    }
+
+    if (finalAvatarUrl && targetAvatarUpdateTimestamp) {
       updatePayload.avatar_url = finalAvatarUrl;
+      updatePayload.avatar_updated_at = targetAvatarUpdateTimestamp;
     }
 
     const { error: updateError } = await supabase
