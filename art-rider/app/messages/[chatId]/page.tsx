@@ -1,0 +1,1 @@
+export default function ChatRoomPage({ params }: { params: { chatId: string } }) { return <div>Chat {params.chatId}</div>; }

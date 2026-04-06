@@ -4,10 +4,10 @@ import ProfileForm from "./ProfileForm";
 
 export default async function PersonalInfoPage() {
   const supabase = await createSupabaseServerClient();
-  
+
   // Explicit backend token resolution parsing
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
     redirect("/login");
   }
@@ -38,7 +38,7 @@ export default async function PersonalInfoPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* ── Header ── */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Información Personal</h2>
