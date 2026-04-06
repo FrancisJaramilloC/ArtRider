@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Heart, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Package, CalendarDays, DollarSign, Settings, Bell, ChevronLeft, Store } from "lucide-react";
 
-export default function ClientDashboardLayout({
+export default function ProviderLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -12,9 +12,11 @@ export default function ClientDashboardLayout({
   const pathname = usePathname();
 
   const navItems = [
-    { name: "Mi Actividad", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Mis Reservas", href: "/dashboard/bookings", icon: CalendarDays },
-    { name: "Favoritos", href: "/dashboard/favorites", icon: Heart },
+    { name: "Centro Operativo", href: "/provider", icon: LayoutDashboard },
+    { name: "Reservas", href: "/provider/bookingsProvider", icon: CalendarDays },
+    { name: "Catálogo", href: "/provider/catalog", icon: Store },
+    { name: "Disponibilidad", href: "/provider/inventory", icon: Package },
+    { name: "Finanzas", href: "/provider/finance", icon: DollarSign },
   ];
 
   return (
@@ -23,26 +25,31 @@ export default function ClientDashboardLayout({
       {/* ── Top Navbar ── */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
         <div className="w-full max-w-7xl h-16 px-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#875B9A] text-white text-xs shrink-0 font-bold">
-              AR
+          <div className="flex items-center gap-2 group">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-900 group-hover:bg-[#875B9A] transition-colors text-white text-xs shrink-0">
+              🎧
             </div>
             <span className="font-extrabold text-lg text-gray-900 tracking-tight">
-              ArtRider
+              ArtRider <span className="font-medium text-gray-400">| Proveedor</span>
             </span>
           </div>
 
           <div className="flex items-center gap-4">
             <Link
-              href="/provider"
-              className="hidden sm:flex items-center gap-2 text-sm font-semibold text-[#875B9A] hover:text-white border border-[#875B9A] hover:bg-[#875B9A] px-4 py-2 rounded-full transition-colors"
+              href="/dashboard"
+              className="hidden sm:flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-full transition-colors"
             >
-              Cambiar a Proveedor
-              <ChevronRight size={16} />
+              <ChevronLeft size={16} />
+              Navegar como Cliente
             </Link>
 
-            <div className="w-9 h-9 ml-2 rounded-full bg-gray-200 flex items-center justify-center shadow-inner shrink-0 cursor-pointer text-gray-600 font-bold text-sm">
-              U
+            <button className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-full transition-colors">
+              <Bell size={20} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+
+            <div className="w-9 h-9 ml-2 rounded-full bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shadow-md shrink-0 cursor-pointer text-white font-bold text-sm">
+              EJ
             </div>
           </div>
         </div>
@@ -64,11 +71,11 @@ export default function ClientDashboardLayout({
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-gray-100 text-gray-900 font-semibold"
+                      ? "bg-purple-50 text-[#875B9A]"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
-                  <Icon size={18} className={isActive ? "text-gray-900" : "text-gray-400"} />
+                  <Icon size={18} className={isActive ? "text-[#875B9A]" : "text-gray-400"} />
                   {item.name}
                 </Link>
               );

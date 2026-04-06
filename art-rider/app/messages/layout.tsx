@@ -1,0 +1,1 @@
+export default function MessagesLayout({ children }: { children: React.ReactNode }) { return <div className='flex h-screen'><div className='w-1/3 border-r'>Bandeja de entrada</div><div className='flex-1'>{children}</div></div>; }

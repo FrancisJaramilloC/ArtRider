@@ -1,0 +1,1 @@
+export default function DashboardReviewsPage() { return <div>Gestión de Reseñas del Proveedor</div>; }
