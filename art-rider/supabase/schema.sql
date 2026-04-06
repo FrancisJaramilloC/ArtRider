@@ -27,7 +27,7 @@ CREATE TABLE profiles (
   email TEXT UNIQUE,
   full_name TEXT,
   birth_date DATE,
-  phone TEXT,
+  phone TEXT UNIQUE,
   avatar_url TEXT,
   avatar_updated_at TIMESTAMPTZ,
   stripe_customer_id TEXT UNIQUE,

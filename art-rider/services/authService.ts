@@ -80,6 +80,17 @@ export async function signUp(prevState: any, formData: FormData) {
 
       if (insertError) {
         console.error('Profiles Table Insert Error Full (Admin):', insertError);
+        
+        // Handle Unique Constraint Violation (Postgres Code 23505)
+        if (insertError.code === '23505') {
+          if (insertError.message.includes('phone')) {
+            return { error: 'Este número de teléfono ya está registrado con otra cuenta.' };
+          }
+          if (insertError.message.includes('email')) {
+            return { error: 'Este correo electrónico ya está registrado.' };
+          }
+        }
+
         return { error: `Account created but failed to initialize profile: ${insertError.message}` };
       }
     }
