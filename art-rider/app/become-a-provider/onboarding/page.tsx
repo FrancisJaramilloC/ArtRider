@@ -1,194 +1,104 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { becomeProvider } from "@/services/providerService";
 import Link from "next/link";
 
-export default function OnboardingWizard() {
-  const [step, setStep] = useState(1);
+export default function OnboardingPage() {
+  const [state, formAction, isPending] = useActionState(becomeProvider, null);
   const router = useRouter();
 
-  const handleNext = () => {
-    if (step < 4) {
-      setStep(step + 1);
-    } else {
+  useEffect(() => {
+    if (state?.success) {
       router.push("/dashboard");
     }
-  };
-
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    }
-  };
+  }, [state, router]);
 
   return (
-    <div className="flex-1 flex flex-col pt-12 pb-24 items-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
-      {/* Progress Bar */}
-      <div className="w-full max-w-2xl px-6 mb-12">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-500">Paso {step} de 4</span>
-          {step < 4 && <span className="text-sm font-medium text-[#875B9A]">A continuación: {step === 1 ? "Categorías" : step === 2 ? "Verificación" : "¡Listo!"}</span>}
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-lg">
+        {/* Back */}
+        <Link href="/become-a-provider" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-8 transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Volver
+        </Link>
+
+        {/* Header */}
+        <div className="mb-8">
+          <p className="text-sm font-semibold text-[#875B9A] uppercase tracking-widest mb-2">Paso 1 de 1</p>
+          <h1 className="text-3xl font-bold text-gray-900">Configura tu perfil de proveedor</h1>
+          <p className="text-gray-500 mt-2 text-sm leading-relaxed">
+            Una vez enviado, nuestro equipo revisará tu solicitud junto a la verificación de identidad (KYC). Te notificaremos cuando tu cuenta esté activa.
+          </p>
         </div>
-        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-[#875B9A] transition-all duration-500 ease-out"
-            style={{ width: `${(step / 4) * 100}%` }}
-          ></div>
+
+        {/* Status Banner */}
+        <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p className="text-sm text-amber-800">
+            La aprobación puede tomar <strong>1-3 días hábiles</strong>. Mientras tanto, puedes preparar tus listings en borrador.
+          </p>
         </div>
-      </div>
 
-      {/* ── Form Container ── */}
-      <div className="w-full max-w-2xl px-6 flex-1 flex flex-col">
-        
-        {/* STEP 1: Basic Info & Address */}
-        {step === 1 && (
-          <div className="space-y-8 animate-in fade-in">
-            <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight mb-2">Configura tu perfil de Proveedor</h2>
-              <p className="text-lg text-gray-500">Estos detalles ayudarán a los clientes a confiar en tu negocio y a ubicar tus equipos.</p>
-            </div>
-            
-            <div className="space-y-5">
-              <div className="grid gap-2">
-                <label className="text-sm font-medium text-gray-900">Nombre de tu Marca o Bodega</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej. Audiovisuales Pro"
-                  className="flex h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-[0.95rem] focus:outline-none focus:ring-2 focus:ring-[#875B9A] transition-all"
-                />
-              </div>
-
-              <div className="pt-4 border-t border-gray-100">
-                <h3 className="font-semibold text-gray-900 mb-4">Dirección Principal (Obligatorio)</h3>
-                
-                <div className="grid gap-5">
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium text-gray-700">Calle Principal y Secundaria</label>
-                    <input 
-                      type="text" 
-                      placeholder="Av. 12 de Octubre y Patria"
-                      className="flex h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-[0.95rem] focus:outline-none focus:ring-2 focus:ring-[#875B9A] transition-all"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <label className="text-sm font-medium text-gray-700">Ciudad</label>
-                      <input 
-                        type="text" 
-                        placeholder="Quito"
-                        className="flex h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-[0.95rem] focus:outline-none focus:ring-2 focus:ring-[#875B9A] transition-all"
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <label className="text-sm font-medium text-gray-700">Provincia / Estado</label>
-                      <input 
-                        type="text" 
-                        placeholder="Pichincha"
-                        className="flex h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-[0.95rem] focus:outline-none focus:ring-2 focus:ring-[#875B9A] transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium text-gray-700">Código Postal (ZIP)</label>
-                    <input 
-                      type="text" 
-                      placeholder="170143"
-                      className="flex h-12 w-full rounded-xl border border-gray-300 px-4 py-2 text-[0.95rem] focus:outline-none focus:ring-2 focus:ring-[#875B9A] transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Error */}
+        {state?.error && (
+          <div className="mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+            <p className="text-sm text-red-600 font-medium">{state.error}</p>
           </div>
         )}
 
-        {/* STEP 2: Categories */}
-        {step === 2 && (
-          <div className="space-y-8 animate-in fade-in">
-            <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight mb-2">¿Qué tipo de equipos alquilarás principalmente?</h2>
-              <p className="text-lg text-gray-500">Puedes seleccionar una o más especificaciones. Esto nos ayuda a posicionar tu perfil.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {['Audio', 'Iluminación', 'Cámaras y Video', 'Efectos Especiales', 'Mobiliario DJ', 'Energía y Cables'].map((cat) => (
-                <label key={cat} className="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl cursor-pointer hover:border-[#875B9A] transition-all hover:bg-purple-50/30 has-[:checked]:border-[#875B9A] has-[:checked]:bg-purple-50/50">
-                  <input type="checkbox" className="w-5 h-5 text-[#875B9A] rounded focus:ring-[#875B9A]" />
-                  <span className="font-semibold text-gray-900">{cat}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3: Identity Verification (KYC) */}
-        {step === 3 && (
-          <div className="space-y-8 animate-in fade-in">
-            <div>
-              <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 tracking-tight mb-2">Verificación de Identidad</h2>
-              <p className="text-lg text-gray-500">Por seguridad de la comunidad ArtRider, todos los proveedores deben subir un documento de identidad oficial. Tu estado será "Pendiente" hasta ser aprobado manualmente.</p>
-            </div>
-            
-            <div className="border-2 border-dashed border-gray-300 rounded-3xl p-12 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors cursor-pointer group">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-purple-100 transition-colors">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-gray-500 group-hover:text-[#875B9A]" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-              </div>
-              <h3 className="font-bold text-gray-900 text-lg mb-1">Haz clic para subir tu documento</h3>
-              <p className="text-sm text-gray-500">Soporta JPG, PNG, PDF. Frente y reverso.</p>
+        {/* Form */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
+          <form action={formAction} className="space-y-5">
+            {/* Brand name */}
+            <div className="space-y-1.5">
+              <label htmlFor="brandName" className="block text-sm font-medium text-gray-700">
+                Nombre de tu negocio / marca <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="brandName"
+                name="brandName"
+                type="text"
+                required
+                maxLength={80}
+                placeholder="Ej: AudioPro Ecuador"
+                className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all"
+              />
+              <p className="text-xs text-gray-400">Este nombre será visible públicamente en tus listings.</p>
             </div>
 
-            <div className="bg-blue-50 text-blue-900 p-4 rounded-xl flex gap-3 text-sm">
-              <span className="text-xl">🛈</span>
-              <p>Tu información es procesada de forma segura bajo estrictos estándares de encriptación (Stripe Identity) y nunca será compartida con terceros.</p>
+            {/* Bio */}
+            <div className="space-y-1.5">
+              <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+                Descripción breve <span className="text-gray-400">(opcional)</span>
+              </label>
+              <textarea
+                id="bio"
+                name="bio"
+                rows={4}
+                maxLength={500}
+                placeholder="Cuéntanos sobre tu negocio, experiencia o especialidad..."
+                className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all resize-none"
+              />
+              <p className="text-xs text-gray-400">Máximo 500 caracteres.</p>
             </div>
-          </div>
-        )}
 
-        {/* STEP 4: Success */}
-        {step === 4 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center animate-in zoom-in-95 duration-500">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-8 text-green-600">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-            </div>
-            <h2 className="text-4xl font-bold text-gray-900 tracking-tight mb-4">¡Solicitud recibida!</h2>
-            <p className="text-xl text-gray-500 max-w-md mx-auto mb-8">
-              Tu perfil de proveedor se encuentra en estado <span className="font-semibold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-md">Pendiente de revisión</span>. Te avisaremos cuando se apruebe.
-            </p>
-            <p className="text-gray-600 mb-8">Mientras tanto, puedes acceder a tu Panel de Proveedor para empezar a añadir tu inventario de equipos. Serán visibles al público tan pronto como tu cuenta se verifique totalmente.</p>
-          </div>
-        )}
-
-        {/* ── Fixed Footer Controls ── */}
-        <div className="mt-auto pt-10 flex items-center justify-between">
-          {step > 1 && step < 4 ? (
-            <button 
-              onClick={handleBack}
-              className="text-gray-900 font-semibold hover:bg-gray-100 px-6 py-3 rounded-full transition-colors underline decoration-2 underline-offset-4"
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isPending}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#875B9A] hover:bg-[#6a437a] text-white py-3 text-sm font-semibold transition-colors shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
-              Atrás
+              {isPending ? "Enviando solicitud..." : "Enviar solicitud →"}
             </button>
-          ) : (
-            <div></div> // Placeholder to keep alignment
-          )}
-
-          <button 
-            onClick={handleNext}
-            className={`bg-[#875B9A] hover:bg-[#6a437a] text-white px-8 py-4 rounded-xl text-[1.1rem] font-bold transition-all shadow-md ${step === 4 ? 'w-full md:w-auto' : ''}`}
-          >
-            {step === 1 ? 'Continuar' : step === 3 ? 'Enviar Solicitud' : step === 4 ? 'Ir a mi Panel de Proveedor' : 'Siguiente'}
-          </button>
+          </form>
         </div>
-
       </div>
     </div>
   );

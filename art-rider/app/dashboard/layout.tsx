@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CalendarDays, Heart, ChevronRight } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Heart, ChevronRight, Package } from "lucide-react";
 
 export default function ClientDashboardLayout({
   children,
@@ -15,6 +15,7 @@ export default function ClientDashboardLayout({
     { name: "Mi Actividad", href: "/dashboard", icon: LayoutDashboard },
     { name: "Mis Reservas", href: "/dashboard/bookings", icon: CalendarDays },
     { name: "Favoritos", href: "/dashboard/favorites", icon: Heart },
+    { name: "Mis Equipos", href: "/dashboard/listings", icon: Package },
   ];
 
   return (
@@ -34,10 +35,10 @@ export default function ClientDashboardLayout({
 
           <div className="flex items-center gap-4">
             <Link
-              href="/provider"
+              href="/become-a-provider"
               className="hidden sm:flex items-center gap-2 text-sm font-semibold text-[#875B9A] hover:text-white border border-[#875B9A] hover:bg-[#875B9A] px-4 py-2 rounded-full transition-colors"
             >
-              Cambiar a Proveedor
+              Ser proveedor
               <ChevronRight size={16} />
             </Link>
 

@@ -1,152 +1,44 @@
-/**
- * listingsService.ts
- *
- * Service layer for all Supabase queries related to the Listings domain.
- *
- * Rules:
- *  - All functions use `createSupabaseServerClient()` (cookie-based SSR client).
- *  - Only published, non-deleted listings are returned to the public.
- *  - No transactional logic (bookings, payments) lives here — see bookingsService.
- *  - Errors are thrown with descriptive messages; callers decide how to handle them.
- */
+"use server";
 
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
-import type { CatalogProduct, ListingAddress, ListingWithRelations } from "@/types/listings";
+import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
+import { revalidatePath } from "next/cache";
 
-// ---------------------------------------------------------------------------
-// Internal: raw shape returned by the Supabase JS client
-// ---------------------------------------------------------------------------
-// The Supabase client types foreign-table joins as arrays (T[] | null) even
-// when the FK is a many-to-one relationship. We define the raw shape here so
-// TypeScript is satisfied, then normalize to our clean ListingWithRelations.
+// ── Types ────────────────────────────────────────────────────────────────────
 
-type RawCatalogRow = {
-  name: string;
+export type Listing = {
+  id: string;
+  owner_id: string;
+  title: string | null;
   brand: string | null;
   model: string | null;
   category: string | null;
-};
-
-type RawAddressRow = {
-  city: string;
-  state: string;
-  country: string;
-};
-
-type RawListingRow = {
-  id: string;
+  cover_image_url: string | null;
   daily_price: number;
   description: string | null;
   is_published: boolean;
   created_at: string;
-  product_catalog: RawCatalogRow[] | RawCatalogRow | null;
-  addresses: RawAddressRow[] | RawAddressRow | null;
 };
 
-// ---------------------------------------------------------------------------
-// Internal: normalizer
-// ---------------------------------------------------------------------------
+const LISTING_SELECT =
+  "id, owner_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at";
 
-/**
- * Normalizes a raw Supabase row into a clean ListingWithRelations.
- * Handles the case where joined rows may come back as an array (Supabase SDK quirk).
- */
-function normalize(raw: RawListingRow): ListingWithRelations {
-  const catalog = Array.isArray(raw.product_catalog)
-    ? (raw.product_catalog[0] as CatalogProduct | undefined) ?? null
-    : (raw.product_catalog as CatalogProduct | null);
+// ── Read (Public) ─────────────────────────────────────────────────────────────
 
-  const address = Array.isArray(raw.addresses)
-    ? (raw.addresses[0] as ListingAddress | undefined) ?? null
-    : (raw.addresses as ListingAddress | null);
-
-  return {
-    id: raw.id,
-    daily_price: raw.daily_price,
-    description: raw.description,
-    is_published: raw.is_published,
-    created_at: raw.created_at,
-    product_catalog: catalog,
-    addresses: address,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Internal: shared select string
-// ---------------------------------------------------------------------------
-
-/**
- * The Supabase select string for a listing with its catalog and address joins.
- * Kept as a constant so both query functions stay in sync.
- */
-const LISTING_SELECT = `
-  id,
-  daily_price,
-  description,
-  is_published,
-  created_at,
-  product_catalog (
-    name,
-    brand,
-    model,
-    category
-  ),
-  addresses (
-    city,
-    state,
-    country
-  )
-` as const;
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-/**
- * Fetches all published, non-deleted listings ordered by newest first.
- *
- * Access:  Fully public — relies on the RLS policy:
- *          `USING (is_published = true OR auth.uid() = owner_id)`
- *          Anonymous users will only receive rows where is_published = true.
- *
- * @returns An array of listings with catalog and address data.
- * @throws  Error with a descriptive message if the Supabase query fails.
- */
-export async function getListings(): Promise<ListingWithRelations[]> {
+export async function getListings(): Promise<Listing[]> {
   const supabase = await createSupabaseServerClient();
-
   const { data, error } = await supabase
     .from("listings")
     .select(LISTING_SELECT)
     .eq("is_published", true)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
-
-  if (error) {
-    throw new Error(
-      `[listingsService] getListings() failed: ${error.message} (code: ${error.code})`
-    );
-  }
-
-  return ((data ?? []) as RawListingRow[]).map(normalize);
+  if (error) throw new Error(`[listingsService] getListings: ${error.message}`);
+  return (data ?? []) as Listing[];
 }
 
-/**
- * Fetches a single published, non-deleted listing by its UUID.
- *
- * Access:  Fully public — same RLS policy as getListings().
- *          If the listing exists but is not published, `null` is returned
- *          (the caller should invoke `notFound()` from next/navigation).
- *
- * @param   id — UUID of the listing to fetch.
- * @returns The listing with catalog and address data, or `null` if not found.
- * @throws  Error with a descriptive message if the Supabase query fails.
- */
-export async function getListingById(
-  id: string
-): Promise<ListingWithRelations | null> {
+export async function getListingById(id: string): Promise<Listing | null> {
   const supabase = await createSupabaseServerClient();
-
   const { data, error } = await supabase
     .from("listings")
     .select(LISTING_SELECT)
@@ -154,18 +46,164 @@ export async function getListingById(
     .eq("is_published", true)
     .is("deleted_at", null)
     .single();
-
   if (error) {
-    // PostgREST returns code PGRST116 when `.single()` finds no rows.
-    // This is a "not found" case, not an infrastructure failure — return null.
-    if (error.code === "PGRST116") {
-      return null;
+    if (error.code === "PGRST116") return null;
+    throw new Error(`[listingsService] getListingById: ${error.message}`);
+  }
+  return data as Listing;
+}
+
+// ── Read (Provider) ───────────────────────────────────────────────────────────
+
+export async function getMyListings(): Promise<Listing[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data, error } = await supabase
+    .from("listings")
+    .select(LISTING_SELECT)
+    .eq("owner_id", user.id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`[listingsService] getMyListings: ${error.message}`);
+  return (data ?? []) as Listing[];
+}
+
+// ── Mutations ────────────────────────────────────────────────────────────────
+
+async function uploadCoverImage(file: File, userId: string): Promise<string | null> {
+  if (!file || file.size === 0) return null;
+  const ext = file.name.split(".").pop() || "jpg";
+  const fileName = `${userId}-${Date.now()}.${ext}`;
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin.storage
+    .from("listing-covers")
+    .upload(fileName, file, { upsert: true, contentType: file.type });
+  if (error) { console.error("[listingsService] upload error:", error); return null; }
+  const supabase = await createSupabaseServerClient();
+  const { data } = supabase.storage.from("listing-covers").getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
+export async function createListing(prevState: any, formData: FormData) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { error: "Debes iniciar sesión." };
+
+    const { data: provider } = await supabase
+      .from("providers").select("status").eq("user_id", user.id).single();
+    if (!provider) return { error: "Necesitas registrarte como proveedor primero." };
+    if (provider.status === "pending") return { error: "Tu cuenta de proveedor está pendiente de aprobación." };
+    if (provider.status === "suspended") return { error: "Tu cuenta de proveedor ha sido suspendida." };
+
+    const title = (formData.get("title") as string)?.trim();
+    const brand = (formData.get("brand") as string)?.trim();
+    const model = (formData.get("model") as string)?.trim();
+    const category = formData.get("category") as string;
+    const dailyPriceRaw = formData.get("dailyPrice") as string;
+    const description = (formData.get("description") as string)?.trim();
+    const publishNow = formData.get("publishNow") === "true";
+
+    if (!title || title.length < 3 || title.length > 100)
+      return { error: "El título debe tener entre 3 y 100 caracteres." };
+    if (!category) return { error: "La categoría es obligatoria." };
+
+    const dailyPrice = Math.round(parseFloat(dailyPriceRaw) * 100);
+    if (isNaN(dailyPrice) || dailyPrice < 100) return { error: "El precio mínimo es $1.00 por día." };
+    if (dailyPrice > 1000000) return { error: "El precio máximo es $10,000 por día." };
+
+    const coverFile = formData.get("coverImage") as File | null;
+    if (coverFile && coverFile.size > 5 * 1024 * 1024)
+      return { error: "La imagen no puede superar los 5MB." };
+
+    const coverImageUrl = coverFile ? await uploadCoverImage(coverFile, user.id) : null;
+
+    const { data: newListing, error: insertError } = await supabase
+      .from("listings")
+      .insert({
+        owner_id: user.id, title, brand: brand || null, model: model || null,
+        category, cover_image_url: coverImageUrl,
+        daily_price: dailyPrice, description: description || null, is_published: publishNow,
+      })
+      .select("id").single();
+
+    if (insertError) return { error: "Error al guardar el equipo. Intenta de nuevo." };
+
+    revalidatePath("/dashboard/listings");
+    revalidatePath("/listings");
+    return { success: true, id: newListing.id };
+  } catch {
+    return { error: "Ocurrió un error inesperado." };
+  }
+}
+
+export async function updateListing(id: string, prevState: any, formData: FormData) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { error: "Debes iniciar sesión." };
+
+    const title = (formData.get("title") as string)?.trim();
+    const brand = (formData.get("brand") as string)?.trim();
+    const model = (formData.get("model") as string)?.trim();
+    const category = formData.get("category") as string;
+    const dailyPriceRaw = formData.get("dailyPrice") as string;
+    const description = (formData.get("description") as string)?.trim();
+
+    if (!title || title.length < 3) return { error: "El título debe tener al menos 3 caracteres." };
+    if (!category) return { error: "La categoría es obligatoria." };
+
+    const dailyPrice = Math.round(parseFloat(dailyPriceRaw) * 100);
+    if (isNaN(dailyPrice) || dailyPrice < 100) return { error: "El precio mínimo es $1.00." };
+
+    const payload: any = {
+      title, brand: brand || null, model: model || null, category,
+      daily_price: dailyPrice, description: description || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const coverFile = formData.get("coverImage") as File | null;
+    if (coverFile && coverFile.size > 0) {
+      if (coverFile.size > 5 * 1024 * 1024) return { error: "La imagen no puede superar los 5MB." };
+      const url = await uploadCoverImage(coverFile, user.id);
+      if (url) payload.cover_image_url = url;
     }
 
-    throw new Error(
-      `[listingsService] getListingById(${id}) failed: ${error.message} (code: ${error.code})`
-    );
-  }
+    const { error } = await supabase
+      .from("listings").update(payload).eq("id", id).eq("owner_id", user.id);
+    if (error) return { error: "Error al actualizar el equipo." };
 
-  return normalize(data as RawListingRow);
+    revalidatePath("/dashboard/listings");
+    revalidatePath(`/listings/${id}`);
+    return { success: true };
+  } catch {
+    return { error: "Error inesperado." };
+  }
+}
+
+export async function togglePublish(id: string, currentState: boolean) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autenticado." };
+  const { error } = await supabase.from("listings")
+    .update({ is_published: !currentState, updated_at: new Date().toISOString() })
+    .eq("id", id).eq("owner_id", user.id);
+  if (error) return { error: "Error al cambiar el estado." };
+  revalidatePath("/dashboard/listings");
+  revalidatePath("/listings");
+  return { success: true };
+}
+
+export async function deleteListing(id: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "No autenticado." };
+  const { error } = await supabase.from("listings")
+    .update({ deleted_at: new Date().toISOString(), is_published: false })
+    .eq("id", id).eq("owner_id", user.id);
+  if (error) return { error: "Error al eliminar." };
+  revalidatePath("/dashboard/listings");
+  revalidatePath("/listings");
+  return { success: true };
 }
