@@ -13,7 +13,7 @@ export default function NewListingPage() {
 
   useEffect(() => {
     if (state?.success) {
-      router.push("/dashboard/listings");
+      router.push("/provider/catalog");
     }
   }, [state, router]);
 
@@ -22,7 +22,7 @@ export default function NewListingPage() {
       {/* Header */}
       <div className="mb-8">
         <Link
-          href="/dashboard/listings"
+          href="/provider/catalog"
           className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

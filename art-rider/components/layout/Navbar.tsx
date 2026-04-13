@@ -5,10 +5,12 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
+import { getMyProviderProfile } from "@/services/providerService";
 
 export default function Navbar({ initialUser = null }: { initialUser?: User | null }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(initialUser);
+  const [isProvider, setIsProvider] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -16,6 +18,16 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      if (user) {
+        try {
+          const profile = await getMyProviderProfile();
+          setIsProvider(!!profile);
+        } catch(e) {
+          setIsProvider(false);
+        }
+      } else {
+        setIsProvider(false);
+      }
     };
     getUser();
 
@@ -87,9 +99,9 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
         {/* ── Right: User Actions ── */}
         <div className="flex-1 flex justify-end items-center gap-3">
           {/* Become Provider / Dashboard button */}
-          {user?.user_metadata?.role === 'provider' ? (
+          {user && isProvider ? (
             <Link
-              href="/dashboard"
+              href="/provider"
               className="hidden lg:inline-flex items-center justify-center h-11 text-[0.88rem] font-semibold text-gray-800 hover:bg-gray-50 px-4 rounded-full transition-colors whitespace-nowrap"
             >
               Panel de Proveedor

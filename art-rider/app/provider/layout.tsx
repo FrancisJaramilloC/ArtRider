@@ -1,97 +1,64 @@
-"use client";
-
+import { getMyProviderProfile } from "@/services/providerService";
+import { redirect } from "next/navigation";
+import ProviderLayoutClient from "./ProviderLayoutClient";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, CalendarDays, DollarSign, Settings, Bell, ChevronLeft, Store } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
-export default function ProviderLayout({
+export default async function ProviderLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
+  const provider = await getMyProviderProfile();
 
-  const navItems = [
-    { name: "Centro Operativo", href: "/provider", icon: LayoutDashboard },
-    { name: "Reservas", href: "/provider/bookingsProvider", icon: CalendarDays },
-    { name: "Catálogo", href: "/provider/catalog", icon: Store },
-    { name: "Disponibilidad", href: "/provider/inventory", icon: Package },
-    { name: "Finanzas", href: "/provider/finance", icon: DollarSign },
-  ];
+  if (!provider) {
+    redirect("/become-a-provider");
+  }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      
-      {/* ── Top Navbar ── */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
-        <div className="w-full max-w-7xl h-16 px-6 flex items-center justify-between">
-          <div className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-900 group-hover:bg-[#875B9A] transition-colors text-white text-xs shrink-0">
-              🎧
-            </div>
-            <span className="font-extrabold text-lg text-gray-900 tracking-tight">
-              ArtRider <span className="font-medium text-gray-400">| Proveedor</span>
-            </span>
+  // Pending State
+  if (provider.status === "pending") {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50 items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white border border-gray-200 rounded-3xl p-8 shadow-xl text-center">
+          <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
           </div>
-
-          <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="hidden sm:flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-full transition-colors"
-            >
-              <ChevronLeft size={16} />
-              Navegar como Cliente
-            </Link>
-
-            <button className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-full transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-
-            <div className="w-9 h-9 ml-2 rounded-full bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shadow-md shrink-0 cursor-pointer text-white font-bold text-sm">
-              EJ
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">En Verificación</h1>
+          <p className="text-gray-500 mb-8 leading-relaxed">
+            Tu cuenta de proveedor <strong>{provider.brand_name}</strong> está en proceso de revisión manual. Este proceso suele tomar de 1 a 3 días hábiles.
+          </p>
+          <Link
+            href="/dashboard"
+            className="inline-flex flex-col items-center justify-center gap-2 text-[#875B9A] font-semibold bg-purple-50 hover:bg-purple-100 w-full py-4 rounded-2xl transition-colors"
+          >
+            <span>Volver a mi cuenta de cliente</span>
+          </Link>
         </div>
-      </header>
-
-      {/* ── Main Layout (Sidebar + Content) ── */}
-      <div className="flex-1 flex w-full">
-        
-        {/* ── Left Sidebar ── */}
-        <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 fixed h-[calc(100vh-64px)] overflow-y-auto">
-          <nav className="p-4 space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-purple-50 text-[#875B9A]"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                >
-                  <Icon size={18} className={isActive ? "text-[#875B9A]" : "text-gray-400"} />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-        </aside>
-
-        {/* ── Dashboard Content ── */}
-        <main className="flex-1 min-w-0 md:ml-64 p-6 lg:p-10">
-          <div className="max-w-[1240px] mx-auto w-full">
-            {children}
-          </div>
-        </main>
-
       </div>
-    
-    </div>
+    );
+  }
+
+  // Suspended State
+  if (provider.status === "suspended") {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50 items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white border border-red-200 rounded-3xl p-8 shadow-xl text-center">
+           <h1 className="text-2xl font-bold text-red-600 mb-3">Cuenta Suspendida</h1>
+           <p className="text-gray-600 mb-8">
+             Tu cuenta de proveedor ha sido temporalmente inhabilitada por un administrador.
+           </p>
+           <Link href="/dashboard" className="text-blue-600 font-semibold hover:underline">Volver al inicio</Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Active State
+  return (
+    <ProviderLayoutClient>
+      {children}
+    </ProviderLayoutClient>
   );
 }

@@ -130,7 +130,7 @@ export async function createListing(prevState: any, formData: FormData) {
 
     if (insertError) return { error: "Error al guardar el equipo. Intenta de nuevo." };
 
-    revalidatePath("/dashboard/listings");
+    revalidatePath("/provider/catalog");
     revalidatePath("/listings");
     return { success: true, id: newListing.id };
   } catch {
@@ -174,7 +174,7 @@ export async function updateListing(id: string, prevState: any, formData: FormDa
       .from("listings").update(payload).eq("id", id).eq("owner_id", user.id);
     if (error) return { error: "Error al actualizar el equipo." };
 
-    revalidatePath("/dashboard/listings");
+    revalidatePath("/provider/catalog");
     revalidatePath(`/listings/${id}`);
     return { success: true };
   } catch {

@@ -1,7 +1,7 @@
 import { updateListing } from "@/services/listingsService";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { notFound } from "next/navigation";
-import EditListingClient from "@/app/dashboard/listings/[id]/edit/EditListingClient";
+import EditListingClient from "@/app/provider/catalog/[id]/edit/EditListingClient";
 
 export default async function EditListingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

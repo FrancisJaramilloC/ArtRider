@@ -86,7 +86,7 @@ export default function ListingsManagerClient({ listings: initial }: { listings:
             {/* Actions */}
             <div className="border-t border-gray-100 px-4 py-3 flex items-center justify-between gap-2">
               <Link
-                href={`/dashboard/listings/${listing.id}/edit`}
+                href={`/provider/catalog/${listing.id}/edit`}
                 className="text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors"
               >
                 Editar

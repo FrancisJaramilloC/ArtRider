@@ -78,6 +78,7 @@ export async function signUp(prevState: any, formData: FormData) {
       const supabaseAdmin = createSupabaseAdminClient();
       const { error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: authData.user.id,
+        email: authData.user.email,
         full_name: `${firstName} ${lastName}`.trim(),
         phone: phone,
         birth_date: birthDate,
