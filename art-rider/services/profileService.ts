@@ -118,6 +118,12 @@ export async function updateProfile(prevState: any, formData: FormData) {
 
     if (updateError) {
       console.error('Update Profile Error:', updateError);
+      
+      // Handle Unique Constraint Violation (Postgres Code 23505)
+      if (updateError.code === '23505' && updateError.message.includes('phone')) {
+        return { error: 'Este número de teléfono ya está registrado con otra cuenta.' };
+      }
+
       return { error: 'Error interno guardando tu perfil. Por favor intenta más tarde.' };
     }
 

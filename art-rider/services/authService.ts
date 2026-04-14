@@ -9,13 +9,18 @@ import { redirect } from 'next/navigation';
 export async function signUp(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const confirmPassword = formData.get('confirmPassword') as string;
   const firstName = formData.get('firstName') as string;
   const lastName = formData.get('lastName') as string;
   const phone = formData.get('phone') as string;
   const birthDate = formData.get('birthDate') as string;
 
-  if (!email || !password || !firstName || !lastName || !phone || !birthDate) {
+  if (!email || !password || !confirmPassword || !firstName || !lastName || !phone || !birthDate) {
     return { error: 'All fields are required.' };
+  }
+
+  if (password !== confirmPassword) {
+    return { error: 'Las contraseñas no coinciden. Por favor verifícalas.' };
   }
 
   // Parameter Constraints: Name Lengths
@@ -73,6 +78,7 @@ export async function signUp(prevState: any, formData: FormData) {
       const supabaseAdmin = createSupabaseAdminClient();
       const { error: insertError } = await supabaseAdmin.from('profiles').insert({
         id: authData.user.id,
+        email: authData.user.email,
         full_name: `${firstName} ${lastName}`.trim(),
         phone: phone,
         birth_date: birthDate,
@@ -80,6 +86,17 @@ export async function signUp(prevState: any, formData: FormData) {
 
       if (insertError) {
         console.error('Profiles Table Insert Error Full (Admin):', insertError);
+        
+        // Handle Unique Constraint Violation (Postgres Code 23505)
+        if (insertError.code === '23505') {
+          if (insertError.message.includes('phone')) {
+            return { error: 'Este número de teléfono ya está registrado con otra cuenta.' };
+          }
+          if (insertError.message.includes('email')) {
+            return { error: 'Este correo electrónico ya está registrado.' };
+          }
+        }
+
         return { error: `Account created but failed to initialize profile: ${insertError.message}` };
       }
     }

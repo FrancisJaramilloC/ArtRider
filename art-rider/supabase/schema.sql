@@ -27,7 +27,7 @@ CREATE TABLE profiles (
   email TEXT UNIQUE,
   full_name TEXT,
   birth_date DATE,
-  phone TEXT,
+  phone TEXT UNIQUE,
   avatar_url TEXT,
   avatar_updated_at TIMESTAMPTZ,
   stripe_customer_id TEXT UNIQUE,
@@ -59,10 +59,18 @@ CREATE TABLE providers (
   user_id UUID UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
   brand_name TEXT,
   bio TEXT,
-  status TEXT DEFAULT 'pending',
+  status TEXT DEFAULT 'pending', -- pending, active, suspended
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE providers ENABLE ROW LEVEL SECURITY;
+
+-- RLS: provider can only read/write their own record
+CREATE POLICY "providers_user_read" ON providers
+  FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "providers_user_insert" ON providers
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "providers_user_update" ON providers
+  FOR UPDATE USING (auth.uid() = user_id);
 
 -- =========================================================
 -- 6. ADDRESSES
@@ -110,13 +118,27 @@ CREATE TABLE listings (
   owner_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   catalog_item_id UUID REFERENCES product_catalog(id),
   address_id UUID REFERENCES addresses(id),
+  title TEXT,
+  brand TEXT,
+  model TEXT,
+  category TEXT CHECK (category IN ('audio', 'lighting', 'video', 'effects', 'other')),
+  cover_image_url TEXT,
   daily_price INTEGER NOT NULL,
   description TEXT,
   is_published BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
+
+-- RLS: public reads published; owner reads/writes all their own
+CREATE POLICY "listings_public_read" ON listings
+  FOR SELECT USING (is_published = true OR auth.uid() = owner_id);
+CREATE POLICY "listings_owner_insert" ON listings
+  FOR INSERT WITH CHECK (auth.uid() = owner_id);
+CREATE POLICY "listings_owner_update" ON listings
+  FOR UPDATE USING (auth.uid() = owner_id);
 
 -- =========================================================
 -- 9. EQUIPMENT UNITS (CRITICAL MODEL)

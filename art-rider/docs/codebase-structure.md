@@ -1,4 +1,4 @@
-# Codebase Structure
+ Codebase Structure
 
 Our Next.js architecture heavily decouples presentation from core logic protecting long-term scale and allowing the team of 4 to avoid conflict.
 
