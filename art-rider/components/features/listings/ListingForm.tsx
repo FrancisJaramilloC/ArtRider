@@ -38,6 +38,9 @@ export default function ListingForm({
     defaultValues.cover_image_url ?? null
   );
   const [publishNow, setPublishNow] = useState(defaultValues.is_published ?? false);
+  const [imageError, setImageError] = useState(false);
+
+  const isEditing = !!defaultValues.cover_image_url;
 
   // Convert cents → dollars for display
   const defaultPrice = defaultValues.dailyPrice
@@ -53,13 +56,21 @@ export default function ListingForm({
       return;
     }
     setPreviewUrl(URL.createObjectURL(file));
+    setImageError(false);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onSubmit={(e) => {
+      if (!isEditing && !previewUrl) {
+        e.preventDefault();
+        setImageError(true);
+        return;
+      }
+      setImageError(false);
+    }}>
       {/* Cover image */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">Foto del equipo</label>
+        <label className="block text-sm font-medium text-gray-700">Foto del equipo <span className="text-red-500">*</span></label>
         <div
           className="relative w-full h-52 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden cursor-pointer group hover:border-[#875B9A] transition-colors"
           onClick={() => fileInputRef.current?.click()}
@@ -90,6 +101,9 @@ export default function ListingForm({
           className="hidden"
           onChange={handleFileChange}
         />
+        {imageError && (
+          <p className="text-sm text-red-500 font-medium">Debes subir una foto del equipo.</p>
+        )}
       </div>
 
       {/* Title */}

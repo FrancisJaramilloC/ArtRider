@@ -114,10 +114,12 @@ export async function createListing(prevState: any, formData: FormData) {
     if (dailyPrice > 1000000) return { error: "El precio máximo es $10,000 por día." };
 
     const coverFile = formData.get("coverImage") as File | null;
-    if (coverFile && coverFile.size > 5 * 1024 * 1024)
+    if (!coverFile || coverFile.size === 0)
+      return { error: "La foto del equipo es obligatoria." };
+    if (coverFile.size > 5 * 1024 * 1024)
       return { error: "La imagen no puede superar los 5MB." };
 
-    const coverImageUrl = coverFile ? await uploadCoverImage(coverFile, user.id) : null;
+    const coverImageUrl = await uploadCoverImage(coverFile, user.id);
 
     const { data: newListing, error: insertError } = await supabase
       .from("listings")

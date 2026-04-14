@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, CalendarDays, Heart, ChevronRight } from "lucide-react";
 import type { ProviderProfile } from "@/services/providerService";
+import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 
 export default function DashboardLayoutClient({
   children,
@@ -26,14 +27,7 @@ export default function DashboardLayoutClient({
       {/* ── Top Navbar ── */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
         <div className="w-full max-w-7xl h-16 px-6 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#875B9A] text-white text-xs shrink-0 font-bold">
-              AR
-            </div>
-            <span className="font-extrabold text-lg text-gray-900 tracking-tight">
-              ArtRider
-            </span>
-          </Link>
+          <ArtRiderLogo subtitle="Usuario" />
 
           <div className="flex items-center gap-4">
             {provider ? (
@@ -54,9 +48,12 @@ export default function DashboardLayoutClient({
               </Link>
             )}
 
-            <div className="w-9 h-9 ml-2 rounded-full bg-gray-200 flex items-center justify-center shadow-inner shrink-0 cursor-pointer text-gray-600 font-bold text-sm">
+            <Link
+              href="/profile"
+              className="w-9 h-9 ml-2 rounded-full bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shadow-md shrink-0 cursor-pointer text-white font-bold text-sm hover:shadow-lg transition-shadow"
+            >
               U
-            </div>
+            </Link>
           </div>
         </div>
       </header>

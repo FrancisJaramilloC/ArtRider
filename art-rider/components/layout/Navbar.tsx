@@ -98,11 +98,11 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
 
         {/* ── Right: User Actions ── */}
         <div className="flex-1 flex justify-end items-center gap-3">
-          {/* Become Provider / Dashboard button */}
-          {user && isProvider ? (
+          {/* Become Provider / Provider panel button — only when logged in */}
+          {user && (isProvider ? (
             <Link
               href="/provider"
-              className="hidden lg:inline-flex items-center justify-center h-11 text-[0.88rem] font-semibold text-gray-800 hover:bg-gray-50 px-4 rounded-full transition-colors whitespace-nowrap"
+              className="hidden lg:inline-flex items-center justify-center h-11 text-[0.88rem] font-semibold text-[#875B9A] hover:text-white border border-[#875B9A] hover:bg-[#875B9A] px-4 rounded-full transition-colors whitespace-nowrap"
             >
               Panel de Proveedor
             </Link>
@@ -113,19 +113,22 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
             >
               Conviértete en proveedor
             </Link>
-          )}
+          ))}
 
-          {/* Cart Icon */}
-          <button
-            aria-label="Carrito"
-            className="p-2.5 hover:bg-gray-50 rounded-full transition-colors flex items-center justify-center shrink-0"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="9" cy="21" r="1"></circle>
-              <circle cx="20" cy="21" r="1"></circle>
-              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-            </svg>
-          </button>
+          {/* Cart/Dashboard Icon — only when logged in */}
+          {user && (
+            <Link
+              href="/dashboard"
+              aria-label="Mi cuenta"
+              className="p-2.5 hover:bg-gray-50 rounded-full transition-colors flex items-center justify-center shrink-0"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+            </Link>
+          )}
 
           <div className="relative ml-1">
             {/* Airbnb-style User Pill */}

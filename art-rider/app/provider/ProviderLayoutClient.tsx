@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Store, CalendarDays, Package, DollarSign, Bell, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, Store, CalendarDays, Package, DollarSign, ChevronLeft } from "lucide-react";
+import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 
 export default function ProviderLayoutClient({
   children,
@@ -25,32 +26,23 @@ export default function ProviderLayoutClient({
       {/* ── Top Navbar ── */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
         <div className="w-full max-w-7xl h-16 px-6 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group hover:cursor-pointer">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-900 group-hover:bg-[#875B9A] transition-colors text-white text-xs shrink-0">
-              🎧
-            </div>
-            <span className="font-extrabold text-lg text-gray-900 tracking-tight">
-              ArtRider <span className="font-medium text-gray-400">| Proveedor</span>
-            </span>
-          </Link>
+          <ArtRiderLogo subtitle="Proveedor" />
 
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
-              className="hidden sm:flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900 border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-full transition-colors"
+              className="hidden sm:flex items-center gap-2 text-sm font-semibold text-[#875B9A] hover:text-white border border-[#875B9A] hover:bg-[#875B9A] px-4 py-2 rounded-full transition-colors"
             >
               <ChevronLeft size={16} />
               Navegar como Cliente
             </Link>
 
-            <button className="relative p-2 text-gray-500 hover:bg-gray-50 rounded-full transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
-
-            <div className="w-9 h-9 ml-2 rounded-full bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shadow-md shrink-0 cursor-pointer text-white font-bold text-sm">
-              EJ
-            </div>
+            <Link
+              href="/profile"
+              className="w-9 h-9 ml-2 rounded-full bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shadow-md shrink-0 cursor-pointer text-white font-bold text-sm hover:shadow-lg transition-shadow"
+            >
+              P
+            </Link>
           </div>
         </div>
       </header>

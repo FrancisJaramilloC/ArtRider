@@ -1,5 +1,8 @@
 import ProfileNav from "@/components/features/profile/ProfileNav";
+import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Configuración de Cuenta | ArtRider",
@@ -12,8 +15,27 @@ export default function ProfileLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-gray-50/50 min-h-[calc(100vh-80px)] w-full">
-      <div className="max-w-6xl mx-auto px-6 py-10 md:py-16 flex flex-col md:flex-row gap-10 lg:gap-14">
+    <div className="min-h-screen flex flex-col bg-gray-50/50">
+
+      {/* ── Top Navbar ── */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
+        <div className="w-full max-w-7xl h-16 px-6 flex items-center justify-between">
+          <ArtRiderLogo subtitle="Usuario" />
+
+          <div className="flex items-center gap-4">
+            <Link
+              href="/dashboard"
+              className="hidden sm:flex items-center gap-2 text-sm font-semibold text-[#875B9A] hover:text-white border border-[#875B9A] hover:bg-[#875B9A] px-4 py-2 rounded-full transition-colors"
+            >
+              <ChevronLeft size={16} />
+              Volver al Dashboard
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Main Content ── */}
+      <div className="max-w-6xl mx-auto px-6 py-10 md:py-16 flex flex-col md:flex-row gap-10 lg:gap-14 w-full">
         
         {/* ── Left Sidebar Nav ── */}
         <aside className="w-full md:w-64 shrink-0">
