@@ -32,19 +32,11 @@ export default async function ListingsPage() {
 
   return (
     <main
-      style={{
-        minHeight: "100vh",
-        background: "var(--background)",
-        paddingBottom: "80px",
-      }}
+      className="min-h-screen bg-white pb-20"
     >
       {/* ── Page header ── */}
       <header
-        style={{
-          padding: "56px 24px 40px",
-          maxWidth: "1200px",
-          margin: "0 auto",
-        }}
+        className="pt-14 pb-10 px-6 max-w-[1200px] mx-auto"
       >
         {/* Eyebrow label */}
         <p
@@ -55,31 +47,24 @@ export default async function ListingsPage() {
         </p>
 
         <h1
-          className="text-4xl font-bold tracking-tight"
-          style={{ color: "var(--text-primary)", marginBottom: "10px" }}
+          className="text-4xl font-bold tracking-tight text-gray-900 mb-2.5"
         >
-          Equipment Catalog
+          Catálogo de Equipos
         </h1>
 
         <p
-          className="text-base"
-          style={{
-            color: "var(--text-secondary)",
-            maxWidth: "540px",
-            lineHeight: "1.65",
-          }}
+          className="text-base text-gray-500 max-w-[540px] leading-relaxed"
         >
-          Professional audio, lighting, and production gear — rented directly
-          from verified owners near you.
+          Equipos profesionales de audio, iluminación y producción — alquilados
+          directamente de propietarios verificados cerca de ti.
         </p>
 
         {/* Subtle divider */}
         <div
+          className="mt-8 h-px"
           style={{
-            marginTop: "32px",
-            height: "1px",
             background:
-              "linear-gradient(90deg, var(--primary-500) 0%, transparent 70%)",
+              "linear-gradient(90deg, #875B9A 0%, transparent 70%)",
           }}
         />
       </header>
@@ -87,17 +72,14 @@ export default async function ListingsPage() {
       {/* ── Catalog grid ── */}
       <section
         aria-label="Available equipment listings"
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "0 24px",
-        }}
+        className="max-w-[1200px] mx-auto px-6"
       >
         {listings.length === 0 ? (
           /* ── Empty state ── */
           <div
-            className="listing-card flex flex-col items-center justify-center text-center"
+            className="flex flex-col items-center justify-center text-center bg-gray-50 border border-gray-200 rounded-2xl"
             style={{ padding: "72px 32px", gap: "16px" }}
+
             role="status"
             aria-live="polite"
           >
@@ -105,17 +87,15 @@ export default async function ListingsPage() {
               📭
             </span>
             <h2
-              className="text-lg font-semibold"
-              style={{ color: "var(--text-primary)" }}
+              className="text-lg font-semibold text-gray-900"
             >
-              No listings available yet
+              Aún no hay equipos disponibles
             </h2>
             <p
-              className="text-sm"
-              style={{ color: "var(--text-secondary)", maxWidth: "340px" }}
+              className="text-sm text-gray-500 max-w-[340px]"
             >
-              Be the first! Owner accounts can publish equipment listings from
-              the dashboard.
+              ¡Sé el primero! Los proveedores pueden publicar equipos desde
+              su panel de control.
             </p>
           </div>
         ) : (
@@ -137,18 +117,13 @@ export default async function ListingsPage() {
         {/* Listing count footer */}
         {listings.length > 0 && (
           <p
-            className="text-xs text-center"
-            style={{
-              color: "var(--text-muted)",
-              marginTop: "40px",
-            }}
+            className="text-xs text-center text-gray-400 mt-10"
           >
-            Showing{" "}
-            <strong style={{ color: "var(--text-secondary)" }}>
+            Mostrando{" "}
+            <strong className="text-gray-600">
               {listings.length}
             </strong>{" "}
-            published{" "}
-            {listings.length === 1 ? "listing" : "listings"}
+            {listings.length === 1 ? "equipo publicado" : "equipos publicados"}
           </p>
         )}
       </section>

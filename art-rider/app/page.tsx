@@ -6,6 +6,7 @@ import HomepageListingCard from "@/components/features/home/HomepageListingCard"
 import { HowItWorks } from "@/components/features/home/HowItWorks";
 import { BecomeProviderCTA } from "@/components/features/home/BecomeProviderCTA";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { getListings } from "@/services/listingsService";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -14,17 +15,19 @@ export const metadata: Metadata = {
     "Marketplace de alquiler de equipos de audio, iluminación y video. Conecta con propietarios verificados y reserva con confianza.",
 };
 
-// ─── Mock Data (Pure UI mode) ──────────────────────────────────────────────────
+// ── Category Icon Map ──────────────────────────────────────────────────────────
 
-const CATEGORIES = [
-  { title: "Sonido",      imageSrc: "/category-sonido.png",      icon: "🔊", href: "/listings?category=audio" },
-  { title: "Iluminación", imageSrc: "/category-iluminacion.png", icon: "💡", href: "/listings?category=lighting" },
-  { title: "Video",       imageSrc: "/category-video.png",       icon: "🎥", href: "/listings?category=video" },
-  { title: "Efectos",     imageSrc: "/category-efectos.png",     icon: "✨", href: "/listings?category=effects" },
-];
+const CATEGORY_ICONS: Record<string, string> = {
+  audio: "🔊", lighting: "💡", video: "🎥", effects: "✨", other: "📦",
+};
 
-// Note: Duplicated items heavily below to demonstrate the horizontal scrolling carousel effectiveness
-const FEATURED_EQUIPMENT = [
+const CATEGORY_LABELS: Record<string, string> = {
+  audio: "Sonido", lighting: "Iluminación", video: "Video", effects: "Efectos", other: "Otro",
+};
+
+// ── Fallback Mock Data (shown only when no real listings exist) ─────────────────
+
+const MOCK_EQUIPMENT = [
   {
     id: "mock-sub-beta-1",
     title: "Subwoofer Activo Beta 3",
@@ -68,7 +71,7 @@ const FEATURED_EQUIPMENT = [
   },
 ];
 
-const FEATURED_PACKAGES = [
+const MOCK_PACKAGES = [
   {
     id: "mock-intermedio-1",
     title: "Paquete Audiovisual Intermedio",
@@ -159,6 +162,36 @@ export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
 
+  // Fetch real published listings
+  let realListings: { id: string; title: string | null; category: string | null; daily_price: number; cover_image_url: string | null }[] = [];
+  try {
+    realListings = await getListings();
+  } catch {
+    // Graceful fallback — use mock data if query fails
+  }
+
+  // Map real listings to HomepageListingCard format
+  const featuredEquipment = realListings.length > 0
+    ? realListings.slice(0, 8).map((l) => ({
+        id: l.id,
+        title: l.title ?? "Equipo sin título",
+        categoryLabel: CATEGORY_LABELS[l.category ?? ""] ?? l.category ?? "Equipo",
+        location: "Ecuador",
+        price: `$${(l.daily_price / 100).toFixed(0)}`,
+        rating: 0,
+        reviewCount: 0,
+        icon: CATEGORY_ICONS[l.category ?? ""] ?? "📦",
+      }))
+    : MOCK_EQUIPMENT;
+
+  // Categories stay static (they're navigation links, not data)
+  const CATEGORIES = [
+    { title: "Sonido",      imageSrc: "/category-sonido.png",      icon: "🔊", href: "/listings?category=audio" },
+    { title: "Iluminación", imageSrc: "/category-iluminacion.png", icon: "💡", href: "/listings?category=lighting" },
+    { title: "Video",       imageSrc: "/category-video.png",       icon: "🎥", href: "/listings?category=video" },
+    { title: "Efectos",     imageSrc: "/category-efectos.png",     icon: "✨", href: "/listings?category=effects" },
+  ];
+
   return (
     <>
       <Navbar initialUser={data?.user || null} />      <main>
@@ -180,24 +213,24 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── Equipos destacados (Horizontal Scroll) ── */}
+        {/* ── Equipos destacados ── */}
         <section id="equipos" className="bg-white py-12 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
             <SectionHeader
               title="Equipos destacados"
-              ctaLabel="Mostrar (150+)"
+              ctaLabel={`Mostrar (${realListings.length > 0 ? realListings.length + "+" : "150+"})`}
               ctaHref="/listings"
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
-              {FEATURED_EQUIPMENT.map((item) => (
+              {featuredEquipment.map((item) => (
                 <HomepageListingCard key={item.id} {...item} />
               ))}
             </div>
           </div>
         </section>
 
-        {/* ── Paquetes destacados (Horizontal Scroll) ── */}
+        {/* ── Paquetes destacados ── */}
         <section id="paquetes" className="bg-white py-12 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
             <SectionHeader
@@ -208,7 +241,7 @@ export default async function HomePage() {
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
-              {FEATURED_PACKAGES.map((item) => (
+              {MOCK_PACKAGES.map((item) => (
                 <HomepageListingCard key={item.id} {...item} />
               ))}
             </div>

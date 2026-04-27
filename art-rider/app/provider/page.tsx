@@ -1,18 +1,28 @@
 import Link from "next/link";
 import { Plus, TrendingUp, Package, CalendarClock, MessageCircle, Edit3 } from "lucide-react";
+import { getMyProviderProfile } from "@/services/providerService";
+import { getMyListings } from "@/services/listingsService";
 
-export default function ProviderOverviewPage() {
+export default async function ProviderOverviewPage() {
+  const provider = await getMyProviderProfile();
+  const listings = await getMyListings();
+
+  const brandName = provider?.brand_name ?? "Proveedor";
+  const initials = brandName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+  const activeListingsCount = listings.filter((l) => l.is_published).length;
+  const totalListingsCount = listings.length;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Hola, EJ Audiovisuales</h1>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Hola, {brandName}</h1>
           <p className="text-gray-500 mt-1">Aquí tienes el resumen de tu negocio de hoy.</p>
         </div>
         <Link 
-          href="/provider/catalog"
+          href="/provider/catalog/new"
           className="inline-flex items-center justify-center gap-2 bg-[#875B9A] hover:bg-[#6a437a] text-white px-5 py-2.5 rounded-xl font-bold transition-transform hover:scale-105 active:scale-95 shadow-md shadow-purple-900/10"
         >
           <Plus size={18} />
@@ -30,9 +40,9 @@ export default function ProviderOverviewPage() {
               <TrendingUp size={18} />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-2">$450.00</p>
-          <div className="flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 w-fit px-2 py-1 rounded-md">
-            <span>+15% desde el mes pasado</span>
+          <p className="text-3xl font-bold text-gray-900 mb-2">$0.00</p>
+          <div className="flex items-center text-xs font-semibold text-gray-500 bg-gray-100 w-fit px-2 py-1 rounded-md">
+            <span>Las reservas estarán disponibles pronto</span>
           </div>
         </div>
 
@@ -43,9 +53,9 @@ export default function ProviderOverviewPage() {
               <CalendarClock size={18} />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-2">3</p>
+          <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
           <div className="flex items-center text-xs font-semibold text-gray-500 bg-gray-100 w-fit px-2 py-1 rounded-md">
-            <span>Requieren tu acción</span>
+            <span>Sin reservas activas</span>
           </div>
         </div>
 
@@ -56,9 +66,9 @@ export default function ProviderOverviewPage() {
               <Package size={18} />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-2">12</p>
+          <p className="text-3xl font-bold text-gray-900 mb-2">{activeListingsCount}</p>
           <div className="flex items-center text-xs font-semibold text-gray-500 bg-gray-100 w-fit px-2 py-1 rounded-md">
-            <span>En tu inventario</span>
+            <span>{totalListingsCount} en tu catálogo total</span>
           </div>
         </div>
 
@@ -69,9 +79,9 @@ export default function ProviderOverviewPage() {
               <MessageCircle size={18} />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-2">98%</p>
-          <div className="flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 w-fit px-2 py-1 rounded-md">
-            <span>Tiempo prom: 1h</span>
+          <p className="text-3xl font-bold text-gray-900 mb-2">—</p>
+          <div className="flex items-center text-xs font-semibold text-gray-500 bg-gray-100 w-fit px-2 py-1 rounded-md">
+            <span>Disponible con mensajería</span>
           </div>
         </div>
 
@@ -92,60 +102,15 @@ export default function ProviderOverviewPage() {
             </Link>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
-              <thead className="bg-gray-50/50 text-gray-500 font-semibold border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-4 font-medium">Cliente</th>
-                  <th className="px-6 py-4 font-medium">Equipo</th>
-                  <th className="px-6 py-4 font-medium">Fechas</th>
-                  <th className="px-6 py-4 font-medium">Estado</th>
-                  <th className="px-6 py-4 font-medium text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100/80 text-gray-700">
-                
-                {/* Row 1 */}
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Carlos M.</td>
-                  <td className="px-6 py-4 max-w-[200px] truncate">Sony FX3 + Lentes</td>
-                  <td className="px-6 py-4 text-gray-500">12 - 14 Oct</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
-                      Pendiente
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right font-medium text-gray-900">$120.00</td>
-                </tr>
-
-                {/* Row 2 */}
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Lucía S.</td>
-                  <td className="px-6 py-4 max-w-[200px] truncate">Subwoofer Activo Beta 3</td>
-                  <td className="px-6 py-4 text-gray-500">08 - 09 Oct</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-                      Confirmado
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right font-medium text-gray-900">$50.00</td>
-                </tr>
-
-                {/* Row 3 */}
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Agencia X</td>
-                  <td className="px-6 py-4 max-w-[200px] truncate">Kit Iluminación Pro</td>
-                  <td className="px-6 py-4 text-gray-500">01 - 05 Oct</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
-                      Completado
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right font-medium text-gray-900">$250.00</td>
-                </tr>
-                
-              </tbody>
-            </table>
+          {/* Empty state for bookings */}
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+              <CalendarClock size={24} className="text-gray-300" />
+            </div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-1">Sin reservas todavía</h3>
+            <p className="text-xs text-gray-400 max-w-[280px]">
+              Cuando tus clientes reserven equipos, aparecerán aquí. Empieza publicando tu inventario.
+            </p>
           </div>
         </div>
 
@@ -163,24 +128,33 @@ export default function ProviderOverviewPage() {
 
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-xl bg-gray-900 text-white flex items-center justify-center font-bold text-xl">
-                  EJ
+                  {initials}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg">EJ Audiovisuales</h3>
-                  <p className="text-sm text-gray-500">Calificación: ⭐ 4.9 (12 reviews)</p>
+                  <h3 className="font-bold text-gray-900 text-lg">{brandName}</h3>
+                  <p className="text-sm text-gray-500">Sin calificaciones aún</p>
                 </div>
               </div>
 
               <div className="space-y-4 text-sm">
                 <div>
-                  <p className="text-gray-500 mb-0.5">Ubicación</p>
-                  <p className="font-medium text-gray-900">Calle República y Eloy Alfaro, Quito, EC</p>
+                  <p className="text-gray-500 mb-0.5">Miembro desde</p>
+                  <p className="font-medium text-gray-900">
+                    {provider?.created_at 
+                      ? new Date(provider.created_at).toLocaleDateString("es-EC", { year: "numeric", month: "long" })
+                      : "—"
+                    }
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-0.5">Equipos publicados</p>
+                  <p className="font-medium text-gray-900">{activeListingsCount} activos / {totalListingsCount} total</p>
                 </div>
                 <div>
                   <p className="text-gray-500 mb-0.5">Estado KYC</p>
-                  <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md font-medium">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                    Identidad Verificada
+                  <span className="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md font-medium">
+                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                    Pendiente de verificación
                   </span>
                 </div>
               </div>

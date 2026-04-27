@@ -49,8 +49,8 @@ export async function signUp(prevState: any, formData: FormData) {
     age--;
   }
 
-  if (age < 15) {
-    return { error: 'Debes ser mayor de 15 años para utilizar ArtRider.' };
+  if (age < 18) {
+    return { error: 'Debes ser mayor de 18 años para utilizar ArtRider.' };
   }
 
   try {
