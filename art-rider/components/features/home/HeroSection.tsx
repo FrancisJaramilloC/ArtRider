@@ -5,7 +5,7 @@ export default function HeroSection() {
     <section className="bg-white px-4 sm:px-6 lg:px-8 py-12 text-center flex flex-col items-center">
       <div className="max-w-[800px] w-full relative">
         {/* ── Main headline ── */}
-        <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 leading-tight tracking-tight mb-4">
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-5">
           Encuentra el equipo perfecto para tu evento
         </h1>
 
