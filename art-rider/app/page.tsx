@@ -120,11 +120,11 @@ function SectionHeader({
   return (
     <div className={`flex ${centered ? "flex-col items-center text-center" : "flex-row flex-wrap items-center justify-between"} mb-8 gap-4`}>
       <div>
-        <h2 className="text-[1.75rem] font-bold text-gray-900 tracking-tight leading-tight">
+        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">
           {title}
         </h2>
         {subtitle && (
-          <p className="text-[1rem] text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 mt-1">
             {subtitle}
           </p>
         )}
@@ -165,8 +165,8 @@ export default async function HomePage() {
         <HeroSection />
 
         {/* ── Explora por categoría ── */}
-        <section className="bg-white px-6 pt-8 pb-16">
-          <div className="max-w-[1240px] mx-auto">
+        <section id="categorias" className="bg-white py-12 scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <SectionHeader
               title="Explora por categoría"
               subtitle="Encuentra exactamente lo que necesitas para tu evento"
@@ -181,8 +181,8 @@ export default async function HomePage() {
         </section>
 
         {/* ── Equipos destacados (Horizontal Scroll) ── */}
-        <section className="bg-white px-6 pt-4 pb-16">
-          <div className="max-w-[1240px] mx-auto overflow-hidden">
+        <section id="equipos" className="bg-white py-12 scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
             <SectionHeader
               title="Equipos destacados"
               ctaLabel="Mostrar (150+)"
@@ -198,8 +198,8 @@ export default async function HomePage() {
         </section>
 
         {/* ── Paquetes destacados (Horizontal Scroll) ── */}
-        <section className="bg-white px-6 pt-4 pb-24">
-          <div className="max-w-[1240px] mx-auto overflow-hidden">
+        <section id="paquetes" className="bg-white py-12 scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
             <SectionHeader
               title="Paquetes destacados elaborados por expertos"
               subtitle="Combos listos para rentar que ahorran dinero y tiempo"

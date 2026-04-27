@@ -2,15 +2,15 @@
 
 export default function HeroSection() {
   return (
-    <section className="bg-white px-6 pt-24 pb-28 text-center flex flex-col items-center">
+    <section className="bg-white px-4 sm:px-6 lg:px-8 py-12 text-center flex flex-col items-center">
       <div className="max-w-[800px] w-full relative">
         {/* ── Main headline ── */}
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-5">
+        <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 leading-tight tracking-tight mb-4">
           Encuentra el equipo perfecto para tu evento
         </h1>
 
         {/* ── Subtitle ── */}
-        <p className="text-[1.1rem] text-gray-500 leading-relaxed max-w-[700px] mx-auto mb-10">
+        <p className="text-sm text-gray-500 leading-relaxed max-w-[600px] mx-auto mb-8">
           Audio, iluminación y video profesional. Reserva equipos de alta calidad con propietarios verificados.
         </p>
 

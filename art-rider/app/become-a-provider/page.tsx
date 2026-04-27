@@ -1,85 +1,160 @@
+"use client";
+
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
+
+function ProviderCTAButton({ className }: { className?: string }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+      setLoading(false);
+    };
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  if (loading) {
+    return (
+      <span className={className ?? ""}>
+        <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+        Cargando...
+      </span>
+    );
+  }
+
+  if (user) {
+    return (
+      <Link href="/become-a-provider/onboarding" className={className ?? ""}>
+        Comenzar mi solicitud
+        <ArrowRight className="w-4 h-4" />
+      </Link>
+    );
+  }
+
+  return (
+    <Link
+      href="/login?redirect=/become-a-provider"
+      className={className ?? ""}
+    >
+      Iniciar sesión para aplicar
+      <ArrowRight className="w-4 h-4" />
+    </Link>
+  );
+}
 
 export default function BecomeProviderLanding() {
   return (
-    <div className="flex-1 flex flex-col items-center animate-in fade-in duration-700">
+    <div className="flex flex-col bg-white">
       
-      {/* ── Hero Content ── */}
-      <section className="w-full max-w-7xl mx-auto px-6 py-20 lg:py-32 flex flex-col items-center justify-center text-center">
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 leading-[1.1] mb-8">
-          Pon a trabajar tus<br/> 
-          <span className="text-[#875B9A]">equipos creativos</span>
-        </h1>
-        <p className="text-xl md:text-2xl text-gray-500 max-w-3xl mx-auto font-medium mb-12">
-          Convierte tus equipos de audio, iluminación y video que no estás utilizando diariamente en una fuente de ingresos adicional.
-        </p>
-        
-        {/* Earnings Estimator Mock */}
-        <div className="w-full max-w-xl mx-auto bg-white border border-gray-200 rounded-3xl p-8 shadow-xl mb-12 shadow-gray-200/50">
-          <p className="text-gray-500 font-medium mb-2">Puedes ganar hasta</p>
-          <div className="text-6xl font-black text-gray-900 tracking-tight mb-4">$450 <span className="text-2xl font-semibold text-gray-400">/ mes</span></div>
-          <p className="text-sm text-gray-400">
-            Estimación basada en alquileres locales de equipos de cámara y lentes similares a tu zona.
-          </p>
-        </div>
+      {/* ── Section 1: Hero ── */}
+      <section className="w-full flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8 py-20 relative overflow-hidden bg-white">
+        {/* Subtle Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[800px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(135,91,154,0.06)_0%,transparent_70%)] pointer-events-none" />
 
-        <Link
-          href="/become-a-provider/onboarding"
-          className="bg-[#875B9A] hover:bg-[#6a437a] text-white px-10 py-5 rounded-2xl text-xl font-bold transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-purple-900/20"
-        >
-          ¡Comienza ahora gratis!
-        </Link>
+        <h1 className="relative z-10 text-3xl md:text-4xl font-semibold tracking-tight text-gray-900 leading-tight mb-4 max-w-3xl">
+          El negocio de{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#875B9A] to-[#6a437a]">la creatividad.</span>
+        </h1>
+        <p className="relative z-10 text-sm md:text-base text-gray-500 max-w-xl font-normal leading-relaxed mb-10">
+          Convierte tus equipos de cámara, iluminación y sonido en un activo rentable. Únete a la plataforma líder de renta audiovisual.
+        </p>
+
+        {/* Dynamic CTA — top */}
+        <ProviderCTAButton className="relative z-10 inline-flex items-center gap-2.5 bg-[#1C1C1E] hover:bg-black text-white px-8 py-3.5 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg" />
       </section>
 
-      {/* ── ArtRider Cover (Guarantees) ── */}
-      <section className="w-full border-t border-gray-100 bg-gray-50 py-24">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4 tracking-tight">ArtRider Cover</h2>
-            <p className="text-xl text-gray-500">Protección de primera clase integrada en cada alquiler.</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-10">
-            {/* Feature 1 */}
-            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 text-[#875B9A]">
-                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Protección de daños</h3>
-              <p className="text-gray-500 leading-relaxed">
-                Reembolsamos hasta $5,000 en caso de roturas, daños o accidentes, gracias a nuestro sistema de seguros integrado.
-              </p>
-            </div>
-            
-            {/* Feature 2 */}
-            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 text-[#875B9A]">
-                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Usuarios verificados</h3>
-              <p className="text-gray-500 leading-relaxed">
-                Cada usuario pasa por un riguroso sistema que verifica su identidad (KYC) antes de poder operar en la plataforma.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 text-[#875B9A]">
-                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Soporte 24/7</h3>
-              <p className="text-gray-500 leading-relaxed">
-                Nuestro equipo especializado está disponible a cualquier hora del día para respaldarte durante transacciones.
-              </p>
+      {/* ── Section 2: 0% Commission ── */}
+      <section className="w-full bg-[#FAFAFA] py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12">
+          
+          {/* Left: Text */}
+          <div className="flex-1 flex flex-col justify-center">
+            <span className="text-[#875B9A] font-semibold text-xs tracking-widest uppercase mb-4">Modelo de negocio</span>
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight leading-snug text-gray-900 mb-4">
+              Gana más. Sin letra chica.
+            </h2>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-md mb-8">
+              Mantén el 100% de tus ingresos iniciales. No cobramos comisiones por subir tus equipos ni cuotas de mantenimiento mensual.
+            </p>
+            <div className="w-full max-w-sm bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Ingreso estimado</p>
+              <div className="text-4xl font-bold text-gray-900 tracking-tight mb-1">$450<span className="text-xl text-gray-400 font-medium">/mes</span></div>
+              <p className="text-xs text-gray-500">Basado en el alquiler promedio de 2 equipos profesionales a la semana.</p>
             </div>
           </div>
+          
+          {/* Right: Visual Placeholder */}
+          <div className="flex-1 w-full">
+            <div className="w-full aspect-[4/3] rounded-2xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center overflow-hidden relative">
+               <div className="w-16 h-16 bg-white/60 rounded-full flex items-center justify-center mb-3 shadow-sm backdrop-blur-md">
+                 <span className="text-2xl">📸</span>
+               </div>
+               <span className="text-gray-400 font-semibold tracking-wider uppercase text-xs">Dashboard Preview</span>
+            </div>
+          </div>
+
         </div>
+      </section>
+
+      {/* ── Section 3: Security & Support ── */}
+      <section className="w-full bg-[#1C1C1E] text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl md:text-3xl font-semibold tracking-tight leading-snug mb-3">
+              Tranquilidad absoluta.
+            </h2>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              Hemos construido ArtRider Cover para proteger tu inversión. Cada renta está asegurada y cada usuario estrictamente verificado.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl mx-auto">
+            {/* Card 1 */}
+            <div className="flex flex-col p-8 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/[0.08] transition-colors">
+              <span className="text-[#D4A5E8] font-semibold text-xs tracking-widest uppercase mb-4">ArtRider Cover</span>
+              <h3 className="text-lg font-semibold mb-2 tracking-tight">Protección de $5,000.</h3>
+              <p className="text-sm text-gray-400 leading-relaxed">
+                En el raro caso de daño accidental, nuestra póliza cubre reparaciones y reemplazos sin fricciones. Tu equipo siempre está a salvo.
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div className="flex flex-col p-8 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/[0.08] transition-colors">
+              <span className="text-[#D4A5E8] font-semibold text-xs tracking-widest uppercase mb-4">Verificación KYC</span>
+              <h3 className="text-lg font-semibold mb-2 tracking-tight">Identidad validada.</h3>
+              <p className="text-sm text-gray-400 leading-relaxed">
+                No cualquiera puede alquilar. Requerimos identificación oficial, verificación biométrica facial y validación de tarjeta de crédito.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── Section 4: Final CTA ── */}
+      <section className="py-16 flex flex-col items-center text-center px-4 sm:px-6 lg:px-8 bg-white">
+        <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-gray-900 leading-snug mb-6">
+          ¿Listo para monetizar?
+        </h2>
+
+        {/* Dynamic CTA — bottom */}
+        <ProviderCTAButton className="inline-flex items-center gap-2.5 bg-[#875B9A] hover:bg-[#6B427E] text-white px-8 py-3.5 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-purple-900/10" />
       </section>
 
     </div>

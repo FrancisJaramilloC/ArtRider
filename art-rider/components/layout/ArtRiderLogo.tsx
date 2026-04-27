@@ -8,8 +8,8 @@ export default function ArtRiderLogo({ subtitle }: { subtitle?: string }) {
   return (
     <Link href="/" className="flex items-center gap-2.5 group shrink-0">
       {/* Soundwave circle */}
-      <div className="w-[36px] h-[36px] rounded-full border-2 border-gray-900 group-hover:border-[#875B9A] transition-colors flex items-center justify-center shrink-0">
-        <svg viewBox="0 0 427 448" fill="currentColor" className="w-[20px] h-[20px] text-gray-900 group-hover:text-[#875B9A] transition-colors">
+      <div className="w-8 h-8 rounded-full border-[1.5px] border-gray-900 group-hover:border-[#875B9A] transition-colors flex items-center justify-center shrink-0">
+        <svg viewBox="0 0 427 448" fill="currentColor" className="w-[16px] h-[16px] text-gray-900 group-hover:text-[#875B9A] transition-colors">
           <path d="M13.5 148C6.044 148 0 154.044 0 161.5v125c0 7.456 6.044 13.5 13.5 13.5S27 293.456 27 286.5v-125C27 154.044 20.956 148 13.5 148z"/>
           <path d="M74.5 101C67.044 101 61 107.044 61 114.5v219c0 7.456 6.044 13.5 13.5 13.5S88 340.456 88 333.5v-219C88 107.044 81.956 101 74.5 101z"/>
           <path d="M135.5 54C128.044 54 122 60.044 122 67.5v313c0 7.456 6.044 13.5 13.5 13.5S149 387.456 149 380.5V67.5C149 60.044 142.956 54 135.5 54z"/>
@@ -20,7 +20,7 @@ export default function ArtRiderLogo({ subtitle }: { subtitle?: string }) {
         </svg>
       </div>
       {/* Brand name + optional subtitle */}
-      <span className="font-extrabold text-[1.1rem] text-gray-900 tracking-tight group-hover:text-[#875B9A] transition-colors">
+      <span className="font-bold text-[1.05rem] text-gray-900 tracking-tight group-hover:text-[#875B9A] transition-colors">
         ArtRider
         {subtitle && (
           <span className="font-medium text-gray-400 group-hover:text-[#875B9A]/60 transition-colors">

@@ -29,25 +29,7 @@ export default function CategoryCard({
   return (
     <Link
       href={href}
-      style={{
-        position: "relative",
-        display: "block",
-        borderRadius: "12px",
-        overflow: "hidden",
-        cursor: "pointer",
-        textDecoration: "none",
-        aspectRatio: "3 / 4",
-        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-        transition: "transform 220ms cubic-bezier(0.34,1.56,0.64,1), box-shadow 220ms ease",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-4px) scale(1.02)";
-        (e.currentTarget as HTMLAnchorElement).style.boxShadow = "0 16px 40px rgba(0,0,0,0.28)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0) scale(1)";
-        (e.currentTarget as HTMLAnchorElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.15)";
-      }}
+      className="relative block rounded-2xl overflow-hidden cursor-pointer no-underline aspect-[3/4] border border-slate-100 group transition-all duration-200 hover:-translate-y-1 hover:shadow-sm"
       aria-label={`Explorar categoría: ${title}`}
     >
       {/* Background image */}

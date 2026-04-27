@@ -31,7 +31,7 @@ export default function HomepageListingCard({
       className="group flex flex-col h-full w-full outline-none focus-visible:ring-2 focus-visible:ring-[#875B9A] rounded-2xl"
     >
       {/* ── Image Area (Aspect Ratio 1:1 strict) ── */}
-      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gray-100 mb-3 shrink-0 border border-gray-100 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.02)]">
+      <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-gray-100 mb-3 shrink-0 border border-slate-100">
         
         {/* Placeholder emoji/icon for mock */}
         <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50 bg-gray-200 transition-transform duration-500 group-hover:scale-105">

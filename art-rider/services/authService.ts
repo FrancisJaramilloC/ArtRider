@@ -113,6 +113,7 @@ export async function signUp(prevState: any, formData: FormData) {
 export async function signIn(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const redirectUrl = (formData.get('redirectUrl') as string) || '/';
 
   if (!email || !password) {
     return { error: 'Email and password are required.' };
@@ -135,7 +136,7 @@ export async function signIn(prevState: any, formData: FormData) {
     return { error: 'An unexpected error occurred during sign in. Please try again later.' };
   }
 
-  redirect('/');
+  redirect(redirectUrl);
 }
 
 export async function signOut() {

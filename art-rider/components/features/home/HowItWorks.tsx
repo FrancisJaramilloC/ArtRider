@@ -1,57 +1,48 @@
 "use client";
 
-import { Search, CalendarCheck, ShieldCheck, Smile } from "lucide-react";
-
-const steps = [
-  {
-    icon: <Search className="w-6 h-6 text-[#875B9A]" />,
-    title: "Explora",
-    description: "Encuentra el equipo audiovisual perfecto para tu proyecto.",
-  },
-  {
-    icon: <CalendarCheck className="w-6 h-6 text-[#875B9A]" />,
-    title: "Reserva",
-    description: "Selecciona las fechas y solicita la reserva al propietario.",
-  },
-  {
-    icon: <ShieldCheck className="w-6 h-6 text-[#875B9A]" />,
-    title: "Pago Seguro",
-    description: "Realiza el pago con total tranquilidad a través de nuestra plataforma segura.",
-  },
-  {
-    icon: <Smile className="w-6 h-6 text-[#875B9A]" />,
-    title: "Disfruta",
-    description: "Recoge el equipo, realiza tu proyecto y devuélvelo al finalizar.",
-  },
-];
-
 export function HowItWorks() {
   return (
-    <section className="bg-white py-24">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            ¿Cómo funciona ArtRider?
-          </h2>
-          <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-            Alquilar el equipo que necesitas nunca ha sido tan fácil. Sigue estos 4 sencillos pasos.
-          </p>
+    <section className="bg-white py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Title — unified scale */}
+        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight mb-10">
+          Cómo funciona
+        </h2>
+
+        {/* Horizontal 3-Step Flow — ultra-minimal */}
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-0">
+          
+          {/* Step 1 */}
+          <div className="flex items-center gap-3 flex-1">
+            <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 text-sm font-semibold flex items-center justify-center shrink-0">1</span>
+            <span className="text-[0.95rem] font-medium text-gray-900">Explora equipos</span>
+          </div>
+
+          {/* Arrow */}
+          <svg className="hidden md:block w-6 h-6 text-gray-300 shrink-0 mx-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+
+          {/* Step 2 */}
+          <div className="flex items-center gap-3 flex-1">
+            <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 text-sm font-semibold flex items-center justify-center shrink-0">2</span>
+            <span className="text-[0.95rem] font-medium text-gray-900">Reserva al instante</span>
+          </div>
+
+          {/* Arrow */}
+          <svg className="hidden md:block w-6 h-6 text-gray-300 shrink-0 mx-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+
+          {/* Step 3 */}
+          <div className="flex items-center gap-3 flex-1">
+            <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 text-sm font-semibold flex items-center justify-center shrink-0">3</span>
+            <span className="text-[0.95rem] font-medium text-gray-900">Crea tu evento</span>
+          </div>
+
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 relative">
-          {/* Optional connecting line for larger screens */}
-          <div className="hidden lg:block absolute top-[28px] left-[10%] right-[10%] h-[2px] bg-gray-100 -z-10" />
-
-          {steps.map((step, index) => (
-            <div key={index} className="flex flex-col items-center text-center relative z-10">
-              <div className="w-14 h-14 bg-[#f9f7fb] rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-[#ede9f2]">
-                {step.icon}
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">{step.title}</h3>
-              <p className="text-gray-600 leading-relaxed">{step.description}</p>
-            </div>
-          ))}
-        </div>
       </div>
     </section>
   );
