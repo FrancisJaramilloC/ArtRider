@@ -5,10 +5,12 @@ export default function HeroSection() {
     <section className="bg-white px-4 sm:px-6 lg:px-8 py-12 text-center flex flex-col items-center">
       <div className="max-w-[800px] w-full relative">
         {/* ── Main headline ── */}
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-5">
-          Encuentra el equipo perfecto para tu evento
-        </h1>
-
+        <h1 className="text-2xl md:text-5xl font-extrabold text-gray-900 tracking-tight mb-4 leading-tight">
+      Encuentra el equipo perfecto para <br className="hidden md:block" />
+      <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+        tu evento
+      </span>
+      </h1>
         {/* ── Subtitle ── */}
         <p className="text-sm text-gray-500 leading-relaxed max-w-[600px] mx-auto mb-8">
           Audio, iluminación y video profesional. Reserva equipos de alta calidad con propietarios verificados.
