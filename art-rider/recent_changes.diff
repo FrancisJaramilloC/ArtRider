@@ -1,0 +1,2021 @@
+﻿diff --git a/art-rider/app/globals.css b/art-rider/app/globals.css
+index 80a0987..99255b6 100644
+--- a/art-rider/app/globals.css
++++ b/art-rider/app/globals.css
+@@ -56,10 +56,8 @@ body {
+ }
+ 
+ .listing-card {
+-  background: linear-gradient(135deg, rgba(30, 27, 42, 0.85) 0%, rgba(22, 20, 30, 0.70) 100%);
+-  backdrop-filter: blur(16px);
+-  -webkit-backdrop-filter: blur(16px);
+-  border: 1px solid var(--border-card);
++  background: #ffffff;
++  border: 1px solid #e5e7eb;
+   border-radius: 16px;
+   transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease, border-color 220ms ease;
+   will-change: transform;
+@@ -67,8 +65,8 @@ body {
+ 
+ .listing-card:hover {
+   transform: translateY(-6px) scale(1.01);
+-  box-shadow: 0 20px 48px rgba(135, 91, 154, 0.22), 0 4px 16px rgba(0, 0, 0, 0.40);
+-  border-color: var(--primary-400);
++  box-shadow: 0 20px 48px rgba(135, 91, 154, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
++  border-color: #a97dc4;
+ }
+ 
+ @keyframes shimmer {
+diff --git a/art-rider/app/listings/page.tsx b/art-rider/app/listings/page.tsx
+index 4349e11..3d3178f 100644
+--- a/art-rider/app/listings/page.tsx
++++ b/art-rider/app/listings/page.tsx
+@@ -32,19 +32,11 @@ export default async function ListingsPage() {
+ 
+   return (
+     <main
+-      style={{
+-        minHeight: "100vh",
+-        background: "var(--background)",
+-        paddingBottom: "80px",
+-      }}
++      className="min-h-screen bg-white pb-20"
+     >
+       {/* ΓöÇΓöÇ Page header ΓöÇΓöÇ */}
+       <header
+-        style={{
+-          padding: "56px 24px 40px",
+-          maxWidth: "1200px",
+-          margin: "0 auto",
+-        }}
++        className="pt-14 pb-10 px-6 max-w-[1200px] mx-auto"
+       >
+         {/* Eyebrow label */}
+         <p
+@@ -55,31 +47,24 @@ export default async function ListingsPage() {
+         </p>
+ 
+         <h1
+-          className="text-4xl font-bold tracking-tight"
+-          style={{ color: "var(--text-primary)", marginBottom: "10px" }}
++          className="text-4xl font-bold tracking-tight text-gray-900 mb-2.5"
+         >
+-          Equipment Catalog
++          Cat├ílogo de Equipos
+         </h1>
+ 
+         <p
+-          className="text-base"
+-          style={{
+-            color: "var(--text-secondary)",
+-            maxWidth: "540px",
+-            lineHeight: "1.65",
+-          }}
++          className="text-base text-gray-500 max-w-[540px] leading-relaxed"
+         >
+-          Professional audio, lighting, and production gear ΓÇö rented directly
+-          from verified owners near you.
++          Equipos profesionales de audio, iluminaci├│n y producci├│n ΓÇö alquilados
++          directamente de propietarios verificados cerca de ti.
+         </p>
+ 
+         {/* Subtle divider */}
+         <div
++          className="mt-8 h-px"
+           style={{
+-            marginTop: "32px",
+-            height: "1px",
+             background:
+-              "linear-gradient(90deg, var(--primary-500) 0%, transparent 70%)",
++              "linear-gradient(90deg, #875B9A 0%, transparent 70%)",
+           }}
+         />
+       </header>
+@@ -87,17 +72,14 @@ export default async function ListingsPage() {
+       {/* ΓöÇΓöÇ Catalog grid ΓöÇΓöÇ */}
+       <section
+         aria-label="Available equipment listings"
+-        style={{
+-          maxWidth: "1200px",
+-          margin: "0 auto",
+-          padding: "0 24px",
+-        }}
++        className="max-w-[1200px] mx-auto px-6"
+       >
+         {listings.length === 0 ? (
+           /* ΓöÇΓöÇ Empty state ΓöÇΓöÇ */
+           <div
+-            className="listing-card flex flex-col items-center justify-center text-center"
++            className="flex flex-col items-center justify-center text-center bg-gray-50 border border-gray-200 rounded-2xl"
+             style={{ padding: "72px 32px", gap: "16px" }}
++
+             role="status"
+             aria-live="polite"
+           >
+@@ -105,17 +87,15 @@ export default async function ListingsPage() {
+               ≡ƒô¡
+             </span>
+             <h2
+-              className="text-lg font-semibold"
+-              style={{ color: "var(--text-primary)" }}
++              className="text-lg font-semibold text-gray-900"
+             >
+-              No listings available yet
++              A├║n no hay equipos disponibles
+             </h2>
+             <p
+-              className="text-sm"
+-              style={{ color: "var(--text-secondary)", maxWidth: "340px" }}
++              className="text-sm text-gray-500 max-w-[340px]"
+             >
+-              Be the first! Owner accounts can publish equipment listings from
+-              the dashboard.
++              ┬íS├⌐ el primero! Los proveedores pueden publicar equipos desde
++              su panel de control.
+             </p>
+           </div>
+         ) : (
+@@ -137,18 +117,13 @@ export default async function ListingsPage() {
+         {/* Listing count footer */}
+         {listings.length > 0 && (
+           <p
+-            className="text-xs text-center"
+-            style={{
+-              color: "var(--text-muted)",
+-              marginTop: "40px",
+-            }}
++            className="text-xs text-center text-gray-400 mt-10"
+           >
+-            Showing{" "}
+-            <strong style={{ color: "var(--text-secondary)" }}>
++            Mostrando{" "}
++            <strong className="text-gray-600">
+               {listings.length}
+             </strong>{" "}
+-            published{" "}
+-            {listings.length === 1 ? "listing" : "listings"}
++            {listings.length === 1 ? "equipo publicado" : "equipos publicados"}
+           </p>
+         )}
+       </section>
+diff --git a/art-rider/app/page.tsx b/art-rider/app/page.tsx
+index 7e9ce9e..6a66d98 100644
+--- a/art-rider/app/page.tsx
++++ b/art-rider/app/page.tsx
+@@ -6,6 +6,7 @@ import HomepageListingCard from "@/components/features/home/HomepageListingCard"
+ import { HowItWorks } from "@/components/features/home/HowItWorks";
+ import { BecomeProviderCTA } from "@/components/features/home/BecomeProviderCTA";
+ import { createSupabaseServerClient } from "@/lib/supabaseServer";
++import { getListings } from "@/services/listingsService";
+ import type { Metadata } from "next";
+ 
+ export const metadata: Metadata = {
+@@ -14,17 +15,19 @@ export const metadata: Metadata = {
+     "Marketplace de alquiler de equipos de audio, iluminaci├│n y video. Conecta con propietarios verificados y reserva con confianza.",
+ };
+ 
+-// ΓöÇΓöÇΓöÇ Mock Data (Pure UI mode) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++// ΓöÇΓöÇ Category Icon Map ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ 
+-const CATEGORIES = [
+-  { title: "Sonido",      imageSrc: "/category-sonido.png",      icon: "≡ƒöè", href: "/listings?category=audio" },
+-  { title: "Iluminaci├│n", imageSrc: "/category-iluminacion.png", icon: "≡ƒÆí", href: "/listings?category=lighting" },
+-  { title: "Video",       imageSrc: "/category-video.png",       icon: "≡ƒÄÑ", href: "/listings?category=video" },
+-  { title: "Efectos",     imageSrc: "/category-efectos.png",     icon: "Γ£¿", href: "/listings?category=effects" },
+-];
++const CATEGORY_ICONS: Record<string, string> = {
++  audio: "≡ƒöè", lighting: "≡ƒÆí", video: "≡ƒÄÑ", effects: "Γ£¿", other: "≡ƒôª",
++};
++
++const CATEGORY_LABELS: Record<string, string> = {
++  audio: "Sonido", lighting: "Iluminaci├│n", video: "Video", effects: "Efectos", other: "Otro",
++};
+ 
+-// Note: Duplicated items heavily below to demonstrate the horizontal scrolling carousel effectiveness
+-const FEATURED_EQUIPMENT = [
++// ΓöÇΓöÇ Fallback Mock Data (shown only when no real listings exist) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++const MOCK_EQUIPMENT = [
+   {
+     id: "mock-sub-beta-1",
+     title: "Subwoofer Activo Beta 3",
+@@ -68,7 +71,7 @@ const FEATURED_EQUIPMENT = [
+   },
+ ];
+ 
+-const FEATURED_PACKAGES = [
++const MOCK_PACKAGES = [
+   {
+     id: "mock-intermedio-1",
+     title: "Paquete Audiovisual Intermedio",
+@@ -159,6 +162,36 @@ export default async function HomePage() {
+   const supabase = await createSupabaseServerClient();
+   const { data } = await supabase.auth.getUser();
+ 
++  // Fetch real published listings
++  let realListings: { id: string; title: string | null; category: string | null; daily_price: number; cover_image_url: string | null }[] = [];
++  try {
++    realListings = await getListings();
++  } catch {
++    // Graceful fallback ΓÇö use mock data if query fails
++  }
++
++  // Map real listings to HomepageListingCard format
++  const featuredEquipment = realListings.length > 0
++    ? realListings.slice(0, 8).map((l) => ({
++        id: l.id,
++        title: l.title ?? "Equipo sin t├¡tulo",
++        categoryLabel: CATEGORY_LABELS[l.category ?? ""] ?? l.category ?? "Equipo",
++        location: "Ecuador",
++        price: `$${(l.daily_price / 100).toFixed(0)}`,
++        rating: 0,
++        reviewCount: 0,
++        icon: CATEGORY_ICONS[l.category ?? ""] ?? "≡ƒôª",
++      }))
++    : MOCK_EQUIPMENT;
++
++  // Categories stay static (they're navigation links, not data)
++  const CATEGORIES = [
++    { title: "Sonido",      imageSrc: "/category-sonido.png",      icon: "≡ƒöè", href: "/listings?category=audio" },
++    { title: "Iluminaci├│n", imageSrc: "/category-iluminacion.png", icon: "≡ƒÆí", href: "/listings?category=lighting" },
++    { title: "Video",       imageSrc: "/category-video.png",       icon: "≡ƒÄÑ", href: "/listings?category=video" },
++    { title: "Efectos",     imageSrc: "/category-efectos.png",     icon: "Γ£¿", href: "/listings?category=effects" },
++  ];
++
+   return (
+     <>
+       <Navbar initialUser={data?.user || null} />      <main>
+@@ -180,24 +213,24 @@ export default async function HomePage() {
+           </div>
+         </section>
+ 
+-        {/* ΓöÇΓöÇ Equipos destacados (Horizontal Scroll) ΓöÇΓöÇ */}
++        {/* ΓöÇΓöÇ Equipos destacados ΓöÇΓöÇ */}
+         <section id="equipos" className="bg-white py-12 scroll-mt-20">
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
+             <SectionHeader
+               title="Equipos destacados"
+-              ctaLabel="Mostrar (150+)"
++              ctaLabel={`Mostrar (${realListings.length > 0 ? realListings.length + "+" : "150+"})`}
+               ctaHref="/listings"
+             />
+ 
+             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
+-              {FEATURED_EQUIPMENT.map((item) => (
++              {featuredEquipment.map((item) => (
+                 <HomepageListingCard key={item.id} {...item} />
+               ))}
+             </div>
+           </div>
+         </section>
+ 
+-        {/* ΓöÇΓöÇ Paquetes destacados (Horizontal Scroll) ΓöÇΓöÇ */}
++        {/* ΓöÇΓöÇ Paquetes destacados ΓöÇΓöÇ */}
+         <section id="paquetes" className="bg-white py-12 scroll-mt-20">
+           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
+             <SectionHeader
+@@ -208,7 +241,7 @@ export default async function HomePage() {
+             />
+ 
+             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
+-              {FEATURED_PACKAGES.map((item) => (
++              {MOCK_PACKAGES.map((item) => (
+                 <HomepageListingCard key={item.id} {...item} />
+               ))}
+             </div>
+diff --git a/art-rider/app/provider/catalog/CatalogClient.tsx b/art-rider/app/provider/catalog/CatalogClient.tsx
+new file mode 100644
+index 0000000..21d4199
+--- /dev/null
++++ b/art-rider/app/provider/catalog/CatalogClient.tsx
+@@ -0,0 +1,862 @@
++"use client";
++
++import { useState, useTransition, useRef } from "react";
++import Image from "next/image";
++import Link from "next/link";
++import type { Listing } from "@/services/listingsService";
++import { togglePublish, deleteListing, createListing } from "@/services/listingsService";
++import type { Package } from "@/services/packagesService";
++import { createPackage } from "@/services/packagesService";
++
++// ΓöÇΓöÇ Constants ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++const CATEGORIES = [
++  { value: "audio",    label: "Sonido"      },
++  { value: "lighting", label: "Iluminacion" },
++  { value: "video",    label: "Video"       },
++  { value: "effects",  label: "Efectos"     },
++  { value: "other",    label: "Otro"        },
++] as const;
++
++const CATEGORY_MAP: Record<string, string> = Object.fromEntries(
++  CATEGORIES.map((c) => [c.value, c.label])
++);
++
++// ΓöÇΓöÇ Shared styles ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++const cls = {
++  input:
++    "block w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6a437a] focus:border-transparent transition-all",
++  label:
++    "block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5",
++  btnPrimary:
++    "inline-flex items-center justify-center gap-2 bg-[#6a437a] hover:bg-[#5c3569] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
++  btnSecondary:
++    "inline-flex items-center justify-center border border-gray-200 text-sm font-semibold text-gray-700 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors",
++} as const;
++
++// ΓöÇΓöÇ Pure helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
++
++// ΓöÇΓöÇ Shared UI atoms ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++function ModalShell({
++  title,
++  subtitle,
++  formId,
++  submitLabel,
++  pending,
++  onClose,
++  children,
++}: {
++  title: string;
++  subtitle: string;
++  formId: string;
++  submitLabel: string;
++  pending: boolean;
++  onClose: () => void;
++  children: React.ReactNode;
++}) {
++  return (
++    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
++      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
++      <div className="relative bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
++        <div className="sm:hidden flex justify-center pt-3">
++          <div className="w-8 h-1 rounded-full bg-gray-200" />
++        </div>
++        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
++          <div>
++            <h2 className="text-base font-bold text-gray-900">{title}</h2>
++            <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
++          </div>
++          <button type="button" onClick={onClose} aria-label="Cerrar"
++            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
++            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
++              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
++            </svg>
++          </button>
++        </div>
++        <div className="overflow-y-auto flex-1">{children}</div>
++        <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
++          <button type="button" onClick={onClose} className={`${cls.btnSecondary} flex-1`}>Cancelar</button>
++          <button type="submit" form={formId} disabled={pending} className={`${cls.btnPrimary} flex-1`}>
++            {pending ? "Guardando..." : submitLabel}
++          </button>
++        </div>
++      </div>
++    </div>
++  );
++}
++
++function PhotoUpload({ name, previewUrl, onFile }: {
++  name: string;
++  previewUrl: string | null;
++  onFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
++}) {
++  const ref = useRef<HTMLInputElement>(null);
++  return (
++    <div>
++      <label className={cls.label}>Foto <span className="text-[#6a437a]">*</span></label>
++      <div onClick={() => ref.current?.click()}
++        className="relative h-44 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer hover:border-[#6a437a] hover:bg-purple-50/40 transition-all overflow-hidden group">
++        {previewUrl ? (
++          <>
++            <Image src={previewUrl} alt="Preview" fill className="object-cover" />
++            <span className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold">
++              Cambiar imagen
++            </span>
++          </>
++        ) : (
++          <div className="text-center text-gray-400 group-hover:text-[#6a437a] transition-colors">
++            <svg className="mx-auto mb-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
++              <rect x="3" y="3" width="18" height="18" rx="2"/>
++              <circle cx="8.5" cy="8.5" r="1.5"/>
++              <polyline points="21 15 16 10 5 21"/>
++            </svg>
++            <p className="text-sm font-medium">Seleccionar foto</p>
++            <p className="text-xs mt-0.5">JPG, PNG o WebP ΓÇö max 5 MB</p>
++          </div>
++        )}
++      </div>
++      <input ref={ref} type="file" name={name} accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFile} />
++    </div>
++  );
++}
++
++function PublishToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
++  return (
++    <button type="button" role="switch" aria-checked={value} onClick={() => onChange(!value)}
++      className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${value ? "border-[#6a437a] bg-purple-50/50" : "border-gray-200 bg-white"}`}>
++      <div className={`relative w-9 h-5 rounded-full shrink-0 transition-colors ${value ? "bg-[#6a437a]" : "bg-gray-200"}`}>
++        <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${value ? "translate-x-4" : ""}`} />
++      </div>
++      <input type="hidden" name="publishNow" value={String(value)} />
++      <div>
++        <p className="text-sm font-semibold text-gray-900">{value ? "Publicar ahora" : "Guardar como borrador"}</p>
++        <p className="text-xs text-gray-400">{value ? "Visible para clientes de inmediato." : "Solo tu puedes verlo. Puedes publicarlo despues."}</p>
++      </div>
++    </button>
++  );
++}
++
++function ErrorBanner({ message }: { message: string }) {
++  return (
++    <p className="text-xs font-medium text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{message}</p>
++  );
++}
++
++// ΓöÇΓöÇ Create Equipment Modal ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++function CreateEquipmentModal({ onClose }: { onClose: () => void }) {
++  const formRef = useRef<HTMLFormElement>(null);
++  const [preview, setPreview]      = useState<string | null>(null);
++  const [publish, setPublish]      = useState(true);
++  const [error, setError]          = useState<string | null>(null);
++  const [pending, startTransition] = useTransition();
++
++  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
++    const file = e.target.files?.[0];
++    if (!file) return;
++    if (file.size > 5 * 1024 * 1024) { alert("Maximo 5 MB."); e.target.value = ""; return; }
++    setPreview(URL.createObjectURL(file));
++  }
++
++  function handleSubmit(e: React.FormEvent) {
++    e.preventDefault();
++    if (!formRef.current) return;
++    const fd = new FormData(formRef.current);
++    fd.set("publishNow", String(publish));
++    setError(null);
++    startTransition(async () => {
++      const res = await createListing(null, fd);
++      if (res?.error) { setError(res.error); return; }
++      onClose();
++      window.location.reload();
++    });
++  }
++
++  return (
++    <ModalShell
++      title="Nuevo equipo"
++      subtitle="Completa la informacion de tu equipo"
++      formId="eq-form"
++      submitLabel="Guardar equipo"
++      pending={pending}
++      onClose={onClose}
++    >
++      <form ref={formRef} id="eq-form" onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
++        {error && <ErrorBanner message={error} />}
++
++        <PhotoUpload name="coverImage" previewUrl={preview} onFile={handleFile} />
++
++        <div>
++          <label htmlFor="eq-title" className={cls.label}>Nombre <span className="text-[#6a437a]">*</span></label>
++          <input id="eq-title" name="title" type="text" required minLength={3} maxLength={100}
++            placeholder="Ej: Parlante profesional 1000W" className={cls.input} />
++        </div>
++
++        <div className="grid grid-cols-2 gap-3">
++          <div>
++            <label htmlFor="eq-brand" className={cls.label}>Marca</label>
++            <input id="eq-brand" name="brand" type="text" maxLength={60} placeholder="JBL" className={cls.input} />
++          </div>
++          <div>
++            <label htmlFor="eq-model" className={cls.label}>Modelo</label>
++            <input id="eq-model" name="model" type="text" maxLength={60} placeholder="EON615" className={cls.input} />
++          </div>
++        </div>
++
++        <div>
++          <label className={cls.label}>Categoria <span className="text-[#6a437a]">*</span></label>
++          <div className="flex flex-wrap gap-2">
++            {CATEGORIES.map((cat) => (
++              <label key={cat.value}
++                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer text-sm font-medium text-gray-700 hover:border-[#6a437a] transition-all has-[:checked]:border-[#6a437a] has-[:checked]:bg-[#6a437a] has-[:checked]:text-white">
++                <input type="radio" name="category" value={cat.value} required className="sr-only" />
++                {cat.label}
++              </label>
++            ))}
++          </div>
++        </div>
++
++        <div>
++          <label htmlFor="eq-price" className={cls.label}>Precio / dia (USD) <span className="text-[#6a437a]">*</span></label>
++          <div className="relative">
++            <span className="absolute inset-y-0 left-4 flex items-center text-gray-400 text-sm select-none">$</span>
++            <input id="eq-price" name="dailyPrice" type="number" required min="1" step="0.01" placeholder="0.00"
++              className={`${cls.input} pl-8`} />
++          </div>
++        </div>
++
++        <div>
++          <label htmlFor="eq-desc" className={cls.label}>
++            Descripcion <span className="font-normal normal-case text-gray-400">(opcional)</span>
++          </label>
++          <textarea id="eq-desc" name="description" rows={3} maxLength={1000}
++            placeholder="Estado del equipo, que incluye, condiciones de alquiler..."
++            className={`${cls.input} resize-none`} />
++        </div>
++
++        <PublishToggle value={publish} onChange={setPublish} />
++      </form>
++    </ModalShell>
++  );
++}
++
++// ΓöÇΓöÇ Equipment selector popup (inside package modal) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++function EquipmentSelectorPopup({
++  publishedListings,
++  selected,
++  onToggle,
++  onClose,
++}: {
++  publishedListings: Listing[];
++  selected: Set<string>;
++  onToggle: (id: string) => void;
++  onClose: () => void;
++}) {
++  const [search, setSearch] = useState("");
++  const filtered = publishedListings.filter((l) =>
++    !search || (l.title ?? "").toLowerCase().includes(search.toLowerCase())
++  );
++
++  return (
++    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-6">
++      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
++      <div className="relative bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[70vh]">
++        <div className="sm:hidden flex justify-center pt-3">
++          <div className="w-8 h-1 rounded-full bg-gray-200" />
++        </div>
++
++        {/* Header */}
++        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
++          <div>
++            <p className="text-sm font-bold text-gray-900">Seleccionar equipos</p>
++            <p className="text-xs text-gray-400 mt-0.5">{selected.size} seleccionado{selected.size !== 1 ? "s" : ""}</p>
++          </div>
++          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors">
++            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
++              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
++            </svg>
++          </button>
++        </div>
++
++        {/* Search */}
++        <div className="px-5 pt-3 pb-2">
++          <div className="relative">
++            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
++              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
++            </svg>
++            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
++              placeholder="Buscar por nombre..."
++              className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6a437a] focus:border-transparent transition-all" />
++          </div>
++        </div>
++
++        {/* List */}
++        <div className="overflow-y-auto flex-1 px-3 pb-3 space-y-1">
++          {filtered.length === 0 ? (
++            <p className="text-center text-sm text-gray-400 py-10">Sin equipos publicados que coincidan.</p>
++          ) : (
++            filtered.map((listing) => {
++              const isSelected = selected.has(listing.id);
++              return (
++                <button key={listing.id} type="button" onClick={() => onToggle(listing.id)}
++                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${isSelected ? "bg-purple-50 border border-[#6a437a]" : "hover:bg-gray-50 border border-transparent"}`}>
++                  {/* Thumbnail */}
++                  <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
++                    {listing.cover_image_url ? (
++                      <Image src={listing.cover_image_url} alt={listing.title ?? "Equipo"} fill className="object-cover" />
++                    ) : (
++                      <div className="w-full h-full flex items-center justify-center">
++                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
++                          <rect x="3" y="3" width="18" height="18" rx="2"/>
++                          <circle cx="8.5" cy="8.5" r="1.5"/>
++                          <polyline points="21 15 16 10 5 21"/>
++                        </svg>
++                      </div>
++                    )}
++                  </div>
++
++                  {/* Info */}
++                  <div className="flex-1 min-w-0">
++                    <p className="text-sm font-semibold text-gray-900 truncate">{listing.title ?? "Sin titulo"}</p>
++                    <p className="text-xs text-gray-400">{formatPrice(listing.daily_price)} / dia</p>
++                  </div>
++
++                  {/* Checkbox */}
++                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? "border-[#6a437a] bg-[#6a437a]" : "border-gray-300"}`}>
++                    {isSelected && (
++                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
++                        <polyline points="20 6 9 17 4 12"/>
++                      </svg>
++                    )}
++                  </div>
++                </button>
++              );
++            })
++          )}
++        </div>
++
++        {/* Confirm */}
++        <div className="px-5 py-4 border-t border-gray-100">
++          <button type="button" onClick={onClose} className={`${cls.btnPrimary} w-full`}>
++            Confirmar seleccion ({selected.size})
++          </button>
++        </div>
++      </div>
++    </div>
++  );
++}
++
++// ΓöÇΓöÇ Create Package Modal ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++function CreatePackageModal({
++  publishedListings,
++  onClose,
++}: {
++  publishedListings: Listing[];
++  onClose: () => void;
++}) {
++  const formRef = useRef<HTMLFormElement>(null);
++  const [publish, setPublish]            = useState(true);
++  const [error, setError]                = useState<string | null>(null);
++  const [pending, startTransition]       = useTransition();
++  const [selectedIds, setSelectedIds]    = useState<Set<string>>(new Set());
++  const [showSelector, setShowSelector]  = useState(false);
++
++  const selectedListings = publishedListings.filter((l) => selectedIds.has(l.id));
++
++  function toggleListing(id: string) {
++    setSelectedIds((prev) => {
++      const next = new Set(prev);
++      next.has(id) ? next.delete(id) : next.add(id);
++      return next;
++    });
++  }
++
++  function removeListing(id: string) {
++    setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
++  }
++
++  function handleSubmit(e: React.FormEvent) {
++    e.preventDefault();
++    if (!formRef.current) return;
++    if (selectedIds.size < 2) { setError("Agrega al menos 2 equipos al paquete."); return; }
++    const fd = new FormData(formRef.current);
++    fd.set("publishNow", String(publish));
++    selectedIds.forEach((id) => fd.append("listingIds", id));
++    setError(null);
++    startTransition(async () => {
++      const res = await createPackage(null, fd);
++      if (res?.error) { setError(res.error); return; }
++      onClose();
++      window.location.reload();
++    });
++  }
++
++  return (
++    <>
++      {showSelector && (
++        <EquipmentSelectorPopup
++          publishedListings={publishedListings}
++          selected={selectedIds}
++          onToggle={toggleListing}
++          onClose={() => setShowSelector(false)}
++        />
++      )}
++
++      <ModalShell
++        title="Nuevo paquete"
++        subtitle="Agrupa equipos publicados para ofrecerlos juntos"
++        formId="pkg-form"
++        submitLabel="Crear paquete"
++        pending={pending}
++        onClose={onClose}
++      >
++        <form ref={formRef} id="pkg-form" onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
++          {error && <ErrorBanner message={error} />}
++
++          {/* Title */}
++          <div>
++            <label htmlFor="pkg-title" className={cls.label}>Titulo del paquete <span className="text-[#6a437a]">*</span></label>
++            <input id="pkg-title" name="title" type="text" required minLength={3} maxLength={100}
++              placeholder="Ej: Paquete Fiesta Premium" className={cls.input} />
++          </div>
++
++          {/* Description */}
++          <div>
++            <label htmlFor="pkg-desc" className={cls.label}>
++              Descripcion <span className="font-normal normal-case text-gray-400">(opcional)</span>
++            </label>
++            <textarea id="pkg-desc" name="description" rows={3} maxLength={1000}
++              placeholder="Describe que incluye este paquete y para que tipo de eventos es ideal..."
++              className={`${cls.input} resize-none`} />
++          </div>
++
++          {/* Price */}
++          <div>
++            <label htmlFor="pkg-price" className={cls.label}>Precio por dia (USD) <span className="text-[#6a437a]">*</span></label>
++            <div className="relative">
++              <span className="absolute inset-y-0 left-4 flex items-center text-gray-400 text-sm select-none">$</span>
++              <input id="pkg-price" name="dailyPrice" type="number" required min="1" step="0.01" placeholder="0.00"
++                className={`${cls.input} pl-8`} />
++            </div>
++            <p className="text-xs text-gray-400 mt-1.5">
++              Precio total del paquete. Suma de equipos incluidos:{" "}
++              <span className="font-semibold text-gray-700">
++                {formatPrice(selectedListings.reduce((sum, l) => sum + l.daily_price, 0))}
++              </span>
++            </p>
++          </div>
++
++          {/* Equipment selection ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
++          <div>
++            <div className="flex items-center justify-between mb-2">
++              <label className={`${cls.label} mb-0`}>
++                Equipos incluidos <span className="text-[#6a437a]">*</span>
++              </label>
++              <span className="text-xs text-gray-400">Minimo 2</span>
++            </div>
++
++            {/* Selected list */}
++            {selectedListings.length > 0 ? (
++              <div className="space-y-2 mb-3">
++                {selectedListings.map((l) => (
++                  <div key={l.id}
++                    className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2.5">
++                    <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-200 shrink-0">
++                      {l.cover_image_url ? (
++                        <Image src={l.cover_image_url} alt={l.title ?? ""} fill className="object-cover" />
++                      ) : (
++                        <div className="w-full h-full flex items-center justify-center">
++                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
++                            <rect x="3" y="3" width="18" height="18" rx="2"/>
++                            <circle cx="8.5" cy="8.5" r="1.5"/>
++                            <polyline points="21 15 16 10 5 21"/>
++                          </svg>
++                        </div>
++                      )}
++                    </div>
++                    <div className="flex-1 min-w-0">
++                      <p className="text-xs font-semibold text-gray-900 truncate">{l.title ?? "Sin titulo"}</p>
++                      <p className="text-[11px] text-gray-400">{formatPrice(l.daily_price)} / dia</p>
++                    </div>
++                    <button type="button" onClick={() => removeListing(l.id)}
++                      className="text-gray-400 hover:text-red-500 transition-colors">
++                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
++                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
++                      </svg>
++                    </button>
++                  </div>
++                ))}
++              </div>
++            ) : (
++              <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl py-8 text-center mb-3">
++                <p className="text-sm text-gray-400">No hay equipos seleccionados</p>
++                <p className="text-xs text-gray-300 mt-0.5">Agrega al menos 2 equipos publicados</p>
++              </div>
++            )}
++
++            {/* Add button */}
++            {publishedListings.length === 0 ? (
++              <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 font-medium">
++                No tienes equipos publicados. Publica al menos 2 equipos antes de crear un paquete.
++              </p>
++            ) : (
++              <button type="button" onClick={() => setShowSelector(true)}
++                className="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 hover:border-[#6a437a] hover:text-[#6a437a] text-gray-500 text-sm font-semibold py-2.5 rounded-xl transition-all">
++                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
++                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
++                </svg>
++                Agregar equipos
++              </button>
++            )}
++          </div>
++
++          <PublishToggle value={publish} onChange={setPublish} />
++        </form>
++      </ModalShell>
++    </>
++  );
++}
++
++// ΓöÇΓöÇ Stat Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++function StatCard({ label, value, hint, accent = false }: {
++  label: string;
++  value: number;
++  hint?: string;
++  accent?: boolean;
++}) {
++  return (
++    <div className={`relative rounded-2xl px-5 py-5 overflow-hidden border transition-shadow hover:shadow-md ${accent ? "bg-[#6a437a] border-transparent" : "bg-white border-gray-100"}`}>
++      {accent && <div aria-hidden className="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-10 bg-white" />}
++      <p className={`text-[11px] font-bold uppercase tracking-widest mb-1 ${accent ? "text-purple-200" : "text-gray-400"}`}>{label}</p>
++      <p className={`text-4xl font-black leading-none ${accent ? "text-white" : "text-gray-900"}`}>{value}</p>
++      {hint && <p className={`text-xs mt-2 ${accent ? "text-purple-200" : "text-gray-400"}`}>{hint}</p>}
++    </div>
++  );
++}
++
++function CategoryBadge({ category }: { category: string | null }) {
++  if (!category) return null;
++  return (
++    <span className="text-[10px] font-bold uppercase tracking-widest text-[#6a437a] bg-purple-50 border border-purple-100 px-2.5 py-0.5 rounded-full">
++      {CATEGORY_MAP[category] ?? category}
++    </span>
++  );
++}
++
++// ΓöÇΓöÇ Equipment Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++function EquipmentCard({ listing, onToggle, onDelete }: {
++  listing: Listing;
++  onToggle: (id: string, current: boolean) => void;
++  onDelete: (id: string, title: string | null) => void;
++}) {
++  return (
++    <article className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
++      <div className="relative h-48 bg-gray-50 shrink-0">
++        {listing.cover_image_url ? (
++          <Image src={listing.cover_image_url} alt={listing.title ?? "Equipo"} fill className="object-cover"
++            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw" />
++        ) : (
++          <div className="w-full h-full flex items-center justify-center">
++            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
++              <rect x="3" y="3" width="18" height="18" rx="2"/>
++              <circle cx="8.5" cy="8.5" r="1.5"/>
++              <polyline points="21 15 16 10 5 21"/>
++            </svg>
++          </div>
++        )}
++        <span className={`absolute top-3 left-3 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${listing.is_published ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
++          {listing.is_published ? "Activo" : "Borrador"}
++        </span>
++      </div>
++      <div className="p-4 flex flex-col flex-1 gap-1">
++        <CategoryBadge category={listing.category} />
++        <h3 className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug mt-1">
++          {listing.title ?? "Sin titulo"}
++        </h3>
++        {listing.brand && (
++          <p className="text-xs text-gray-400">{listing.brand}{listing.model ? ` ┬╖ ${listing.model}` : ""}</p>
++        )}
++        <p className="text-xl font-black text-gray-900 mt-auto pt-3">
++          {formatPrice(listing.daily_price)}
++          <span className="text-xs font-normal text-gray-400 ml-1">/ dia</span>
++        </p>
++      </div>
++      <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
++        <Link href={`/provider/catalog/${listing.id}/edit`}
++          className="text-xs font-semibold text-[#6a437a] hover:text-[#5c3569] underline underline-offset-2 transition-colors">
++          Editar
++        </Link>
++        <div className="flex items-center gap-3">
++          <button onClick={() => onToggle(listing.id, listing.is_published)}
++            className="text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors">
++            {listing.is_published ? "Ocultar" : "Publicar"}
++          </button>
++          <button onClick={() => onDelete(listing.id, listing.title)}
++            className="text-xs font-semibold text-red-400 hover:text-red-600 transition-colors">
++            Eliminar
++          </button>
++        </div>
++      </div>
++    </article>
++  );
++}
++
++function AddNewCard({ label, hint, onClick }: { label: string; hint: string; onClick: () => void }) {
++  return (
++    <button onClick={onClick}
++      className="flex flex-col items-center justify-center gap-3 min-h-[280px] rounded-2xl border-2 border-dashed border-gray-200 hover:border-[#6a437a] hover:bg-purple-50/30 transition-all group">
++      <div className="w-12 h-12 rounded-full border-2 border-gray-200 group-hover:border-[#6a437a] group-hover:bg-[#6a437a] flex items-center justify-center transition-all">
++        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
++          className="text-gray-400 group-hover:text-white transition-colors">
++          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
++        </svg>
++      </div>
++      <div className="text-center px-4">
++        <p className="text-sm font-semibold text-gray-600 group-hover:text-[#6a437a] transition-colors">{label}</p>
++        <p className="text-xs text-gray-400 mt-0.5">{hint}</p>
++      </div>
++    </button>
++  );
++}
++
++// ΓöÇΓöÇ Package Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++function PackageCard({ pkg, itemCount }: { pkg: Package; itemCount: number }) {
++  return (
++    <article className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
++      <div className="relative h-48 bg-gradient-to-br from-purple-50 to-white shrink-0 flex items-center justify-center">
++        <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center">
++          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6a437a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
++            <rect x="2" y="7" width="20" height="14" rx="2"/>
++            <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
++          </svg>
++        </div>
++        <span className={`absolute top-3 left-3 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${pkg.is_published ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
++          {pkg.is_published ? "Activo" : "Borrador"}
++        </span>
++      </div>
++      <div className="p-4 flex flex-col flex-1 gap-1">
++        <span className="text-[10px] font-bold uppercase tracking-widest text-[#6a437a] bg-purple-50 border border-purple-100 px-2.5 py-0.5 rounded-full w-fit">
++          {itemCount} equipo{itemCount !== 1 ? "s" : ""}
++        </span>
++        <h3 className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug mt-1">{pkg.title}</h3>
++        {pkg.description && <p className="text-xs text-gray-400 line-clamp-2">{pkg.description}</p>}
++        <p className="text-xl font-black text-gray-900 mt-auto pt-3">
++          {formatPrice(pkg.daily_price)}
++          <span className="text-xs font-normal text-gray-400 ml-1">/ dia</span>
++        </p>
++      </div>
++      <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
++        <span className="text-xs text-gray-400">Paquete</span>
++        <div className="flex items-center gap-3">
++          <button className="text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors">
++            {pkg.is_published ? "Ocultar" : "Publicar"}
++          </button>
++          <button className="text-xs font-semibold text-red-400 hover:text-red-600 transition-colors">
++            Eliminar
++          </button>
++        </div>
++      </div>
++    </article>
++  );
++}
++
++// ΓöÇΓöÇ Main ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++export default function CatalogClient({
++  listings: initial,
++  packages: initialPackages,
++}: {
++  listings: Listing[];
++  packages: Package[];
++}) {
++  const [listings, setListings]             = useState(initial);
++  const [packages]                          = useState(initialPackages);
++  const [loadingId, setLoadingId]           = useState<string | null>(null);
++  const [, startTransition]                 = useTransition();
++  const [activeModal, setActiveModal]       = useState<"equipment" | "package" | null>(null);
++  const [activeTab, setActiveTab]           = useState<"equipos" | "paquetes">("equipos");
++  const [search, setSearch]                 = useState("");
++  const [filterCategory, setFilterCategory] = useState("all");
++
++  const published        = listings.filter((l) => l.is_published).length;
++  const drafts           = listings.filter((l) => !l.is_published).length;
++  const publishedListings = listings.filter((l) => l.is_published);
++
++  const filtered = listings.filter((l) => {
++    const term = search.toLowerCase();
++    const matchSearch = !term || [l.title, l.brand, l.model].some((v) => v?.toLowerCase().includes(term));
++    const matchCat    = filterCategory === "all" || l.category === filterCategory;
++    return matchSearch && matchCat;
++  });
++
++  const hasFilters = Boolean(search) || filterCategory !== "all";
++
++  function handleToggle(id: string, current: boolean) {
++    setListings((prev) => prev.map((l) => (l.id === id ? { ...l, is_published: !current } : l)));
++    setLoadingId(id);
++    startTransition(async () => {
++      const res = await togglePublish(id, current);
++      if (res.error) setListings((prev) => prev.map((l) => (l.id === id ? { ...l, is_published: current } : l)));
++      setLoadingId(null);
++    });
++  }
++
++  function handleDelete(id: string, title: string | null) {
++    if (!confirm(`Eliminar "${title ?? "este equipo"}"? Esta accion es irreversible.`)) return;
++    setLoadingId(id);
++    startTransition(async () => {
++      const res = await deleteListing(id);
++      if (!res.error) setListings((prev) => prev.filter((l) => l.id !== id));
++      setLoadingId(null);
++    });
++  }
++
++  const clearFilters = () => { setSearch(""); setFilterCategory("all"); };
++
++  return (
++    <>
++      {activeModal === "equipment" && (
++        <CreateEquipmentModal onClose={() => setActiveModal(null)} />
++      )}
++      {activeModal === "package" && (
++        <CreatePackageModal
++          publishedListings={publishedListings}
++          onClose={() => setActiveModal(null)}
++        />
++      )}
++
++      <div className="space-y-8">
++
++        {/* Hero header */}
++        <div className="relative rounded-2xl bg-gradient-to-br from-[#f8f4fc] via-white to-white border border-purple-100 px-7 py-7 overflow-hidden">
++          <div aria-hidden className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[#6a437a]/5 blur-2xl pointer-events-none" />
++          <div aria-hidden className="absolute bottom-0 left-20 w-24 h-24 rounded-full bg-[#6a437a]/5 blur-xl pointer-events-none" />
++          <div className="relative flex items-center justify-between gap-4">
++            <div>
++              <p className="text-[11px] font-bold uppercase tracking-widest text-[#6a437a] mb-1">Panel de proveedor</p>
++              <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mi catalogo</h1>
++              <p className="text-sm text-gray-500 mt-1">
++                {listings.length} equipo{listings.length !== 1 ? "s" : ""} registrado{listings.length !== 1 ? "s" : ""}
++                {drafts > 0 && (
++                  <span className="ml-2 bg-amber-50 text-amber-700 border border-amber-100 text-[11px] font-semibold px-2 py-0.5 rounded-full">
++                    {drafts} {drafts === 1 ? "borrador" : "borradores"}
++                  </span>
++                )}
++              </p>
++            </div>
++            <button onClick={() => setActiveModal("equipment")} className={cls.btnPrimary}>
++              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
++                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
++              </svg>
++              Nuevo equipo
++            </button>
++          </div>
++        </div>
++
++        {/* Stats */}
++        <div className="grid grid-cols-3 gap-4">
++          <StatCard label="Total de items"   value={listings.length} hint={`${published} activos ┬╖ ${drafts} borradores`} accent />
++          <StatCard label="Equipos activos"  value={published}       hint="Visibles en el catalogo publico" />
++          <StatCard label="Paquetes creados" value={packages.length} hint={packages.length === 0 ? "Crea tu primer paquete" : `${packages.filter(p => p.is_published).length} publicados`} />
++        </div>
++
++        {/* Tabs + Toolbar */}
++        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
++          <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1">
++            {(["equipos", "paquetes"] as const).map((tab) => (
++              <button key={tab} onClick={() => setActiveTab(tab)}
++                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${activeTab === tab ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
++                {tab.charAt(0).toUpperCase() + tab.slice(1)}
++                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === tab ? "bg-[#6a437a] text-white" : "bg-gray-200 text-gray-500"}`}>
++                  {tab === "equipos" ? listings.length : packages.length}
++                </span>
++              </button>
++            ))}
++          </div>
++
++          {activeTab === "equipos" && (
++            <div className="flex items-center gap-2 w-full sm:w-auto">
++              <div className="relative flex-1 sm:w-64">
++                <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
++                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
++                </svg>
++                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
++                  placeholder="Buscar equipos..."
++                  className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6a437a] focus:border-transparent transition-all" />
++              </div>
++              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
++                className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6a437a] focus:border-transparent transition-all">
++                <option value="all">Todas las categorias</option>
++                {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
++              </select>
++            </div>
++          )}
++        </div>
++
++        {/* Content */}
++        {activeTab === "equipos" ? (
++          <div className="space-y-3">
++            {hasFilters && (
++              <div className="flex items-center justify-between">
++                <p className="text-sm text-gray-500">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</p>
++                <button onClick={clearFilters}
++                  className="text-xs font-semibold text-[#6a437a] hover:text-[#5c3569] underline underline-offset-2 transition-colors">
++                  Limpiar filtros
++                </button>
++              </div>
++            )}
++            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
++              <AddNewCard label="Agregar equipo" hint="Publica un nuevo item en tu catalogo" onClick={() => setActiveModal("equipment")} />
++              {filtered.map((listing) => (
++                <div key={listing.id} className={loadingId === listing.id ? "opacity-40 pointer-events-none" : ""}>
++                  <EquipmentCard listing={listing} onToggle={handleToggle} onDelete={handleDelete} />
++                </div>
++              ))}
++            </div>
++            {listings.length > 0 && filtered.length === 0 && (
++              <div className="flex flex-col items-center py-20 gap-2 text-center">
++                <p className="text-base font-semibold text-gray-700">Sin resultados</p>
++                <p className="text-sm text-gray-400">Intenta con otros terminos o cambia la categoria.</p>
++                <button onClick={clearFilters} className="mt-2 text-sm font-semibold text-[#6a437a] hover:underline">
++                  Ver todos los equipos
++                </button>
++              </div>
++            )}
++          </div>
++        ) : (
++          <div className="space-y-3">
++            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
++              <AddNewCard
++                label="Crear paquete"
++                hint={publishedListings.length < 2 ? "Necesitas al menos 2 equipos publicados" : "Agrupa equipos para ofrecerlos juntos"}
++                onClick={() => setActiveModal("package")}
++              />
++              {packages.map((pkg) => (
++                <PackageCard key={pkg.id} pkg={pkg} itemCount={pkg.items?.length ?? 0} />
++              ))}
++            </div>
++            {packages.length === 0 && (
++              <div className="flex flex-col items-center py-16 gap-2 text-center">
++                <p className="text-sm text-gray-400">Todavia no tienes paquetes creados.</p>
++                {publishedListings.length < 2 && (
++                  <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-4 py-2 mt-1 font-medium">
++                    Necesitas al menos 2 equipos publicados para crear un paquete.
++                  </p>
++                )}
++              </div>
++            )}
++          </div>
++        )}
++      </div>
++    </>
++  );
++}
+diff --git a/art-rider/app/provider/catalog/page.tsx b/art-rider/app/provider/catalog/page.tsx
+index ed5a635..03dc3c6 100644
+--- a/art-rider/app/provider/catalog/page.tsx
++++ b/art-rider/app/provider/catalog/page.tsx
+@@ -1,85 +1,17 @@
+-import { getMyListings, togglePublish, deleteListing } from "@/services/listingsService";
++import { getMyListings } from "@/services/listingsService";
++import { getMyPackages } from "@/services/packagesService";
+ import { getMyProviderProfile } from "@/services/providerService";
+-import Link from "next/link";
+ import { redirect } from "next/navigation";
+-import ListingsManagerClient from "./ListingsManagerClient";
++import CatalogClient from "./CatalogClient";
+ 
+ export default async function MyListingsPage() {
+   const provider = await getMyProviderProfile();
++  if (!provider) redirect("/become-a-provider");
+ 
+-  if (!provider) {
+-    redirect("/become-a-provider");
+-  }
++  const [listings, packages] = await Promise.all([
++    getMyListings(),
++    getMyPackages(),
++  ]);
+ 
+-  const listings = await getMyListings();
+-  const published = listings.filter((l) => l.is_published).length;
+-  const drafts = listings.filter((l) => !l.is_published).length;
+-
+-  return (
+-    <div className="space-y-6">
+-      {/* Header */}
+-      <div className="flex items-center justify-between">
+-        <div>
+-          <h1 className="text-2xl font-bold text-gray-900">Mis equipos</h1>
+-          <p className="text-sm text-gray-500 mt-0.5">
+-            {published} publicado{published !== 1 ? "s" : ""} ┬╖ {drafts} borrador{drafts !== 1 ? "es" : ""}
+-          </p>
+-        </div>
+-
+-        {provider.status === "active" ? (
+-          <Link
+-            href="/provider/catalog/new"
+-            className="inline-flex items-center gap-2 bg-[#875B9A] hover:bg-[#6a437a] text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors shadow-sm"
+-          >
+-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+-            </svg>
+-            Nuevo equipo
+-          </Link>
+-        ) : (
+-          <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
+-            ΓÅ│ Pendiente de aprobaci├│n
+-          </span>
+-        )}
+-      </div>
+-
+-      {/* Pending approval notice */}
+-      {provider.status === "pending" && (
+-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-4">
+-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 shrink-0">
+-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+-          </svg>
+-          <div>
+-            <p className="text-sm font-semibold text-amber-800">Cuenta pendiente de aprobaci├│n</p>
+-            <p className="text-sm text-amber-700 mt-0.5">
+-              Tu solicitud de cuenta de proveedor est├í siendo revisada por nuestro equipo junto a la verificaci├│n de identidad (KYC). Este proceso toma 1-3 d├¡as h├íbiles.
+-            </p>
+-          </div>
+-        </div>
+-      )}
+-
+-      {/* Listings grid / empty state */}
+-      {listings.length === 0 ? (
+-        <div className="bg-white rounded-2xl border border-gray-100 p-12 flex flex-col items-center text-center gap-4">
+-          <span className="text-5xl">≡ƒôª</span>
+-          <h2 className="text-lg font-semibold text-gray-800">No tienes equipos a├║n</h2>
+-          <p className="text-sm text-gray-500 max-w-xs">
+-            {provider.status === "active"
+-              ? "Publica tu primer equipo y empieza a recibir reservas."
+-              : "Una vez que tu cuenta sea aprobada, podr├ís publicar tus equipos."}
+-          </p>
+-          {provider.status === "active" && (
+-            <Link
+-              href="/provider/catalog/new"
+-              className="mt-2 inline-flex items-center gap-2 bg-[#875B9A] text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-[#6a437a] transition-colors"
+-            >
+-              Publicar primer equipo
+-            </Link>
+-          )}
+-        </div>
+-      ) : (
+-        <ListingsManagerClient listings={listings} />
+-      )}
+-    </div>
+-  );
++  return <CatalogClient listings={listings} packages={packages} />;
+ }
+diff --git a/art-rider/app/provider/page.tsx b/art-rider/app/provider/page.tsx
+index ae052d5..c8aec45 100644
+--- a/art-rider/app/provider/page.tsx
++++ b/art-rider/app/provider/page.tsx
+@@ -1,18 +1,28 @@
+ import Link from "next/link";
+ import { Plus, TrendingUp, Package, CalendarClock, MessageCircle, Edit3 } from "lucide-react";
++import { getMyProviderProfile } from "@/services/providerService";
++import { getMyListings } from "@/services/listingsService";
++
++export default async function ProviderOverviewPage() {
++  const provider = await getMyProviderProfile();
++  const listings = await getMyListings();
++
++  const brandName = provider?.brand_name ?? "Proveedor";
++  const initials = brandName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
++  const activeListingsCount = listings.filter((l) => l.is_published).length;
++  const totalListingsCount = listings.length;
+ 
+-export default function ProviderOverviewPage() {
+   return (
+     <div className="space-y-8 animate-in fade-in duration-500">
+       
+       {/* ΓöÇΓöÇ Page Header ΓöÇΓöÇ */}
+       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+         <div>
+-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Hola, EJ Audiovisuales</h1>
++          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Hola, {brandName}</h1>
+           <p className="text-gray-500 mt-1">Aqu├¡ tienes el resumen de tu negocio de hoy.</p>
+         </div>
+         <Link 
+-          href="/provider/catalog"
++          href="/provider/catalog/new"
+           className="inline-flex items-center justify-center gap-2 bg-[#875B9A] hover:bg-[#6a437a] text-white px-5 py-2.5 rounded-xl font-bold transition-transform hover:scale-105 active:scale-95 shadow-md shadow-purple-900/10"
+         >
+           <Plus size={18} />
+@@ -30,9 +40,9 @@ export default function ProviderOverviewPage() {
+               <TrendingUp size={18} />
+             </div>
+           </div>
+-          <p className="text-3xl font-bold text-gray-900 mb-2">$450.00</p>
+-          <div className="flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 w-fit px-2 py-1 rounded-md">
+-            <span>+15% desde el mes pasado</span>
++          <p className="text-3xl font-bold text-gray-900 mb-2">$0.00</p>
++          <div className="flex items-center text-xs font-semibold text-gray-500 bg-gray-100 w-fit px-2 py-1 rounded-md">
++            <span>Las reservas estar├ín disponibles pronto</span>
+           </div>
+         </div>
+ 
+@@ -43,9 +53,9 @@ export default function ProviderOverviewPage() {
+               <CalendarClock size={18} />
+             </div>
+           </div>
+-          <p className="text-3xl font-bold text-gray-900 mb-2">3</p>
++          <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
+           <div className="flex items-center text-xs font-semibold text-gray-500 bg-gray-100 w-fit px-2 py-1 rounded-md">
+-            <span>Requieren tu acci├│n</span>
++            <span>Sin reservas activas</span>
+           </div>
+         </div>
+ 
+@@ -56,9 +66,9 @@ export default function ProviderOverviewPage() {
+               <Package size={18} />
+             </div>
+           </div>
+-          <p className="text-3xl font-bold text-gray-900 mb-2">12</p>
++          <p className="text-3xl font-bold text-gray-900 mb-2">{activeListingsCount}</p>
+           <div className="flex items-center text-xs font-semibold text-gray-500 bg-gray-100 w-fit px-2 py-1 rounded-md">
+-            <span>En tu inventario</span>
++            <span>{totalListingsCount} en tu cat├ílogo total</span>
+           </div>
+         </div>
+ 
+@@ -69,9 +79,9 @@ export default function ProviderOverviewPage() {
+               <MessageCircle size={18} />
+             </div>
+           </div>
+-          <p className="text-3xl font-bold text-gray-900 mb-2">98%</p>
+-          <div className="flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 w-fit px-2 py-1 rounded-md">
+-            <span>Tiempo prom: 1h</span>
++          <p className="text-3xl font-bold text-gray-900 mb-2">ΓÇö</p>
++          <div className="flex items-center text-xs font-semibold text-gray-500 bg-gray-100 w-fit px-2 py-1 rounded-md">
++            <span>Disponible con mensajer├¡a</span>
+           </div>
+         </div>
+ 
+@@ -92,60 +102,15 @@ export default function ProviderOverviewPage() {
+             </Link>
+           </div>
+           
+-          <div className="overflow-x-auto">
+-            <table className="w-full text-left text-sm whitespace-nowrap">
+-              <thead className="bg-gray-50/50 text-gray-500 font-semibold border-b border-gray-100">
+-                <tr>
+-                  <th className="px-6 py-4 font-medium">Cliente</th>
+-                  <th className="px-6 py-4 font-medium">Equipo</th>
+-                  <th className="px-6 py-4 font-medium">Fechas</th>
+-                  <th className="px-6 py-4 font-medium">Estado</th>
+-                  <th className="px-6 py-4 font-medium text-right">Total</th>
+-                </tr>
+-              </thead>
+-              <tbody className="divide-y divide-gray-100/80 text-gray-700">
+-                
+-                {/* Row 1 */}
+-                <tr className="hover:bg-gray-50 transition-colors">
+-                  <td className="px-6 py-4 font-medium text-gray-900">Carlos M.</td>
+-                  <td className="px-6 py-4 max-w-[200px] truncate">Sony FX3 + Lentes</td>
+-                  <td className="px-6 py-4 text-gray-500">12 - 14 Oct</td>
+-                  <td className="px-6 py-4">
+-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+-                      Pendiente
+-                    </span>
+-                  </td>
+-                  <td className="px-6 py-4 text-right font-medium text-gray-900">$120.00</td>
+-                </tr>
+-
+-                {/* Row 2 */}
+-                <tr className="hover:bg-gray-50 transition-colors">
+-                  <td className="px-6 py-4 font-medium text-gray-900">Luc├¡a S.</td>
+-                  <td className="px-6 py-4 max-w-[200px] truncate">Subwoofer Activo Beta 3</td>
+-                  <td className="px-6 py-4 text-gray-500">08 - 09 Oct</td>
+-                  <td className="px-6 py-4">
+-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+-                      Confirmado
+-                    </span>
+-                  </td>
+-                  <td className="px-6 py-4 text-right font-medium text-gray-900">$50.00</td>
+-                </tr>
+-
+-                {/* Row 3 */}
+-                <tr className="hover:bg-gray-50 transition-colors">
+-                  <td className="px-6 py-4 font-medium text-gray-900">Agencia X</td>
+-                  <td className="px-6 py-4 max-w-[200px] truncate">Kit Iluminaci├│n Pro</td>
+-                  <td className="px-6 py-4 text-gray-500">01 - 05 Oct</td>
+-                  <td className="px-6 py-4">
+-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+-                      Completado
+-                    </span>
+-                  </td>
+-                  <td className="px-6 py-4 text-right font-medium text-gray-900">$250.00</td>
+-                </tr>
+-                
+-              </tbody>
+-            </table>
++          {/* Empty state for bookings */}
++          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
++            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mb-4">
++              <CalendarClock size={24} className="text-gray-300" />
++            </div>
++            <h3 className="text-sm font-semibold text-gray-700 mb-1">Sin reservas todav├¡a</h3>
++            <p className="text-xs text-gray-400 max-w-[280px]">
++              Cuando tus clientes reserven equipos, aparecer├ín aqu├¡. Empieza publicando tu inventario.
++            </p>
+           </div>
+         </div>
+ 
+@@ -163,24 +128,33 @@ export default function ProviderOverviewPage() {
+ 
+               <div className="flex items-center gap-4 mb-6">
+                 <div className="w-16 h-16 rounded-xl bg-gray-900 text-white flex items-center justify-center font-bold text-xl">
+-                  EJ
++                  {initials}
+                 </div>
+                 <div>
+-                  <h3 className="font-bold text-gray-900 text-lg">EJ Audiovisuales</h3>
+-                  <p className="text-sm text-gray-500">Calificaci├│n: Γ¡É 4.9 (12 reviews)</p>
++                  <h3 className="font-bold text-gray-900 text-lg">{brandName}</h3>
++                  <p className="text-sm text-gray-500">Sin calificaciones a├║n</p>
+                 </div>
+               </div>
+ 
+               <div className="space-y-4 text-sm">
+                 <div>
+-                  <p className="text-gray-500 mb-0.5">Ubicaci├│n</p>
+-                  <p className="font-medium text-gray-900">Calle Rep├║blica y Eloy Alfaro, Quito, EC</p>
++                  <p className="text-gray-500 mb-0.5">Miembro desde</p>
++                  <p className="font-medium text-gray-900">
++                    {provider?.created_at 
++                      ? new Date(provider.created_at).toLocaleDateString("es-EC", { year: "numeric", month: "long" })
++                      : "ΓÇö"
++                    }
++                  </p>
++                </div>
++                <div>
++                  <p className="text-gray-500 mb-0.5">Equipos publicados</p>
++                  <p className="font-medium text-gray-900">{activeListingsCount} activos / {totalListingsCount} total</p>
+                 </div>
+                 <div>
+                   <p className="text-gray-500 mb-0.5">Estado KYC</p>
+-                  <span className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md font-medium">
+-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+-                    Identidad Verificada
++                  <span className="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md font-medium">
++                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
++                    Pendiente de verificaci├│n
+                   </span>
+                 </div>
+               </div>
+diff --git a/art-rider/components/features/home/HeroSection.tsx b/art-rider/components/features/home/HeroSection.tsx
+index a92eada..9d57dbc 100644
+--- a/art-rider/components/features/home/HeroSection.tsx
++++ b/art-rider/components/features/home/HeroSection.tsx
+@@ -5,7 +5,7 @@ export default function HeroSection() {
+     <section className="bg-white px-4 sm:px-6 lg:px-8 py-12 text-center flex flex-col items-center">
+       <div className="max-w-[800px] w-full relative">
+         {/* ΓöÇΓöÇ Main headline ΓöÇΓöÇ */}
+-        <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 leading-tight tracking-tight mb-4">
++        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-5">
+           Encuentra el equipo perfecto para tu evento
+         </h1>
+ 
+diff --git a/art-rider/components/features/listings/ListingCard.tsx b/art-rider/components/features/listings/ListingCard.tsx
+index 652465f..3dea0bf 100644
+--- a/art-rider/components/features/listings/ListingCard.tsx
++++ b/art-rider/components/features/listings/ListingCard.tsx
+@@ -4,26 +4,21 @@
+  * ListingCard.tsx ΓÇö Client Component
+  *
+  * Renders a single listing in the public catalog grid.
+- * Receives a hydrated `ListingWithRelations` object as a prop, forwarded
+- * from the Server Component parent (app/listings/page.tsx).
++ * Receives a `Listing` object as a prop, forwarded from the Server Component
++ * parent (app/listings/page.tsx).
+  *
+  * Interactivity: hover lift animation (CSS), navigation to detail page (Link).
+- * No auth state is read here ΓÇö that lives only in ReserveButton.
+  */
+ 
+ import Link from "next/link";
+-import type { ListingWithRelations } from "@/types/listings";
++import Image from "next/image";
++import type { Listing } from "@/services/listingsService";
+ 
+ // ΓöÇΓöÇΓöÇ Helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ 
+-/** Formats an integer price (stored in smallest currency unit) to a display string. */
++/** Formats an integer price (stored in cents) to a display string. */
+ function formatPrice(cents: number): string {
+-  // Prices are stored as integers; treat as full currency units (e.g. COP pesos)
+-  return new Intl.NumberFormat("es-CO", {
+-    style: "currency",
+-    currency: "COP",
+-    maximumFractionDigits: 0,
+-  }).format(cents);
++  return `$${(cents / 100).toFixed(2)}`;
+ }
+ 
+ /** Returns a gradient and emoji for a category to make the placeholder image vivid. */
+@@ -32,75 +27,89 @@ function getCategoryStyle(category: string | null): {
+   icon: string;
+ } {
+   const map: Record<string, { gradient: string; icon: string }> = {
+-    audio:       { gradient: "linear-gradient(135deg, #1a0533 0%, #4b1d6e 100%)", icon: "≡ƒÄº" },
+-    lighting:    { gradient: "linear-gradient(135deg, #0a1a33 0%, #1d3d6e 100%)", icon: "≡ƒÆí" },
+-    instruments: { gradient: "linear-gradient(135deg, #1a1a03 0%, #5c5c0d 100%)", icon: "≡ƒÄ╕" },
+-    video:       { gradient: "linear-gradient(135deg, #1a0303 0%, #6e1d1d 100%)", icon: "≡ƒÄÑ" },
+-    dj:          { gradient: "linear-gradient(135deg, #03031a 0%, #1d1d6e 100%)", icon: "≡ƒÄ¢∩╕Å" },
++    audio:    { gradient: "linear-gradient(135deg, #1a0533 0%, #4b1d6e 100%)", icon: "≡ƒÄº" },
++    lighting: { gradient: "linear-gradient(135deg, #0a1a33 0%, #1d3d6e 100%)", icon: "≡ƒÆí" },
++    video:    { gradient: "linear-gradient(135deg, #1a0303 0%, #6e1d1d 100%)", icon: "≡ƒÄÑ" },
++    effects:  { gradient: "linear-gradient(135deg, #03031a 0%, #1d1d6e 100%)", icon: "Γ£¿" },
++    other:    { gradient: "linear-gradient(135deg, #f3f0f7 0%, #e8e0f0 100%)", icon: "≡ƒôª" },
+   };
+   const key = (category ?? "").toLowerCase();
+-  return map[key] ?? { gradient: "linear-gradient(135deg, #12101a 0%, #2a1f3d 100%)", icon: "≡ƒôª" };
++  return map[key] ?? { gradient: "linear-gradient(135deg, #f3f0f7 0%, #e8e0f0 100%)", icon: "≡ƒôª" };
+ }
+ 
++const CATEGORY_LABELS: Record<string, string> = {
++  audio: "Sonido", lighting: "Iluminaci├│n", video: "Video",
++  effects: "Efectos", other: "Otro",
++};
++
+ // ΓöÇΓöÇΓöÇ Component ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+ 
+ interface ListingCardProps {
+-  listing: ListingWithRelations;
++  listing: Listing;
+ }
+ 
+ export default function ListingCard({ listing }: ListingCardProps) {
+-  const catalog = listing.product_catalog;
+-  const address = listing.addresses;
+-  const category = catalog?.category ?? null;
++  const category = listing.category;
+   const { gradient, icon } = getCategoryStyle(category);
+ 
+-  const title = catalog?.name ?? "Equipment Listing";
++  const title = listing.title ?? "Equipo sin t├¡tulo";
+   const subtitle =
+-    catalog?.brand && catalog?.model
+-      ? `${catalog.brand} ┬╖ ${catalog.model}`
+-      : catalog?.brand ?? catalog?.model ?? null;
++    listing.brand && listing.model
++      ? `${listing.brand} ┬╖ ${listing.model}`
++      : listing.brand ?? listing.model ?? null;
+ 
+-  const location =
+-    address
+-      ? [address.city, address.state].filter(Boolean).join(", ")
+-      : null;
++  const categoryLabel = CATEGORY_LABELS[category ?? ""] ?? category;
+ 
+   return (
+     <Link
+       href={`/listings/${listing.id}`}
+-      className="listing-card block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+-      aria-label={`View listing: ${title}`}
++      className="listing-card block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#875B9A] focus-visible:ring-offset-2"
++      aria-label={`Ver equipo: ${title}`}
+     >
+-      {/* ΓöÇΓöÇ Placeholder image area ΓöÇΓöÇ */}
++      {/* ΓöÇΓöÇ Image area ΓöÇΓöÇ */}
+       <div
+         className="relative flex items-center justify-center"
+         style={{
+           height: "176px",
+-          background: gradient,
+           borderRadius: "16px 16px 0 0",
++          overflow: "hidden",
+         }}
+       >
++        {listing.cover_image_url ? (
++          <Image
++            src={listing.cover_image_url}
++            alt={title}
++            fill
++            className="object-cover"
++            sizes="(max-width: 768px) 100vw, 300px"
++          />
++        ) : (
++          <div
++            className="w-full h-full flex items-center justify-center"
++            style={{ background: gradient }}
++          >
++            <span
++              style={{
++                fontSize: "3.5rem",
++                filter: "drop-shadow(0 4px 12px rgba(135,91,154,0.45))",
++                userSelect: "none",
++              }}
++              aria-hidden="true"
++            >
++              {icon}
++            </span>
++          </div>
++        )}
++
+         {/* Category badge */}
+-        {category && (
++        {categoryLabel && (
+           <span
+             className="category-badge absolute"
+             style={{ top: "12px", left: "12px" }}
+           >
+-            {category}
++            {categoryLabel}
+           </span>
+         )}
+-
+-        {/* Equipment icon */}
+-        <span
+-          style={{
+-            fontSize: "3.5rem",
+-            filter: "drop-shadow(0 4px 12px rgba(135,91,154,0.45))",
+-            userSelect: "none",
+-          }}
+-          aria-hidden="true"
+-        >
+-          {icon}
+-        </span>
+       </div>
+ 
+       {/* ΓöÇΓöÇ Card body ΓöÇΓöÇ */}
+@@ -109,7 +118,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
+         <h2
+           className="text-sm font-semibold leading-snug"
+           style={{
+-            color: "var(--text-primary)",
++            color: "#111827",
+             marginBottom: "4px",
+             display: "-webkit-box",
+             WebkitLineClamp: 2,
+@@ -124,7 +133,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
+         {subtitle && (
+           <p
+             className="text-xs"
+-            style={{ color: "var(--text-secondary)", marginBottom: "12px" }}
++            style={{ color: "#6b7280", marginBottom: "12px" }}
+           >
+             {subtitle}
+           </p>
+@@ -134,51 +143,25 @@ export default function ListingCard({ listing }: ListingCardProps) {
+         <div
+           style={{
+             height: "1px",
+-            background: "var(--border-subtle)",
++            background: "rgba(229, 231, 235, 0.6)",
+             marginBottom: "12px",
+           }}
+         />
+ 
+-        {/* Location + Price row */}
+-        <div className="flex items-end justify-between gap-2">
+-          {/* Location */}
+-          <div className="flex items-center gap-1 min-w-0">
+-            <svg
+-              width="12"
+-              height="12"
+-              viewBox="0 0 24 24"
+-              fill="none"
+-              stroke="currentColor"
+-              strokeWidth="2.5"
+-              strokeLinecap="round"
+-              strokeLinejoin="round"
+-              style={{ color: "var(--text-muted)", flexShrink: 0 }}
+-              aria-hidden="true"
+-            >
+-              <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z" />
+-              <circle cx="12" cy="10" r="3" />
+-            </svg>
+-            <span
+-              className="text-xs truncate"
+-              style={{ color: "var(--text-muted)" }}
+-            >
+-              {location ?? "Location not set"}
+-            </span>
+-          </div>
+-
+-          {/* Price */}
++        {/* Price row */}
++        <div className="flex items-end justify-end gap-2">
+           <div className="text-right flex-shrink-0">
+             <span
+               className="text-base font-bold"
+-              style={{ color: "var(--primary-400)" }}
++              style={{ color: "#875B9A" }}
+             >
+               {formatPrice(listing.daily_price)}
+             </span>
+             <span
+               className="text-xs block"
+-              style={{ color: "var(--text-muted)", marginTop: "-2px" }}
++              style={{ color: "#9ca3af", marginTop: "-2px" }}
+             >
+-              / day
++              / d├¡a
+             </span>
+           </div>
+         </div>
+diff --git a/art-rider/services/authService.ts b/art-rider/services/authService.ts
+index 709f7fe..ca0d3c2 100644
+--- a/art-rider/services/authService.ts
++++ b/art-rider/services/authService.ts
+@@ -49,8 +49,8 @@ export async function signUp(prevState: any, formData: FormData) {
+     age--;
+   }
+ 
+-  if (age < 15) {
+-    return { error: 'Debes ser mayor de 15 a├▒os para utilizar ArtRider.' };
++  if (age < 18) {
++    return { error: 'Debes ser mayor de 18 a├▒os para utilizar ArtRider.' };
+   }
+ 
+   try {
+diff --git a/art-rider/services/packagesService.ts b/art-rider/services/packagesService.ts
+new file mode 100644
+index 0000000..8e9c3b9
+--- /dev/null
++++ b/art-rider/services/packagesService.ts
+@@ -0,0 +1,151 @@
++"use server";
++
++import { createSupabaseServerClient } from "@/lib/supabaseServer";
++import { revalidatePath } from "next/cache";
++
++// ΓöÇΓöÇ Types ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++export type Package = {
++  id: string;
++  owner_id: string;
++  title: string;
++  description: string | null;
++  daily_price: number;
++  is_published: boolean;
++  created_at: string;
++  items?: PackageItem[];
++};
++
++export type PackageItem = {
++  id: string;
++  package_id: string;
++  listing_id: string;
++  quantity: number;
++};
++
++// ΓöÇΓöÇ Read ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++export async function getMyPackages(): Promise<Package[]> {
++  const supabase = await createSupabaseServerClient();
++  const { data: { user } } = await supabase.auth.getUser();
++  if (!user) return [];
++
++  const { data, error } = await supabase
++    .from("packages")
++    .select("*, items:package_items(*)")
++    .eq("owner_id", user.id)
++    .is("deleted_at", null)
++    .order("created_at", { ascending: false });
++
++  if (error) throw new Error(`[packagesService] getMyPackages: ${error.message}`);
++  return (data ?? []) as Package[];
++}
++
++// ΓöÇΓöÇ Create ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++export async function createPackage(
++  _prevState: unknown,
++  formData: FormData
++): Promise<{ success?: true; id?: string; error?: string }> {
++  try {
++    const supabase = await createSupabaseServerClient();
++    const { data: { user }, error: authError } = await supabase.auth.getUser();
++    if (authError || !user) return { error: "Debes iniciar sesion." };
++
++    const title       = (formData.get("title") as string)?.trim();
++    const description = (formData.get("description") as string)?.trim();
++    const priceRaw    = formData.get("dailyPrice") as string;
++    const publishNow  = formData.get("publishNow") === "true";
++    const listingIds  = formData.getAll("listingIds") as string[];
++
++    if (!title || title.length < 3)
++      return { error: "El titulo debe tener al menos 3 caracteres." };
++    if (listingIds.length < 2)
++      return { error: "Un paquete debe incluir al menos 2 equipos." };
++
++    const dailyPrice = Math.round(parseFloat(priceRaw) * 100);
++    if (isNaN(dailyPrice) || dailyPrice < 100)
++      return { error: "El precio minimo es $1.00 por dia." };
++
++    // Verify all listings belong to this owner and are published
++    const { data: ownedListings } = await supabase
++      .from("listings")
++      .select("id")
++      .eq("owner_id", user.id)
++      .eq("is_published", true)
++      .in("id", listingIds)
++      .is("deleted_at", null);
++
++    if (!ownedListings || ownedListings.length !== listingIds.length)
++      return { error: "Algunos equipos seleccionados no son validos. Solo puedes agregar equipos publicados." };
++
++    // Insert package
++    const { data: pkg, error: insertError } = await supabase
++      .from("packages")
++      .insert({
++        owner_id: user.id,
++        title,
++        description: description || null,
++        daily_price: dailyPrice,
++        is_published: publishNow,
++      })
++      .select("id")
++      .single();
++
++    if (insertError || !pkg) return { error: "Error al crear el paquete." };
++
++    // Insert package items
++    const items = listingIds.map((lid) => ({
++      package_id: pkg.id,
++      listing_id: lid,
++      quantity: 1,
++    }));
++
++    const { error: itemsError } = await supabase.from("package_items").insert(items);
++    if (itemsError) return { error: "Error al vincular los equipos al paquete." };
++
++    revalidatePath("/provider/catalog");
++    return { success: true, id: pkg.id };
++  } catch {
++    return { error: "Error inesperado. Intenta de nuevo." };
++  }
++}
++
++// ΓöÇΓöÇ Delete ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++export async function deletePackage(id: string): Promise<{ error?: string }> {
++  const supabase = await createSupabaseServerClient();
++  const { data: { user } } = await supabase.auth.getUser();
++  if (!user) return { error: "No autenticado." };
++
++  const { error } = await supabase
++    .from("packages")
++    .update({ deleted_at: new Date().toISOString(), is_published: false })
++    .eq("id", id)
++    .eq("owner_id", user.id);
++
++  if (error) return { error: "Error al eliminar el paquete." };
++  revalidatePath("/provider/catalog");
++  return {};
++}
++
++// ΓöÇΓöÇ Toggle publish ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++export async function togglePackagePublish(
++  id: string,
++  current: boolean
++): Promise<{ error?: string }> {
++  const supabase = await createSupabaseServerClient();
++  const { data: { user } } = await supabase.auth.getUser();
++  if (!user) return { error: "No autenticado." };
++
++  const { error } = await supabase
++    .from("packages")
++    .update({ is_published: !current, updated_at: new Date().toISOString() })
++    .eq("id", id)
++    .eq("owner_id", user.id);
++
++  if (error) return { error: "Error al cambiar el estado del paquete." };
++  revalidatePath("/provider/catalog");
++  return {};
++}
+diff --git a/art-rider/supabase/migrations/001_add_reviews_and_align_schema.sql b/art-rider/supabase/migrations/001_add_reviews_and_align_schema.sql
+new file mode 100644
+index 0000000..9d6b001
+--- /dev/null
++++ b/art-rider/supabase/migrations/001_add_reviews_and_align_schema.sql
+@@ -0,0 +1,83 @@
++-- =========================================================
++-- ArtRider Migration: Align schema with Class Diagram v4.0
++-- =========================================================
++-- Run this migration MANUALLY in Supabase SQL Editor
++-- after reviewing the changes below.
++-- =========================================================
++
++-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++-- 1. REVIEWS TABLE (Missing from original schema)
++-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++CREATE TABLE IF NOT EXISTS reviews (
++  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
++  booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE,
++  author_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
++  target_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
++  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
++  comment TEXT,
++  created_at TIMESTAMPTZ DEFAULT NOW()
++);
++ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
++
++-- RLS: Only booking participants can see/write reviews
++CREATE POLICY "Reviews visible to booking participants" ON reviews
++  FOR SELECT USING (
++    EXISTS (
++      SELECT 1 FROM bookings
++      WHERE bookings.id = reviews.booking_id
++      AND auth.uid() IN (bookings.client_id, bookings.owner_id)
++    )
++    OR auth.uid() = target_id  -- Target user can always see reviews about them
++  );
++
++CREATE POLICY "Only booking participants can create reviews" ON reviews
++  FOR INSERT WITH CHECK (
++    auth.uid() = author_id
++    AND EXISTS (
++      SELECT 1 FROM bookings
++      WHERE bookings.id = booking_id
++      AND auth.uid() IN (bookings.client_id, bookings.owner_id)
++      AND bookings.status = 'COMPLETED'
++    )
++  );
++
++CREATE POLICY "Prevent update reviews" ON reviews
++  FOR UPDATE USING (false) WITH CHECK (false);
++
++CREATE POLICY "Prevent delete reviews" ON reviews
++  FOR DELETE USING (false);
++
++
++-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++-- 2. DIGITAL CONTRACTS ΓÇö Add bilateral signature fields
++--    (Aligning with Class Diagram v4.0)
++-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++-- Add version tracking
++ALTER TABLE digital_contracts ADD COLUMN IF NOT EXISTS version TEXT DEFAULT 'v1.0-2025';
++
++-- Owner signature fields
++ALTER TABLE digital_contracts ADD COLUMN IF NOT EXISTS owner_signed_at TIMESTAMPTZ;
++ALTER TABLE digital_contracts ADD COLUMN IF NOT EXISTS owner_signature_hash TEXT;
++ALTER TABLE digital_contracts ADD COLUMN IF NOT EXISTS owner_pdf_url TEXT;
++
++-- Client signature fields
++ALTER TABLE digital_contracts ADD COLUMN IF NOT EXISTS client_signed_at TIMESTAMPTZ;
++ALTER TABLE digital_contracts ADD COLUMN IF NOT EXISTS client_signature_hash TEXT;
++ALTER TABLE digital_contracts ADD COLUMN IF NOT EXISTS client_pdf_url TEXT;
++
++
++-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++-- 3. MESSAGES ΓÇö Add sent_at timestamp
++-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++ALTER TABLE messages ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ DEFAULT NOW();
++
++
++-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++-- 4. PAYMENTS ΓÇö Add security_deposit_amount and created_at
++-- ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++
++ALTER TABLE payments ADD COLUMN IF NOT EXISTS security_deposit_amount INTEGER DEFAULT 0;
++ALTER TABLE payments ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+diff --git a/art-rider/supabase/migrations/20260427_packages.sql b/art-rider/supabase/migrations/20260427_packages.sql
+new file mode 100644
+index 0000000..f9baa6d
+--- /dev/null
++++ b/art-rider/supabase/migrations/20260427_packages.sql
+@@ -0,0 +1,52 @@
++-- =========================================================
++-- Run this in: Supabase Dashboard > SQL Editor
++-- =========================================================
++
++-- PACKAGES
++CREATE TABLE IF NOT EXISTS packages (
++  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
++  owner_id        UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
++  title           TEXT NOT NULL,
++  description     TEXT,
++  daily_price     INTEGER NOT NULL,
++  is_published    BOOLEAN DEFAULT FALSE,
++  created_at      TIMESTAMPTZ DEFAULT NOW(),
++  updated_at      TIMESTAMPTZ DEFAULT NOW(),
++  deleted_at      TIMESTAMPTZ
++);
++
++ALTER TABLE packages ENABLE ROW LEVEL SECURITY;
++
++CREATE POLICY "packages_owner_read"   ON packages FOR SELECT
++  USING (auth.uid() = owner_id OR is_published = true);
++CREATE POLICY "packages_owner_insert" ON packages FOR INSERT
++  WITH CHECK (auth.uid() = owner_id);
++CREATE POLICY "packages_owner_update" ON packages FOR UPDATE
++  USING (auth.uid() = owner_id);
++CREATE POLICY "packages_owner_delete" ON packages FOR DELETE
++  USING (auth.uid() = owner_id);
++
++-- PACKAGE_ITEMS  (which listings belong to a package)
++CREATE TABLE IF NOT EXISTS package_items (
++  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
++  package_id UUID NOT NULL REFERENCES packages(id) ON DELETE CASCADE,
++  listing_id UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
++  quantity   INTEGER NOT NULL DEFAULT 1,
++  UNIQUE(package_id, listing_id)
++);
++
++ALTER TABLE package_items ENABLE ROW LEVEL SECURITY;
++
++CREATE POLICY "package_items_read"   ON package_items FOR SELECT
++  USING (EXISTS (
++    SELECT 1 FROM packages p
++    WHERE p.id = package_id AND (p.owner_id = auth.uid() OR p.is_published = true)
++  ));
++CREATE POLICY "package_items_insert" ON package_items FOR INSERT
++  WITH CHECK (EXISTS (
++    SELECT 1 FROM packages p WHERE p.id = package_id AND p.owner_id = auth.uid()
++  ));
++CREATE POLICY "package_items_delete" ON package_items FOR DELETE
++  USING (EXISTS (
++    SELECT 1 FROM packages p WHERE p.id = package_id AND p.owner_id = auth.uid()
++  ));
