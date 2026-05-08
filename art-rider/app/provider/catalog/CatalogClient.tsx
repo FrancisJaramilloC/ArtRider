@@ -532,11 +532,10 @@ function StatCard({ label, value, hint, accent = false }: {
   accent?: boolean;
 }) {
   return (
-    <div className={`relative rounded-2xl px-5 py-5 overflow-hidden border transition-shadow hover:shadow-md ${accent ? "bg-[#6a437a] border-transparent" : "bg-white border-gray-100"}`}>
-      {accent && <div aria-hidden className="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-10 bg-white" />}
-      <p className={`text-[11px] font-bold uppercase tracking-widest mb-1 ${accent ? "text-purple-200" : "text-gray-400"}`}>{label}</p>
-      <p className={`text-4xl font-black leading-none ${accent ? "text-white" : "text-gray-900"}`}>{value}</p>
-      {hint && <p className={`text-xs mt-2 ${accent ? "text-purple-200" : "text-gray-400"}`}>{hint}</p>}
+    <div className={`rounded-2xl px-5 py-5 border transition-shadow hover:shadow-md ${accent ? "bg-white border-l-4 border-l-gray-900 border-gray-100" : "bg-white border-gray-100"}`}>
+      <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-gray-400">{label}</p>
+      <p className="text-3xl font-black leading-none text-gray-900">{value}</p>
+      {hint && <p className="text-xs mt-2 text-gray-400">{hint}</p>}
     </div>
   );
 }
@@ -544,7 +543,7 @@ function StatCard({ label, value, hint, accent = false }: {
 function CategoryBadge({ category }: { category: string | null }) {
   if (!category) return null;
   return (
-    <span className="text-[10px] font-bold uppercase tracking-widest text-[#6a437a] bg-purple-50 border border-purple-100 px-2.5 py-0.5 rounded-full">
+    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full">
       {CATEGORY_MAP[category] ?? category}
     </span>
   );
@@ -644,7 +643,7 @@ function PackageCard({ pkg, itemCount }: { pkg: Package; itemCount: number }) {
         </span>
       </div>
       <div className="p-4 flex flex-col flex-1 gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-[#6a437a] bg-purple-50 border border-purple-100 px-2.5 py-0.5 rounded-full w-fit">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full w-fit">
           {itemCount} equipo{itemCount !== 1 ? "s" : ""}
         </span>
         <h3 className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug mt-1">{pkg.title}</h3>
@@ -737,13 +736,11 @@ export default function CatalogClient({
       <div className="space-y-8">
 
         {/* Hero header */}
-        <div className="relative rounded-2xl bg-gradient-to-br from-[#f8f4fc] via-white to-white border border-purple-100 px-7 py-7 overflow-hidden">
-          <div aria-hidden className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[#6a437a]/5 blur-2xl pointer-events-none" />
-          <div aria-hidden className="absolute bottom-0 left-20 w-24 h-24 rounded-full bg-[#6a437a]/5 blur-xl pointer-events-none" />
-          <div className="relative flex items-center justify-between gap-4">
+        <div className="rounded-2xl bg-white border border-gray-200 px-7 py-7">
+          <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-[#6a437a] mb-1">Panel de proveedor</p>
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mi catalogo</h1>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Panel de proveedor</p>
+              <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mi catálogo</h1>
               <p className="text-sm text-gray-500 mt-1">
                 {listings.length} equipo{listings.length !== 1 ? "s" : ""} registrado{listings.length !== 1 ? "s" : ""}
                 {drafts > 0 && (
@@ -776,7 +773,7 @@ export default function CatalogClient({
               <button key={tab} onClick={() => setActiveTab(tab)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${activeTab === tab ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === tab ? "bg-[#6a437a] text-white" : "bg-gray-200 text-gray-500"}`}>
+                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === tab ? "bg-gray-900 text-white" : "bg-gray-200 text-gray-500"}`}>
                   {tab === "equipos" ? listings.length : packages.length}
                 </span>
               </button>

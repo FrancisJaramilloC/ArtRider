@@ -145,8 +145,9 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
         </div>
 
         {/* ── Center: Main Nav ── */}
-        <div className="hidden md:flex flex-1 justify-center items-center gap-8">
+        <div className="hidden md:flex flex-1 justify-center items-center gap-4 lg:gap-6">
           {[
+            { label: "Cerca de ti", href: "/map" },
             { label: "Categorías", href: "#categorias" },
             { label: "Equipos", href: "#equipos" },
             { label: "Paquetes", href: "#paquetes" }
@@ -154,7 +155,7 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
             <Link
               key={label}
               href={href}
-              className="text-[0.95rem] font-medium text-gray-600 hover:text-[#875B9A] transition-colors"
+              className="text-[0.9rem] font-medium text-gray-600 hover:text-[#875B9A] transition-colors whitespace-nowrap"
             >
               {label}
             </Link>
@@ -162,7 +163,7 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
           {user && (
             <Link
               href="/bookings"
-              className="text-[0.95rem] font-medium text-gray-600 hover:text-[#875B9A] transition-colors"
+              className="text-[0.9rem] font-medium text-gray-600 hover:text-[#875B9A] transition-colors whitespace-nowrap"
             >
               Mis Reservas
             </Link>
