@@ -12,9 +12,9 @@ import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 // ── Nav structure ──────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
-  { name: "Mi Actividad", href: "/dashboard",           icon: LayoutDashboard },
-  { name: "Mis Reservas", href: "/dashboard/bookings",  icon: CalendarDays    },
-  { name: "Favoritos",    href: "/dashboard/favorites", icon: Heart           },
+  { name: "Mi Actividad", href: "/dashboard",   icon: LayoutDashboard },
+  { name: "Reservas",     href: "/bookings",   icon: CalendarDays    },
+  { name: "Favoritos",    href: "/favoritos",  icon: Heart           },
 ];
 
 const BOTTOM_LINKS = [

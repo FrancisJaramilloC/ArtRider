@@ -351,7 +351,7 @@ export default function BookingCalendar({ initialUser }: Props) {
       {/* Header */}
       <div className="pb-1">
         <h1 className="text-[1.75rem] font-bold tracking-tight text-gray-900">
-          Mis reservas
+          Reservas
         </h1>
         <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
           Equipos de audio que has alquilado en ArtRider — Loja.
