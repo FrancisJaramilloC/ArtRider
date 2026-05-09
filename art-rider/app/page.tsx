@@ -184,12 +184,13 @@ export default async function HomePage() {
       }))
     : MOCK_EQUIPMENT;
 
-  // Categories stay static (they're navigation links, not data)
+  // Categories — static navigation links (Publicidad in the middle)
   const CATEGORIES = [
-    { title: "Sonido",      imageSrc: "/category-sonido.png",      icon: "🔊", href: "/listings?category=audio" },
-    { title: "Iluminación", imageSrc: "/category-iluminacion.png", icon: "💡", href: "/listings?category=lighting" },
-    { title: "Video",       imageSrc: "/category-video.png",       icon: "🎥", href: "/listings?category=video" },
-    { title: "Efectos",     imageSrc: "/category-efectos.png",     icon: "✨", href: "/listings?category=effects" },
+    { title: "Sonido",      imageSrc: "/category-sonido.png",      href: "/listings?category=audio" },
+    { title: "Iluminación", imageSrc: "/category-iluminacion.png", href: "/listings?category=lighting" },
+    { title: "Publicidad",  imageSrc: "/category-publicidad.png",  href: "/listings?category=advertising" },
+    { title: "Video",       imageSrc: "/category-video.png",       href: "/listings?category=video" },
+    { title: "Efectos",     imageSrc: "/category-efectos.png",     href: "/listings?category=effects" },
   ];
 
   return (
@@ -197,15 +198,15 @@ export default async function HomePage() {
       <Navbar initialUser={data?.user || null} />      <main>
         <HeroSection />
 
-        {/* ── Explora por categoría ── */}
+        {/* ── Explora por categoría (Carousel) ── */}
         <section id="categorias" className="bg-white py-12 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <SectionHeader
               title="Explora por categoría"
               subtitle="Encuentra exactamente lo que necesitas para tu evento"
             />
-            {/* Keeping grid for categories as they are standard cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {/* Horizontal scroll on mobile, full row on desktop */}
+            <div className="-mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pb-4 overflow-x-auto flex gap-4 md:gap-5 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {CATEGORIES.map((cat) => (
                 <CategoryCard key={cat.title} {...cat} />
               ))}

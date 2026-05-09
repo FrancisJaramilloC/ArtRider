@@ -36,7 +36,7 @@ export default function DashboardLayoutClient({
   const isActive = (href: string) => pathname === href;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#f7f7f8]">
 
       {/* ── Navbar ── */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
@@ -77,7 +77,7 @@ export default function DashboardLayoutClient({
         <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 fixed h-[calc(100vh-64px)]">
 
           {/* User strip */}
-          <div className="px-5 pt-6 pb-4 border-b border-gray-100">
+          <div className="px-6 pt-7 pb-5 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shrink-0 text-white font-bold text-sm">
                 U
@@ -102,9 +102,9 @@ export default function DashboardLayoutClient({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                    className={`flex items-center gap-3 px-3 py-3.5 rounded-xl text-sm font-medium transition-all duration-150 ${
                       active
-                        ? "bg-purple-50 text-[#6a437a]"
+                        ? "bg-violet-50 text-[#6a437a]"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                   >
@@ -145,7 +145,7 @@ export default function DashboardLayoutClient({
 
             {/* CTA — solo para usuarios que aún no son proveedores */}
             {!provider && (
-              <div className="mt-3 mx-1 bg-gradient-to-br from-purple-50 to-white border border-purple-100 rounded-xl px-3 py-3">
+              <div className="mt-4 mx-1 bg-gradient-to-br from-violet-50 to-white border border-violet-100 rounded-2xl px-4 py-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Sparkles size={13} className="text-[#6a437a] shrink-0" />
                   <p className="text-xs font-bold text-gray-800">¿Tienes equipos?</p>
@@ -166,8 +166,8 @@ export default function DashboardLayoutClient({
         </aside>
 
         {/* ── Content ── */}
-        <main className="flex-1 min-w-0 md:ml-64 p-6 lg:p-10">
-          <div className="max-w-[1240px] mx-auto w-full">
+        <main className="flex-1 min-w-0 md:ml-64 px-6 py-8 lg:px-10 lg:py-10">
+          <div className="max-w-[1200px] mx-auto w-full">
             {children}
           </div>
         </main>
