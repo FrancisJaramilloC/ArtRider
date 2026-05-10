@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * CategoryCard.tsx — Server Component (no interaction, pure display)
- * Full-bleed image card with dark overlay, bottom-left icon + title + "Explorar" text.
- * Matches the screenshot: Sonido, Iluminación, Video, Efectos cards.
+ * CategoryCard.tsx — Clean, premium category card without emoji icons.
+ * Full-bleed image with dark gradient overlay and bottom-left title + "Explorar" label.
+ * Smooth hover animation with scale and shadow.
  */
 
 import Image from "next/image";
@@ -14,8 +14,6 @@ export interface CategoryCardProps {
   title: string;
   /** Path to the background image (relative to /public) */
   imageSrc: string;
-  /** Small emoji or icon shown above the title */
-  icon: string;
   /** URL the card links to */
   href: string;
 }
@@ -23,13 +21,17 @@ export interface CategoryCardProps {
 export default function CategoryCard({
   title,
   imageSrc,
-  icon,
   href,
 }: CategoryCardProps) {
   return (
     <Link
       href={href}
-      className="relative block rounded-2xl overflow-hidden cursor-pointer no-underline aspect-[3/4] border border-slate-100 group transition-all duration-200 hover:-translate-y-1 hover:shadow-sm"
+      className="
+        relative block rounded-2xl overflow-hidden cursor-pointer no-underline
+        h-[170px] sm:h-[220px] md:h-[270px] min-w-[180px] sm:min-w-[210px] lg:min-w-0 lg:flex-1 shrink-0
+        group transition-all duration-300 ease-out
+        hover:-translate-y-1.5 hover:shadow-[0_16px_40px_rgba(135,91,154,0.2)]
+      "
       aria-label={`Explorar categoría: ${title}`}
     >
       {/* Background image */}
@@ -37,74 +39,25 @@ export default function CategoryCard({
         src={imageSrc}
         alt={title}
         fill
-        style={{ objectFit: "cover" }}
-        sizes="(max-width: 768px) 50vw, 25vw"
+        className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+        sizes="(max-width: 1024px) 280px, 20vw"
       />
 
-      {/* Dark gradient overlay — stronger at bottom */}
+      {/* Dark gradient overlay */}
       <div
         aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.30) 50%, rgba(0,0,0,0.78) 100%)",
-        }}
+        className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/25 to-black/75 transition-opacity duration-300 group-hover:to-black/65"
       />
 
       {/* Bottom-left content */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "16px",
-          left: "16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "4px",
-        }}
-      >
-        {/* Icon chip */}
-        <div
-          style={{
-            width: "30px",
-            height: "30px",
-            borderRadius: "6px",
-            backgroundColor: "rgba(255,255,255,0.18)",
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "15px",
-            marginBottom: "6px",
-            border: "1px solid rgba(255,255,255,0.25)",
-          }}
-          aria-hidden="true"
-        >
-          {icon}
-        </div>
-
+      <div className="absolute bottom-3 sm:bottom-5 left-3 sm:left-5 flex flex-col gap-0.5 sm:gap-1">
         {/* Category title */}
-        <span
-          style={{
-            color: "#ffffff",
-            fontWeight: 700,
-            fontSize: "1.15rem",
-            lineHeight: 1.2,
-            textShadow: "0 1px 4px rgba(0,0,0,0.5)",
-          }}
-        >
+        <span className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
           {title}
         </span>
 
         {/* Explorar label */}
-        <span
-          style={{
-            color: "rgba(255,255,255,0.75)",
-            fontSize: "0.75rem",
-            fontWeight: 500,
-            letterSpacing: "0.01em",
-          }}
-        >
+        <span className="text-white/70 text-sm font-medium tracking-wide group-hover:text-white/90 transition-colors duration-300">
           Explorar
         </span>
       </div>

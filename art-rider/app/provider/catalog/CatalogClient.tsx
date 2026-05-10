@@ -26,11 +26,11 @@ const CATEGORY_MAP: Record<string, string> = Object.fromEntries(
 
 const cls = {
   input:
-    "block w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#6a437a] focus:border-transparent transition-all",
+    "block w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all",
   label:
     "block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5",
   btnPrimary:
-    "inline-flex items-center justify-center gap-2 bg-[#6a437a] hover:bg-[#5c3569] text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
+    "inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed",
   btnSecondary:
     "inline-flex items-center justify-center border border-gray-200 text-sm font-semibold text-gray-700 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors",
 } as const;
@@ -97,9 +97,9 @@ function PhotoUpload({ name, previewUrl, onFile }: {
   const ref = useRef<HTMLInputElement>(null);
   return (
     <div>
-      <label className={cls.label}>Foto <span className="text-[#6a437a]">*</span></label>
+      <label className={cls.label}>Foto <span className="text-red-500">*</span></label>
       <div onClick={() => ref.current?.click()}
-        className="relative h-44 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer hover:border-[#6a437a] hover:bg-purple-50/40 transition-all overflow-hidden group">
+        className="relative h-44 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center cursor-pointer hover:border-gray-900 hover:bg-gray-50 transition-all overflow-hidden group">
         {previewUrl ? (
           <>
             <Image src={previewUrl} alt="Preview" fill className="object-cover" />
@@ -108,7 +108,7 @@ function PhotoUpload({ name, previewUrl, onFile }: {
             </span>
           </>
         ) : (
-          <div className="text-center text-gray-400 group-hover:text-[#6a437a] transition-colors">
+          <div className="text-center text-gray-400 group-hover:text-gray-700 transition-colors">
             <svg className="mx-auto mb-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2"/>
               <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -127,8 +127,8 @@ function PhotoUpload({ name, previewUrl, onFile }: {
 function PublishToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button type="button" role="switch" aria-checked={value} onClick={() => onChange(!value)}
-      className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${value ? "border-[#6a437a] bg-purple-50/50" : "border-gray-200 bg-white"}`}>
-      <div className={`relative w-9 h-5 rounded-full shrink-0 transition-colors ${value ? "bg-[#6a437a]" : "bg-gray-200"}`}>
+      className={`w-full flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${value ? "border-gray-900 bg-gray-50" : "border-gray-200 bg-white"}`}>
+      <div className={`relative w-9 h-5 rounded-full shrink-0 transition-colors ${value ? "bg-gray-900" : "bg-gray-200"}`}>
         <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${value ? "translate-x-4" : ""}`} />
       </div>
       <input type="hidden" name="publishNow" value={String(value)} />
@@ -191,7 +191,7 @@ function CreateEquipmentModal({ onClose }: { onClose: () => void }) {
         <PhotoUpload name="coverImage" previewUrl={preview} onFile={handleFile} />
 
         <div>
-          <label htmlFor="eq-title" className={cls.label}>Nombre <span className="text-[#6a437a]">*</span></label>
+          <label htmlFor="eq-title" className={cls.label}>Nombre <span className="text-red-500">*</span></label>
           <input id="eq-title" name="title" type="text" required minLength={3} maxLength={100}
             placeholder="Ej: Parlante profesional 1000W" className={cls.input} />
         </div>
@@ -208,11 +208,11 @@ function CreateEquipmentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label className={cls.label}>Categoria <span className="text-[#6a437a]">*</span></label>
+          <label className={cls.label}>Categoria <span className="text-red-500">*</span></label>
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((cat) => (
               <label key={cat.value}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer text-sm font-medium text-gray-700 hover:border-[#6a437a] transition-all has-[:checked]:border-[#6a437a] has-[:checked]:bg-[#6a437a] has-[:checked]:text-white">
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer text-sm font-medium text-gray-700 hover:border-gray-900 transition-all has-[:checked]:border-gray-900 has-[:checked]:bg-gray-900 has-[:checked]:text-white">
                 <input type="radio" name="category" value={cat.value} required className="sr-only" />
                 {cat.label}
               </label>
@@ -221,7 +221,7 @@ function CreateEquipmentModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label htmlFor="eq-price" className={cls.label}>Precio / dia (USD) <span className="text-[#6a437a]">*</span></label>
+          <label htmlFor="eq-price" className={cls.label}>Precio / dia (USD) <span className="text-red-500">*</span></label>
           <div className="relative">
             <span className="absolute inset-y-0 left-4 flex items-center text-gray-400 text-sm select-none">$</span>
             <input id="eq-price" name="dailyPrice" type="number" required min="1" step="0.01" placeholder="0.00"
@@ -291,7 +291,7 @@ function EquipmentSelectorPopup({
             </svg>
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por nombre..."
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6a437a] focus:border-transparent transition-all" />
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 pl-8 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all" />
           </div>
         </div>
 
@@ -304,7 +304,7 @@ function EquipmentSelectorPopup({
               const isSelected = selected.has(listing.id);
               return (
                 <button key={listing.id} type="button" onClick={() => onToggle(listing.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${isSelected ? "bg-purple-50 border border-[#6a437a]" : "hover:bg-gray-50 border border-transparent"}`}>
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left ${isSelected ? "bg-gray-100 border border-gray-900" : "hover:bg-gray-50 border border-transparent"}`}>
                   {/* Thumbnail */}
                   <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 shrink-0">
                     {listing.cover_image_url ? (
@@ -327,7 +327,7 @@ function EquipmentSelectorPopup({
                   </div>
 
                   {/* Checkbox */}
-                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? "border-[#6a437a] bg-[#6a437a]" : "border-gray-300"}`}>
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? "border-gray-900 bg-gray-900" : "border-gray-300"}`}>
                     {isSelected && (
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12"/>
@@ -421,7 +421,7 @@ function CreatePackageModal({
 
           {/* Title */}
           <div>
-            <label htmlFor="pkg-title" className={cls.label}>Titulo del paquete <span className="text-[#6a437a]">*</span></label>
+            <label htmlFor="pkg-title" className={cls.label}>Titulo del paquete <span className="text-red-500">*</span></label>
             <input id="pkg-title" name="title" type="text" required minLength={3} maxLength={100}
               placeholder="Ej: Paquete Fiesta Premium" className={cls.input} />
           </div>
@@ -438,7 +438,7 @@ function CreatePackageModal({
 
           {/* Price */}
           <div>
-            <label htmlFor="pkg-price" className={cls.label}>Precio por dia (USD) <span className="text-[#6a437a]">*</span></label>
+            <label htmlFor="pkg-price" className={cls.label}>Precio por dia (USD) <span className="text-red-500">*</span></label>
             <div className="relative">
               <span className="absolute inset-y-0 left-4 flex items-center text-gray-400 text-sm select-none">$</span>
               <input id="pkg-price" name="dailyPrice" type="number" required min="1" step="0.01" placeholder="0.00"
@@ -456,7 +456,7 @@ function CreatePackageModal({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className={`${cls.label} mb-0`}>
-                Equipos incluidos <span className="text-[#6a437a]">*</span>
+                Equipos incluidos <span className="text-red-500">*</span>
               </label>
               <span className="text-xs text-gray-400">Minimo 2</span>
             </div>
@@ -507,7 +507,7 @@ function CreatePackageModal({
               </p>
             ) : (
               <button type="button" onClick={() => setShowSelector(true)}
-                className="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 hover:border-[#6a437a] hover:text-[#6a437a] text-gray-500 text-sm font-semibold py-2.5 rounded-xl transition-all">
+                className="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 hover:border-gray-900 hover:text-gray-900 text-gray-500 text-sm font-semibold py-2.5 rounded-xl transition-all">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
@@ -532,11 +532,11 @@ function StatCard({ label, value, hint, accent = false }: {
   accent?: boolean;
 }) {
   return (
-    <div className={`relative rounded-2xl px-5 py-5 overflow-hidden border transition-shadow hover:shadow-md ${accent ? "bg-[#6a437a] border-transparent" : "bg-white border-gray-100"}`}>
+    <div className={`relative rounded-2xl px-5 py-5 overflow-hidden border transition-shadow hover:shadow-md ${accent ? "bg-gray-900 border-transparent" : "bg-white border-gray-100"}`}>
       {accent && <div aria-hidden className="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-10 bg-white" />}
-      <p className={`text-[11px] font-bold uppercase tracking-widest mb-1 ${accent ? "text-purple-200" : "text-gray-400"}`}>{label}</p>
+      <p className={`text-[11px] font-bold uppercase tracking-widest mb-1 ${accent ? "text-gray-300" : "text-gray-400"}`}>{label}</p>
       <p className={`text-4xl font-black leading-none ${accent ? "text-white" : "text-gray-900"}`}>{value}</p>
-      {hint && <p className={`text-xs mt-2 ${accent ? "text-purple-200" : "text-gray-400"}`}>{hint}</p>}
+      {hint && <p className={`text-xs mt-2 ${accent ? "text-gray-300" : "text-gray-400"}`}>{hint}</p>}
     </div>
   );
 }
@@ -544,7 +544,7 @@ function StatCard({ label, value, hint, accent = false }: {
 function CategoryBadge({ category }: { category: string | null }) {
   if (!category) return null;
   return (
-    <span className="text-[10px] font-bold uppercase tracking-widest text-[#6a437a] bg-purple-50 border border-purple-100 px-2.5 py-0.5 rounded-full">
+    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full">
       {CATEGORY_MAP[category] ?? category}
     </span>
   );
@@ -591,7 +591,7 @@ function EquipmentCard({ listing, onToggle, onDelete }: {
       </div>
       <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
         <Link href={`/provider/catalog/${listing.id}/edit`}
-          className="text-xs font-semibold text-[#6a437a] hover:text-[#5c3569] underline underline-offset-2 transition-colors">
+          className="text-xs font-semibold text-gray-700 hover:text-gray-900 underline underline-offset-2 transition-colors">
           Editar
         </Link>
         <div className="flex items-center gap-3">
@@ -612,15 +612,15 @@ function EquipmentCard({ listing, onToggle, onDelete }: {
 function AddNewCard({ label, hint, onClick }: { label: string; hint: string; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className="flex flex-col items-center justify-center gap-3 min-h-[280px] rounded-2xl border-2 border-dashed border-gray-200 hover:border-[#6a437a] hover:bg-purple-50/30 transition-all group">
-      <div className="w-12 h-12 rounded-full border-2 border-gray-200 group-hover:border-[#6a437a] group-hover:bg-[#6a437a] flex items-center justify-center transition-all">
+      className="flex flex-col items-center justify-center gap-3 min-h-[280px] rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-900 hover:bg-gray-50 transition-all group">
+      <div className="w-12 h-12 rounded-full border-2 border-gray-200 group-hover:border-gray-900 group-hover:bg-gray-900 flex items-center justify-center transition-all">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
           className="text-gray-400 group-hover:text-white transition-colors">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
       </div>
       <div className="text-center px-4">
-        <p className="text-sm font-semibold text-gray-600 group-hover:text-[#6a437a] transition-colors">{label}</p>
+        <p className="text-sm font-semibold text-gray-600 group-hover:text-gray-900 transition-colors">{label}</p>
         <p className="text-xs text-gray-400 mt-0.5">{hint}</p>
       </div>
     </button>
@@ -632,9 +632,9 @@ function AddNewCard({ label, hint, onClick }: { label: string; hint: string; onC
 function PackageCard({ pkg, itemCount }: { pkg: Package; itemCount: number }) {
   return (
     <article className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-      <div className="relative h-48 bg-gradient-to-br from-purple-50 to-white shrink-0 flex items-center justify-center">
+      <div className="relative h-48 bg-gray-50 shrink-0 flex items-center justify-center">
         <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6a437a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="7" width="20" height="14" rx="2"/>
             <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
           </svg>
@@ -644,7 +644,7 @@ function PackageCard({ pkg, itemCount }: { pkg: Package; itemCount: number }) {
         </span>
       </div>
       <div className="p-4 flex flex-col flex-1 gap-1">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-[#6a437a] bg-purple-50 border border-purple-100 px-2.5 py-0.5 rounded-full w-fit">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full w-fit">
           {itemCount} equipo{itemCount !== 1 ? "s" : ""}
         </span>
         <h3 className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug mt-1">{pkg.title}</h3>
@@ -737,12 +737,10 @@ export default function CatalogClient({
       <div className="space-y-8">
 
         {/* Hero header */}
-        <div className="relative rounded-2xl bg-gradient-to-br from-[#f8f4fc] via-white to-white border border-purple-100 px-7 py-7 overflow-hidden">
-          <div aria-hidden className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-[#6a437a]/5 blur-2xl pointer-events-none" />
-          <div aria-hidden className="absolute bottom-0 left-20 w-24 h-24 rounded-full bg-[#6a437a]/5 blur-xl pointer-events-none" />
+        <div className="relative rounded-2xl bg-white border border-gray-200 px-7 py-7 overflow-hidden">
           <div className="relative flex items-center justify-between gap-4">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-[#6a437a] mb-1">Panel de proveedor</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Panel de proveedor</p>
               <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mi catalogo</h1>
               <p className="text-sm text-gray-500 mt-1">
                 {listings.length} equipo{listings.length !== 1 ? "s" : ""} registrado{listings.length !== 1 ? "s" : ""}
@@ -776,7 +774,7 @@ export default function CatalogClient({
               <button key={tab} onClick={() => setActiveTab(tab)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${activeTab === tab ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"}`}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === tab ? "bg-[#6a437a] text-white" : "bg-gray-200 text-gray-500"}`}>
+                <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === tab ? "bg-gray-900 text-white" : "bg-gray-200 text-gray-500"}`}>
                   {tab === "equipos" ? listings.length : packages.length}
                 </span>
               </button>
@@ -791,10 +789,10 @@ export default function CatalogClient({
                 </svg>
                 <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
                   placeholder="Buscar equipos..."
-                  className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6a437a] focus:border-transparent transition-all" />
+                  className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all" />
               </div>
               <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}
-                className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#6a437a] focus:border-transparent transition-all">
+                className="rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all">
                 <option value="all">Todas las categorias</option>
                 {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
@@ -809,7 +807,7 @@ export default function CatalogClient({
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</p>
                 <button onClick={clearFilters}
-                  className="text-xs font-semibold text-[#6a437a] hover:text-[#5c3569] underline underline-offset-2 transition-colors">
+                  className="text-xs font-semibold text-gray-700 hover:text-gray-900 underline underline-offset-2 transition-colors">
                   Limpiar filtros
                 </button>
               </div>
@@ -826,7 +824,7 @@ export default function CatalogClient({
               <div className="flex flex-col items-center py-20 gap-2 text-center">
                 <p className="text-base font-semibold text-gray-700">Sin resultados</p>
                 <p className="text-sm text-gray-400">Intenta con otros terminos o cambia la categoria.</p>
-                <button onClick={clearFilters} className="mt-2 text-sm font-semibold text-[#6a437a] hover:underline">
+                <button onClick={clearFilters} className="mt-2 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:underline">
                   Ver todos los equipos
                 </button>
               </div>

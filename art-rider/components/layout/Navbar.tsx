@@ -59,7 +59,15 @@ function MenuDivider() {
 
 // ── Main Navbar ─────────────────────────────────────────────────────────────
 
-export default function Navbar({ initialUser = null }: { initialUser?: User | null }) {
+export default function Navbar({
+  initialUser = null,
+  hideNavLinks = false,
+  logoSubtitle,
+}: {
+  initialUser?: User | null;
+  hideNavLinks?: boolean;
+  logoSubtitle?: string;
+}) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [user, setUser] = useState<User | null>(initialUser);
   const [isProvider, setIsProvider] = useState(false);
@@ -133,47 +141,64 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
     window.location.href = "/";
   };
 
-  const userInitial = user?.email?.charAt(0).toUpperCase() || "U";
+  const userInitial = (
+    user?.user_metadata?.display_name?.charAt(0) ||
+    user?.user_metadata?.full_name?.charAt(0) ||
+    user?.email?.charAt(0) ||
+    "U"
+  ).toUpperCase();
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <nav className="sticky top-0 z-50 bg-white border-b border-gray-100">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center">
 
         {/* ── Left: Logo ── */}
-        <div className="flex-1 flex justify-start items-center">
-          <ArtRiderLogo />
+        <div className="flex items-center">
+          <ArtRiderLogo subtitle={logoSubtitle} />
         </div>
 
-        {/* ── Center: Main Nav ── */}
-        <div className="hidden md:flex flex-1 justify-center items-center gap-8">
-          {[
-            { label: "Categorías", href: "#categorias" },
-            { label: "Equipos", href: "#equipos" },
-            { label: "Paquetes", href: "#paquetes" }
-          ].map(({ label, href }) => (
-            <Link
-              key={label}
-              href={href}
-              className="text-[0.95rem] font-medium text-gray-600 hover:text-[#875B9A] transition-colors"
-            >
-              {label}
-            </Link>
-          ))}
-          {user && (
-            <Link
-              href="/bookings"
-              className="text-[0.95rem] font-medium text-gray-600 hover:text-[#875B9A] transition-colors"
-            >
-              Mis Reservas
-            </Link>
-          )}
-        </div>
+        {/* ── Center: Main Nav — absolutely centered regardless of sidebar widths ── */}
+        {!hideNavLinks && (
+          <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 lg:gap-10">
+            {[
+              { label: "Categorías", href: "#categorias" },
+              { label: "Equipos", href: "#equipos" },
+              { label: "Paquetes", href: "#paquetes" }
+            ].map(({ label, href }) => (
+              <Link
+                key={label}
+                href={href}
+                className="text-base font-medium text-gray-600 hover:text-[#875B9A] transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+            {user && (
+              <Link
+                href="/bookings"
+                className="text-base font-medium text-gray-600 hover:text-[#875B9A] transition-colors"
+              >
+                Reservas
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* ── Right: User Actions ── */}
-        <div className="flex-1 flex justify-end items-center gap-4">
+        <div className="ml-auto flex items-center gap-4">
 
           {/* ── External CTA Button (left of menu) ── */}
-          {isProvider ? (
+          {hideNavLinks ? (
+            <Link
+              href="/"
+              className="hidden lg:inline-flex items-center justify-center h-[42px] px-4
+                text-[0.88rem] font-semibold text-gray-800
+                bg-transparent hover:bg-gray-100
+                rounded-full transition-colors whitespace-nowrap"
+            >
+              Panel Principal
+            </Link>
+          ) : isProvider ? (
             /* STATE 3: Provider → Panel de proveedor */
             <Link
               href="/provider"
@@ -325,11 +350,11 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
                     />
                     <MenuItem
                       href="/bookings"
-                      label="Mis Reservas"
+                      label="Reservas"
                       onClick={closeMenu}
                     />
                     <MenuItem
-                      href="/favorites"
+                      href="/favoritos"
                       label="Favoritos"
                       onClick={closeMenu}
                     />
@@ -367,11 +392,11 @@ export default function Navbar({ initialUser = null }: { initialUser?: User | nu
                     />
                     <MenuItem
                       href="/bookings"
-                      label="Mis Reservas"
+                      label="Reservas"
                       onClick={closeMenu}
                     />
                     <MenuItem
-                      href="/favorites"
+                      href="/favoritos"
                       label="Favoritos"
                       onClick={closeMenu}
                     />

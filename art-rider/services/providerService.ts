@@ -110,3 +110,38 @@ export async function becomeProvider(prevState: any, formData: FormData) {
     return { error: "Ocurrió un error inesperado. Por favor intenta más tarde." };
   }
 }
+
+export async function updateProviderBrandName(
+  newBrandName: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: "No autenticado." };
+    }
+
+    const trimmed = newBrandName.trim();
+    if (!trimmed || trimmed.length < 2 || trimmed.length > 80) {
+      return { success: false, error: "El nombre debe tener entre 2 y 80 caracteres." };
+    }
+
+    const { error } = await supabase
+      .from("providers")
+      .update({ brand_name: trimmed })
+      .eq("user_id", user.id);
+
+    if (error) {
+      return { success: false, error: "No se pudo actualizar el nombre." };
+    }
+
+    revalidatePath("/provider");
+    return { success: true };
+  } catch {
+    return { success: false, error: "Error inesperado." };
+  }
+}

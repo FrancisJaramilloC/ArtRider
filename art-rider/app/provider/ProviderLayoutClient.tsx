@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Store, CalendarDays, Package,
-  DollarSign, ChevronLeft, HelpCircle, Settings,
+  DollarSign, HelpCircle, Settings,
 } from "lucide-react";
-import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
+import Navbar from "@/components/layout/Navbar";
+import type { User } from "@supabase/supabase-js";
 
 // ── Nav structure ──────────────────────────────────────────────────────────────
 
@@ -29,13 +30,21 @@ const NAV_SECTIONS = [
 ];
 
 const BOTTOM_LINKS = [
-  { name: "Configuración", href: "/profile",  icon: Settings    },
+  { name: "Configuración", href: "#",          icon: Settings    },
   { name: "Ayuda",         href: "/help",     icon: HelpCircle  },
 ];
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
-export default function ProviderLayoutClient({ children }: { children: React.ReactNode }) {
+export default function ProviderLayoutClient({
+  children,
+  provider,
+  initialUser,
+}: {
+  children: React.ReactNode;
+  provider: { brand_name: string };
+  initialUser: User | null;
+}) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
@@ -45,42 +54,23 @@ export default function ProviderLayoutClient({ children }: { children: React.Rea
     <div className="min-h-screen flex flex-col bg-gray-50">
 
       {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
-        <div className="w-full max-w-7xl h-16 px-6 flex items-center justify-between">
-          <ArtRiderLogo subtitle="Proveedor" />
-          <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="hidden sm:flex items-center gap-2 text-sm font-semibold text-[#875B9A] hover:text-white border border-[#875B9A] hover:bg-[#875B9A] px-4 py-2 rounded-full transition-colors"
-            >
-              <ChevronLeft size={16} />
-              Navegar como Cliente
-            </Link>
-            <Link
-              href="/profile"
-              className="w-9 h-9 ml-2 rounded-full bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shadow-md shrink-0 text-white font-bold text-sm hover:shadow-lg transition-shadow"
-            >
-              P
-            </Link>
-          </div>
-        </div>
-      </header>
+      <Navbar initialUser={initialUser} hideNavLinks logoSubtitle={provider.brand_name} />
 
       {/* ── Body ── */}
       <div className="flex-1 flex w-full">
 
         {/* ── Sidebar ── */}
-        <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 fixed h-[calc(100vh-64px)]">
+        <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 fixed top-24 h-[calc(100vh-6rem)]">
 
           {/* Brand strip */}
           <div className="px-5 pt-6 pb-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-gray-900 flex items-center justify-center shrink-0">
                 <Store size={16} className="text-white" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-gray-900 truncate">Panel de Proveedor</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Gestiona tu negocio</p>
+                <p className="text-xs font-bold text-gray-900 truncate">{provider.brand_name}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Panel de Proveedor</p>
               </div>
             </div>
           </div>
@@ -102,20 +92,20 @@ export default function ProviderLayoutClient({ children }: { children: React.Rea
                         href={item.href}
                         className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
                           active
-                            ? "bg-purple-50 text-[#6a437a]"
+                            ? "bg-gray-100 text-gray-900"
                             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                         }`}
                       >
                         <span
                           className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                            active ? "bg-[#6a437a] text-white" : "bg-gray-100 text-gray-500"
+                            active ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500"
                           }`}
                         >
                           <Icon size={15} />
                         </span>
                         <span className={active ? "font-semibold" : ""}>{item.name}</span>
                         {active && (
-                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#6a437a]" />
+                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-gray-900" />
                         )}
                       </Link>
                     );
@@ -142,7 +132,6 @@ export default function ProviderLayoutClient({ children }: { children: React.Rea
                 </Link>
               );
             })}
-
           </div>
 
         </aside>
