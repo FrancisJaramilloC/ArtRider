@@ -150,7 +150,7 @@ export default function Navbar({
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-100">
-      <div className="relative max-w-7xl mx-auto px-8 h-24 flex items-center">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center">
 
         {/* ── Left: Logo ── */}
         <div className="flex items-center">
@@ -159,7 +159,7 @@ export default function Navbar({
 
         {/* ── Center: Main Nav — absolutely centered regardless of sidebar widths ── */}
         {!hideNavLinks && (
-          <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-12">
+          <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 lg:gap-10">
             {[
               { label: "Categorías", href: "#categorias" },
               { label: "Equipos", href: "#equipos" },

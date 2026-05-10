@@ -67,14 +67,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
       aria-label={`Ver equipo: ${title}`}
     >
       {/* ── Image area ── */}
-      <div
-        className="relative flex items-center justify-center"
-        style={{
-          height: "176px",
-          borderRadius: "16px 16px 0 0",
-          overflow: "hidden",
-        }}
-      >
+      <div className="relative aspect-[4/3] w-full overflow-hidden">
         {listing.cover_image_url ? (
           <Image
             src={listing.cover_image_url}
@@ -113,56 +106,27 @@ export default function ListingCard({ listing }: ListingCardProps) {
       </div>
 
       {/* ── Card body ── */}
-      <div style={{ padding: "16px 20px 20px" }}>
+      <div className="p-4">
         {/* Title */}
-        <h2
-          className="text-sm font-semibold leading-snug"
-          style={{
-            color: "#111827",
-            marginBottom: "4px",
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-          }}
-        >
+        <h2 className="text-sm font-semibold leading-snug text-gray-900 mb-1 line-clamp-2">
           {title}
         </h2>
 
         {/* Brand · Model */}
         {subtitle && (
-          <p
-            className="text-xs"
-            style={{ color: "#6b7280", marginBottom: "12px" }}
-          >
-            {subtitle}
-          </p>
+          <p className="text-xs text-gray-500 mb-3">{subtitle}</p>
         )}
 
         {/* Divider */}
-        <div
-          style={{
-            height: "1px",
-            background: "rgba(229, 231, 235, 0.6)",
-            marginBottom: "12px",
-          }}
-        />
+        <div className="h-px bg-gray-100 mb-3" />
 
         {/* Price row */}
         <div className="flex items-end justify-end gap-2">
           <div className="text-right flex-shrink-0">
-            <span
-              className="text-base font-bold"
-              style={{ color: "#875B9A" }}
-            >
+            <span className="text-sm font-bold text-[#875B9A]">
               {formatPrice(listing.daily_price)}
             </span>
-            <span
-              className="text-xs block"
-              style={{ color: "#9ca3af", marginTop: "-2px" }}
-            >
-              / día
-            </span>
+            <span className="text-xs text-gray-400 block -mt-0.5">/ día</span>
           </div>
         </div>
       </div>

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "Marketplace de alquiler de equipos de audio, iluminación y video. Conecta con propietarios verificados y reserva con confianza.",
 };
 
-// ── Category Icon Map ──────────────────────────────────────────────────────────
+// ── Category maps ──────────────────────────────────────────────────────────────
 
 const CATEGORY_ICONS: Record<string, string> = {
   audio: "🔊", lighting: "💡", video: "🎥", effects: "✨", other: "📦",
@@ -24,86 +24,6 @@ const CATEGORY_ICONS: Record<string, string> = {
 const CATEGORY_LABELS: Record<string, string> = {
   audio: "Sonido", lighting: "Iluminación", video: "Video", effects: "Efectos", other: "Otro",
 };
-
-// ── Fallback Mock Data (shown only when no real listings exist) ─────────────────
-
-const MOCK_EQUIPMENT = [
-  {
-    id: "mock-sub-beta-1",
-    title: "Subwoofer Activo Beta 3",
-    categoryLabel: "Sonido",
-    location: "Quito, EC",
-    price: "$50",
-    rating: 4.8,
-    reviewCount: 12,
-    icon: "🔊",
-  },
-  {
-    id: "mock-beta-es215a-2",
-    title: "Parlante Beta 3 ES215A",
-    categoryLabel: "Sonido",
-    location: "Guayaquil, EC",
-    price: "$30",
-    rating: 4.9,
-    reviewCount: 45,
-    icon: "🔉",
-  },
-  {
-    id: "mock-light-3",
-    title: "Cabeza Móvil LED 150W",
-    categoryLabel: "Iluminación",
-    location: "Cuenca, EC",
-    price: "$25",
-    rating: 4.5,
-    reviewCount: 8,
-    badge: "OFERTA",
-    icon: "💡",
-  },
-  {
-    id: "mock-video-4",
-    title: "Sony FX3 + Lentes",
-    categoryLabel: "Video",
-    location: "Quito, EC",
-    price: "$120",
-    rating: 5.0,
-    reviewCount: 102,
-    icon: "🎥",
-  },
-];
-
-const MOCK_PACKAGES = [
-  {
-    id: "mock-intermedio-1",
-    title: "Paquete Audiovisual Intermedio",
-    categoryLabel: "Paquete Completo",
-    location: "Quito, EC",
-    price: "$150",
-    rating: 4.8,
-    reviewCount: 22,
-    badge: "OFERTA",
-    icon: "📦",
-  },
-  {
-    id: "mock-basico-2",
-    title: "Paquete Básico para Fiestas",
-    categoryLabel: "Paquete Completo",
-    location: "Guayaquil, EC",
-    price: "$80",
-    rating: 4.7,
-    reviewCount: 15,
-    icon: "📦",
-  },
-  {
-    id: "mock-pro-3",
-    title: "Setup Completo Conciertos Pro",
-    categoryLabel: "Paquete Completo",
-    location: "Cuenca, EC",
-    price: "$450",
-    rating: 5.0,
-    reviewCount: 3,
-    icon: "📦",
-  },
-];
 
 // ─── Shared section header ─────────────────────────────────────────────────────
 
@@ -121,9 +41,9 @@ function SectionHeader({
   ctaHref?: string;
 }) {
   return (
-    <div className={`flex ${centered ? "flex-col items-center text-center" : "flex-row flex-wrap items-center justify-between"} mb-8 gap-4`}>
+    <div className={`flex ${centered ? "flex-col items-center text-center" : "flex-row flex-wrap items-center justify-between"} mb-5 sm:mb-8 gap-3 sm:gap-4`}>
       <div>
-        <h2 className="text-2xl font-semibold text-gray-900 tracking-tight">
+        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight">
           {title}
         </h2>
         {subtitle && (
@@ -145,46 +65,75 @@ function SectionHeader({
   );
 }
 
-// ─── Horizontal Carousel Container Wrapper ──────────────────────────────────────
-
-function HorizontalCarousel({ children }: { children: React.ReactNode }) {
-  return (
-    // Uses native CSS mandatory snap scrolling for smooth mobile/desktop PWA feel, hides scrollbars
-    <div className="-mx-6 px-6 pb-6 overflow-x-auto flex gap-6 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-      {children}
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.auth.getUser();
+  const { data: authData } = await supabase.auth.getUser();
 
-  // Fetch real published listings
-  let realListings: { id: string; title: string | null; category: string | null; daily_price: number; cover_image_url: string | null }[] = [];
+  // ── Provider check (server-side) — determines CTA visibility ──────────────
+  let isProvider = false;
+  if (authData?.user) {
+    const { data: providerRow } = await supabase
+      .from("providers")
+      .select("id")
+      .eq("user_id", authData.user.id)
+      .maybeSingle();
+    isProvider = !!providerRow;
+  }
+
+  // ── Fetch real published listings ──────────────────────────────────────────
+  let realListings: {
+    id: string;
+    title: string | null;
+    category: string | null;
+    daily_price: number;
+    cover_image_url: string | null;
+  }[] = [];
   try {
     realListings = await getListings();
   } catch {
-    // Graceful fallback — use mock data if query fails
+    // silently fail — section hidden if empty
   }
 
-  // Map real listings to HomepageListingCard format
-  const featuredEquipment = realListings.length > 0
-    ? realListings.slice(0, 8).map((l) => ({
-        id: l.id,
-        title: l.title ?? "Equipo sin título",
-        categoryLabel: CATEGORY_LABELS[l.category ?? ""] ?? l.category ?? "Equipo",
-        location: "Ecuador",
-        price: `$${(l.daily_price / 100).toFixed(0)}`,
-        rating: 0,
-        reviewCount: 0,
-        icon: CATEGORY_ICONS[l.category ?? ""] ?? "📦",
-      }))
-    : MOCK_EQUIPMENT;
+  // ── Fetch real published packages (all providers, public view) ─────────────
+  let realPackages: { id: string; title: string; daily_price: number }[] = [];
+  try {
+    const { data } = await supabase
+      .from("packages")
+      .select("id, title, daily_price")
+      .eq("is_published", true)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+    realPackages = (data ?? []) as { id: string; title: string; daily_price: number }[];
+  } catch {
+    // silently fail — section hidden if empty
+  }
 
-  // Categories — static navigation links (Publicidad in the middle)
+  // ── Map to card format (cap at 8 items per section) ───────────────────────
+  const featuredEquipment = realListings.slice(0, 8).map((l) => ({
+    id: l.id,
+    title: l.title ?? "Equipo sin título",
+    categoryLabel: CATEGORY_LABELS[l.category ?? ""] ?? l.category ?? "Equipo",
+    location: "Ecuador",
+    price: `$${(l.daily_price / 100).toFixed(0)}`,
+    rating: 0,
+    reviewCount: 0,
+    icon: CATEGORY_ICONS[l.category ?? ""] ?? "📦",
+  }));
+
+  const featuredPackages = realPackages.slice(0, 8).map((pkg) => ({
+    id: pkg.id,
+    title: pkg.title,
+    categoryLabel: "Paquete Completo",
+    location: "Ecuador",
+    price: `$${(pkg.daily_price / 100).toFixed(0)}`,
+    rating: 0,
+    reviewCount: 0,
+    icon: "📦",
+  }));
+
+  // ── Static categories ──────────────────────────────────────────────────────
   const CATEGORIES = [
     { title: "Sonido",      imageSrc: "/category-sonido.png",      href: "/listings?category=audio" },
     { title: "Iluminación", imageSrc: "/category-iluminacion.png", href: "/listings?category=lighting" },
@@ -195,17 +144,17 @@ export default async function HomePage() {
 
   return (
     <>
-      <Navbar initialUser={data?.user || null} />      <main>
+      <Navbar initialUser={authData?.user || null} />
+      <main>
         <HeroSection />
 
-        {/* ── Explora por categoría (Carousel) ── */}
-        <section id="categorias" className="bg-white py-12 scroll-mt-20">
+        {/* ── Explora por categoría ── */}
+        <section id="categorias" className="bg-white py-8 sm:py-12 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <SectionHeader
               title="Explora por categoría"
               subtitle="Encuentra exactamente lo que necesitas para tu evento"
             />
-            {/* Horizontal scroll on mobile, full row on desktop */}
             <div className="-mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pb-4 overflow-x-auto flex gap-4 md:gap-5 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               {CATEGORIES.map((cat) => (
                 <CategoryCard key={cat.title} {...cat} />
@@ -214,43 +163,57 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── Equipos destacados ── */}
-        <section id="equipos" className="bg-white py-12 scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
-            <SectionHeader
-              title="Equipos destacados"
-              ctaLabel={`Mostrar (${realListings.length > 0 ? realListings.length + "+" : "150+"})`}
-              ctaHref="/listings"
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
-              {featuredEquipment.map((item) => (
-                <HomepageListingCard key={item.id} {...item} />
-              ))}
+        {/* ── Equipos destacados — hidden if no real listings exist ── */}
+        {featuredEquipment.length > 0 && (
+          <section id="equipos" className="bg-white py-8 sm:py-12 scroll-mt-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
+              <SectionHeader
+                title="Equipos destacados"
+                ctaLabel={`Mostrar (${realListings.length})`}
+                ctaHref="/listings"
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
+                {featuredEquipment.map((item) => (
+                  <HomepageListingCard key={item.id} {...item} />
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* ── Paquetes destacados ── */}
-        <section id="paquetes" className="bg-white py-12 scroll-mt-20">
+        {/* ── Paquetes destacados — always visible ── */}
+        <section id="paquetes" className="bg-white py-8 sm:py-12 scroll-mt-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
             <SectionHeader
               title="Paquetes destacados elaborados por expertos"
               subtitle="Combos listos para rentar que ahorran dinero y tiempo"
-              ctaLabel="Mostrar (42+)"
+              ctaLabel={realPackages.length > 0 ? `Mostrar (${realPackages.length})` : undefined}
               ctaHref="/listings?type=packages"
             />
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-10">
-              {MOCK_PACKAGES.map((item) => (
-                <HomepageListingCard key={item.id} {...item} />
-              ))}
-            </div>
+            {featuredPackages.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
+                {featuredPackages.map((item) => (
+                  <HomepageListingCard key={item.id} {...item} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 py-12 px-6 text-center">
+                <span className="text-3xl" aria-hidden="true">📦</span>
+                <p className="text-sm font-medium text-gray-500">
+                  Aún no hay paquetes disponibles.
+                </p>
+                <p className="text-xs text-gray-400">
+                  Los proveedores pueden crear paquetes desde su panel de control.
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
         <HowItWorks />
-        <BecomeProviderCTA />
+
+        {/* ── Become a provider CTA — hidden from existing providers ── */}
+        {!isProvider && <BecomeProviderCTA />}
 
       </main>
 

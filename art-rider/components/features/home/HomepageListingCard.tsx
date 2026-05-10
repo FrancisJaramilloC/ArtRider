@@ -31,10 +31,10 @@ export default function HomepageListingCard({
       className="group flex flex-col h-full w-full outline-none focus-visible:ring-2 focus-visible:ring-[#875B9A] rounded-2xl"
     >
       {/* ── Image Area (Aspect Ratio 1:1 strict) ── */}
-      <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-gray-100 mb-3 shrink-0 border border-slate-100">
+      <div className="relative aspect-[3/2] w-full rounded-2xl overflow-hidden bg-gray-100 mb-2.5 shrink-0 border border-slate-100">
         
         {/* Placeholder emoji/icon for mock */}
-        <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-50 bg-gray-200 transition-transform duration-500 group-hover:scale-105">
+        <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-50 bg-gray-200 transition-transform duration-500 group-hover:scale-105">
           {icon}
         </div>
 
@@ -69,7 +69,7 @@ export default function HomepageListingCard({
             {categoryLabel}
           </span>
           {/* Subtle star rating on the right */}
-          <div className="flex items-center gap-1 text-[0.85rem] text-gray-800">
+          <div className="flex items-center gap-1 text-xs text-gray-800">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-gray-900 translate-y-[-1px]">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
             </svg>
@@ -78,7 +78,7 @@ export default function HomepageListingCard({
         </div>
 
         {/* Title */}
-        <h3 className="text-[1rem] font-semibold text-gray-900 truncate tracking-tight leading-snug">
+        <h3 className="text-sm font-semibold text-gray-900 truncate tracking-tight leading-snug">
           {title}
         </h3>
 
@@ -88,15 +88,15 @@ export default function HomepageListingCard({
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
             <circle cx="12" cy="10" r="3"></circle>
           </svg>
-          <span className="text-[0.88rem] truncate">
+          <span className="text-xs truncate">
             {location}
           </span>
         </div>
 
         {/* Price Row (Pushed to bottom) */}
         <div className="mt-auto pt-1.5 flex items-baseline gap-1">
-          <span className="text-[0.95rem] font-semibold text-gray-900">{price}</span>
-          <span className="text-[0.88rem] text-gray-500">por día</span>
+          <span className="text-sm font-bold text-gray-900">{price}</span>
+          <span className="text-xs text-gray-500">por día</span>
         </div>
 
       </div>

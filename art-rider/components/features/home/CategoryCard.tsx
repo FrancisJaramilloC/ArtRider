@@ -28,7 +28,7 @@ export default function CategoryCard({
       href={href}
       className="
         relative block rounded-2xl overflow-hidden cursor-pointer no-underline
-        h-[340px] md:h-[400px] min-w-[260px] lg:min-w-0 lg:flex-1 shrink-0
+        h-[170px] sm:h-[220px] md:h-[270px] min-w-[180px] sm:min-w-[210px] lg:min-w-0 lg:flex-1 shrink-0
         group transition-all duration-300 ease-out
         hover:-translate-y-1.5 hover:shadow-[0_16px_40px_rgba(135,91,154,0.2)]
       "
@@ -50,9 +50,9 @@ export default function CategoryCard({
       />
 
       {/* Bottom-left content */}
-      <div className="absolute bottom-5 left-5 flex flex-col gap-1">
+      <div className="absolute bottom-3 sm:bottom-5 left-3 sm:left-5 flex flex-col gap-0.5 sm:gap-1">
         {/* Category title */}
-        <span className="text-white font-bold text-[1.3rem] leading-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
+        <span className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
           {title}
         </span>
 
