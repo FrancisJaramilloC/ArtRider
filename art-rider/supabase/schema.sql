@@ -234,7 +234,10 @@ ALTER TABLE digital_contracts ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE conversations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  booking_id UUID REFERENCES bookings(id),
+  booking_id UUID REFERENCES bookings(id), -- Optional now
+  client_id UUID REFERENCES profiles(id),
+  provider_id UUID REFERENCES providers(id),
+  listing_id UUID REFERENCES listings(id), -- Optional context
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
