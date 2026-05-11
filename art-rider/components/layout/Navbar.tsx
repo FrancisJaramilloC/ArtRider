@@ -177,7 +177,6 @@ export default function Navbar({
         {!hideNavLinks && (
           <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 lg:gap-10">
             {[
-              { label: "Cerca de ti", href: "/map" },
               { label: "Categorías", href: "#categorias" },
               { label: "Equipos", href: "#equipos" },
               { label: "Paquetes", href: "#paquetes" }

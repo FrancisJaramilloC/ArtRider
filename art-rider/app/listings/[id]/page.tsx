@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
+import MapWrapper from "@/components/listing-map/MapWrapper";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,21 @@ export default async function ListingDetailPage({
     reviews.length > 0
       ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
       : 0;
+
+  // ── Layer 3 data: Nearby listings for the map ──────────────────────────────
+  let nearbyListings: any[] = [];
+  try {
+    const { data } = await supabase
+      .from("listings")
+      .select(`
+        *,
+        address:addresses(latitude, longitude, city, state)
+      `)
+      .eq("is_published", true)
+      .not("address_id", "is", null)
+      .limit(20);
+    nearbyListings = data ?? [];
+  } catch { /* ignore error */ }
 
   // ── Display values ─────────────────────────────────────────────────────────
   const priceDisplay = `$${(listing.daily_price / 100).toFixed(2)}`;
@@ -358,6 +374,22 @@ export default async function ListingDetailPage({
                 </div>
               )}
             </div>
+
+            {/* LAYER E — Location Map */}
+            {listing.address_id && (
+              <div className="py-8 border-t border-gray-100 mt-6">
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">Ubicación</h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Explora la ubicación exacta y otros equipos en la zona
+                  </p>
+                </div>
+                <MapWrapper
+                  currentListing={listing as any}
+                  nearbyListings={nearbyListings}
+                />
+              </div>
+            )}
           </div>
 
           {/* ─── RIGHT COLUMN — Booking card (desktop, sticky) ───────── */}
