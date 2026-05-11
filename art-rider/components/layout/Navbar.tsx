@@ -157,32 +157,31 @@ export default function Navbar({
           <ArtRiderLogo subtitle={logoSubtitle} />
         </div>
 
-        {/* ── Center: Main Nav — absolutely centered regardless of sidebar widths ── */}
-        {!hideNavLinks && (
-          <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 lg:gap-10">
-            {[
-              { label: "Categorías", href: "#categorias" },
-              { label: "Equipos", href: "#equipos" },
-              { label: "Paquetes", href: "#paquetes" }
-            ].map(({ label, href }) => (
-              <Link
-                key={label}
-                href={href}
-                className="text-base font-medium text-gray-600 hover:text-[#875B9A] transition-colors"
-              >
-                {label}
-              </Link>
-            ))}
-            {user && (
-              <Link
-                href="/bookings"
-                className="text-base font-medium text-gray-600 hover:text-[#875B9A] transition-colors"
-              >
-                Reservas
-              </Link>
-            )}
-          </div>
-        )}
+        {/* ── Center: Main Nav ── */}
+        <div className="hidden md:flex flex-1 justify-center items-center gap-4 lg:gap-6">
+          {[
+            { label: "Cerca de ti", href: "/map" },
+            { label: "Categorías", href: "#categorias" },
+            { label: "Equipos", href: "#equipos" },
+            { label: "Paquetes", href: "#paquetes" }
+          ].map(({ label, href }) => (
+            <Link
+              key={label}
+              href={href}
+              className="text-[0.9rem] font-medium text-gray-600 hover:text-[#875B9A] transition-colors whitespace-nowrap"
+            >
+              {label}
+            </Link>
+          ))}
+          {user && (
+            <Link
+              href="/bookings"
+              className="text-[0.9rem] font-medium text-gray-600 hover:text-[#875B9A] transition-colors whitespace-nowrap"
+            >
+              Mis Reservas
+            </Link>
+          )}
+        </div>
 
         {/* ── Right: User Actions ── */}
         <div className="ml-auto flex items-center gap-4">
