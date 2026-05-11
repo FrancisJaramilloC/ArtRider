@@ -105,6 +105,12 @@ export async function createListing(prevState: any, formData: FormData) {
     const description = (formData.get("description") as string)?.trim();
     const publishNow = formData.get("publishNow") === "true";
 
+    // Location fields
+    const city = (formData.get("city") as string)?.trim() || null;
+    const state = (formData.get("state") as string)?.trim() || null;
+    const latitudeRaw = formData.get("latitude") as string;
+    const longitudeRaw = formData.get("longitude") as string;
+
     if (!title || title.length < 3 || title.length > 100)
       return { error: "El título debe tener entre 3 y 100 caracteres." };
     if (!category) return { error: "La categoría es obligatoria." };
@@ -121,12 +127,38 @@ export async function createListing(prevState: any, formData: FormData) {
 
     const coverImageUrl = await uploadCoverImage(coverFile, user.id);
 
+    // Create address if coordinates are provided
+    let addressId: string | null = null;
+    const latitude = latitudeRaw ? parseFloat(latitudeRaw) : null;
+    const longitude = longitudeRaw ? parseFloat(longitudeRaw) : null;
+
+    if (latitude != null && longitude != null && !isNaN(latitude) && !isNaN(longitude)) {
+      const { data: newAddress, error: addrError } = await supabase
+        .from("addresses")
+        .insert({
+          user_id: user.id,
+          line1: city || "Sin dirección",
+          city: city || "Sin ciudad",
+          state: state || "Sin estado",
+          postal_code: "000000",
+          country: "EC",
+          latitude,
+          longitude,
+        })
+        .select("id")
+        .single();
+      if (!addrError && newAddress) {
+        addressId = newAddress.id;
+      }
+    }
+
     const { data: newListing, error: insertError } = await supabase
       .from("listings")
       .insert({
         owner_id: user.id, title, brand: brand || null, model: model || null,
         category, cover_image_url: coverImageUrl,
         daily_price: dailyPrice, description: description || null, is_published: publishNow,
+        address_id: addressId,
       })
       .select("id").single();
 
@@ -134,6 +166,7 @@ export async function createListing(prevState: any, formData: FormData) {
 
     revalidatePath("/provider/catalog");
     revalidatePath("/listings");
+    revalidatePath("/map");
     return { success: true, id: newListing.id };
   } catch {
     return { error: "Ocurrió un error inesperado." };
@@ -153,6 +186,12 @@ export async function updateListing(id: string, prevState: any, formData: FormDa
     const dailyPriceRaw = formData.get("dailyPrice") as string;
     const description = (formData.get("description") as string)?.trim();
 
+    // Location fields
+    const city = (formData.get("city") as string)?.trim() || null;
+    const state = (formData.get("state") as string)?.trim() || null;
+    const latitudeRaw = formData.get("latitude") as string;
+    const longitudeRaw = formData.get("longitude") as string;
+
     if (!title || title.length < 3) return { error: "El título debe tener al menos 3 caracteres." };
     if (!category) return { error: "La categoría es obligatoria." };
 
@@ -164,6 +203,30 @@ export async function updateListing(id: string, prevState: any, formData: FormDa
       daily_price: dailyPrice, description: description || null,
       updated_at: new Date().toISOString(),
     };
+
+    // Handle location update
+    const latitude = latitudeRaw ? parseFloat(latitudeRaw) : null;
+    const longitude = longitudeRaw ? parseFloat(longitudeRaw) : null;
+
+    if (latitude != null && longitude != null && !isNaN(latitude) && !isNaN(longitude)) {
+      const { data: newAddress, error: addrError } = await supabase
+        .from("addresses")
+        .insert({
+          user_id: user.id,
+          line1: city || "Sin dirección",
+          city: city || "Sin ciudad",
+          state: state || "Sin estado",
+          postal_code: "000000",
+          country: "EC",
+          latitude,
+          longitude,
+        })
+        .select("id")
+        .single();
+      if (!addrError && newAddress) {
+        payload.address_id = newAddress.id;
+      }
+    }
 
     const coverFile = formData.get("coverImage") as File | null;
     if (coverFile && coverFile.size > 0) {
@@ -178,6 +241,7 @@ export async function updateListing(id: string, prevState: any, formData: FormDa
 
     revalidatePath("/provider/catalog");
     revalidatePath(`/listings/${id}`);
+    revalidatePath("/map");
     return { success: true };
   } catch {
     return { error: "Error inesperado." };

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Map,
+  useMap,
   MapMarker,
   MarkerContent,
   MarkerPopup,
@@ -11,6 +12,36 @@ import {
 } from "@/components/ui/map";
 import Navbar from "@/components/layout/Navbar";
 import Image from "next/image";
+
+// ── FlyToUser: centra el mapa en la ubicación real del usuario al cargar ────
+
+function FlyToUser() {
+  const { map, isLoaded } = useMap();
+  const [hasFlown, setHasFlown] = useState(false);
+
+  useEffect(() => {
+    if (!map || !isLoaded || hasFlown) return;
+    if (!("geolocation" in navigator)) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        map.flyTo({
+          center: [pos.coords.longitude, pos.coords.latitude],
+          zoom: 14,
+          duration: 1800,
+        });
+        setHasFlown(true);
+      },
+      () => {
+        // Permiso denegado o error — se queda en el centro por defecto
+        setHasFlown(true);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }, [map, isLoaded, hasFlown]);
+
+  return null;
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -174,9 +205,9 @@ export default function MapClient({ initialListings }: { initialListings: MapLis
 
   const defaultCenter: [number, number] = [-78.467838, -0.180653];
 
-  const handleMarkerClick = useCallback((id: string) => {
+  const handleMarkerClick = (id: string) => {
     setSelectedId((prev) => (prev === id ? null : id));
-  }, []);
+  };
 
   useEffect(() => {
     if (!selectedId) return;
@@ -240,6 +271,9 @@ export default function MapClient({ initialListings }: { initialListings: MapLis
             zoom={12}
             className="w-full h-full"
           >
+            {/* Geolocalización automática al entrar */}
+            <FlyToUser />
+
             <MapControls
               position="bottom-right"
               showZoom
