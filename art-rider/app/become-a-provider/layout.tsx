@@ -1,6 +1,8 @@
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { getMyProviderProfile } from "@/services/providerService";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,6 +17,14 @@ export default async function BecomeProviderLayout({
 }) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
+
+  // Si el usuario ya está autenticado y ya es proveedor, redirigirlo a su panel.
+  if (data?.user) {
+    const profile = await getMyProviderProfile();
+    if (profile) {
+      redirect("/provider");
+    }
+  }
 
   return (
     <>
