@@ -115,7 +115,7 @@ ALTER TABLE product_catalog ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE listings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  owner_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  provider_id UUID REFERENCES providers(id) ON DELETE CASCADE,
   catalog_item_id UUID REFERENCES product_catalog(id),
   address_id UUID REFERENCES addresses(id),
   title TEXT,
@@ -134,11 +134,11 @@ ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
 
 -- RLS: public reads published; owner reads/writes all their own
 CREATE POLICY "listings_public_read" ON listings
-  FOR SELECT USING (is_published = true OR auth.uid() = owner_id);
+  FOR SELECT USING (is_published = true OR is_my_provider(provider_id));
 CREATE POLICY "listings_owner_insert" ON listings
-  FOR INSERT WITH CHECK (auth.uid() = owner_id);
+  FOR INSERT WITH CHECK (is_my_provider(provider_id));
 CREATE POLICY "listings_owner_update" ON listings
-  FOR UPDATE USING (auth.uid() = owner_id);
+  FOR UPDATE USING (is_my_provider(provider_id));
 
 -- =========================================================
 -- 9. EQUIPMENT UNITS (CRITICAL MODEL)
@@ -162,7 +162,7 @@ ALTER TABLE equipment_units ENABLE ROW LEVEL SECURITY;
 CREATE TABLE bookings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   client_id UUID REFERENCES profiles(id),
-  owner_id UUID REFERENCES profiles(id),
+  provider_id UUID REFERENCES providers(id),
   status booking_status DEFAULT 'AWAITING_SIGNATURES',
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,

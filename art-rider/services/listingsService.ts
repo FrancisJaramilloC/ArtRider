@@ -3,12 +3,13 @@
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { revalidatePath } from "next/cache";
+import { getMyProviderId } from "@/services/helpers/getMyProviderId";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type Listing = {
   id: string;
-  owner_id: string;
+  provider_id: string;
   title: string | null;
   brand: string | null;
   model: string | null;
@@ -21,7 +22,7 @@ export type Listing = {
 };
 
 const LISTING_SELECT =
-  "id, owner_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at";
+  "id, provider_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at";
 
 // ── Read (Public) ─────────────────────────────────────────────────────────────
 
@@ -56,13 +57,13 @@ export async function getListingById(id: string): Promise<Listing | null> {
 // ── Read (Provider) ───────────────────────────────────────────────────────────
 
 export async function getMyListings(): Promise<Listing[]> {
+  const providerId = await getMyProviderId();
+  if (!providerId) return [];
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
   const { data, error } = await supabase
     .from("listings")
     .select(LISTING_SELECT)
-    .eq("owner_id", user.id)
+    .eq("provider_id", providerId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw new Error(`[listingsService] getMyListings: ${error.message}`);
@@ -92,7 +93,7 @@ export async function createListing(prevState: any, formData: FormData) {
     if (authError || !user) return { error: "Debes iniciar sesión." };
 
     const { data: provider } = await supabase
-      .from("providers").select("status").eq("user_id", user.id).single();
+      .from("providers").select("id, status").eq("user_id", user.id).single();
     if (!provider) return { error: "Necesitas registrarte como proveedor primero." };
     if (provider.status === "pending") return { error: "Tu cuenta de proveedor está pendiente de aprobación." };
     if (provider.status === "suspended") return { error: "Tu cuenta de proveedor ha sido suspendida." };
@@ -155,7 +156,7 @@ export async function createListing(prevState: any, formData: FormData) {
     const { data: newListing, error: insertError } = await supabase
       .from("listings")
       .insert({
-        owner_id: user.id, title, brand: brand || null, model: model || null,
+        provider_id: provider.id, title, brand: brand || null, model: model || null,
         category, cover_image_url: coverImageUrl,
         daily_price: dailyPrice, description: description || null, is_published: publishNow,
         address_id: addressId,
@@ -235,8 +236,10 @@ export async function updateListing(id: string, prevState: any, formData: FormDa
       if (url) payload.cover_image_url = url;
     }
 
+    const providerId = await getMyProviderId();
+    if (!providerId) return { error: "No eres proveedor." };
     const { error } = await supabase
-      .from("listings").update(payload).eq("id", id).eq("owner_id", user.id);
+      .from("listings").update(payload).eq("id", id).eq("provider_id", providerId);
     if (error) return { error: "Error al actualizar el equipo." };
 
     revalidatePath("/provider/catalog");
@@ -249,12 +252,12 @@ export async function updateListing(id: string, prevState: any, formData: FormDa
 }
 
 export async function togglePublish(id: string, currentState: boolean) {
+  const providerId = await getMyProviderId();
+  if (!providerId) return { error: "No autenticado." };
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "No autenticado." };
   const { error } = await supabase.from("listings")
     .update({ is_published: !currentState, updated_at: new Date().toISOString() })
-    .eq("id", id).eq("owner_id", user.id);
+    .eq("id", id).eq("provider_id", providerId);
   if (error) return { error: "Error al cambiar el estado." };
   revalidatePath("/dashboard/listings");
   revalidatePath("/listings");
@@ -262,12 +265,12 @@ export async function togglePublish(id: string, currentState: boolean) {
 }
 
 export async function deleteListing(id: string) {
+  const providerId = await getMyProviderId();
+  if (!providerId) return { error: "No autenticado." };
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "No autenticado." };
   const { error } = await supabase.from("listings")
     .update({ deleted_at: new Date().toISOString(), is_published: false })
-    .eq("id", id).eq("owner_id", user.id);
+    .eq("id", id).eq("provider_id", providerId);
   if (error) return { error: "Error al eliminar." };
   revalidatePath("/dashboard/listings");
   revalidatePath("/listings");
