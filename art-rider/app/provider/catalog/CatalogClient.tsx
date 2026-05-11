@@ -532,10 +532,11 @@ function StatCard({ label, value, hint, accent = false }: {
   accent?: boolean;
 }) {
   return (
-    <div className={`rounded-2xl px-5 py-5 border transition-shadow hover:shadow-md ${accent ? "bg-white border-l-4 border-l-gray-900 border-gray-100" : "bg-white border-gray-100"}`}>
-      <p className="text-[11px] font-bold uppercase tracking-widest mb-1 text-gray-400">{label}</p>
-      <p className="text-3xl font-black leading-none text-gray-900">{value}</p>
-      {hint && <p className="text-xs mt-2 text-gray-400">{hint}</p>}
+    <div className={`relative rounded-2xl px-5 py-5 overflow-hidden border transition-shadow hover:shadow-md ${accent ? "bg-gray-900 border-transparent" : "bg-white border-gray-100"}`}>
+      {accent && <div aria-hidden className="absolute -right-6 -top-6 w-28 h-28 rounded-full opacity-10 bg-white" />}
+      <p className={`text-[11px] font-bold uppercase tracking-widest mb-1 ${accent ? "text-gray-300" : "text-gray-400"}`}>{label}</p>
+      <p className={`text-4xl font-black leading-none ${accent ? "text-white" : "text-gray-900"}`}>{value}</p>
+      {hint && <p className={`text-xs mt-2 ${accent ? "text-gray-300" : "text-gray-400"}`}>{hint}</p>}
     </div>
   );
 }
@@ -736,11 +737,11 @@ export default function CatalogClient({
       <div className="space-y-8">
 
         {/* Hero header */}
-        <div className="rounded-2xl bg-white border border-gray-200 px-7 py-7">
-          <div className="flex items-center justify-between gap-4">
+        <div className="relative rounded-2xl bg-white border border-gray-200 px-7 py-7 overflow-hidden">
+          <div className="relative flex items-center justify-between gap-4">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Panel de proveedor</p>
-              <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mi catálogo</h1>
+              <h1 className="text-2xl font-black text-gray-900 tracking-tight">Mi catalogo</h1>
               <p className="text-sm text-gray-500 mt-1">
                 {listings.length} equipo{listings.length !== 1 ? "s" : ""} registrado{listings.length !== 1 ? "s" : ""}
                 {drafts > 0 && (
