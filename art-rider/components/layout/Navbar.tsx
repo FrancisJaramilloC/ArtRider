@@ -71,6 +71,7 @@ export default function Navbar({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [user, setUser] = useState<User | null>(initialUser);
   const [isProvider, setIsProvider] = useState(false);
+  const [isLoadingProvider, setIsLoadingProvider] = useState(!!initialUser);
   const router = useRouter();
   const supabase = createClient();
 
@@ -91,11 +92,24 @@ export default function Navbar({
       } else {
         setIsProvider(false);
       }
+      setIsLoadingProvider(false);
     };
     getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user ?? null)
+      (_event, session) => {
+        setUser(session?.user ?? null);
+        if (!session?.user) {
+          setIsProvider(false);
+          setIsLoadingProvider(false);
+        } else {
+          setIsLoadingProvider(true);
+          getMyProviderProfile()
+            .then(profile => setIsProvider(!!profile))
+            .catch(() => setIsProvider(false))
+            .finally(() => setIsLoadingProvider(false));
+        }
+      }
     );
 
     return () => subscription.unsubscribe();
@@ -114,6 +128,8 @@ export default function Navbar({
   useEffect(() => {
     if (dropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownOpen, handleClickOutside]);
@@ -199,6 +215,10 @@ export default function Navbar({
             >
               Panel Principal
             </Link>
+          ) : isLoadingProvider ? (
+             <div className="hidden lg:inline-flex items-center justify-center h-[42px] px-4 w-[160px]">
+               <span className="w-4 h-4 rounded-full border-2 border-gray-300 border-t-gray-600 animate-spin" />
+             </div>
           ) : isProvider ? (
             /* STATE 3: Provider → Panel de proveedor */
             <Link
