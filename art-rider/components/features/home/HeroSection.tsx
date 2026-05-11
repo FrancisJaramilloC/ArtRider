@@ -2,10 +2,10 @@
 
 export default function HeroSection() {
   return (
-    <section className="bg-white px-4 sm:px-6 lg:px-8 py-12 text-center flex flex-col items-center">
+    <section className="bg-white px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-center flex flex-col items-center">
       <div className="max-w-[800px] w-full relative">
         {/* ── Main headline ── */}
-        <h1 className="text-2xl md:text-5xl font-extrabold text-gray-900 tracking-tight mb-4 leading-tight">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-3 leading-tight">
       Encuentra el equipo perfecto para <br className="hidden md:block" />
       <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
         tu evento

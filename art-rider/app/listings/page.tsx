@@ -36,7 +36,7 @@ export default async function ListingsPage() {
     >
       {/* ── Page header ── */}
       <header
-        className="pt-14 pb-10 px-6 max-w-[1200px] mx-auto"
+        className="pt-8 sm:pt-14 pb-6 sm:pb-10 px-4 sm:px-6 max-w-[1200px] mx-auto"
       >
         {/* Eyebrow label */}
         <p
@@ -47,7 +47,7 @@ export default async function ListingsPage() {
         </p>
 
         <h1
-          className="text-4xl font-bold tracking-tight text-gray-900 mb-2.5"
+          className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-gray-900 mb-2.5"
         >
           Catálogo de Equipos
         </h1>
@@ -72,7 +72,7 @@ export default async function ListingsPage() {
       {/* ── Catalog grid ── */}
       <section
         aria-label="Available equipment listings"
-        className="max-w-[1200px] mx-auto px-6"
+        className="max-w-[1200px] mx-auto px-4 sm:px-6"
       >
         {listings.length === 0 ? (
           /* ── Empty state ── */
@@ -100,14 +100,7 @@ export default async function ListingsPage() {
           </div>
         ) : (
           /* ── Responsive grid: 1 → 2 → 3 columns ── */
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns:
-                "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
-              gap: "24px",
-            }}
-          >
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
             {listings.map((listing) => (
               <ListingCard key={listing.id} listing={listing} />
             ))}

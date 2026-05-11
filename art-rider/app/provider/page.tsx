@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Plus, TrendingUp, Package, CalendarClock, MessageCircle, Edit3 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { getMyProviderProfile } from "@/services/providerService";
 import { getMyListings } from "@/services/listingsService";
+import BrandNameCard from "./BrandNameCard";
 
 export default async function ProviderOverviewPage() {
   const provider = await getMyProviderProfile();
@@ -11,17 +12,20 @@ export default async function ProviderOverviewPage() {
   const initials = brandName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   const activeListingsCount = listings.filter((l) => l.is_published).length;
   const totalListingsCount = listings.length;
+  const memberSince = provider?.created_at
+    ? new Date(provider.created_at).toLocaleDateString("es-EC", { year: "numeric", month: "long" })
+    : "—";
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      
+    <div className="space-y-8">
+
       {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Hola, {brandName}</h1>
           <p className="text-sm text-gray-500 mt-1">Aquí tienes el resumen de tu negocio.</p>
         </div>
-        <Link 
+        <Link
           href="/provider/catalog/new"
           className="inline-flex items-center justify-center gap-2 bg-[#6a437a] hover:bg-[#5c3569] text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors active:scale-95"
         >
@@ -93,8 +97,7 @@ export default async function ProviderOverviewPage() {
               Ver todas →
             </Link>
           </div>
-          
-          {/* Empty state for bookings */}
+
           <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
             <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-3">
               <CalendarClock size={22} className="text-gray-300" />
