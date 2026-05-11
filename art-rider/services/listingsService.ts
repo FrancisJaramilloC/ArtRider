@@ -19,10 +19,17 @@ export type Listing = {
   description: string | null;
   is_published: boolean;
   created_at: string;
+  address_id?: string | null;
+  address?: {
+    latitude: number;
+    longitude: number;
+    city: string;
+    state: string;
+  } | null;
 };
 
 const LISTING_SELECT =
-  "id, provider_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at";
+  "id, provider_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
 
 // ── Read (Public) ─────────────────────────────────────────────────────────────
 
