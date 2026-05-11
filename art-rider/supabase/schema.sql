@@ -247,3 +247,17 @@ CREATE TABLE messages (
   sender_id UUID REFERENCES profiles(id),
   content TEXT
 );
+
+-- =========================================================
+-- 16. UNIFIED CATALOG VIEW (POLYMORPHIC SEARCH)
+-- =========================================================
+
+CREATE OR REPLACE VIEW catalog_items AS
+  SELECT id, 'listing'::TEXT AS item_type, provider_id, title, category,
+         cover_image_url, daily_price, description, is_published, created_at
+  FROM listings WHERE deleted_at IS NULL
+  UNION ALL
+  SELECT id, 'package'::TEXT AS item_type, provider_id, title,
+         NULL::TEXT AS category, NULL::TEXT AS cover_image_url,
+         daily_price, description, is_published, created_at
+  FROM packages WHERE deleted_at IS NULL;
