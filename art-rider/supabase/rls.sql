@@ -163,17 +163,11 @@
 
     -- 13. Conversations
     CREATE POLICY "conversations_read" ON conversations FOR SELECT
-      USING (
-        EXISTS (SELECT 1 FROM bookings WHERE bookings.id = conversations.booking_id AND (auth.uid() = bookings.client_id OR is_my_provider(bookings.provider_id)))
-      );
+      USING (auth.uid() = client_id OR is_my_provider(provider_id));
     CREATE POLICY "conversations_insert" ON conversations FOR INSERT
-      WITH CHECK (
-        EXISTS (SELECT 1 FROM bookings WHERE bookings.id = booking_id AND (auth.uid() = bookings.client_id OR is_my_provider(bookings.provider_id)))
-      );
+      WITH CHECK (auth.uid() = client_id);
     CREATE POLICY "conversations_update" ON conversations FOR UPDATE
-      USING (
-        EXISTS (SELECT 1 FROM bookings WHERE bookings.id = conversations.booking_id AND (auth.uid() = bookings.client_id OR is_my_provider(bookings.provider_id)))
-      );
+      USING (auth.uid() = client_id OR is_my_provider(provider_id));
     CREATE POLICY "Prevent delete conversations" ON conversations FOR DELETE USING (false);
 
     -- 14. Messages
@@ -181,8 +175,7 @@
       USING (
         EXISTS (
           SELECT 1 FROM conversations
-          JOIN bookings ON conversations.booking_id = bookings.id
-          WHERE conversations.id = messages.conversation_id AND (auth.uid() = bookings.client_id OR is_my_provider(bookings.provider_id))
+          WHERE conversations.id = messages.conversation_id AND (auth.uid() = conversations.client_id OR is_my_provider(conversations.provider_id))
         )
       );
     CREATE POLICY "messages_insert" ON messages FOR INSERT
@@ -190,8 +183,7 @@
         auth.uid() = sender_id AND
         EXISTS (
           SELECT 1 FROM conversations
-          JOIN bookings ON conversations.booking_id = bookings.id
-          WHERE conversations.id = conversation_id AND (auth.uid() = bookings.client_id OR is_my_provider(bookings.provider_id))
+          WHERE conversations.id = conversation_id AND (auth.uid() = conversations.client_id OR is_my_provider(conversations.provider_id))
         )
       );
     CREATE POLICY "Prevent update messages" ON messages FOR UPDATE USING (false) WITH CHECK (false);
