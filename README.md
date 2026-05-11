@@ -1,2 +1,2 @@
 # ArtRider
-By: Jean Carlso Cuenca
+By: Jean Carlo Cuenca
