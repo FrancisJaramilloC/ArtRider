@@ -1,6 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { getMyProviderId } from "@/services/helpers/getMyProviderId";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ export interface BookingWithDetails {
   end_date: string;
   total_price: number;
   client_id: string;
-  owner_id: string;
+  provider_id: string;
   created_at: string;
   archived_at: string | null;
   client_profile: { id: string; full_name: string | null; avatar_url: string | null } | null;
@@ -40,7 +41,7 @@ export interface BookingWithDetails {
 
 function mapRawToBookingWithDetails(
   raw: any,
-  ownerId: string,
+  provider_id: string,
   includeClientProfile: boolean
 ): BookingWithDetails {
   return {
@@ -50,14 +51,14 @@ function mapRawToBookingWithDetails(
     end_date: raw.end_date,
     total_price: raw.total_price,
     client_id: raw.client_id,
-    owner_id: raw.owner_id,
+    provider_id: raw.provider_id,
     created_at: raw.created_at,
     archived_at: raw.archived_at ?? null,
     client_profile: includeClientProfile ? (raw.client_profile ?? null) : null,
     booking_units: (raw.booking_units ?? []) as BookingUnit[],
     payment_confirmed: (raw.payments ?? [])[0]?.status === "CAPTURED",
     provider_has_reviewed: (raw.reviews ?? []).some(
-      (r: any) => r.author_id === ownerId
+      (r: any) => r.author_id === provider_id
     ),
   };
 }
@@ -75,7 +76,7 @@ export async function getClientBookings(): Promise<BookingWithDetails[]> {
     const { data, error } = await supabase
       .from("bookings")
       .select(
-        `id, status, start_date, end_date, total_price, client_id, owner_id, created_at, archived_at, booking_units(id, listing_id, quantity, listing:listings(id, title, price_per_day)), payments(status), reviews(id, author_id)`
+        `id, status, start_date, end_date, total_price, client_id, provider_id, created_at, archived_at, booking_units(id, listing_id, quantity, listing:listings(id, title, price_per_day)), payments(status), reviews(id, author_id)`
       )
       .eq("client_id", user.id)
       .neq("status", "ARCHIVED")
@@ -84,7 +85,7 @@ export async function getClientBookings(): Promise<BookingWithDetails[]> {
     if (error) return [];
 
     return (data ?? []).map((raw) =>
-      mapRawToBookingWithDetails(raw, raw.owner_id, false)
+      mapRawToBookingWithDetails(raw, raw.provider_id, false)
     );
   } catch {
     return [];
@@ -95,25 +96,23 @@ export async function getClientBookings(): Promise<BookingWithDetails[]> {
 
 export async function getProviderBookings(): Promise<BookingWithDetails[]> {
   try {
+    const providerId = await getMyProviderId();
+    if (!providerId) return [];
     const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return [];
 
     const { data, error } = await supabase
       .from("bookings")
       .select(
-        `id, status, start_date, end_date, total_price, client_id, owner_id, created_at, archived_at, booking_units(id, listing_id, quantity, listing:listings(id, title, price_per_day)), client_profile:profiles!client_id(id, full_name, avatar_url), payments(status), reviews(id, author_id)`
+        `id, status, start_date, end_date, total_price, client_id, provider_id, created_at, archived_at, booking_units(id, listing_id, quantity, listing:listings(id, title, price_per_day)), client_profile:profiles!client_id(id, full_name, avatar_url), payments(status), reviews(id, author_id)`
       )
-      .eq("owner_id", user.id)
+      .eq("provider_id", providerId)
       .neq("status", "ARCHIVED")
       .order("created_at", { ascending: false });
 
     if (error) return [];
 
     return (data ?? []).map((raw) =>
-      mapRawToBookingWithDetails(raw, raw.owner_id, true)
+      mapRawToBookingWithDetails(raw, raw.provider_id, true)
     );
   } catch {
     return [];
@@ -134,7 +133,7 @@ export async function checkArchivingEligibility(
 
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select("id, status, owner_id, client_id, payments(status), reviews(id, author_id)")
+      .select("id, status, provider_id, client_id, payments(status), reviews(id, author_id)")
       .eq("id", bookingId)
       .single();
 
@@ -142,7 +141,8 @@ export async function checkArchivingEligibility(
       return { eligible: false, reason: "No tienes permiso para esta reserva" };
     }
 
-    if (booking.owner_id !== user.id) {
+    const providerId = await getMyProviderId();
+    if (!providerId || booking.provider_id !== providerId) {
       return { eligible: false, reason: "No tienes permiso para esta reserva" };
     }
 
@@ -158,7 +158,7 @@ export async function checkArchivingEligibility(
     }
 
     const providerAlreadyReviewed = (booking.reviews ?? []).some(
-      (r: any) => r.author_id === booking.owner_id
+      (r: any) => r.author_id === booking.provider_id
     );
     if (providerAlreadyReviewed) {
       return { eligible: false, reason: "Esta reserva ya ha sido reseñada" };
@@ -185,7 +185,7 @@ export async function archiveBookingWithReview(
 
     const { data: booking, error: fetchError } = await supabase
       .from("bookings")
-      .select("id, owner_id, client_id, status")
+      .select("id, provider_id, client_id, status")
       .eq("id", bookingId)
       .single();
 
@@ -193,7 +193,8 @@ export async function archiveBookingWithReview(
       return { success: false, error: "No tienes permiso para esta reserva" };
     }
 
-    if (booking.owner_id !== user.id) {
+    const providerId = await getMyProviderId();
+    if (!providerId || booking.provider_id !== providerId) {
       return { success: false, error: "No tienes permiso para esta reserva" };
     }
 
@@ -218,7 +219,7 @@ export async function archiveBookingWithReview(
       .from("bookings")
       .update({ status: "ARCHIVED", archived_at: new Date().toISOString() })
       .eq("id", bookingId)
-      .eq("owner_id", user.id);
+      .eq("provider_id", providerId);
 
     if (updateError) {
       return { success: false, error: "No se pudo archivar la reserva" };

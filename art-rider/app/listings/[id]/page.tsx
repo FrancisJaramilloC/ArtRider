@@ -121,7 +121,7 @@ export default async function ListingDetailPage({
     const { data } = await supabase
       .from("providers")
       .select("brand_name, created_at")
-      .eq("user_id", listing.owner_id)
+      .eq("id", listing.provider_id)
       .maybeSingle();
     if (data) {
       providerName = data.brand_name ?? null;

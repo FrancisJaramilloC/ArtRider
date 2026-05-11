@@ -2,12 +2,13 @@
 
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { revalidatePath } from "next/cache";
+import { getMyProviderId } from "@/services/helpers/getMyProviderId";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 export type Package = {
   id: string;
-  owner_id: string;
+  provider_id: string;
   title: string;
   description: string | null;
   daily_price: number;
@@ -26,14 +27,14 @@ export type PackageItem = {
 // ── Read ───────────────────────────────────────────────────────────────────────
 
 export async function getMyPackages(): Promise<Package[]> {
+  const providerId = await getMyProviderId();
+  if (!providerId) return [];
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
 
   const { data, error } = await supabase
     .from("packages")
     .select("*, items:package_items(*)")
-    .eq("owner_id", user.id)
+    .eq("provider_id", providerId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
@@ -49,8 +50,8 @@ export async function createPackage(
 ): Promise<{ success?: true; id?: string; error?: string }> {
   try {
     const supabase = await createSupabaseServerClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) return { error: "Debes iniciar sesion." };
+    const providerId = await getMyProviderId();
+    if (!providerId) return { error: "Debes ser proveedor para crear paquetes." };
 
     const title       = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
@@ -71,7 +72,7 @@ export async function createPackage(
     const { data: ownedListings } = await supabase
       .from("listings")
       .select("id")
-      .eq("owner_id", user.id)
+      .eq("provider_id", providerId)
       .eq("is_published", true)
       .in("id", listingIds)
       .is("deleted_at", null);
@@ -83,7 +84,7 @@ export async function createPackage(
     const { data: pkg, error: insertError } = await supabase
       .from("packages")
       .insert({
-        owner_id: user.id,
+        provider_id: providerId,
         title,
         description: description || null,
         daily_price: dailyPrice,
@@ -114,15 +115,15 @@ export async function createPackage(
 // ── Delete ─────────────────────────────────────────────────────────────────────
 
 export async function deletePackage(id: string): Promise<{ error?: string }> {
+  const providerId = await getMyProviderId();
+  if (!providerId) return { error: "No autenticado." };
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "No autenticado." };
 
   const { error } = await supabase
     .from("packages")
     .update({ deleted_at: new Date().toISOString(), is_published: false })
     .eq("id", id)
-    .eq("owner_id", user.id);
+    .eq("provider_id", providerId);
 
   if (error) return { error: "Error al eliminar el paquete." };
   revalidatePath("/provider/catalog");
@@ -135,15 +136,15 @@ export async function togglePackagePublish(
   id: string,
   current: boolean
 ): Promise<{ error?: string }> {
+  const providerId = await getMyProviderId();
+  if (!providerId) return { error: "No autenticado." };
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: "No autenticado." };
 
   const { error } = await supabase
     .from("packages")
     .update({ is_published: !current, updated_at: new Date().toISOString() })
     .eq("id", id)
-    .eq("owner_id", user.id);
+    .eq("provider_id", providerId);
 
   if (error) return { error: "Error al cambiar el estado del paquete." };
   revalidatePath("/provider/catalog");
