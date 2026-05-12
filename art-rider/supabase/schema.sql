@@ -17,6 +17,9 @@ CREATE TYPE booking_status AS ENUM ('AWAITING_SIGNATURES', 'PAID', 'ACTIVE', 'CO
 CREATE TYPE payment_status AS ENUM ('AUTHORIZED', 'CAPTURED', 'REFUNDED');
 CREATE TYPE contract_status AS ENUM ('PENDING', 'PARTIALLY_SIGNED', 'EXECUTED');
 CREATE TYPE calendar_status AS ENUM ('BOOKED', 'BLOCKED', 'MAINTENANCE');
+CREATE TYPE verification_status AS ENUM ('pending', 'verified', 'rejected');
+CREATE TYPE provider_status AS ENUM ('pending', 'active', 'suspended');
+CREATE TYPE equipment_status AS ENUM ('AVAILABLE', 'MAINTENANCE', 'RETIRED', 'LOST');
 
 -- =========================================================
 -- 3. CORE USER MODEL (PROFILES)
@@ -45,7 +48,7 @@ CREATE TABLE identity_verifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
   provider_ref TEXT,
-  status TEXT DEFAULT 'pending', -- pending, verified, rejected
+  status verification_status DEFAULT 'pending',
   verified_at TIMESTAMPTZ
 );
 ALTER TABLE identity_verifications ENABLE ROW LEVEL SECURITY;
@@ -59,7 +62,7 @@ CREATE TABLE providers (
   user_id UUID UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
   brand_name TEXT,
   bio TEXT,
-  status TEXT DEFAULT 'pending', -- pending, active, suspended
+  status provider_status DEFAULT 'pending',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE providers ENABLE ROW LEVEL SECURITY;
@@ -149,7 +152,7 @@ CREATE TABLE equipment_units (
   listing_id UUID REFERENCES listings(id) ON DELETE CASCADE,
   serial_number TEXT NOT NULL,
   condition TEXT,
-  internal_status TEXT DEFAULT 'AVAILABLE',
+  internal_status equipment_status DEFAULT 'AVAILABLE',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(listing_id, serial_number)
 );
