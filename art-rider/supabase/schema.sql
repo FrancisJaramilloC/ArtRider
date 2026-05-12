@@ -167,6 +167,9 @@ CREATE TABLE bookings (
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   total_price INTEGER NOT NULL,
+  snapshot_listing JSONB,   -- Frozen listing data at booking time
+  snapshot_address JSONB,   -- Frozen address data at booking time
+  snapshot_provider JSONB,  -- Frozen provider data at booking time
   created_at TIMESTAMPTZ DEFAULT NOW(),
   CHECK (start_date <= end_date)
 );
@@ -224,7 +227,8 @@ CREATE TABLE digital_contracts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   booking_id UUID UNIQUE REFERENCES bookings(id),
   status contract_status DEFAULT 'PENDING',
-  contract_hash TEXT
+  contract_hash TEXT,
+  snapshot_booking JSONB  -- Full booking context frozen at signing time
 );
 ALTER TABLE digital_contracts ENABLE ROW LEVEL SECURITY;
 
