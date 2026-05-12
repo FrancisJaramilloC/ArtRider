@@ -133,7 +133,10 @@ export async function createListing(prevState: any, formData: FormData) {
 
     if (!title || title.length < 3 || title.length > 100)
       return { error: "El título debe tener entre 3 y 100 caracteres." };
+    if (!brand) return { error: "La marca es obligatoria." };
     if (!category) return { error: "La categoría es obligatoria." };
+    if (!city) return { error: "La ciudad es obligatoria." };
+    if (!state) return { error: "La provincia o estado es obligatorio." };
 
     const dailyPrice = Math.round(parseFloat(dailyPriceRaw) * 100);
     if (isNaN(dailyPrice) || dailyPrice < 100)
@@ -149,40 +152,36 @@ export async function createListing(prevState: any, formData: FormData) {
 
     const coverImageUrl = await uploadCoverImage(coverFile, user.id);
 
-    // Create address if coordinates are provided
-    let addressId: string | null = null;
+    // Build address — location is required (city + state always present at this point)
     const latitude = latitudeRaw ? parseFloat(latitudeRaw) : null;
     const longitude = longitudeRaw ? parseFloat(longitudeRaw) : null;
 
-    if (
-      latitude != null &&
-      longitude != null &&
-      !isNaN(latitude) &&
-      !isNaN(longitude)
-    ) {
-      const { data: newAddress, error: addrError } = await supabase
-        .from("addresses")
-        .insert({
-          user_id: user.id,
-          line1: city || "Sin dirección",
-          city: city || "Sin ciudad",
-          state: state || "Sin estado",
-          postal_code: "000000",
-          country: "EC",
-          latitude,
-          longitude,
-        })
-        .select("id")
-        .single();
-      if (!addrError && newAddress) {
-        addressId = newAddress.id;
-      }
-    }
+    const addressPayload: Record<string, unknown> = {
+      user_id: user.id,
+      line1: city,
+      city,
+      state,
+      postal_code: "000000",
+      country: "EC",
+      latitude: latitude != null && !isNaN(latitude) ? latitude : 0,
+      longitude: longitude != null && !isNaN(longitude) ? longitude : 0,
+    };
+
+    const { data: newAddress, error: addrError } = await supabase
+      .from("addresses")
+      .insert(addressPayload)
+      .select("id")
+      .single();
+
+    if (addrError || !newAddress)
+      return { error: "Error al guardar la ubicación. Intenta de nuevo." };
+
+    const addressId = newAddress.id;
 
     const { data: newListing, error: insertError } = await supabase
       .from("listings")
       .insert({
-        provider_id: provider.id, title, brand: brand || null, model: model || null,
+        provider_id: provider.id, title, brand, model: model || null,
         category, cover_image_url: coverImageUrl,
         daily_price: dailyPrice, description: description || null, is_published: publishNow,
         address_id: addressId,
