@@ -156,34 +156,6 @@ export async function createListing(prevState: any, formData: FormData) {
     const latitude = latitudeRaw ? parseFloat(latitudeRaw) : null;
     const longitude = longitudeRaw ? parseFloat(longitudeRaw) : null;
 
-<<<<<<< HEAD
-    if (
-      latitude != null &&
-      longitude != null &&
-      !isNaN(latitude) &&
-      !isNaN(longitude)
-    ) {
-      const { data: newAddress, error: addrError } = await supabase
-        .from("addresses")
-        .insert({
-          user_id: user.id,
-          line1: city || "Sin dirección",
-          city: city || "Sin ciudad",
-          state: state || "Sin estado",
-          postal_code: "000000",
-          country: "EC",
-          latitude,
-          longitude,
-        })
-        .select("id")
-        .single();
-      if (!addrError && newAddress) {
-        addressId = newAddress.id;
-      } else if (addrError) {
-        console.error("[createListing] address insert error:", addrError);
-      }
-    }
-=======
     const addressPayload: Record<string, unknown> = {
       user_id: user.id,
       line1: city,
@@ -205,7 +177,6 @@ export async function createListing(prevState: any, formData: FormData) {
       return { error: "Error al guardar la ubicación. Intenta de nuevo." };
 
     const addressId = newAddress.id;
->>>>>>> origin/develop
 
     const { data: newListing, error: insertError } = await supabase
       .from("listings")
@@ -218,10 +189,8 @@ export async function createListing(prevState: any, formData: FormData) {
       .select("id")
       .single();
 
-    if (insertError) {
-      console.error("[createListing] listing insert error:", insertError);
+    if (insertError)
       return { error: "Error al guardar el equipo. Intenta de nuevo." };
-    }
 
     revalidatePath("/provider/catalog");
     revalidatePath("/listings");

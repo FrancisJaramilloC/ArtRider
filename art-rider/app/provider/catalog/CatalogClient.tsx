@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useTransition, useRef, useCallback } from "react";
+import { useState, useTransition, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Listing } from "@/services/listingsService";
 import { togglePublish, deleteListing, createListing } from "@/services/listingsService";
 import type { Package } from "@/services/packagesService";
 import { createPackage } from "@/services/packagesService";
-import LocationPickerWrapper from "@/components/location-picker/LocationPickerWrapper";
-import type { LocationData } from "@/components/location-picker/LocationPicker";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -156,9 +154,6 @@ function CreateEquipmentModal({ onClose }: { onClose: () => void }) {
   const [publish, setPublish]      = useState(true);
   const [error, setError]          = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [location, setLocation]    = useState<LocationData | null>(null);
-
-  const handleLocationChange = useCallback((loc: LocationData) => setLocation(loc), []);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -242,13 +237,6 @@ function CreateEquipmentModal({ onClose }: { onClose: () => void }) {
             placeholder="Estado del equipo, que incluye, condiciones de alquiler..."
             className={`${cls.input} resize-none`} />
         </div>
-
-        {/* ── Selector de Ubicación (estilo Airbnb) ── */}
-        <LocationPickerWrapper onChange={handleLocationChange} />
-        <input type="hidden" name="latitude" value={location?.lat ?? ""} />
-        <input type="hidden" name="longitude" value={location?.lng ?? ""} />
-        <input type="hidden" name="city" value={location?.city ?? ""} />
-        <input type="hidden" name="state" value={location?.state ?? ""} />
 
         <PublishToggle value={publish} onChange={setPublish} />
       </form>

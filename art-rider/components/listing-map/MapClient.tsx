@@ -66,11 +66,11 @@ export default function MapClient({
             <MarkerContent>
               <div
                 className={`
-                  px-3 py-1.5 rounded-full text-[13px] font-bold tracking-tight shadow-md transition-all duration-200 cursor-pointer
+                  px-3 py-1.5 rounded-full text-sm font-bold tracking-tight shadow-md transition-all duration-200
                   ${
                     activeId === currentListing.id || selectedId === currentListing.id
-                      ? "bg-[#875B9A] text-white scale-110 shadow-xl shadow-[#875B9A]/30 z-50 relative"
-                      : "bg-[#875B9A]/90 text-white border border-[#875B9A] hover:bg-[#875B9A] hover:scale-105 relative z-10"
+                      ? "bg-[#875B9A] text-white border-white scale-110 shadow-lg shadow-[#875B9A]/30 z-50 relative"
+                      : "bg-[#875B9A]/90 text-white border border-[#875B9A] hover:bg-[#875B9A] hover:scale-105"
                   }
                 `}
               >

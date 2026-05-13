@@ -163,23 +163,33 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── Equipos destacados — hidden if no real listings exist ── */}
-        {featuredEquipment.length > 0 && (
-          <section id="equipos" className="bg-white py-8 sm:py-12 scroll-mt-20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
-              <SectionHeader
-                title="Equipos destacados"
-                ctaLabel={`Mostrar (${realListings.length})`}
-                ctaHref="/listings"
-              />
+        {/* ── Equipos destacados ── */}
+        <section id="equipos" className="bg-white py-8 sm:py-12 scroll-mt-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
+            <SectionHeader
+              title="Equipos destacados"
+              ctaLabel={realListings.length > 0 ? `Mostrar (${realListings.length})` : undefined}
+              ctaHref="/listings"
+            />
+            {featuredEquipment.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
                 {featuredEquipment.map((item) => (
                   <HomepageListingCard key={item.id} {...item} />
                 ))}
               </div>
-            </div>
-          </section>
-        )}
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 py-12 px-6 text-center">
+                <span className="text-3xl" aria-hidden="true">🎛️</span>
+                <p className="text-sm font-medium text-gray-500">
+                  Aún no hay equipos disponibles.
+                </p>
+                <p className="text-xs text-gray-400">
+                  Los proveedores pueden publicar sus equipos desde su panel de control.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
 
         {/* ── Paquetes destacados — always visible ── */}
         <section id="paquetes" className="bg-white py-8 sm:py-12 scroll-mt-20">
