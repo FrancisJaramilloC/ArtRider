@@ -176,6 +176,8 @@ export async function createListing(prevState: any, formData: FormData) {
         .single();
       if (!addrError && newAddress) {
         addressId = newAddress.id;
+      } else if (addrError) {
+        console.error("[createListing] address insert error:", addrError);
       }
     }
 
@@ -190,8 +192,10 @@ export async function createListing(prevState: any, formData: FormData) {
       .select("id")
       .single();
 
-    if (insertError)
+    if (insertError) {
+      console.error("[createListing] listing insert error:", insertError);
       return { error: "Error al guardar el equipo. Intenta de nuevo." };
+    }
 
     revalidatePath("/provider/catalog");
     revalidatePath("/listings");
