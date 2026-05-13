@@ -4,11 +4,12 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 
 const CATEGORIES = [
-  { value: "audio", label: "Sonido" },
-  { value: "lighting", label: "Iluminación" },
-  { value: "video", label: "Video" },
-  { value: "effects", label: "Efectos" },
-  { value: "other", label: "Otro" },
+  { value: "audio",       label: "Sonido"       },
+  { value: "lighting",    label: "Iluminación"  },
+  { value: "video",       label: "Video"        },
+  { value: "effects",     label: "Efectos"      },
+  { value: "advertising", label: "Publicidad"   },
+  { value: "other",       label: "Otro"         },
 ];
 
 type Props = {
@@ -133,9 +134,9 @@ export default function ListingForm({
       {/* Brand + Model */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <label htmlFor="brand" className="block text-sm font-medium text-gray-700">Marca</label>
+          <label htmlFor="brand" className="block text-sm font-medium text-gray-700">Marca <span className="text-red-500">*</span></label>
           <input
-            id="brand" name="brand" type="text"
+            id="brand" name="brand" type="text" required
             defaultValue={defaultValues.brand ?? ""}
             maxLength={60} placeholder="Ej: JBL"
             className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all"
