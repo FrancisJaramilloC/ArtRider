@@ -215,8 +215,8 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-3">
-      <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5">
+    <div className="space-y-4">
+      <label className="block text-sm font-bold uppercase tracking-widest text-gray-500 mb-2">
         Ubicación del equipo
       </label>
 
@@ -225,7 +225,7 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
         <div className="relative">
           {/* Search icon */}
           <svg
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
           >
             <circle cx="11" cy="11" r="8" />
@@ -237,30 +237,30 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => results.length > 0 && setShowResults(true)}
             placeholder="Busca una dirección, lugar o zona..."
-            className="block w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
+            className="block w-full rounded-2xl border border-gray-200 bg-white pl-12 pr-4 py-3.5 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all shadow-sm"
           />
           {isSearching && (
-            <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-              <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+              <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
             </div>
           )}
         </div>
 
         {/* Suggestions dropdown */}
         {showResults && (
-          <div className="absolute z-50 mt-1.5 w-full bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+          <div className="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
             {results.map((r) => (
               <button
                 key={r.place_id}
                 type="button"
                 onClick={() => handleSelect(r)}
-                className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 flex items-start gap-3"
+                className="w-full text-left px-5 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 flex items-start gap-3"
               >
-                <svg className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" strokeLinecap="round" strokeLinejoin="round" />
                   <circle cx="12" cy="10" r="3" />
                 </svg>
-                <span className="text-sm text-gray-700 leading-snug line-clamp-2">
+                <span className="text-base text-gray-700 leading-snug line-clamp-2">
                   {r.display_name}
                 </span>
               </button>
@@ -271,12 +271,12 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
 
       {/* Map with fixed center pin */}
       {(mapReady || currentAddress) && (
-        <p className="text-xs text-gray-400 truncate px-1">
+        <p className="text-sm text-gray-500 font-medium truncate px-1">
           📍 {currentAddress}
         </p>
       )}
 
-      <div className="relative rounded-xl overflow-hidden border border-gray-200" style={{ height: 280 }}>
+      <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-sm" style={{ height: 400 }}>
         <div ref={mapContainerRef} className="w-full h-full" />
 
         {/* Fixed center pin (CSS only — always centered) */}

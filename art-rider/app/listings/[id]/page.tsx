@@ -384,10 +384,12 @@ export default async function ListingDetailPage({
                     Explora la ubicación exacta y otros equipos en la zona
                   </p>
                 </div>
-                <MapWrapper
-                  currentListing={listing as any}
-                  nearbyListings={nearbyListings}
-                />
+                <div className="h-[400px] md:h-[500px] w-full rounded-2xl overflow-hidden border border-gray-200">
+                  <MapWrapper
+                    currentListing={listing as any}
+                    nearbyListings={nearbyListings}
+                  />
+                </div>
               </div>
             )}
           </div>
