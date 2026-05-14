@@ -19,4 +19,15 @@ const MapClient = dynamic(() => import("./MapClient"), {
   ),
 });
 
-export default MapClient;
+// Helper to normalize Supabase nested relations which can sometimes be arrays
+function normalizeListing(listing: any) {
+  if (!listing) return listing;
+  const address = Array.isArray(listing.address) ? listing.address[0] : listing.address;
+  return { ...listing, address };
+}
+
+export default function MapWrapper({ currentListing, nearbyListings }: any) {
+  const safeCurrent = normalizeListing(currentListing);
+  const safeNearby = (nearbyListings || []).map(normalizeListing);
+  return <MapClient currentListing={safeCurrent} nearbyListings={safeNearby} />;
+}

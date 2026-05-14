@@ -8,6 +8,8 @@ import { BecomeProviderCTA } from "@/components/features/home/BecomeProviderCTA"
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { getListings } from "@/services/listingsService";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "ArtRider — Alquila Equipos Creativos para tu Evento",
@@ -110,18 +112,7 @@ export default async function HomePage() {
     // silently fail — section hidden if empty
   }
 
-  // ── Map to card format (cap at 8 items per section) ───────────────────────
-  const featuredEquipment = realListings.slice(0, 8).map((l) => ({
-    id: l.id,
-    title: l.title ?? "Equipo sin título",
-    categoryLabel: CATEGORY_LABELS[l.category ?? ""] ?? l.category ?? "Equipo",
-    location: "Ecuador",
-    price: `$${(l.daily_price / 100).toFixed(0)}`,
-    rating: 0,
-    reviewCount: 0,
-    icon: CATEGORY_ICONS[l.category ?? ""] ?? "📦",
-  }));
-
+  // ── Map to card format for packages ───────────────────────
   const featuredPackages = realPackages.slice(0, 8).map((pkg) => ({
     id: pkg.id,
     title: pkg.title,
@@ -132,6 +123,27 @@ export default async function HomePage() {
     reviewCount: 0,
     icon: "📦",
   }));
+
+  // Group listings by city for the homepage
+  const listingsByCity = realListings.reduce((acc, listing: any) => {
+    const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
+    const city = addr?.city?.trim() || "Otras ubicaciones";
+    
+    if (!acc[city]) acc[city] = [];
+    acc[city].push({
+      id: listing.id,
+      title: listing.title ?? "Equipo sin título",
+      categoryLabel: CATEGORY_LABELS[listing.category ?? ""] ?? listing.category ?? "Equipo",
+      location: city,
+      price: `$${(listing.daily_price / 100).toFixed(0)}`,
+      rating: 0,
+      reviewCount: 0,
+      icon: CATEGORY_ICONS[listing.category ?? ""] ?? "📦",
+    });
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const sortedCities = Object.entries(listingsByCity).sort(([, a], [, b]) => b.length - a.length);
 
   // ── Static categories ──────────────────────────────────────────────────────
   const CATEGORIES = [
@@ -163,29 +175,45 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── Equipos destacados ── */}
+        {/* ── Equipos destacados por ciudad ── */}
         <section id="equipos" className="bg-white py-8 sm:py-12 scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
-            <SectionHeader
-              title="Equipos destacados"
-              ctaLabel={realListings.length > 0 ? `Mostrar (${realListings.length})` : undefined}
-              ctaHref="/listings"
-            />
-            {featuredEquipment.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
-                {featuredEquipment.map((item) => (
-                  <HomepageListingCard key={item.id} {...item} />
-                ))}
-              </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden space-y-12">
+            {sortedCities.length > 0 ? (
+              sortedCities.map(([city, cityListings]) => (
+                <div key={city} className="space-y-5">
+                  <Link
+                    href={`/explore?city=${encodeURIComponent(city)}`}
+                    className="group inline-flex items-center gap-3 hover:opacity-80 transition-opacity"
+                  >
+                    <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight">
+                      Equipos populares en {city}
+                    </h2>
+                    <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 group-hover:bg-[#875B9A] group-hover:text-white transition-colors">
+                      <ChevronRight className="w-5 h-5" />
+                    </span>
+                  </Link>
+
+                  <div className="-mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pb-4 overflow-x-auto flex gap-4 md:gap-5 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    {cityListings.map((item) => (
+                      <div key={item.id} className="w-[280px] sm:w-[320px] shrink-0 snap-start">
+                        <HomepageListingCard {...item} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
             ) : (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 py-12 px-6 text-center">
-                <span className="text-3xl" aria-hidden="true">🎛️</span>
-                <p className="text-sm font-medium text-gray-500">
-                  Aún no hay equipos disponibles.
-                </p>
-                <p className="text-xs text-gray-400">
-                  Los proveedores pueden publicar sus equipos desde su panel de control.
-                </p>
+              <div>
+                <SectionHeader title="Equipos destacados" />
+                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 py-12 px-6 text-center">
+                  <span className="text-3xl" aria-hidden="true">🎛️</span>
+                  <p className="text-sm font-medium text-gray-500">
+                    Aún no hay equipos disponibles.
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    Los proveedores pueden publicar sus equipos desde su panel de control.
+                  </p>
+                </div>
               </div>
             )}
           </div>

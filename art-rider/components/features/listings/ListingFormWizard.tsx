@@ -361,10 +361,10 @@ function StepCategory({
 }: { data: WizardData; update: (p: Partial<WizardData>) => void; errors: StepErrors }) {
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
+      <h1 className="text-4xl font-bold text-gray-900 mb-3 leading-tight">
         ¿Qué tipo de equipo vas a publicar?
       </h1>
-      <p className="text-gray-500 mb-8 text-[15px]">
+      <p className="text-gray-500 mb-8 text-base">
         Elige la categoría que mejor describe tu equipo.
       </p>
 
@@ -392,10 +392,10 @@ function StepCategory({
                 strokeWidth={1.75}
               />
               <div>
-                <p className={`text-sm font-semibold ${selected ? "text-[#875B9A]" : "text-gray-800"}`}>
+                <p className={`text-base font-bold ${selected ? "text-[#875B9A]" : "text-gray-800"}`}>
                   {label}
                 </p>
-                <p className="text-[11px] text-gray-400 mt-0.5 leading-relaxed">{desc}</p>
+                <p className="text-xs text-gray-400 mt-1 leading-relaxed">{desc}</p>
               </div>
             </button>
           );
@@ -420,10 +420,10 @@ function StepDetails({
   return (
     <div className="space-y-6 max-w-lg">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3 leading-tight">
           Cuéntanos sobre tu equipo
         </h1>
-        <p className="text-gray-500 text-[15px]">
+        <p className="text-gray-500 text-base">
           Estos detalles ayudan a los clientes a encontrar exactamente lo que buscan.
         </p>
       </div>
@@ -496,10 +496,10 @@ function StepPhotos({
   return (
     <div className="space-y-6 max-w-lg">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3 leading-tight">
           Añade una foto de tu equipo
         </h1>
-        <p className="text-gray-500 text-[15px]">
+        <p className="text-gray-500 text-base">
           Las buenas fotos generan más reservas. Usa luz natural y fondo limpio.
         </p>
       </div>
@@ -583,10 +583,10 @@ function StepLocation({
   return (
     <div className="space-y-6 max-w-lg">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3 leading-tight">
           ¿Dónde está tu equipo?
         </h1>
-        <p className="text-gray-500 text-[15px]">
+        <p className="text-gray-500 text-base">
           Busca una dirección o usa el mapa para ser preciso. Los clientes solo verán un área aproximada, nunca tu dirección exacta.
         </p>
       </div>
@@ -631,16 +631,16 @@ function StepPrice({
   return (
     <div className="space-y-6 max-w-lg">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3 leading-tight">
           Fija tu precio
         </h1>
-        <p className="text-gray-500 text-[15px]">
+        <p className="text-gray-500 text-base">
           Define el precio de alquiler por día de tu equipo.
         </p>
       </div>
 
-      <div className="space-y-1.5">
-        <label className="block text-sm font-semibold text-gray-800">
+      <div className="space-y-2">
+        <label className="block text-base font-bold text-gray-800">
           Precio por día (USD) <span className="text-red-500">*</span>
         </label>
         <div className="relative flex items-center">
@@ -743,10 +743,10 @@ function Field({
   label, required, error, children,
 }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-semibold text-gray-800">
+    <div className="space-y-2">
+      <label className="block text-base font-bold text-gray-800">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       {children}
     </div>
@@ -755,15 +755,15 @@ function Field({
 
 function ErrorMsg({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex items-center gap-1 text-xs text-red-500 mt-1">
-      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+    <p className="flex items-center gap-1.5 text-sm text-red-500 mt-1.5">
+      <AlertCircle className="w-4 h-4 shrink-0" />
       {children}
     </p>
   );
 }
 
 function inputCx(hasError: boolean) {
-  return `block w-full rounded-2xl border px-4 py-3.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all ${
+  return `block w-full rounded-2xl border px-5 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all shadow-sm ${
     hasError
       ? "border-red-300 bg-red-50"
       : "border-gray-200 bg-gray-50 hover:border-gray-300"
