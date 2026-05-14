@@ -7,6 +7,8 @@ import {
   MapPin, ChevronLeft, ChevronRight, Loader2, Check,
   LocateFixed, Camera, X, AlertCircle,
 } from "lucide-react";
+import LocationPickerWrapper from "@/components/location-picker/LocationPickerWrapper";
+import type { LocationData } from "@/components/location-picker/LocationPicker";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -569,6 +571,15 @@ function StepLocation({
 }) {
   const hasGps = data.latitude != null && data.longitude != null;
 
+  const handleLocationChange = (loc: LocationData) => {
+    update({
+      latitude: loc.lat,
+      longitude: loc.lng,
+      city: loc.city,
+      state: loc.state,
+    });
+  };
+
   return (
     <div className="space-y-6 max-w-lg">
       <div>
@@ -576,28 +587,11 @@ function StepLocation({
           ¿Dónde está tu equipo?
         </h1>
         <p className="text-gray-500 text-[15px]">
-          Los clientes ven la ciudad, nunca tu dirección exacta.
+          Busca una dirección o usa el mapa para ser preciso. Los clientes solo verán un área aproximada, nunca tu dirección exacta.
         </p>
       </div>
 
-      <button
-        type="button"
-        onClick={detectLocation}
-        disabled={locating}
-        className={`w-full flex items-center justify-center gap-2.5 p-4 rounded-2xl border-2 text-sm font-semibold transition-all duration-200 disabled:opacity-60 ${
-          hasGps
-            ? "border-green-300 bg-green-50 text-green-700"
-            : "border-gray-200 bg-gray-50 text-gray-600 hover:border-[#875B9A]/50 hover:text-[#875B9A] hover:bg-[#875B9A]/3"
-        }`}
-      >
-        {locating ? (
-          <><Loader2 className="w-4 h-4 animate-spin" />Detectando ubicación...</>
-        ) : hasGps ? (
-          <><Check className="w-4 h-4 text-green-600" strokeWidth={2.5} />Coordenadas detectadas ({data.latitude!.toFixed(4)}, {data.longitude!.toFixed(4)})</>
-        ) : (
-          <><LocateFixed className="w-4 h-4" />Usar mi ubicación actual <span className="text-gray-400 font-normal ml-1">(opcional)</span></>
-        )}
-      </button>
+      <LocationPickerWrapper onChange={handleLocationChange} />
 
       {locationError && (
         <p className="text-xs text-red-500 flex items-center gap-1.5">
@@ -605,38 +599,12 @@ function StepLocation({
         </p>
       )}
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-100" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-white px-3 text-xs text-gray-400">o escribe tu ubicación</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Ciudad" required error={errors.city}>
-          <input
-            type="text"
-            value={data.city}
-            onChange={(e) => update({ city: e.target.value })}
-            placeholder="Ej: Quito"
-            className={inputCx(!!errors.city)}
-          />
-          {errors.city && <ErrorMsg>{errors.city}</ErrorMsg>}
-        </Field>
-
-        <Field label="Provincia / Estado" required error={errors.state}>
-          <input
-            type="text"
-            value={data.state}
-            onChange={(e) => update({ state: e.target.value })}
-            placeholder="Ej: Pichincha"
-            className={inputCx(!!errors.state)}
-          />
-          {errors.state && <ErrorMsg>{errors.state}</ErrorMsg>}
-        </Field>
-      </div>
+      {(errors.city || errors.state) && (
+        <p className="text-xs text-red-500 flex items-center gap-1.5 bg-red-50 p-3 rounded-xl border border-red-100">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          Por favor, selecciona una ubicación válida en el mapa.
+        </p>
+      )}
 
       <div className="flex items-start gap-3 bg-blue-50 rounded-2xl p-4 border border-blue-100">
         <MapPin className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
