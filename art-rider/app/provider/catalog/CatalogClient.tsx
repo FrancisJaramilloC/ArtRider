@@ -4,7 +4,7 @@ import { useState, useTransition, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Listing } from "@/services/listingsService";
-import { togglePublish, deleteListing, createListing } from "@/services/listingsService";
+import { togglePublish, deleteListing } from "@/services/listingsService";
 import type { Package } from "@/services/packagesService";
 import { createPackage } from "@/services/packagesService";
 
@@ -143,104 +143,6 @@ function PublishToggle({ value, onChange }: { value: boolean; onChange: (v: bool
 function ErrorBanner({ message }: { message: string }) {
   return (
     <p className="text-xs font-medium text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{message}</p>
-  );
-}
-
-// ── Create Equipment Modal ─────────────────────────────────────────────────────
-
-function CreateEquipmentModal({ onClose }: { onClose: () => void }) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [preview, setPreview]      = useState<string | null>(null);
-  const [publish, setPublish]      = useState(true);
-  const [error, setError]          = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert("Maximo 5 MB."); e.target.value = ""; return; }
-    setPreview(URL.createObjectURL(file));
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!formRef.current) return;
-    const fd = new FormData(formRef.current);
-    fd.set("publishNow", String(publish));
-    setError(null);
-    startTransition(async () => {
-      const res = await createListing(null, fd);
-      if (res?.error) { setError(res.error); return; }
-      onClose();
-      window.location.reload();
-    });
-  }
-
-  return (
-    <ModalShell
-      title="Nuevo equipo"
-      subtitle="Completa la informacion de tu equipo"
-      formId="eq-form"
-      submitLabel="Guardar equipo"
-      pending={pending}
-      onClose={onClose}
-    >
-      <form ref={formRef} id="eq-form" onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
-        {error && <ErrorBanner message={error} />}
-
-        <PhotoUpload name="coverImage" previewUrl={preview} onFile={handleFile} />
-
-        <div>
-          <label htmlFor="eq-title" className={cls.label}>Nombre <span className="text-red-500">*</span></label>
-          <input id="eq-title" name="title" type="text" required minLength={3} maxLength={100}
-            placeholder="Ej: Parlante profesional 1000W" className={cls.input} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="eq-brand" className={cls.label}>Marca</label>
-            <input id="eq-brand" name="brand" type="text" maxLength={60} placeholder="JBL" className={cls.input} />
-          </div>
-          <div>
-            <label htmlFor="eq-model" className={cls.label}>Modelo</label>
-            <input id="eq-model" name="model" type="text" maxLength={60} placeholder="EON615" className={cls.input} />
-          </div>
-        </div>
-
-        <div>
-          <label className={cls.label}>Categoria <span className="text-red-500">*</span></label>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
-              <label key={cat.value}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 cursor-pointer text-sm font-medium text-gray-700 hover:border-gray-900 transition-all has-[:checked]:border-gray-900 has-[:checked]:bg-gray-900 has-[:checked]:text-white">
-                <input type="radio" name="category" value={cat.value} required className="sr-only" />
-                {cat.label}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="eq-price" className={cls.label}>Precio / dia (USD) <span className="text-red-500">*</span></label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-4 flex items-center text-gray-400 text-sm select-none">$</span>
-            <input id="eq-price" name="dailyPrice" type="number" required min="1" step="0.01" placeholder="0.00"
-              className={`${cls.input} pl-8`} />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="eq-desc" className={cls.label}>
-            Descripcion <span className="font-normal normal-case text-gray-400">(opcional)</span>
-          </label>
-          <textarea id="eq-desc" name="description" rows={3} maxLength={1000}
-            placeholder="Estado del equipo, que incluye, condiciones de alquiler..."
-            className={`${cls.input} resize-none`} />
-        </div>
-
-        <PublishToggle value={publish} onChange={setPublish} />
-      </form>
-    </ModalShell>
   );
 }
 
@@ -724,9 +626,7 @@ export default function CatalogClient({
 
   return (
     <>
-      {activeModal === "equipment" && (
-        <CreateEquipmentModal onClose={() => setActiveModal(null)} />
-      )}
+      {/* El formulario de equipo ahora vive en /provider/catalog/new */}
       {activeModal === "package" && (
         <CreatePackageModal
           publishedListings={publishedListings}
@@ -751,12 +651,12 @@ export default function CatalogClient({
                 )}
               </p>
             </div>
-            <button onClick={() => setActiveModal("equipment")} className={cls.btnPrimary}>
+            <Link href="/provider/catalog/new" className={cls.btnPrimary}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
               Nuevo equipo
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -813,7 +713,7 @@ export default function CatalogClient({
               </div>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              <AddNewCard label="Agregar equipo" hint="Publica un nuevo item en tu catalogo" onClick={() => setActiveModal("equipment")} />
+              <Link href="/provider/catalog/new" className="block"><AddNewCard label="Agregar equipo" hint="Publica un nuevo item en tu catalogo" onClick={() => {}} /></Link>
               {filtered.map((listing) => (
                 <div key={listing.id} className={loadingId === listing.id ? "opacity-40 pointer-events-none" : ""}>
                   <EquipmentCard listing={listing} onToggle={handleToggle} onDelete={handleDelete} />
