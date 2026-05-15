@@ -139,6 +139,7 @@ export default async function HomePage() {
       rating: 0,
       reviewCount: 0,
       icon: CATEGORY_ICONS[listing.category ?? ""] ?? "📦",
+      imageUrl: listing.cover_image_url || null,
     });
     return acc;
   }, {} as Record<string, any[]>);

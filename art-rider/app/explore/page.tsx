@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import { getListings } from "@/services/listingsService";
 import ListingCard from "@/components/features/listings/ListingCard";
 import ExploreMap from "@/components/explore/ExploreMap";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Explorar Equipos | ArtRider",
@@ -42,7 +40,7 @@ export default async function ExplorePage(props: {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white">
-      {/* Top Navigation */}
+      {/* Top Navigation — global BackButton already provides the back arrow */}
       <header className="flex-shrink-0 px-6 py-4 border-b border-gray-100 flex items-center justify-center bg-white z-10 relative shadow-sm">
         <div className="text-center">
           <h1 className="text-lg font-bold text-gray-900">

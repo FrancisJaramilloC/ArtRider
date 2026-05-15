@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 
 export interface HomepageListingCardProps {
   id: string;
@@ -12,6 +13,7 @@ export interface HomepageListingCardProps {
   reviewCount: number;
   badge?: string;
   icon: string;
+  imageUrl?: string | null;
 }
 
 export default function HomepageListingCard({
@@ -24,6 +26,7 @@ export default function HomepageListingCard({
   reviewCount,
   badge,
   icon,
+  imageUrl,
 }: HomepageListingCardProps) {
   return (
     <Link
@@ -33,10 +36,20 @@ export default function HomepageListingCard({
       {/* ── Image Area (Aspect Ratio 1:1 strict) ── */}
       <div className="relative aspect-[3/2] w-full rounded-2xl overflow-hidden bg-gray-100 mb-2.5 shrink-0 border border-slate-100">
         
-        {/* Placeholder emoji/icon for mock */}
-        <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-50 bg-gray-200 transition-transform duration-500 group-hover:scale-105">
-          {icon}
-        </div>
+        {/* Cover image or placeholder */}
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="320px"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-50 bg-gray-200 transition-transform duration-500 group-hover:scale-105">
+            {icon}
+          </div>
+        )}
 
         {/* Favorite Heart (Airbnb style floating icon) */}
         <button 
