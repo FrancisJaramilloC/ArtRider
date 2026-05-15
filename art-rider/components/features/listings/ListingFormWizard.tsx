@@ -87,7 +87,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
     state: "",
     latitude: null,
     longitude: null,
-    publishNow: false,
+    publishNow: true,
   });
 
   const update = (patch: Partial<WizardData>) =>

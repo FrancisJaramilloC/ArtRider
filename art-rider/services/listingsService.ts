@@ -300,25 +300,37 @@ export async function updateListing(
 export async function togglePublish(id: string, currentState: boolean) {
   const providerId = await getMyProviderId();
   if (!providerId) return { error: "No autenticado." };
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("listings")
+
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin
+    .from("listings")
     .update({ is_published: !currentState, updated_at: new Date().toISOString() })
-    .eq("id", id).eq("provider_id", providerId);
+    .eq("id", id)
+    .eq("provider_id", providerId);
+
   if (error) return { error: "Error al cambiar el estado." };
-  revalidatePath("/dashboard/listings");
+
+  revalidatePath("/provider/catalog");
   revalidatePath("/listings");
+  revalidatePath("/");
   return { success: true };
 }
 
 export async function deleteListing(id: string) {
   const providerId = await getMyProviderId();
   if (!providerId) return { error: "No autenticado." };
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("listings")
+
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin
+    .from("listings")
     .update({ deleted_at: new Date().toISOString(), is_published: false })
-    .eq("id", id).eq("provider_id", providerId);
+    .eq("id", id)
+    .eq("provider_id", providerId);
+
   if (error) return { error: "Error al eliminar." };
-  revalidatePath("/dashboard/listings");
+
+  revalidatePath("/provider/catalog");
   revalidatePath("/listings");
+  revalidatePath("/");
   return { success: true };
 }
