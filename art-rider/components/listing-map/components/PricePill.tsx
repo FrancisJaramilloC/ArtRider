@@ -9,8 +9,8 @@ export function PricePill({ price, isActive }: { price: number; isActive: boolea
   return (
     <div
       className={`
-        px-3 py-[5px] rounded-full font-semibold text-[12px] leading-none
-        whitespace-nowrap shadow-md transition-all duration-150 ease-out
+        px-4 py-1.5 rounded-full font-bold text-[13px] leading-none
+        whitespace-nowrap shadow-md transition-all duration-150 ease-out cursor-pointer
         ${
           isActive
             ? "bg-white text-gray-900 scale-110 shadow-lg shadow-black/20 ring-1 ring-gray-200"
