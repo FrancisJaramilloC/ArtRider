@@ -32,9 +32,13 @@ const LISTING_SELECT =
   "id, provider_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
 
 // ── Read (Public) ─────────────────────────────────────────────────────────────
+// Admin client is used here so that the addresses join is not blocked by RLS.
+// The addresses table policy only allows owners to read their own rows, which
+// means anonymous/other-user requests get null for the address join.
+// These functions only return published, non-deleted listings — safe to bypass.
 
 export async function getListings(): Promise<Listing[]> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("listings")
     .select(LISTING_SELECT)
@@ -46,7 +50,7 @@ export async function getListings(): Promise<Listing[]> {
 }
 
 export async function getListingById(id: string): Promise<Listing | null> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("listings")
     .select(LISTING_SELECT)
@@ -163,8 +167,8 @@ export async function createListing(prevState: any, formData: FormData) {
       state,
       postal_code: "000000",
       country: "EC",
-      latitude: latitude != null && !isNaN(latitude) ? latitude : 0,
-      longitude: longitude != null && !isNaN(longitude) ? longitude : 0,
+      latitude: latitude != null && !isNaN(latitude) && latitude !== 0 ? latitude : null,
+      longitude: longitude != null && !isNaN(longitude) && longitude !== 0 ? longitude : null,
     };
 
     const { data: newAddress, error: addrError } = await supabase
@@ -173,8 +177,10 @@ export async function createListing(prevState: any, formData: FormData) {
       .select("id")
       .single();
 
-    if (addrError || !newAddress)
+    if (addrError || !newAddress) {
+      console.error("[listingsService] addresses insert error:", addrError);
       return { error: "Error al guardar la ubicación. Intenta de nuevo." };
+    }
 
     const addressId = newAddress.id;
 
@@ -189,14 +195,17 @@ export async function createListing(prevState: any, formData: FormData) {
       .select("id")
       .single();
 
-    if (insertError)
+    if (insertError) {
+      console.error("[listingsService] listings insert error:", insertError);
       return { error: "Error al guardar el equipo. Intenta de nuevo." };
+    }
 
     revalidatePath("/provider/catalog");
     revalidatePath("/listings");
     revalidatePath("/map");
     return { success: true, id: newListing.id };
-  } catch {
+  } catch (err) {
+    console.error("[listingsService] createListing unexpected error:", err);
     return { error: "Ocurrió un error inesperado." };
   }
 }

@@ -1,5 +1,6 @@
 import { getListingById } from "@/services/listingsService";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -147,9 +148,12 @@ export default async function ListingDetailPage({
       : 0;
 
   // ── Layer 3 data: Nearby listings for the map ──────────────────────────────
+  // Admin client bypasses RLS on addresses so coordinates are always readable
+  // for published listings regardless of which user is viewing the page.
   let nearbyListings: any[] = [];
   try {
-    const { data } = await supabase
+    const adminSupabase = createSupabaseAdminClient();
+    const { data } = await adminSupabase
       .from("listings")
       .select(`
         *,

@@ -31,17 +31,24 @@ type NominatimResult = {
 type Props = {
   onChange: (location: LocationData) => void;
   defaultCenter?: [number, number]; // [lng, lat]
+  /** Pre-seeded from a saved listing — initializes the map immediately */
+  initialLocation?: {
+    lat: number;
+    lng: number;
+    city?: string;
+    state?: string;
+  };
 };
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const DEFAULT_CENTER: [number, number] = [-78.467838, -0.180653]; // Quito
+const DEFAULT_CENTER: [number, number] = [-79.20422, -3.99313]; // Loja
 const DARK_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTER }: Props) {
+export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTER, initialLocation }: Props) {
   // Search state
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
@@ -57,6 +64,8 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
   const mapRef = useRef<maplibregl.Map | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  // Prevents the forward-geocode effect from firing on programmatic query changes
+  const userTypedRef = useRef(false);
 
   // ── Initialize Map ──────────────────────────────────────────────────────
 
@@ -96,9 +105,38 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
     []
   );
 
+  // ── One-time init from saved listing (edit mode) ───────────────────────
+
+  useEffect(() => {
+    if (!initialLocation) return;
+    const { lat, lng, city, state } = initialLocation;
+
+    // Initialize the map immediately — visible without any user interaction
+    initMap([lng, lat]);
+
+    // Pre-fill the search bar with city + state so it's not blank
+    const hint = city && state ? `${city}, ${state}` : "";
+    if (hint) {
+      setQuery(hint);
+      setCurrentAddress(hint);
+    }
+
+    // Emit location data immediately so the form has valid values on load
+    if (city && state) {
+      onChange({ lat, lng, city, state, displayAddress: hint });
+    }
+
+    // Fire reverse geocode to replace the hint with the real street address
+    reverseGeocode(lat, lng);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Nominatim: Forward Geocoding (Search) ───────────────────────────────
 
   useEffect(() => {
+    // Skip search when query was set programmatically (e.g., init from saved listing)
+    if (!userTypedRef.current) return;
+
     if (query.length < 3) {
       setResults([]);
       setShowResults(false);
@@ -234,7 +272,7 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
           <input
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { userTypedRef.current = true; setQuery(e.target.value); }}
             onFocus={() => results.length > 0 && setShowResults(true)}
             placeholder="Busca una dirección, lugar o zona..."
             className="block w-full rounded-2xl border border-gray-200 bg-white pl-12 pr-4 py-3.5 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all shadow-sm"

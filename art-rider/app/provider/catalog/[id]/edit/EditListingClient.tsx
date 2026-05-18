@@ -56,6 +56,10 @@ export default function EditListingClient({ listing, updateAction }: Props) {
               description: listing.description,
               cover_image_url: listing.cover_image_url,
               is_published: listing.is_published,
+              city: listing.address?.city ?? undefined,
+              state: listing.address?.state ?? undefined,
+              latitude: listing.address?.latitude ?? null,
+              longitude: listing.address?.longitude ?? null,
             }}
             submitLabel="Guardar cambios"
           />

@@ -9,7 +9,7 @@ import {
   MapControls,
   MarkerTooltip,
 } from "@/components/ui/map";
-import { Listing } from "@/types";
+import type { Listing } from "@/services/listingsService";
 import { PricePill } from "@/components/listing-map/components/PricePill";
 import { PopupCard } from "@/components/listing-map/components/PopupCard";
 import type { MapListing } from "@/components/listing-map/types";
@@ -22,8 +22,8 @@ interface ExploreMapProps {
 export default function ExploreMap({ listings, center }: ExploreMapProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Default to Cuenca/Ecuador if no center provided
-  const mapCenter: [number, number] = center || [-79.0045, -2.9001];
+  // Default to Loja, Ecuador if no center provided
+  const mapCenter: [number, number] = center || [-79.20422, -3.99313];
 
   // Helper to safely extract MapListing format
   const getMapListing = (listing: any): MapListing | null => {

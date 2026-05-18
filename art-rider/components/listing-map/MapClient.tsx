@@ -36,10 +36,13 @@ export default function MapClient({
     setSelectedId((prev) => (prev === id ? null : id));
   };
 
-  const centerCoords: [number, number] = [
-    currentListing.address?.longitude ?? DEFAULT_CENTER[0],
-    currentListing.address?.latitude ?? DEFAULT_CENTER[1],
-  ];
+  const addrLng = currentListing.address?.longitude;
+  const addrLat = currentListing.address?.latitude;
+  const hasValidCoords =
+    addrLng != null && addrLat != null && !(addrLng === 0 && addrLat === 0);
+  const centerCoords: [number, number] = hasValidCoords
+    ? [addrLng, addrLat]
+    : DEFAULT_CENTER;
 
   return (
     <div className="w-full h-full relative group">
