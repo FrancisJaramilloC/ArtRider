@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { MapPin } from "lucide-react";
 import { Suspense } from "react";
 import { getListings } from "@/services/listingsService";
-import Navbar from "@/components/layout/Navbar";
 import ExploreFilterBar from "@/components/explore/ExploreFilterBar";
 import ExploreCard from "@/components/explore/ExploreCard";
 import ExploreMap from "@/components/explore/ExploreMap";
@@ -47,19 +46,19 @@ export default async function ExplorePage(props: {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white">
 
-      {/* ── Navbar: mismo que landing page ── */}
-      <Navbar hideNavLinks />
-
-      {/* ── Barra de categorías estilo Airbnb ── */}
-      <Suspense>
-        <ExploreFilterBar city={city} />
-      </Suspense>
-
       {/* ── Body: split 55 / 45 ── */}
       <div className="flex flex-1 overflow-hidden min-h-0">
 
         {/* ── Left 55%: catálogo scrollable ── */}
-        <div className="w-[55%] h-full overflow-y-auto shrink-0 bg-white">
+        <div className="w-full lg:w-[55%] h-full overflow-y-auto shrink-0 bg-white">
+
+          {/* Barra de filtros — debajo del BackButton */}
+          <div className="mt-14 sticky top-0 z-10 bg-white">
+            <Suspense>
+              <ExploreFilterBar city={city} />
+            </Suspense>
+          </div>
+
           {listings.length === 0 ? (
 
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-10">
@@ -76,15 +75,8 @@ export default async function ExplorePage(props: {
 
             <div className="px-6 pt-5 pb-24">
 
-              {/* Contador — mismo estilo que Airbnb "X+ estancias" */}
-              <p className="text-[13px] font-semibold text-gray-900 mb-5">
-                {listings.length}{" "}
-                {listings.length === 1 ? "equipo disponible" : "equipos disponibles"}
-                {city ? ` en ${city}` : ""}
-              </p>
-
               {/* Grid 2 columnas */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-7">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-7">
                 {listings.map((listing) => (
                   <ExploreCard key={listing.id} listing={listing} />
                 ))}
@@ -96,7 +88,7 @@ export default async function ExplorePage(props: {
 
         {/* ── Right 45%: mapa sticky con contorno izquierdo ── */}
         <div
-          className="flex-1 h-full relative"
+          className="hidden lg:block flex-1 h-full relative"
           style={{ boxShadow: "inset 6px 0 10px -6px rgba(0,0,0,0.10)" }}
         >
           <ExploreMap listings={listings} center={mapCenter} />
