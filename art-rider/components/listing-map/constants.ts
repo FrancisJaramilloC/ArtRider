@@ -1,7 +1,7 @@
 // ── Constantes del módulo de mapa ────────────────────────────────────────────
 
-/** Centro por defecto del mapa (Quito, Ecuador) */
-export const DEFAULT_CENTER: [number, number] = [-78.467838, -0.180653];
+/** Centro por defecto del mapa (Loja, Ecuador) */
+export const DEFAULT_CENTER: [number, number] = [-79.20422, -3.99313];
 
 /** Labels de categorías en español */
 export const CATEGORY_LABELS: Record<string, string> = {

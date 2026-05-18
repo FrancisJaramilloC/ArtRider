@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Program Files/nodejs//**)",
+      "Read(//mnt/c/Program Files/**)",
+      "Bash(/c/Program Files/nodejs/node.exe *)",
+      "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")",
+      "WebFetch(domain:www.airbnb.com)",
+      "Bash(pnpm add *)",
+      "Bash(\"/c/Program Files/nodejs/node\" -v)",
+      "Bash(\"/c/Program Files/nodejs/npm\" install framer-motion clsx tailwind-merge lucide-react --legacy-peer-deps)",
+      "Bash(\"/c/Program Files/nodejs/npm\" list framer-motion clsx tailwind-merge lucide-react --depth=0)"
+    ]
+  }
+}

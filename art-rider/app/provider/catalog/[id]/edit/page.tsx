@@ -12,10 +12,11 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
 
   const supabase = await createSupabaseServerClient();
 
-  // Fetch listing including unpublished — only the owner can edit their own drafts
+  // Fetch listing including unpublished — only the owner can edit their own drafts.
+  // Join addresses so we can pre-fill location fields in the form.
   const { data: listing, error } = await supabase
     .from("listings")
-    .select("*")
+    .select("*, address:addresses(city, state, latitude, longitude)")
     .eq("id", id)
     .eq("provider_id", providerId)
     .is("deleted_at", null)

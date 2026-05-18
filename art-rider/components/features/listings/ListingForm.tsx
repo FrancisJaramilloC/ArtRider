@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
+import LocationPickerWrapper from "@/components/location-picker/LocationPickerWrapper";
+import type { LocationData } from "@/components/location-picker/LocationPicker";
 
 const CATEGORIES = [
   { value: "audio",       label: "Sonido"       },
@@ -45,11 +47,22 @@ export default function ListingForm({
   const [publishNow, setPublishNow] = useState(defaultValues.is_published ?? false);
   const [imageError, setImageError] = useState(false);
 
-  // Location state
-  const [latitude, setLatitude] = useState<number | null>(defaultValues.latitude ?? null);
-  const [longitude, setLongitude] = useState<number | null>(defaultValues.longitude ?? null);
-  const [locatingUser, setLocatingUser] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  // Location state — driven by LocationPicker's onChange
+  const [locationData, setLocationData] = useState({
+    city: defaultValues.city ?? "",
+    state: defaultValues.state ?? "",
+    latitude: defaultValues.latitude ?? null as number | null,
+    longitude: defaultValues.longitude ?? null as number | null,
+  });
+
+  const handleLocationChange = (loc: LocationData) => {
+    setLocationData({
+      city: loc.city,
+      state: loc.state,
+      latitude: loc.lat,
+      longitude: loc.lng,
+    });
+  };
 
   const isEditing = !!defaultValues.cover_image_url;
 
@@ -201,103 +214,27 @@ export default function ListingForm({
         <p className="text-xs text-gray-400">Máximo 1000 caracteres.</p>
       </div>
 
-      {/* Location */}
+      {/* Location — same interactive picker as the creation wizard */}
       <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
-          Ubicación del equipo
-        </label>
+        <LocationPickerWrapper
+          onChange={handleLocationChange}
+          initialLocation={
+            defaultValues.latitude != null && defaultValues.longitude != null
+              ? {
+                  lat: defaultValues.latitude,
+                  lng: defaultValues.longitude,
+                  city: defaultValues.city,
+                  state: defaultValues.state,
+                }
+              : undefined
+          }
+        />
 
-        {/* Auto-detect button */}
-        <button
-          type="button"
-          disabled={locatingUser}
-          onClick={() => {
-            if (!("geolocation" in navigator)) {
-              setLocationError("Tu navegador no soporta geolocalización.");
-              return;
-            }
-            setLocatingUser(true);
-            setLocationError(null);
-            navigator.geolocation.getCurrentPosition(
-              (pos) => {
-                setLatitude(pos.coords.latitude);
-                setLongitude(pos.coords.longitude);
-                setLocatingUser(false);
-              },
-              (err) => {
-                setLocationError(
-                  err.code === 1
-                    ? "Permiso de ubicación denegado. Habilítalo en tu navegador."
-                    : "No se pudo obtener tu ubicación. Intenta de nuevo."
-                );
-                setLocatingUser(false);
-              },
-              { enableHighAccuracy: true, timeout: 10000 }
-            );
-          }}
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 hover:border-[#875B9A] hover:text-[#875B9A] transition-all w-full justify-center disabled:opacity-50"
-        >
-          {locatingUser ? (
-            <>
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
-              </svg>
-              Detectando ubicación...
-            </>
-          ) : latitude && longitude ? (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-              Ubicación detectada
-            </>
-          ) : (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-              </svg>
-              Usar mi ubicación actual
-            </>
-          )}
-        </button>
-
-        {locationError && (
-          <p className="text-xs text-red-500">{locationError}</p>
-        )}
-
-        {latitude && longitude && (
-          <p className="text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2 border border-green-200">
-            📍 Coordenadas: {latitude.toFixed(5)}, {longitude.toFixed(5)}
-          </p>
-        )}
-
-        {/* City + State */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label htmlFor="city" className="block text-xs font-medium text-gray-500">Ciudad</label>
-            <input
-              id="city" name="city" type="text"
-              defaultValue={defaultValues.city ?? ""}
-              placeholder="Ej: Quito"
-              className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label htmlFor="state" className="block text-xs font-medium text-gray-500">Provincia / Estado</label>
-            <input
-              id="state" name="state" type="text"
-              defaultValue={defaultValues.state ?? ""}
-              placeholder="Ej: Pichincha"
-              className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all"
-            />
-          </div>
-        </div>
-
-        {/* Hidden coordinate fields */}
-        <input type="hidden" name="latitude" value={latitude ?? ""} />
-        <input type="hidden" name="longitude" value={longitude ?? ""} />
+        {/* Hidden fields read by the server action */}
+        <input type="hidden" name="city"      value={locationData.city} />
+        <input type="hidden" name="state"     value={locationData.state} />
+        <input type="hidden" name="latitude"  value={locationData.latitude  ?? ""} />
+        <input type="hidden" name="longitude" value={locationData.longitude ?? ""} />
       </div>
 
       {/* Publish toggle */}
