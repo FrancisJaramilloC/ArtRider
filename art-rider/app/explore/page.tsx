@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
-import { MapPin } from "lucide-react";
-import { Suspense } from "react";
 import { getListings } from "@/services/listingsService";
-import Navbar from "@/components/layout/Navbar";
-import ExploreFilterBar from "@/components/explore/ExploreFilterBar";
-import ExploreCard from "@/components/explore/ExploreCard";
+import ListingCard from "@/components/features/listings/ListingCard";
 import ExploreMap from "@/components/explore/ExploreMap";
 
 export const metadata: Metadata = {
@@ -13,95 +9,74 @@ export const metadata: Metadata = {
 };
 
 export default async function ExplorePage(props: {
-  searchParams: Promise<{ city?: string; category?: string }>;
+  searchParams: Promise<{ city?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const city = searchParams.city;
-  const category = searchParams.category ?? "all";
   const allListings = await getListings();
 
-  // Filter by city and/or category
-  const listings = allListings.filter((l: any) => {
-    const addr = Array.isArray(l.address) ? l.address[0] : l.address;
-    const listingCity = addr?.city?.trim() || "Otras ubicaciones";
+  // Filter listings by city if provided
+  const listings = city
+    ? allListings.filter((l: any) => {
+        const addr = Array.isArray(l.address) ? l.address[0] : l.address;
+        const listingCity = addr?.city?.trim() || "Otras ubicaciones";
+        return listingCity === city;
+      })
+    : allListings;
 
-    const cityOk = !city || listingCity === city;
-    const catOk  = !category || category === "all" || l.category === category;
-
-    return cityOk && catOk;
-  });
-
-  // Derive map center from first listing with valid coordinates
+  // Calculate default center for the map based on available listings
   let mapCenter: [number, number] | undefined = undefined;
-  const seed = listings.find((l: any) => {
+  const listingWithCoords = listings.find((l: any) => {
     const addr = Array.isArray(l.address) ? l.address[0] : l.address;
     return addr?.latitude != null && addr?.longitude != null;
   });
-  if (seed) {
-    const addr = Array.isArray((seed as any).address)
-      ? (seed as any).address[0]
-      : (seed as any).address;
+  
+  if (listingWithCoords) {
+    const addr = Array.isArray((listingWithCoords as any).address) 
+      ? (listingWithCoords as any).address[0] 
+      : (listingWithCoords as any).address;
     mapCenter = [addr.longitude, addr.latitude];
   }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white">
+      {/* Top Navigation — global BackButton already provides the back arrow */}
+      <header className="flex-shrink-0 px-6 py-4 border-b border-gray-100 flex items-center justify-center bg-white z-10 relative shadow-sm">
+        <div className="text-center">
+          <h1 className="text-lg font-bold text-gray-900">
+            {city ? `Equipos en ${city}` : "Todos los equipos"}
+          </h1>
+          <p className="text-xs text-gray-500 font-medium">
+            {listings.length} {listings.length === 1 ? "equipo" : "equipos"}
+          </p>
+        </div>
+      </header>
 
-      {/* ── Navbar: mismo que landing page ── */}
-      <Navbar hideNavLinks />
-
-      {/* ── Barra de categorías estilo Airbnb ── */}
-      <Suspense>
-        <ExploreFilterBar city={city} />
-      </Suspense>
-
-      {/* ── Body: split 55 / 45 ── */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
-
-        {/* ── Left 55%: catálogo scrollable ── */}
-        <div className="w-[55%] h-full overflow-y-auto shrink-0 bg-white">
+      {/* Split Screen Layout */}
+      <div className="flex-1 flex overflow-hidden">
+        
+        {/* Left Side: Scrollable List */}
+        <div className="w-full lg:w-[600px] xl:w-[700px] flex-shrink-0 overflow-y-auto px-6 py-8 pb-32">
           {listings.length === 0 ? (
-
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-center px-10">
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                <MapPin size={17} strokeWidth={1.5} className="text-gray-400" />
-              </div>
-              <h2 className="text-[14px] font-semibold text-gray-900">Sin resultados</h2>
-              <p className="text-[12.5px] text-gray-500 max-w-[200px] leading-relaxed">
-                Prueba explorando otra ciudad o cambia los filtros.
-              </p>
+            <div className="text-center py-20">
+              <span className="text-4xl">📍</span>
+              <h2 className="mt-4 text-xl font-semibold text-gray-900">No hay resultados</h2>
+              <p className="mt-2 text-gray-500">Prueba buscando en otra ciudad o explorando el mapa.</p>
             </div>
-
           ) : (
-
-            <div className="px-6 pt-5 pb-24">
-
-              {/* Contador — mismo estilo que Airbnb "X+ estancias" */}
-              <p className="text-[13px] font-semibold text-gray-900 mb-5">
-                {listings.length}{" "}
-                {listings.length === 1 ? "equipo disponible" : "equipos disponibles"}
-                {city ? ` en ${city}` : ""}
-              </p>
-
-              {/* Grid 2 columnas */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-7">
-                {listings.map((listing) => (
-                  <ExploreCard key={listing.id} listing={listing} />
-                ))}
-              </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {listings.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} />
+              ))}
             </div>
           )}
         </div>
 
-        {/* ── Right 45%: mapa sticky con contorno izquierdo ── */}
-        <div
-          className="flex-1 h-full relative"
-          style={{ boxShadow: "inset 6px 0 10px -6px rgba(0,0,0,0.10)" }}
-        >
+        {/* Right Side: Sticky Map */}
+        <div className="hidden lg:block flex-1 relative bg-gray-100 border-l border-gray-200">
           <ExploreMap listings={listings} center={mapCenter} />
         </div>
-
+        
       </div>
     </div>
   );

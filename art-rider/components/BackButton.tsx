@@ -16,7 +16,7 @@ export default function BackButton() {
   if (!mounted) return null;
 
   // No lo mostramos en el root principal ni en el home del dashboard
-  if (pathname === "/" || pathname === "/dashboard" || pathname === "/login" || pathname === "/register" || pathname === "/explore") {
+  if (pathname === "/" || pathname === "/dashboard" || pathname === "/login" || pathname === "/register") {
     return null;
   }
 
