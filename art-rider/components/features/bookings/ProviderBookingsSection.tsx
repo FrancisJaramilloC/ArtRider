@@ -2,6 +2,7 @@
 
 import type { BookingWithDetails, BookingStatus } from "@/services/bookingsService";
 
+// Configuración de estados de reserva
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
   AWAITING_SIGNATURES: { label: "Esperando firmas", className: "bg-amber-50 text-amber-700" },
   PAID:               { label: "Pagado",            className: "bg-blue-50 text-blue-700"  },
@@ -12,13 +13,16 @@ const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }>
   ARCHIVED:           { label: "Archivado",          className: "bg-gray-100 text-gray-400" },
 };
 
+// Mapeo de meses abreviados
 const MONTHS_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
+// Formateo de fechas
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
   return `${d.getUTCDate()} ${MONTHS_SHORT[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
+// Props de la sección de reservas del proveedor
 interface ProviderBookingsSectionProps {
   bookings: BookingWithDetails[];
   onArchive: (bookingId: string, clientName: string) => void;
@@ -35,14 +39,14 @@ export default function ProviderBookingsSection({
         Gestiona las reservas de tus equipos de audio e iluminacion
       </p>
 
-      {bookings.length === 0 ? (
+      {bookings.length === 0 ? ( // Si no hay reservas  
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 mt-6">
           <p className="text-gray-500 font-medium">No tienes solicitudes activas</p>
           <p className="text-gray-400 text-sm mt-1">
             Cuando alguien reserve tus equipos apareceran aqui
           </p>
         </div>
-      ) : (
+      ) : ( // Si hay reservas
         <div className="space-y-4 mt-6">
           {bookings.map((booking) => {
             const clientName = booking.client_profile?.full_name ?? "Cliente";
@@ -52,6 +56,7 @@ export default function ProviderBookingsSection({
               booking.payment_confirmed &&
               !booking.provider_has_reviewed;
 
+            // Renderizado de la información de la reserva
             return (
               <div
                 key={booking.id}
@@ -73,7 +78,7 @@ export default function ProviderBookingsSection({
                     {STATUS_CONFIG[booking.status].label}
                   </span>
                 </div>
-
+                {/* Renderizado de los equipos reservados */}
                 <div className="mt-3">
                   {booking.booking_units.map((u) => (
                     <span key={u.id} className="block text-sm font-medium text-gray-800">
@@ -82,6 +87,7 @@ export default function ProviderBookingsSection({
                   ))}
                 </div>
 
+                {/* Renderizado de la información de la reserva */}
                 <div className="mt-3 flex justify-between items-end">
                   <span className="text-sm text-gray-500">
                     {formatDate(booking.start_date)} &rarr; {formatDate(booking.end_date)}
@@ -91,6 +97,7 @@ export default function ProviderBookingsSection({
                   </span>
                 </div>
 
+                {/* Renderizado de la fecha de la reserva */}
                 <div className="mt-3 flex items-center justify-between">
                   <p className="text-xs text-gray-400">
                     Reservado el {formatDate(booking.created_at)}

@@ -1,18 +1,25 @@
+/*
+ * Página de información personal
+ * Muestra el formulario de perfil y secciones adicionales
+ */
+
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
 import ProfileForm from "./ProfileForm";
 
+//  Componente de la pagina de informacion personal
 export default async function PersonalInfoPage() {
   const supabase = await createSupabaseServerClient();
 
-  // Explicit backend token resolution parsing
+  //  Datos del usuario
   const { data: { user } } = await supabase.auth.getUser();
 
+  //  Redirigir si el usuario no esta autenticado
   if (!user) {
     redirect("/login");
   }
 
-  // Fetch contextual user mapping accurately protected by RLS
+  //  Datos del perfil del usuario
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
@@ -38,10 +45,11 @@ export default async function PersonalInfoPage() {
     avatarUpdatedAt: profile.avatar_updated_at || null,
   };
 
+  //  Renderizado de la pagina
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Información Personal</h2>
         <p className="text-[0.95rem] text-gray-500 mt-1">
@@ -52,7 +60,7 @@ export default async function PersonalInfoPage() {
       {/* Encapsulation: Offloading React hooks boundary to separate module keeping routing immutable */}
       <ProfileForm initialData={initialData} />
 
-      {/* ── Secciones Adicionales (Airbnb Style) ── */}
+      {/* Secciones Adicionales*/}
       <div className="pt-6 border-t border-gray-200">
         <div className="flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl cursor-pointer transition-colors group">
           <div className="text-gray-900 group-hover:text-[#875B9A] transition-colors">

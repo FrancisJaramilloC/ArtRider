@@ -11,14 +11,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+// Metadata de la página
 export const metadata: Metadata = {
   title: "ArtRider — Alquila Equipos Creativos para tu Evento",
   description:
     "Marketplace de alquiler de equipos de audio, iluminación y video. Conecta con propietarios verificados y reserva con confianza.",
 };
 
-// ── Category maps ──────────────────────────────────────────────────────────────
-
+//  Mapas de categorías
 const CATEGORY_ICONS: Record<string, string> = {
   audio: "🔊", lighting: "💡", video: "🎥", effects: "✨", other: "📦",
 };
@@ -27,8 +27,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   audio: "Sonido", lighting: "Iluminación", video: "Video", effects: "Efectos", other: "Otro",
 };
 
-// ─── Shared section header ─────────────────────────────────────────────────────
-
+//  Encabezado de sección compartido
 function SectionHeader({
   title,
   subtitle,
@@ -42,7 +41,7 @@ function SectionHeader({
   ctaLabel?: string;
   ctaHref?: string;
 }) {
-  return (
+  return ( 
     <div className={`flex ${centered ? "flex-col items-center text-center" : "flex-row flex-wrap items-center justify-between"} mb-5 sm:mb-8 gap-3 sm:gap-4`}>
       <div>
         <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight">
@@ -67,13 +66,12 @@ function SectionHeader({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
+//  Página principal
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
   const { data: authData } = await supabase.auth.getUser();
 
-  // ── Provider check (server-side) — determines CTA visibility ──────────────
+  //  Verificación de proveedor (lado del servidor) — determina la visibilidad del CTA
   let isProvider = false;
   if (authData?.user) {
     const { data: providerRow } = await supabase
@@ -84,7 +82,7 @@ export default async function HomePage() {
     isProvider = !!providerRow;
   }
 
-  // ── Fetch real published listings ──────────────────────────────────────────
+  //  Obtención de listados reales publicados
   let realListings: {
     id: string;
     title: string | null;
@@ -95,10 +93,10 @@ export default async function HomePage() {
   try {
     realListings = await getListings();
   } catch {
-    // silently fail — section hidden if empty
+    // falló silenciosamente — la sección se oculta si está vacía
   }
 
-  // ── Fetch real published packages (all providers, public view) ─────────────
+  //  Obtención de paquetes reales publicados (vista pública de todos los proveedores)
   let realPackages: { id: string; title: string; daily_price: number }[] = [];
   try {
     const { data } = await supabase
@@ -109,10 +107,10 @@ export default async function HomePage() {
       .order("created_at", { ascending: false });
     realPackages = (data ?? []) as { id: string; title: string; daily_price: number }[];
   } catch {
-    // silently fail — section hidden if empty
+    // falló silenciosamente — la sección se oculta si está vacía
   }
 
-  // ── Map to card format for packages ───────────────────────
+  //  Mapear a formato de tarjeta para paquetes
   const featuredPackages = realPackages.slice(0, 8).map((pkg) => ({
     id: pkg.id,
     title: pkg.title,
@@ -124,12 +122,13 @@ export default async function HomePage() {
     icon: "📦",
   }));
 
-  // Group listings by city for the homepage
+  //  Agrupar listados por ciudad para la página de inicio
   const listingsByCity = realListings.reduce((acc, listing: any) => {
     const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
     const city = addr?.city?.trim() || "Otras ubicaciones";
     
-    if (!acc[city]) acc[city] = [];
+    //Renderizado de la tarjeta de listado por ciudad
+    if (!acc[city]) acc[city] = []; //Verifica si la ciudad existe en el acumulador
     acc[city].push({
       id: listing.id,
       title: listing.title ?? "Equipo sin título",
@@ -146,7 +145,7 @@ export default async function HomePage() {
 
   const sortedCities = Object.entries(listingsByCity).sort(([, a], [, b]) => b.length - a.length);
 
-  // ── Static categories ──────────────────────────────────────────────────────
+  //  Categorías estáticas
   const CATEGORIES = [
     { title: "Sonido",      imageSrc: "/category-sonido.png",      href: "/listings?category=audio" },
     { title: "Iluminación", imageSrc: "/category-iluminacion.png", href: "/listings?category=lighting" },
@@ -154,7 +153,7 @@ export default async function HomePage() {
     { title: "Video",       imageSrc: "/category-video.png",       href: "/listings?category=video" },
     { title: "Efectos",     imageSrc: "/category-efectos.png",     href: "/listings?category=effects" },
   ];
-
+  // Renderizado de la página principal
   return (
     <>
       <Navbar initialUser={authData?.user || null} />
@@ -193,7 +192,7 @@ export default async function HomePage() {
                       <ChevronRight className="w-5 h-5" />
                     </span>
                   </Link>
-
+                  {/* Renderizado de la lista de equipos por ciudad*/}
                   <div className="-mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pb-4 overflow-x-auto flex gap-4 md:gap-5 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                     {cityListings.map((item) => (
                       <div key={item.id} className="w-[280px] sm:w-[320px] shrink-0 snap-start">
@@ -204,6 +203,7 @@ export default async function HomePage() {
                 </div>
               ))
             ) : (
+              //Renderizado de la tarjeta de listado por ciudad
               <div>
                 <SectionHeader title="Equipos destacados" />
                 <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 py-12 px-6 text-center">
@@ -236,6 +236,7 @@ export default async function HomePage() {
                 ))}
               </div>
             ) : (
+              //Renderizado de la tarjeta de listado por ciudad
               <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 py-12 px-6 text-center">
                 <span className="text-3xl" aria-hidden="true">📦</span>
                 <p className="text-sm font-medium text-gray-500">
@@ -251,7 +252,7 @@ export default async function HomePage() {
 
         <HowItWorks />
 
-        {/* ── Become a provider CTA — hidden from existing providers ── */}
+        {/* ── CTA para convertirse en proveedor — escondido para proveedores existentes ── */}
         {!isProvider && <BecomeProviderCTA />}
 
       </main>

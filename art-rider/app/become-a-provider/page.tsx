@@ -6,11 +6,13 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
+// componente que muestra un boton CTA para convertirse en proveedor
 function ProviderCTAButton({ className }: { className?: string }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
+  // useEffect para obtener el usuario
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -19,6 +21,7 @@ function ProviderCTAButton({ className }: { className?: string }) {
     };
     getUser();
 
+    // useEffect para manejar el cambio de estado de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
@@ -28,6 +31,7 @@ function ProviderCTAButton({ className }: { className?: string }) {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
+  // si el usuario no está autenticado, mostrar boton de inicio de sesión
   if (loading) {
     return (
       <span className={className ?? ""}>
@@ -37,6 +41,7 @@ function ProviderCTAButton({ className }: { className?: string }) {
     );
   }
 
+  // si el usuario está autenticado, redirigirlo a su panel
   if (user) {
     return (
       <Link href="/become-a-provider/onboarding" className={className ?? ""}>
@@ -46,6 +51,7 @@ function ProviderCTAButton({ className }: { className?: string }) {
     );
   }
 
+  // si el usuario no está autenticado, mostrar boton de inicio de sesión
   return (
     <Link
       href="/login?redirect=/become-a-provider"
@@ -57,6 +63,7 @@ function ProviderCTAButton({ className }: { className?: string }) {
   );
 }
 
+// componente principal de la pagina de registro
 export default function BecomeProviderLanding() {
   return (
     <div className="flex flex-col bg-white">
@@ -74,15 +81,15 @@ export default function BecomeProviderLanding() {
           Convierte tus equipos de cámara, iluminación y sonido en un activo rentable. Únete a la plataforma líder de renta audiovisual.
         </p>
 
-        {/* Dynamic CTA — top */}
+        {/* boton dinamico */}
         <ProviderCTAButton className="relative z-10 inline-flex items-center gap-2.5 bg-[#1C1C1E] hover:bg-black text-white px-8 py-3.5 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg" />
       </section>
 
-      {/* ── Section 2: 0% Commission ── */}
+      {/* seccion 2: 0% de comision */}
       <section className="w-full bg-[#FAFAFA] py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12">
           
-          {/* Left: Text */}
+          {/* seccion 2 izquierda: texto */}
           <div className="flex-1 flex flex-col justify-center">
             <span className="text-[#875B9A] font-semibold text-xs tracking-widest uppercase mb-4">Modelo de negocio</span>
             <h2 className="text-2xl md:text-3xl font-semibold tracking-tight leading-snug text-gray-900 mb-4">
@@ -98,7 +105,7 @@ export default function BecomeProviderLanding() {
             </div>
           </div>
           
-          {/* Right: Visual Placeholder */}
+          {/* seccion 2 derecha: visualizacion de la app */}
           <div className="flex-1 w-full">
             <div className="w-full aspect-[4/3] rounded-2xl bg-gray-100 border border-gray-200 flex flex-col items-center justify-center overflow-hidden relative">
                <div className="w-16 h-16 bg-white/60 rounded-full flex items-center justify-center mb-3 shadow-sm backdrop-blur-md">
@@ -111,7 +118,7 @@ export default function BecomeProviderLanding() {
         </div>
       </section>
 
-      {/* ── Section 3: Security & Support ── */}
+      {/* seccion 3: seguridad */}
       <section className="w-full bg-[#1C1C1E] text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -147,7 +154,7 @@ export default function BecomeProviderLanding() {
         </div>
       </section>
 
-      {/* ── Section 4: Final CTA ── */}
+      {/* seccion 4: CTA final */}
       <section className="py-16 flex flex-col items-center text-center px-4 sm:px-6 lg:px-8 bg-white">
         <h2 className="text-2xl md:text-3xl font-semibold tracking-tight text-gray-900 leading-snug mb-6">
           ¿Listo para monetizar?

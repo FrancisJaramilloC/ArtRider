@@ -1,25 +1,26 @@
 "use client";
 
+// Componente de la seccion hero
 export default function HeroSection() {
   return (
     <section className="bg-white px-4 sm:px-6 lg:px-8 py-8 sm:py-12 text-center flex flex-col items-center">
       <div className="max-w-[800px] w-full relative">
-        {/* ── Main headline ── */}
+        {/* ── Titular principal ── */}
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-3 leading-tight">
       Encuentra el equipo perfecto para <br className="hidden md:block" />
       <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
         tu evento
       </span>
       </h1>
-        {/* ── Subtitle ── */}
+        {/* ── Subtitulo ── */}
         <p className="text-sm text-gray-500 leading-relaxed max-w-[600px] mx-auto mb-8">
           Audio, iluminación y video profesional. Reserva equipos de alta calidad con propietarios verificados.
         </p>
 
-        {/* ── Simple Single-Input Search Bar (WP Style) ── */}
+        {/* ── Barra de busqueda simple ── */}
         <div className="mx-auto max-w-[600px] relative">
           <div className="flex items-center bg-[#f8f9fa] border border-transparent hover:border-gray-200 focus-within:border-gray-300 focus-within:bg-white focus-within:shadow-[0_2px_12px_rgba(0,0,0,0.06)] rounded-full h-[56px] px-6 transition-all duration-300">
-            {/* Search Icon */}
+            {/* Icono de busqueda */}
             <svg 
               width="22" 
               height="22" 
@@ -35,7 +36,7 @@ export default function HeroSection() {
               <path d="m21 21-4.35-4.35"></path>
             </svg>
 
-            {/* Input Field */}
+            {/* Campo de entrada */}
             <input 
               type="text" 
               placeholder="¿Qué equipo o paquete buscas?" 

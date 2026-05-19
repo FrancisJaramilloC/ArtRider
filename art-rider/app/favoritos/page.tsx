@@ -1,3 +1,4 @@
+// pagina principal de favoritos
 export default function FavoritosPage() {
   return (
     <div className="space-y-6">

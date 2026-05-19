@@ -2,19 +2,18 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import {
-  Volume2, Zap, Video, Sparkles, Megaphone, Package,
-  MapPin, ChevronLeft, ChevronRight, Loader2, Check,
-  LocateFixed, Camera, X, AlertCircle,
-} from "lucide-react";
+import { Volume2, Zap, Video, Sparkles, Megaphone, Package, MapPin, ChevronLeft, ChevronRight, Loader2, Check, LocateFixed, Camera, X, AlertCircle,} from "lucide-react";
 import LocationPickerWrapper from "@/components/location-picker/LocationPickerWrapper";
 import type { LocationData } from "@/components/location-picker/LocationPicker";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// Constantes
 
+// Número total de pasos en el formulario
 const TOTAL_STEPS = 5;
+// Array con los nombres de cada paso
 const STEPS = ["Categoría", "Detalles", "Fotos", "Ubicación", "Precio"];
 
+// Array con las categorías de equipos disponibles
 const CATEGORIES = [
   { value: "audio",       label: "Sonido",      Icon: Volume2,   desc: "Parlantes, micrófonos, consolas" },
   { value: "lighting",    label: "Iluminación",  Icon: Zap,       desc: "Luces, reflectores, cañones DMX" },
@@ -24,15 +23,15 @@ const CATEGORIES = [
   { value: "other",       label: "Otro",         Icon: Package,   desc: "Equipos que no encajan arriba" },
 ] as const;
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
+// Tipos
+//WizardData - Objeto que almacena los datos del formulario
 type WizardData = {
   category: string;
   title: string;
   brand: string;
   model: string;
   description: string;
-  /** Object URL for UI preview only — the actual File lives in the DOM input inside the hidden form */
+  // URL del objeto para la vista previa de la UI: el archivo real vive en la entrada DOM dentro del formulario oculto
   previewUrl: string | null;
   dailyPrice: string;
   city: string;
@@ -41,17 +40,19 @@ type WizardData = {
   longitude: number | null;
   publishNow: boolean;
 };
-
+//StepErrors - Objeto que almacena los errores de cada paso
 type StepErrors = Partial<Record<keyof WizardData | "imageFile", string>>;
 
+// Props - Props del componente
 export type Props = {
   formAction: (payload: FormData) => void;
   isPending: boolean;
   serverError?: string | null;
 };
 
-// ── Root component ────────────────────────────────────────────────────────────
+// Componente raiz del formulario
 
+// función para manejar el estado del formulario
 export default function ListingFormWizard({ formAction, isPending, serverError }: Props) {
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState<StepErrors>({});
@@ -75,6 +76,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
    */
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Estado que almacena los datos del formulario
   const [data, setData] = useState<WizardData>({
     category: "",
     title: "",
@@ -90,11 +92,11 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
     publishNow: true,
   });
 
+  // Función que actualiza el estado del formulario
   const update = (patch: Partial<WizardData>) =>
     setData((prev) => ({ ...prev, ...patch }));
 
-  // ── Per-step validation ─────────────────────────────────────────────────────
-
+  // Validación paso a paso
   const validateStep = (s: number): StepErrors => {
     const e: StepErrors = {};
 
@@ -111,7 +113,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         e.brand = "La marca es obligatoria.";
     }
 
-    // Validate against previewUrl: a non-null URL means the DOM file input has a file
+    // Validar contra previewUrl: una URL no nula significa que el input de tipo file tiene un archivo
     if (s === 3 && !data.previewUrl)
       e.imageFile = "Debes subir al menos una foto del equipo.";
 
@@ -131,6 +133,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
     return e;
   };
 
+  // Manejo del siguiente paso
   const handleNext = () => {
     const e = validateStep(step);
     if (Object.keys(e).length > 0) { setErrors(e); return; }
@@ -138,22 +141,24 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
     setStep((s) => Math.min(s + 1, TOTAL_STEPS));
   };
 
+  // Manejo del paso anterior
   const handleBack = () => {
     setErrors({});
     setStep((s) => Math.max(s - 1, 1));
   };
 
-  // ── Submit: triggers the hidden native form — NOT useActionState dispatch ────
+  // Envía el formulario y maneja los errores de validación
+  // No usa useActionState dispatch para evitar que se pierdan los archivos
   const handleSubmit = () => {
     const e = validateStep(5);
     if (Object.keys(e).length > 0) { setErrors(e); return; }
-    // requestSubmit() fires the form's submit event → Next.js intercepts it →
-    // builds multipart FormData from the DOM (hidden inputs + file input) →
-    // calls the Server Action with a complete, file-inclusive payload.
+    // requestSubmit() dispara el evento de envío del formulario → Next.js lo intercepta →
+    // construye multipart FormData desde el DOM (inputs ocultos + input de archivo) →
+    // llama a la Server Action con un payload completo que incluye el archivo.
     formRef.current?.requestSubmit();
   };
 
-  // ── File handling ─────────────────────────────────────────────────────────────
+  // Manejo del archivo
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -162,29 +167,33 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
       e.target.value = "";
       return;
     }
-    // Store only the object URL for UI preview; the File itself stays in the DOM input
+    // Se almacena solo la URL del objeto para la vista previa en la UI; el archivo en sí mismo permanece en el input DOM
     update({ previewUrl: URL.createObjectURL(file) });
   };
 
+  // Limpia la foto
   const clearPhoto = () => {
     update({ previewUrl: null });
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // ── GPS detection ─────────────────────────────────────────────────────────────
+  // Detección de ubicación (GPS)
   const detectLocation = () => {
-    if (!("geolocation" in navigator)) {
+    if (!("geolocation" in navigator)) { //Verifica si el navegador soporta geolocalización
       setLocationError("Tu navegador no soporta geolocalización.");
       return;
     }
+    // Establece el estado de ubicación en true
     setLocating(true);
     setLocationError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        // Actualiza la ubicación
         update({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+        // Establece el estado de ubicación en false
         setLocating(false);
       },
-      (err) => {
+      (err) => { //Maneja los errores de la geolocalización
         setLocationError(
           err.code === 1
             ? "Permiso denegado. Actívalo en la configuración de tu navegador."
@@ -196,23 +205,24 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
     );
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // Renderizado
   const isLastStep = step === TOTAL_STEPS;
   const progress   = (step / TOTAL_STEPS) * 100;
 
+  // renderizado del formulario
   return (
     <div className="relative">
       {/*
-        Hidden native <form> — the single source of truth for submission.
+        Formulario nativo oculto — la única fuente de verdad para el envío.
 
-        All wizard state is mirrored into hidden inputs (controlled via value prop)
-        so that when requestSubmit() fires, the browser builds the correct
-        multipart/form-data body — including the File from fileInputRef.
+        Todo el estado del asistente se refleja en inputs ocultos (controlados mediante la prop value)
+        para que cuando se dispare requestSubmit(), el navegador construya el cuerpo
+        multipart/form-data correcto, incluyendo el archivo de fileInputRef.
 
-        Why not use dispatch(fd) directly?
-        useActionState's dispatch goes through React's action serialization,
-        which converts FormData to a plain object, dropping all File entries.
-        The native form submit path bypasses this and sends real multipart data.
+        ¿Por qué no usar dispatch(fd) directamente? 
+        El dispatch de useActionState pasa por la serialización de acciones de React,
+        que convierte FormData a un objeto plano, eliminando todas las entradas de tipo File.
+        La ruta de envío del formulario nativo evita esto y envía datos multipart reales.
       */}
       <form
         ref={formRef}
@@ -220,7 +230,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         className="hidden"
         aria-hidden="true"
       >
-        {/* Text/scalar fields — React keeps DOM value in sync with wizard state */}
+        {/* Campos de texto y escalares — React mantiene el valor del DOM sincronizado con el estado del asistente */}
         <input type="hidden" name="title"       value={data.title}              onChange={() => {}} />
         <input type="hidden" name="brand"       value={data.brand}              onChange={() => {}} />
         <input type="hidden" name="model"       value={data.model}              onChange={() => {}} />
@@ -233,7 +243,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         <input type="hidden" name="latitude"    value={data.latitude  ?? ""}    onChange={() => {}} />
         <input type="hidden" name="longitude"   value={data.longitude ?? ""}    onChange={() => {}} />
 
-        {/* File input — must live here so the browser includes the File in FormData */}
+        {/* File input — debe estar aquí para que el navegador incluya el archivo en FormData */}
         <input
           ref={fileInputRef}
           type="file"
@@ -243,7 +253,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         />
       </form>
 
-      {/* ── Thin progress bar ── */}
+      {/* Barra de progreso del formulario */}
       <div className="h-0.5 bg-gray-100 rounded-full mb-8 overflow-hidden">
         <div
           className="h-full bg-[#875B9A] transition-all duration-500 ease-out"
@@ -251,7 +261,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         />
       </div>
 
-      {/* ── Step badge ── */}
+      {/* Badge de progreso del formulario */}
       <div className="flex items-center gap-2.5 mb-8">
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#875B9A] bg-[#875B9A]/8 rounded-full px-3 py-1.5">
           Paso {step} de {TOTAL_STEPS}
@@ -259,7 +269,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         <span className="text-xs text-gray-400 font-medium">{STEPS[step - 1]}</span>
       </div>
 
-      {/* ── Step content ── */}
+      {/* Contenido del paso */}
       <div className="pb-28">
         {step === 1 && (
           <StepCategory data={data} update={update} errors={errors} />
@@ -295,7 +305,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         )}
       </div>
 
-      {/* ── Fixed bottom navigation bar ── */}
+      {/* Barra de navegación inferior fija */}
       <div className="fixed bottom-0 left-0 right-0 md:left-64 z-40 bg-white border-t border-gray-100 shadow-[0_-1px_8px_rgba(0,0,0,0.06)]">
         <div className="max-w-[1240px] mx-auto px-6 lg:px-10 py-4 flex items-center justify-between">
 
@@ -309,7 +319,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
             Atrás
           </button>
 
-          {/* Step dots */}
+          {/* Puntos del paso */}
           <div className="flex items-center gap-1.5">
             {STEPS.map((_, i) => (
               <div
@@ -325,6 +335,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
             ))}
           </div>
 
+          {/* Botón de enviar */} 
           {isLastStep ? (
             <button
               type="button"
@@ -354,7 +365,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
   );
 }
 
-// ── Step 1: Category ──────────────────────────────────────────────────────────
+// ── Paso 1: Categoría ──────────────────────────────────────────────────────────
 
 function StepCategory({
   data, update, errors,
@@ -367,7 +378,7 @@ function StepCategory({
       <p className="text-gray-500 mb-8 text-base">
         Elige la categoría que mejor describe tu equipo.
       </p>
-
+      {/* Grid de categorías */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {CATEGORIES.map(({ value, label, Icon, desc }) => {
           const selected = data.category === value;
@@ -382,6 +393,7 @@ function StepCategory({
                   : "border-gray-200 bg-white hover:border-[#875B9A]/40 hover:bg-gray-50"
               }`}
             >
+              {/* Badge de categoría seleccionada */}
               {selected && (
                 <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#875B9A] flex items-center justify-center">
                   <Check className="w-3 h-3 text-white" strokeWidth={3} />
@@ -391,6 +403,7 @@ function StepCategory({
                 className={`w-6 h-6 ${selected ? "text-[#875B9A]" : "text-gray-500"}`}
                 strokeWidth={1.75}
               />
+              {/* Nombre y descripción de la categoría */}
               <div>
                 <p className={`text-base font-bold ${selected ? "text-[#875B9A]" : "text-gray-800"}`}>
                   {label}
@@ -412,7 +425,7 @@ function StepCategory({
   );
 }
 
-// ── Step 2: Details ───────────────────────────────────────────────────────────
+// ── Paso 2: Detalles ───────────────────────────────────────────────────────────
 
 function StepDetails({
   data, update, errors,
@@ -426,8 +439,9 @@ function StepDetails({
         <p className="text-gray-500 text-base">
           Estos detalles ayudan a los clientes a encontrar exactamente lo que buscan.
         </p>
-      </div>
+      </div>  
 
+      {/* Título del anuncio */}
       <Field label="Título" required error={errors.title}>
         <input
           type="text"
@@ -443,6 +457,7 @@ function StepDetails({
         </div>
       </Field>
 
+      {/* Marca y modelo */}
       <div className="grid grid-cols-2 gap-4">
         <Field label="Marca" required error={errors.brand}>
           <input
@@ -468,6 +483,7 @@ function StepDetails({
         </Field>
       </div>
 
+      {/* Descripción */}
       <Field label="Descripción">
         <textarea
           value={data.description}
@@ -483,7 +499,7 @@ function StepDetails({
   );
 }
 
-// ── Step 3: Photos ────────────────────────────────────────────────────────────
+// ── Paso 3: Fotos ────────────────────────────────────────────────────────────
 
 function StepPhotos({
   data, fileInputRef, clearPhoto, errors,
@@ -504,7 +520,7 @@ function StepPhotos({
         </p>
       </div>
 
-      {/* Dropzone — clicking here triggers the file input inside the hidden form */}
+      {/* Dropzone — al hacer click se abre el input de archivo */}
       <div
         onClick={() => fileInputRef.current?.click()}
         className={`relative w-full rounded-3xl border-2 border-dashed overflow-hidden cursor-pointer group transition-all duration-200 aspect-video ${
@@ -536,6 +552,7 @@ function StepPhotos({
         )}
       </div>
 
+      {/* Error si no hay foto */}
       {errors.imageFile && (
         <p className="flex items-center gap-1.5 text-sm text-red-500">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -557,7 +574,7 @@ function StepPhotos({
   );
 }
 
-// ── Step 4: Location ──────────────────────────────────────────────────────────
+// ── Paso 4: Ubicación ──────────────────────────────────────────────────────────
 
 function StepLocation({
   data, update, errors, locating, locationError, detectLocation,
@@ -569,8 +586,10 @@ function StepLocation({
   locationError: string | null;
   detectLocation: () => void;
 }) {
+  // Verificar si tiene GPS
   const hasGps = data.latitude != null && data.longitude != null;
 
+  // Manejar cambio de ubicación
   const handleLocationChange = (loc: LocationData) => {
     update({
       latitude: loc.lat,
@@ -580,6 +599,7 @@ function StepLocation({
     });
   };
 
+  // Renderizado del componente
   return (
     <div className="space-y-6 max-w-lg">
       <div>
@@ -591,14 +611,17 @@ function StepLocation({
         </p>
       </div>
 
+      {/* Location picker wrapper */}
       <LocationPickerWrapper onChange={handleLocationChange} />
 
+      {/* Error si no hay ubicación */}
       {locationError && (
         <p className="text-xs text-red-500 flex items-center gap-1.5">
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />{locationError}
         </p>
       )}
 
+      {/* Error si no hay ubicación */}
       {(errors.city || errors.state) && (
         <p className="text-xs text-red-500 flex items-center gap-1.5 bg-red-50 p-3 rounded-xl border border-red-100">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -606,6 +629,7 @@ function StepLocation({
         </p>
       )}
 
+      {/* Mensaje informativo sobre la ubicación */}
       <div className="flex items-start gap-3 bg-blue-50 rounded-2xl p-4 border border-blue-100">
         <MapPin className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
         <p className="text-xs text-blue-700 leading-relaxed">
@@ -616,8 +640,9 @@ function StepLocation({
   );
 }
 
-// ── Step 5: Price & Review ────────────────────────────────────────────────────
+// ── Paso 5: Precio y Resumen ────────────────────────────────────────────────────
 
+// Componente para el paso 5: Precio y Resumen
 function StepPrice({
   data, update, errors, serverError,
 }: {
@@ -628,6 +653,7 @@ function StepPrice({
 }) {
   const selectedCat = CATEGORIES.find((c) => c.value === data.category);
 
+  // Renderizado del componente
   return (
     <div className="space-y-6 max-w-lg">
       <div>
@@ -639,6 +665,7 @@ function StepPrice({
         </p>
       </div>
 
+      {/* Campo de precio por día */}
       <div className="space-y-2">
         <label className="block text-base font-bold text-gray-800">
           Precio por día (USD) <span className="text-red-500">*</span>
@@ -661,7 +688,7 @@ function StepPrice({
         {errors.dailyPrice && <ErrorMsg>{errors.dailyPrice}</ErrorMsg>}
       </div>
 
-      {/* Review card */}
+      {/* Card de resumen */}
       <div className="rounded-2xl border border-gray-200 overflow-hidden">
         <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-100">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
@@ -685,7 +712,7 @@ function StepPrice({
         </div>
       </div>
 
-      {/* Publish toggle */}
+      {/* Botón de publicación */}
       <div className="flex items-center gap-4 bg-gray-50 rounded-2xl p-4 border border-gray-200">
         <button
           type="button"
@@ -696,12 +723,14 @@ function StepPrice({
             data.publishNow ? "bg-[#875B9A]" : "bg-gray-300"
           }`}
         >
+          {/* Botón de publicación */}
           <span
             className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
               data.publishNow ? "translate-x-5" : "translate-x-0"
             }`}
           />
         </button>
+        {/* Descripción del interruptor de publicación */}
         <div>
           <p className="text-sm font-semibold text-gray-800">
             {data.publishNow ? "Publicar inmediatamente" : "Guardar como borrador"}
@@ -714,6 +743,7 @@ function StepPrice({
         </div>
       </div>
 
+      {/* Error del servidor */}  
       {serverError && (
         <div className="flex items-start gap-3 rounded-xl bg-red-50 border border-red-200 px-4 py-3.5">
           <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
@@ -724,6 +754,7 @@ function StepPrice({
   );
 }
 
+// Componente para la fila de revisión
 function ReviewRow({
   label, value, valueClass = "text-gray-800",
 }: { label: string; value: string; valueClass?: string }) {
@@ -737,8 +768,9 @@ function ReviewRow({
   );
 }
 
-// ── Shared primitives ─────────────────────────────────────────────────────────
+// Componentes compartidos
 
+// Componente para los campos del formulario
 function Field({
   label, required, error, children,
 }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
@@ -753,6 +785,7 @@ function Field({
   );
 }
 
+// Componente para mostrar mensajes de error
 function ErrorMsg({ children }: { children: React.ReactNode }) {
   return (
     <p className="flex items-center gap-1.5 text-sm text-red-500 mt-1.5">
@@ -762,6 +795,7 @@ function ErrorMsg({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Función para generar estilos de campos de formulario
 function inputCx(hasError: boolean) {
   return `block w-full rounded-2xl border px-5 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all shadow-sm ${
     hasError

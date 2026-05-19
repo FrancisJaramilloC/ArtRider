@@ -6,11 +6,12 @@ import Link from "next/link";
 import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 import { useSearchParams } from "next/navigation";
 
+/* funcion para inicio de sesion */
 function LoginContent() {
   const [state, formAction, isPending] = useActionState(signIn, null);
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/';
-
+/* return de la funcion de login */
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white font-sans">
       {/* ── Left Panel (Brand) ── */}
@@ -19,7 +20,7 @@ function LoginContent() {
         <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none" />
         <div className="absolute -top-32 -left-32 w-[30rem] h-[30rem] bg-white/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-[20rem] h-[20rem] bg-[#D4A5E8]/20 rounded-full blur-[80px] pointer-events-none" />
-        
+        {/* elementos decorativos del panel izquierdo */}
         <div className="relative z-10 flex flex-col gap-12">
           <Link href="/" className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors w-max group">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
@@ -27,7 +28,7 @@ function LoginContent() {
             </svg>
             <span className="font-medium text-sm">Volver al inicio</span>
           </Link>
-          
+          {/* div con el contenido del panel izquierdo */}
           <div className="mt-8">
             <div className="flex items-center gap-3 mb-8">
               <div className="w-16 h-16 rounded-full border-2 border-white/90 flex items-center justify-center shadow-lg bg-white/10 backdrop-blur-sm">
@@ -43,15 +44,17 @@ function LoginContent() {
               </div>
               <span className="font-extrabold text-3xl tracking-tight drop-shadow-sm">ArtRider</span>
             </div>
+            {/* titulo del panel izquierdo */}
             <h2 className="text-4xl lg:text-5xl font-extrabold leading-tight mb-5 drop-shadow-sm">
               Donde las ideas<br/>toman vida.
             </h2>
+            {/* parrafo descriptivo del panel izquierdo */}
             <p className="text-lg text-white/80 max-w-md font-light leading-relaxed">
               Únete a la plataforma líder para creadores audiovisuales. Alquila, comparte y descubre el mejor equipamiento para tu próxima producción.
             </p>
           </div>
         </div>
-        
+        {/* footer del panel izquierdo */}
         <div className="relative z-10 text-sm text-white/50 font-medium">
           © {new Date().getFullYear()} ArtRider. Todos los derechos reservados.
         </div>
@@ -69,7 +72,7 @@ function LoginContent() {
           </Link>
           <ArtRiderLogo />
         </div>
-
+        {/* div con el formulario de inicio de sesión */}
         <div className="w-full max-w-md mx-auto">
           {/* Header */}
           <div className="mb-10">
@@ -86,7 +89,7 @@ function LoginContent() {
               <p className="text-sm text-red-700 font-medium">{state.error}</p>
             </div>
           )}
-
+          {/* formulario */}
           <form action={formAction} className="space-y-6">
             <input type="hidden" name="redirectUrl" value={redirectUrl} />
             {/* Email Field */}
@@ -180,6 +183,7 @@ function LoginContent() {
   );
 }
 
+// componente principal de la pagina de login
 export default function LoginPage() {
   return (
     <Suspense fallback={

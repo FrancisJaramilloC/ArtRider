@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { BookingWithDetails, BookingStatus } from "@/services/bookingsService";
 
+// Configuración de estados de reserva
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
   AWAITING_SIGNATURES: { label: "Esperando firmas", className: "bg-amber-50 text-amber-700" },
   PAID:               { label: "Pagado",            className: "bg-blue-50 text-blue-700"  },
@@ -11,6 +12,7 @@ const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }>
   ARCHIVED:           { label: "Archivado",          className: "bg-gray-100 text-gray-400" },
 };
 
+// Formateo de fechas
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("es-EC", {
     day: "numeric",
@@ -19,10 +21,12 @@ function formatDate(dateStr: string) {
   });
 }
 
+// Props de la sección de reservas del cliente
 interface ClientBookingsSectionProps {
   bookings: BookingWithDetails[];
 }
 
+// Componente de la sección de reservas del cliente
 export default function ClientBookingsSection({ bookings }: ClientBookingsSectionProps) {
   return (
     <section>
@@ -30,8 +34,8 @@ export default function ClientBookingsSection({ bookings }: ClientBookingsSectio
       <p className="text-sm text-gray-500 mt-1">
         Equipos de audio e iluminacion que has reservado
       </p>
-
-      {bookings.length === 0 ? (
+      {/* Renderizado de la lista de reservas */}
+      {bookings.length === 0 ? ( // Si no hay reservas
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 mt-6">
           <p className="text-gray-500 font-medium">No tienes alquileres activos</p>
           <p className="text-gray-400 text-sm mt-1">Explora nuestros equipos disponibles</p>
@@ -42,7 +46,7 @@ export default function ClientBookingsSection({ bookings }: ClientBookingsSectio
             Ver equipos
           </Link>
         </div>
-      ) : (
+      ) : ( // Si hay reservas
         <div className="space-y-4 mt-6">
           {bookings.map((booking) => (
             <div
@@ -64,6 +68,7 @@ export default function ClientBookingsSection({ bookings }: ClientBookingsSectio
                 </span>
               </div>
 
+              {/* Renderizado de la información de la reserva */}
               <div className="mt-3 flex justify-between items-end">
                 <span className="text-sm text-gray-500">
                   {formatDate(booking.start_date)} &rarr; {formatDate(booking.end_date)}

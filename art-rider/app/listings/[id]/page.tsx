@@ -7,7 +7,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import MapWrapper from "@/components/listing-map/MapWrapper";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// Tipos
 
 type Review = {
   id: string;
@@ -17,7 +17,7 @@ type Review = {
   reviewer_id: string;
 };
 
-// ── Label maps ────────────────────────────────────────────────────────────────
+// Label maps
 
 const CATEGORY_LABELS: Record<string, string> = {
   audio: "Sonido", lighting: "Iluminación", video: "Video",
@@ -27,7 +27,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   audio: "🔊", lighting: "💡", video: "🎥", effects: "✨", other: "📦",
 };
 
-// ── Time helpers ──────────────────────────────────────────────────────────────
+// Funciones para el tiempo
 
 function timeAgo(dateString: string): string {
   const days = Math.floor(
@@ -51,8 +51,9 @@ function memberSince(dateString: string): string {
   });
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// Sub-components
 
+// Estrellas
 function StarRow({ rating }: { rating: number }) {
   const filled = Math.round(rating);
   return (
@@ -75,6 +76,7 @@ function StarRow({ rating }: { rating: number }) {
   );
 }
 
+// Sin imagen placeholder
 function NoImagePlaceholder({ icon }: { icon: string }) {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-100 text-gray-300">
@@ -84,8 +86,7 @@ function NoImagePlaceholder({ icon }: { icon: string }) {
   );
 }
 
-// ── Metadata ──────────────────────────────────────────────────────────────────
-
+// Metadatos de la pagina
 export async function generateMetadata({
   params,
 }: {
@@ -103,8 +104,7 @@ export async function generateMetadata({
   };
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
+// Componente principal de la pagina
 export default async function ListingDetailPage({
   params,
 }: {
@@ -116,7 +116,7 @@ export default async function ListingDetailPage({
 
   const supabase = await createSupabaseServerClient();
 
-  // ── Layer 1 data: Provider info ────────────────────────────────────────────
+  //  Datos del proveedor
   let providerName: string | null = null;
   let providerSince: string | null = null;
   try {
@@ -131,7 +131,7 @@ export default async function ListingDetailPage({
     }
   } catch { /* fail silently */ }
 
-  // ── Layer 2 data: Reviews ──────────────────────────────────────────────────
+  //  Datos de las reseñas
   let reviews: Review[] = [];
   try {
     const { data } = await supabase
@@ -147,9 +147,9 @@ export default async function ListingDetailPage({
       ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
       : 0;
 
-  // ── Layer 3 data: Nearby listings for the map ──────────────────────────────
-  // Admin client bypasses RLS on addresses so coordinates are always readable
-  // for published listings regardless of which user is viewing the page.
+  //  Datos de los listados cercanos
+  // Se usa un cliente admin para evitar problemas de RLS
+  // Los datos se obtienen de la tabla "listings"
   let nearbyListings: any[] = [];
   try {
     const adminSupabase = createSupabaseAdminClient();
@@ -165,7 +165,7 @@ export default async function ListingDetailPage({
     nearbyListings = data ?? [];
   } catch { /* ignore error */ }
 
-  // ── Display values ─────────────────────────────────────────────────────────
+  //  Valores de visualización
   const priceDisplay = `$${(listing.daily_price / 100).toFixed(2)}`;
   const catLabel =
     CATEGORY_LABELS[listing.category ?? ""] ?? listing.category ?? "Equipo";
@@ -175,8 +175,7 @@ export default async function ListingDetailPage({
 
   return (
     <main className="min-h-screen bg-white">
-
-      {/* ── Back nav ── */}
+      {/*  Navegación de retorno  */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-2">
         <Link
           href="/listings"
@@ -196,9 +195,7 @@ export default async function ListingDetailPage({
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-24">
 
-        {/* ══════════════════════════════════════════════════════════════
-            LAYER A — TITLE BLOCK (above gallery, Airbnb convention)
-        ══════════════════════════════════════════════════════════════ */}
+        {/*  BLOQUE DE TÍTULO  */}
         <div className="mb-5">
           <span className="category-badge">{catIcon} {catLabel}</span>
 
@@ -212,7 +209,7 @@ export default async function ListingDetailPage({
             </p>
           )}
 
-          {/* Rating summary — only when reviews exist */}
+          {/*  Resumen del rating (solo cuando existen reseñas)  */}
           {reviews.length > 0 && (
             <div className="flex items-center gap-1 mt-2 text-sm text-gray-700">
               <svg
@@ -233,13 +230,9 @@ export default async function ListingDetailPage({
           )}
         </div>
 
-        {/* ══════════════════════════════════════════════════════════════
-            LAYER A — GALLERY
-            Mobile: full-width single image
-            Desktop: asymmetric 3:2 grid (main + 2 stacked tiles)
-        ══════════════════════════════════════════════════════════════ */}
+        {/*  Galería  */}
 
-        {/* Mobile */}
+        {/*  Versión Móvil  */}
         <div className="block md:hidden mb-6">
           <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gray-100">
             {hasImage ? (
@@ -256,9 +249,9 @@ export default async function ListingDetailPage({
           </div>
         </div>
 
-        {/* Desktop — asymmetric Airbnb grid */}
+        {/*  Versión de Escritorio  */}
         <div className="hidden md:grid grid-cols-[3fr_2fr] gap-2 rounded-2xl overflow-hidden h-[420px] mb-10">
-          {/* Main image — left, full height */}
+          {/*  Imagen principal  */}
           <div className="relative bg-gray-100">
             {hasImage ? (
               <Image
@@ -274,22 +267,20 @@ export default async function ListingDetailPage({
             )}
           </div>
 
-          {/* Secondary tiles — right, 2 stacked */}
+          {/*  MiniGalería de Imágenes  */}
           <div className="grid grid-rows-2 gap-2">
             <div className="bg-gray-100" aria-hidden="true" />
             <div className="bg-gray-100" aria-hidden="true" />
           </div>
         </div>
 
-        {/* ══════════════════════════════════════════════════════════════
-            CONTENT GRID: Left column (info) + Right column (booking)
-        ══════════════════════════════════════════════════════════════ */}
+        {/*  GRID PRINCIPAL: Columna izquierda (información) y columna derecha (reserva)  */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10 lg:gap-14 items-start">
 
-          {/* ─── LEFT COLUMN ────────────────────────────────────────── */}
+          {/*  COLUMNA IZQUIERDA  */}
           <div className="min-w-0">
 
-            {/* LAYER B — Provider block */}
+            {/*  Bloque del proveedor  */}
             {providerName && (
               <div className="flex items-center gap-4 pb-6 border-b border-gray-100">
                 <div
@@ -307,7 +298,7 @@ export default async function ListingDetailPage({
               </div>
             )}
 
-            {/* LAYER C — Description */}
+            {/*  Descripción  */}
             {listing.description && (
               <div className="py-6 border-b border-gray-100">
                 <h2 className="text-base font-semibold text-gray-900 mb-3">
@@ -319,12 +310,12 @@ export default async function ListingDetailPage({
               </div>
             )}
 
-            {/* LAYER D — Reviews */}
+            {/*  Reseñas  */}
             <div
               id="reviews"
               className="pt-6 scroll-mt-20"
             >
-              {/* Section header */}
+              {/*  Encabezado de la sección  */}
               <div className="flex items-center gap-2 mb-6">
                 {reviews.length > 0 ? (
                   <>
@@ -343,15 +334,15 @@ export default async function ListingDetailPage({
                 )}
               </div>
 
-              {/* Empty state */}
+              {/*  Estado vacío  */}
               {reviews.length === 0 ? (
                 <p className="text-gray-500 font-medium">No hay reseñas aún</p>
               ) : (
-                /* Reviews grid */
+                /*  Grid de reseñas  */
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-2 pt-6 border-t border-gray-200">
                   {reviews.map((review) => (
                     <div key={review.id} className="flex flex-col gap-2.5">
-                      {/* Reviewer header */}
+                      {/*  Encabezado del reseñador  */}
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
                           <span className="text-sm font-semibold text-gray-500 select-none">
@@ -367,9 +358,9 @@ export default async function ListingDetailPage({
                           </p>
                         </div>
                       </div>
-                      {/* Stars */}
+                      {/*  Estrellas  */}
                       <StarRow rating={review.rating} />
-                      {/* Review text */}
+                      {/*  Texto de la reseña  */}
                       <p className="text-sm text-gray-700 leading-relaxed">
                         {review.content}
                       </p>
@@ -379,7 +370,7 @@ export default async function ListingDetailPage({
               )}
             </div>
 
-            {/* LAYER E — Location Map */}
+            {/* Mapa de ubicación  */}
             {listing.address_id && (
               <div className="py-8 border-t border-gray-100 mt-6">
                 <div className="mb-6">
@@ -398,10 +389,10 @@ export default async function ListingDetailPage({
             )}
           </div>
 
-          {/* ─── RIGHT COLUMN — Booking card (desktop, sticky) ───────── */}
+          {/*  Columna derecha  */}
           <div className="hidden lg:block">
             <div className="sticky top-24 border border-gray-200 rounded-2xl p-6 shadow-sm">
-              {/* Price */}
+              {/*  Precio  */}
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold text-gray-900">
                   {priceDisplay}
@@ -409,7 +400,7 @@ export default async function ListingDetailPage({
                 <span className="text-sm text-gray-500">/ día</span>
               </div>
 
-              {/* Rating under price */}
+              {/*  Rating bajo el precio  */}
               {reviews.length > 0 && (
                 <div className="flex items-center gap-1 text-xs text-gray-500 mt-1 mb-5">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="#111827" aria-hidden="true">
@@ -438,7 +429,7 @@ export default async function ListingDetailPage({
           </div>
         </div>
 
-        {/* ── Mobile: price + booking at bottom ── */}
+        {/*  Precio y reserva en móvil  */}
         <div className="block lg:hidden mt-10 pt-6 border-t border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-baseline gap-1">

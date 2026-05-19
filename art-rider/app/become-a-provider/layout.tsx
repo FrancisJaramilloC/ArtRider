@@ -5,11 +5,13 @@ import { getMyProviderProfile } from "@/services/providerService";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
+// metadatos de la pagina de registro
 export const metadata: Metadata = {
   title: "Conviértete en Proveedor | ArtRider",
   description: "Únete a ArtRider y comienza a ganar dinero alquilando tus equipos audiovisuales a otros creadores.",
 };
 
+// layout principal de la pagina de registro
 export default async function BecomeProviderLayout({
   children,
 }: {
@@ -26,6 +28,7 @@ export default async function BecomeProviderLayout({
     }
   }
 
+  // renderizado del layout principal de la pagina de registro
   return (
     <>
       <Navbar initialUser={data?.user || null} />

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+// Props del modal de reseña
 interface ReviewModalProps {
   bookingId: string;
   clientName: string;
@@ -10,6 +11,7 @@ interface ReviewModalProps {
   isSubmitting: boolean;
 }
 
+// Modal de reseña
 export default function ReviewModal({
   bookingId,
   clientName,
@@ -20,8 +22,10 @@ export default function ReviewModal({
   const [rating, setRating] = useState(0);
   const [content, setContent] = useState("");
 
+  // Deshabilitar el boton de enviar si la reseña no esta completa
   const isDisabled = isSubmitting || rating === 0 || content.trim() === "";
 
+  // Funcion para manejar el envio de la reseña
   const handleSubmit = async () => {
     if (isDisabled) return;
     await onSubmit({ rating, content });
@@ -41,6 +45,7 @@ export default function ReviewModal({
           Califica tu experiencia con {clientName} antes de archivar
         </p>
 
+        {/* Renderizado de estrellas para calificar */}
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">Calificación</p>
           <div className="flex gap-1">
@@ -59,6 +64,7 @@ export default function ReviewModal({
           </div>
         </div>
 
+        {/* Campo de texto para la reseña */}
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Comentario
@@ -71,7 +77,8 @@ export default function ReviewModal({
           />
         </div>
 
-        <div className="mt-6 flex gap-3">
+        {/* Botones de cancelar y enviar */}
+          <div className="mt-6 flex gap-3">
           <button
             type="button"
             onClick={onClose}

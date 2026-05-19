@@ -8,22 +8,27 @@ import ClientBookingsSection from "./ClientBookingsSection";
 import ProviderBookingsSection from "./ProviderBookingsSection";
 import ReviewModal from "./ReviewModal";
 
+// Props de la vista de reservas
 interface BookingsViewProps {
   clientBookings: BookingWithDetails[];
   providerBookings: BookingWithDetails[] | null;
   isProvider: boolean;
 }
 
+// Componente principal de la vista de reservas
 export default function BookingsView({ clientBookings, providerBookings, isProvider }: BookingsViewProps) {
+  // Estados del componente
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"client" | "provider">("client");
   const [reviewModal, setReviewModal] = useState<{ bookingId: string; clientName: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Manejo del archivo de reserva
   const handleArchive = (bookingId: string, clientName: string) => {
     setReviewModal({ bookingId, clientName });
   };
 
+  // Manejo del envío de reseña
   const handleReviewSubmit = async (review: { rating: number; content: string }) => {
     if (!reviewModal) return;
     setIsSubmitting(true);
@@ -40,9 +45,10 @@ export default function BookingsView({ clientBookings, providerBookings, isProvi
     }
   };
 
+  // Renderizado de la vista de reservas
   return (
     <div className="space-y-8">
-      {/* Page header */}
+      {/* Encabezado de la página */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Reservas</h1>
         <p className="text-gray-500 mt-1 text-sm">
@@ -50,7 +56,7 @@ export default function BookingsView({ clientBookings, providerBookings, isProvi
         </p>
       </div>
 
-      {/* Tabs — only shown if user is also a provider */}
+      {/* Tabs — solo se muestran si el usuario también es proveedor */}
       {isProvider && (
         <div className="flex border-b border-gray-200 gap-8">
           {(["client", "provider"] as const).map((tab) => (
@@ -70,7 +76,7 @@ export default function BookingsView({ clientBookings, providerBookings, isProvi
         </div>
       )}
 
-      {/* Content */}
+      {/* Contenido de la vista de reservas */}
       {activeTab === "client" && (
         <ClientBookingsSection bookings={clientBookings} />
       )}
@@ -81,7 +87,7 @@ export default function BookingsView({ clientBookings, providerBookings, isProvi
         />
       )}
 
-      {/* Review modal */}
+      {/*  Modal de reseña  */}
       {reviewModal && (
         <ReviewModal
           bookingId={reviewModal.bookingId}

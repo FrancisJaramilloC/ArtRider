@@ -1,8 +1,9 @@
-export default function DashboardSettingsPage() {
+//  Pagina de ajustes del proveedor
+export default function SettingsPage() {
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
       
-      {/* ── Header ── */}
+      {/*  Header  */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Ajustes de Empresa</h2>
         <p className="text-[0.95rem] text-gray-500 mt-1">
@@ -12,7 +13,7 @@ export default function DashboardSettingsPage() {
 
       <div className="space-y-6">
 
-        {/* ── Form Card: Información Pública ── */}
+        {/*  Card: Informacion publica  */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="p-6 border-b border-gray-100 bg-gray-50/50">
             <h3 className="text-lg font-semibold text-gray-900">Información Pública</h3>
@@ -21,6 +22,7 @@ export default function DashboardSettingsPage() {
           
           <div className="p-6 space-y-6">
             
+            {/*  Input: Nombre de marca o productora  */}
             <div className="grid gap-2">
               <label htmlFor="brandName" className="text-sm font-medium text-gray-700">Nombre de tu Marca o Productora</label>
               <input 
@@ -32,6 +34,7 @@ export default function DashboardSettingsPage() {
               <p className="text-[0.8rem] text-gray-500">Puedes usar tu nombre personal si no tienes una marca registrada.</p>
             </div>
 
+            {/*  Input: Ubicacion principal  */}
             <div className="grid gap-2">
               <label htmlFor="location" className="text-sm font-medium text-gray-700">Ubicación Principal</label>
               <select 
@@ -46,6 +49,7 @@ export default function DashboardSettingsPage() {
               </select>
             </div>
 
+            {/*  Input: Biografia / Descripcion  */}
             <div className="grid gap-2">
               <label htmlFor="bio" className="text-sm font-medium text-gray-700">Biografía / Descripción</label>
               <textarea 
@@ -59,7 +63,7 @@ export default function DashboardSettingsPage() {
 
           </div>
           
-          <div className="p-5 bg-gray-50 border-t border-gray-100 flex justify-end">
+          <div className="p-  5 bg-gray-50 border-t border-gray-100 flex justify-end">
             <button className="bg-[#875B9A] hover:bg-[#6a437a] text-white px-6 py-2.5 rounded-full text-[0.95rem] font-semibold transition-colors shadow-sm">
               Guardar cambios
             </button>

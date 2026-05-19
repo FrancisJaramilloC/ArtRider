@@ -1,10 +1,11 @@
 import Link from "next/link";
 
+// Pie de pagina del sitio web
 export default function Footer() {
   return (
     <footer className="bg-gray-50 border-t border-gray-200 text-[0.88rem] text-gray-600 mt-auto">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* ── Top Section: Links ── */}
+        {/* Seccion superior: Enlaces */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-10 border-b border-gray-200">
           
           {/* Column 1 */}
@@ -39,10 +40,10 @@ export default function Footer() {
 
         </div>
 
-        {/* ── Bottom Section: Legal & Socials ── */}
+        {/* Seccion inferior: Legal y Redes Sociales */}
         <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
           
-          {/* Legal Links */}
+          {/* Enlaces legales */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span>© 2026 ArtRider, Inc.</span>
             <span className="hidden md:inline">·</span>
@@ -53,7 +54,7 @@ export default function Footer() {
             <Link href="#" className="hover:underline">Mapa del sitio</Link>
           </div>
 
-          {/* Language / Currency / Socials */}
+          {/* Idioma, Moneda y Redes Sociales */}
           <div className="flex items-center gap-6 font-semibold text-gray-900">
             <div className="flex items-center gap-4">
               <button className="flex items-center gap-2 hover:underline">
@@ -69,6 +70,7 @@ export default function Footer() {
               </button>
             </div>
             
+            {/* Iconos de redes sociales */}
             <div className="flex items-center gap-3 ml-2">
               <Link href="#" className="hover:text-gray-600 transition-colors" aria-label="Facebook">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>

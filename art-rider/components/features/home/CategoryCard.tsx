@@ -1,23 +1,23 @@
 "use client";
 
-/**
- * CategoryCard.tsx — Clean, premium category card without emoji icons.
- * Full-bleed image with dark gradient overlay and bottom-left title + "Explorar" label.
- * Smooth hover animation with scale and shadow.
- */
+// Card de categoria premium
+// Imagen de fondo completa con overlay de gradiente oscuro y titulo + etiqueta "Explorar" en la parte inferior izquierda
+// Animacion suave al pasar el mouse con escala y sombra
 
 import Image from "next/image";
 import Link from "next/link";
 
+// Props de la card de categoria
 export interface CategoryCardProps {
-  /** Category name displayed in bold at the bottom */
+  // Nombre de la categoria
   title: string;
-  /** Path to the background image (relative to /public) */
+  // Ruta de la imagen de fondo
   imageSrc: string;
-  /** URL the card links to */
+  // URL a la que enlaza la card
   href: string;
 }
 
+// Componente de la card de categoria
 export default function CategoryCard({
   title,
   imageSrc,
@@ -34,7 +34,7 @@ export default function CategoryCard({
       "
       aria-label={`Explorar categoría: ${title}`}
     >
-      {/* Background image */}
+      {/* Imagen de fondo */}
       <Image
         src={imageSrc}
         alt={title}
@@ -43,20 +43,20 @@ export default function CategoryCard({
         sizes="(max-width: 1024px) 280px, 20vw"
       />
 
-      {/* Dark gradient overlay */}
+      {/* Overlay de gradiente oscuro */}
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/25 to-black/75 transition-opacity duration-300 group-hover:to-black/65"
       />
 
-      {/* Bottom-left content */}
+      {/* Contenido en la parte inferior izquierda */}
       <div className="absolute bottom-3 sm:bottom-5 left-3 sm:left-5 flex flex-col gap-0.5 sm:gap-1">
-        {/* Category title */}
+        {/* Nombre de la categoria */}
         <span className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]">
           {title}
         </span>
 
-        {/* Explorar label */}
+        {/* Etiqueta Explorar */}
         <span className="text-white/70 text-sm font-medium tracking-wide group-hover:text-white/90 transition-colors duration-300">
           Explorar
         </span>

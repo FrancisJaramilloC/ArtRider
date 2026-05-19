@@ -9,11 +9,11 @@ import {
 import Navbar from "@/components/layout/Navbar";
 import type { User } from "@supabase/supabase-js";
 
-// ── Nav structure ──────────────────────────────────────────────────────────────
+//  Estructura de navegacion del proveedor
 
 const NAV_SECTIONS = [
   {
-    label: "General",
+    label: "General", //  Seccion general
     items: [
       { name: "Centro Operativo", href: "/provider",              icon: LayoutDashboard },
       { name: "Catálogo",         href: "/provider/catalog",      icon: Store           },
@@ -21,7 +21,7 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    label: "Negocio",
+    label: "Negocio", //  Seccion de negocio
     items: [
       { name: "Reservas",  href: "/provider/bookingsProvider", icon: CalendarDays },
       { name: "Finanzas",  href: "/provider/finance",          icon: DollarSign   },
@@ -34,8 +34,7 @@ const BOTTOM_LINKS = [
   { name: "Ayuda",         href: "/help",     icon: HelpCircle  },
 ];
 
-// ── Component ──────────────────────────────────────────────────────────────────
-
+//  Componente de la estructura de navegacion del proveedor
 export default function ProviderLayoutClient({
   children,
   provider,
@@ -53,16 +52,16 @@ export default function ProviderLayoutClient({
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
 
-      {/* ── Navbar ── */}
+      {/*  Barra de navegacion  */}
       <Navbar initialUser={initialUser} hideNavLinks logoSubtitle={provider.brand_name} />
 
-      {/* ── Body ── */}
+      {/*  Cuerpo de la pagina  */}
       <div className="flex-1 flex w-full">
 
-        {/* ── Sidebar ── */}
+        {/*  Barra lateral  */}
         <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 fixed top-24 h-[calc(100vh-6rem)]">
 
-          {/* Brand strip */}
+          {/*  Barra de la empresa  */}
           <div className="px-5 pt-6 pb-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gray-900 flex items-center justify-center shrink-0">
@@ -75,7 +74,7 @@ export default function ProviderLayoutClient({
             </div>
           </div>
 
-          {/* Nav sections */}
+          {/*  Secciones de navegacion  */}
           <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
             {NAV_SECTIONS.map((section) => (
               <div key={section.label}>
@@ -115,7 +114,7 @@ export default function ProviderLayoutClient({
             ))}
           </nav>
 
-          {/* Bottom links */}
+          {/*  Enlaces de la parte inferior  */}
           <div className="border-t border-gray-100 px-3 py-4 space-y-0.5">
             {BOTTOM_LINKS.map((item) => {
               const Icon = item.icon;
@@ -136,7 +135,7 @@ export default function ProviderLayoutClient({
 
         </aside>
 
-        {/* ── Content ── */}
+        {/*  Contenido principal  */}
         <main className="flex-1 min-w-0 md:ml-64 p-6 lg:p-10">
           <div className="max-w-[1240px] mx-auto w-full">
             {children}

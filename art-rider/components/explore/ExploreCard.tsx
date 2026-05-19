@@ -3,11 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 
+//  Mapeo de categorías
 const CATEGORY_LABELS: Record<string, string> = {
   audio: "SONIDO", lighting: "ILUMINACIÓN", video: "VIDEO",
   effects: "EFECTOS", advertising: "PUBLICIDAD", other: "OTRO",
 };
 
+//  Renderizado de la tarjeta de listado
 export default function ExploreCard({ listing }: { listing: any }) {
   const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
   const city = addr?.city?.trim() || "Sin ubicación";
@@ -19,7 +21,7 @@ export default function ExploreCard({ listing }: { listing: any }) {
       href={`/listings/${listing.id}`}
       className="group flex flex-col outline-none focus-visible:ring-2 focus-visible:ring-[#875B9A] rounded-2xl"
     >
-      {/* Image */}
+      {/* Imagen del equipo */}
       <div className="relative aspect-[4/3] w-full rounded-2xl overflow-hidden bg-gray-100 mb-2.5 border border-gray-100">
         {listing.cover_image_url ? (
           <Image
@@ -35,13 +37,13 @@ export default function ExploreCard({ listing }: { listing: any }) {
           </div>
         )}
 
-        {/* Category badge */}
+        {/* Etiqueta de categoría */}
         <span className="absolute top-2.5 left-2.5 bg-white/90 backdrop-blur-sm text-[10px] font-bold tracking-wider text-gray-700 px-2 py-1 rounded-md shadow-sm">
           {catLabel}
         </span>
       </div>
 
-      {/* Info */}
+      {/* Información del equipo */}
       <div className="flex flex-col gap-0.5">
         <h3 className="text-[13px] font-semibold text-gray-900 truncate leading-snug">
           {listing.title ?? "Equipo sin título"}

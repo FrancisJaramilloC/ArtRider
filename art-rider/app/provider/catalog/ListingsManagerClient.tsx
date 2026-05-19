@@ -6,16 +6,19 @@ import Link from "next/link";
 import type { Listing } from "@/services/listingsService";
 import { togglePublish, deleteListing } from "@/services/listingsService";
 
+//  Etiquetas de las categorias para el dashboard
 const CATEGORY_LABELS: Record<string, string> = {
   audio: "Sonido", lighting: "Iluminación", video: "Video",
   effects: "Efectos", other: "Otro",
 };
 
+//  Client para gestionar los equipos del proveedor
 export default function ListingsManagerClient({ listings: initial }: { listings: Listing[] }) {
   const [listings, setListings] = useState(initial);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  //  Toggle para publicar/despublicar equipos
   const handleTogglePublish = (id: string, current: boolean) => {
     setLoadingId(id);
     startTransition(async () => {
@@ -29,6 +32,7 @@ export default function ListingsManagerClient({ listings: initial }: { listings:
     });
   };
 
+  //  Eliminar equipo 
   const handleDelete = (id: string, title: string | null) => {
     if (!confirm(`¿Eliminar el equipo "${title ?? "sin título"}"? Esta acción no se puede deshacer.`)) return;
     setLoadingId(id);
@@ -41,12 +45,15 @@ export default function ListingsManagerClient({ listings: initial }: { listings:
     });
   };
 
+  //  Renderizado del cliente
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      {/* Lista de equipos */}
       {listings.map((listing) => {
         const isLoading = loadingId === listing.id;
         const priceDisplay = `$${(listing.daily_price / 100).toFixed(2)}`;
 
+        //  Renderizado de cada equipo
         return (
           <div
             key={listing.id}
@@ -63,7 +70,7 @@ export default function ListingsManagerClient({ listings: initial }: { listings:
                   </svg>
                 </div>
               )}
-              {/* Status badge */}
+              {/* Estado del equipo */}
               <span className={`absolute top-2 right-2 text-xs font-semibold px-2.5 py-1 rounded-full ${listing.is_published ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                 {listing.is_published ? "Publicado" : "Borrador"}
               </span>
@@ -83,8 +90,9 @@ export default function ListingsManagerClient({ listings: initial }: { listings:
               <p className="text-base font-bold text-[#875B9A] mt-2">{priceDisplay} <span className="text-xs font-normal text-gray-400">/ día</span></p>
             </div>
 
-            {/* Actions */}
+            {/* Acciones */}
             <div className="border-t border-gray-100 px-4 py-3 flex items-center justify-between gap-2">
+              {/* Enlace para editar */}
               <Link
                 href={`/provider/catalog/${listing.id}/edit`}
                 className="text-xs font-medium text-gray-600 hover:text-gray-900 transition-colors"
@@ -93,7 +101,7 @@ export default function ListingsManagerClient({ listings: initial }: { listings:
               </Link>
 
               <div className="flex items-center gap-2">
-                {/* Publish toggle */}
+                {/* Boton para publicar/despublicar */}
                 <button
                   onClick={() => handleTogglePublish(listing.id, listing.is_published)}
                   disabled={isLoading}
@@ -106,7 +114,7 @@ export default function ListingsManagerClient({ listings: initial }: { listings:
                   {listing.is_published ? "Despublicar" : "Publicar"}
                 </button>
 
-                {/* Delete */}
+                {/* Boton para eliminar */}
                 <button
                   onClick={() => handleDelete(listing.id, listing.title)}
                   disabled={isLoading}

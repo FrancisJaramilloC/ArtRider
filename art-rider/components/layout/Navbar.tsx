@@ -8,8 +8,7 @@ import { useRouter } from "next/navigation";
 import { getMyProviderProfile } from "@/services/providerService";
 import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 
-// ── Menu item helper component ──────────────────────────────────────────────
-
+// Componente para un item del menu
 function MenuItem({
   href,
   label,
@@ -27,6 +26,7 @@ function MenuItem({
     "flex items-center justify-between w-full px-4 py-[10px] text-[0.87rem] text-gray-700 hover:bg-[#f7f5f9] transition-colors duration-150 cursor-pointer";
   const fontWeight = bold ? "font-semibold" : "font-normal";
 
+  // Contenido del item del menu
   const content = (
     <>
       <span>{label}</span>
@@ -38,7 +38,7 @@ function MenuItem({
     </>
   );
 
-  if (href) {
+  if (href) { // Si tiene un href, es un enlace
     return (
       <Link href={href} className={`${baseClasses} ${fontWeight}`} onClick={onClick}>
         {content}
@@ -46,6 +46,7 @@ function MenuItem({
     );
   }
 
+  // Si no tiene un href, es un boton
   return (
     <button type="button" className={`${baseClasses} ${fontWeight} text-left`} onClick={onClick}>
       {content}
@@ -53,12 +54,14 @@ function MenuItem({
   );
 }
 
+// Componente para un divisor del menu
 function MenuDivider() {
   return <div className="my-1 h-px bg-gray-100" />;
 }
 
 // ── Main Navbar ─────────────────────────────────────────────────────────────
 
+// Componente principal de la barra de navegacion
 export default function Navbar({
   initialUser = null,
   hideNavLinks = false,
@@ -68,6 +71,7 @@ export default function Navbar({
   hideNavLinks?: boolean;
   logoSubtitle?: string;
 }) {
+  // Estados del componente
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [user, setUser] = useState<User | null>(initialUser);
   const [isProvider, setIsProvider] = useState(false);
@@ -75,9 +79,10 @@ export default function Navbar({
   const router = useRouter();
   const supabase = createClient();
 
-  // Ref for click-outside detection
+  // Ref para deteccion de click fuera del menu
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Obtener usuario y perfil
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -96,6 +101,7 @@ export default function Navbar({
     };
     getUser();
 
+    // Suscribirse a cambios de autenticacion
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
@@ -115,7 +121,7 @@ export default function Navbar({
     return () => subscription.unsubscribe();
   }, [supabase, initialUser]);
 
-  // ── Click-outside handler ─────────────────────────────────────────────────
+  // Manejador de click fuera del menu
   const handleClickOutside = useCallback((event: MouseEvent) => {
     if (
       dropdownRef.current &&
@@ -134,7 +140,7 @@ export default function Navbar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownOpen, handleClickOutside]);
 
-  // ── Close on Escape key ───────────────────────────────────────────────────
+  // Cerrar menu con la tecla Escape
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setDropdownOpen(false);
@@ -153,7 +159,7 @@ export default function Navbar({
     }
     setUser(null);
     setDropdownOpen(false);
-    // Use window.location as an escape hatch to guarantee cookies clear and layout fully unmounts caching
+    // Usar window.location como un escape para garantizar que las cookies se borren y el layout se desmonte completamente del caché
     window.location.href = "/";
   };
 
@@ -168,12 +174,12 @@ export default function Navbar({
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-100">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 md:h-20 flex items-center">
 
-        {/* ── Left: Logo ── */}
+        {/* Izquierda: Logo */}
         <div className="flex items-center">
           <ArtRiderLogo subtitle={logoSubtitle} />
         </div>
 
-        {/* ── Center: Main Nav — absolutely centered regardless of sidebar widths ── */}
+        {/* Centro: Navegacion principal - centrado independientemente del ancho de la barra lateral */}
         {!hideNavLinks && (
           <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 lg:gap-10">
             {[
@@ -200,10 +206,10 @@ export default function Navbar({
           </div>
         )}
 
-        {/* ── Right: User Actions ── */}
+        {/* Derecha: Acciones del usuario */}
         <div className="ml-auto flex items-center gap-4">
 
-          {/* ── External CTA Button (left of menu) ── */}
+          {/* Boton CTA externo (izquierda del menu) */}
           {hideNavLinks ? (
             <Link
               href="/"
@@ -219,7 +225,7 @@ export default function Navbar({
                <span className="w-4 h-4 rounded-full border-2 border-gray-300 border-t-gray-600 animate-spin" />
              </div>
           ) : isProvider ? (
-            /* STATE 3: Provider → Panel de proveedor */
+            /* Estado 3: Proveedor → Panel de proveedor */
             <Link
               href="/provider"
               className="hidden lg:inline-flex items-center justify-center h-[42px] px-4
@@ -230,7 +236,7 @@ export default function Navbar({
               Panel de proveedor
             </Link>
           ) : (
-            /* STATE 1 & 2: Guest or Client → Conviértete en proveedor */
+            /* Estado 1 & 2: Guest or Client → Conviértete en proveedor */
             <Link
               href="/become-a-provider"
               className="hidden lg:inline-flex items-center justify-center h-[42px] px-4
@@ -242,15 +248,13 @@ export default function Navbar({
             </Link>
           )}
 
-          {/* ── Trigger + Dropdown container ── */}
+          {/* Trigger + Contenedor del dropdown */}
           <div className="relative flex items-center gap-2.5" ref={dropdownRef}>
 
-            {/* ═══════════════════════════════════════════════════════════════
-                TRIGGER: Conditional rendering based on auth state
-                ═══════════════════════════════════════════════════════════════ */}
+            {/* Trigger: Renderizado condicional basado en el estado de autenticación */}
 
             {user ? (
-              /* ── STATE 2 & 3: Logged-in → Avatar circle (navigates to /profile) ── */
+              /* State 2 & 3: Usuario autenticado → Avatar circle (navega a /profile) */
               <Link
                 href="/profile"
                 className="w-[42px] h-[42px] rounded-full flex items-center justify-center
@@ -262,12 +266,12 @@ export default function Navbar({
                 </span>
               </Link>
             ) : (
-              /* ── STATE 1: Not logged-in → Location pin circle ── */
+              /* State 1: Usuario no autenticado → Avatar circle (navega a /profile) */
               <div
                 className="w-[42px] h-[42px] rounded-full flex items-center justify-center
                   bg-gray-100 hover:bg-gray-200 shrink-0 transition-all duration-200 cursor-default"
               >
-                {/* Location / Map Pin icon */}
+                {/* Icono de ubicación / pin de mapa */}
                 <svg
                   width="20"
                   height="20"
@@ -284,7 +288,7 @@ export default function Navbar({
               </div>
             )}
 
-            {/* ── Hamburger circle (always visible) ── */}
+            {/* Hamburger circle (siempre visible) */}
             <button
               id="user-menu-trigger"
               aria-haspopup="true"
@@ -316,9 +320,7 @@ export default function Navbar({
               </svg>
             </button>
 
-            {/* ═══════════════════════════════════════════════════════════════
-                DROPDOWN MENU: 3 strict states
-                ═══════════════════════════════════════════════════════════════ */}
+            {/* DROPDOWN MENU: 3 estados estrictos */}
             {dropdownOpen && (
               <div
                 id="user-dropdown-menu"
@@ -333,7 +335,7 @@ export default function Navbar({
                 "
               >
                 {!user ? (
-                  /* ─── STATE 1: NOT LOGGED IN ─────────────────────────────── */
+                  /* State 1: No autenticado */
                   <>
                     <MenuItem
                       href="/register"
@@ -361,7 +363,7 @@ export default function Navbar({
                     />
                   </>
                 ) : !isProvider ? (
-                  /* ─── STATE 2: LOGGED IN — CLIENT ONLY ───────────────────── */
+                  /* State 2: Logged in — Client only */
                   <>
                     <MenuItem
                       href="/messages"
@@ -403,7 +405,7 @@ export default function Navbar({
                     />
                   </>
                 ) : (
-                  /* ─── STATE 3: LOGGED IN — PROVIDER ──────────────────────── */
+                  /* State 3: Logged in — Provider */
                   <>
                     <MenuItem
                       href="/messages"

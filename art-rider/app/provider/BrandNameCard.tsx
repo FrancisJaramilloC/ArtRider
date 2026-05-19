@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Edit3, Check, X } from "lucide-react";
 import { updateProviderBrandName } from "@/services/providerService";
 
+// Props para el componente
 interface Props {
   brandName: string;
   initials: string;
@@ -13,6 +14,7 @@ interface Props {
   totalListingsCount: number;
 }
 
+//  Componente de la tarjeta de nombre de marca
 export default function BrandNameCard({
   brandName,
   initials,
@@ -26,6 +28,7 @@ export default function BrandNameCard({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  //  Manejo del guardado del nombre de marca
   async function handleSave() {
     if (inputValue.trim() === brandName) { setEditing(false); return; }
     setSubmitting(true);
@@ -37,12 +40,14 @@ export default function BrandNameCard({
     router.refresh();
   }
 
+  //  Manejo de cancelacion del guardado del nombre de marca
   function handleCancel() {
     setInputValue(brandName);
     setEditing(false);
     setError(null);
   }
 
+  //  Render del componente
   return (
     <div className="xl:col-span-1">
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
@@ -58,11 +63,13 @@ export default function BrandNameCard({
           )}
         </div>
 
+        {/*  Cuerpo de la tarjeta  */}
         <div className="flex items-center gap-4 mb-6">
           <div className="w-16 h-16 rounded-xl bg-gray-900 text-white flex items-center justify-center font-bold text-xl shrink-0">
             {initials}
           </div>
           <div className="min-w-0 flex-1">
+            {/*  Input: Nombre de marca  */}
             {editing ? (
               <div className="space-y-2">
                 <input
@@ -77,6 +84,8 @@ export default function BrandNameCard({
                   autoFocus
                   className="w-full rounded-xl border border-gray-300 px-3 py-1.5 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all"
                 />
+
+                {/*  Botones: Guardar y Cancelar  */}
                 <div className="flex gap-1.5">
                   <button
                     onClick={handleSave}
@@ -99,6 +108,7 @@ export default function BrandNameCard({
               </div>
             ) : (
               <>
+                {/*  Display: Nombre de marca  */}
                 <h3 className="font-bold text-gray-900 text-lg truncate">{brandName}</h3>
                 <p className="text-sm text-gray-500">Sin calificaciones aún</p>
               </>
@@ -106,18 +116,25 @@ export default function BrandNameCard({
           </div>
         </div>
 
+        {/*  Informacion de la tarjeta  */}
         <div className="space-y-4 text-sm">
+
+          {/*  Fecha de membresia  */}
           <div>
             <p className="text-gray-500 mb-0.5">Miembro desde</p>
             <p className="font-medium text-gray-900">{memberSince}</p>
           </div>
+
+          {/*  Cantidad de equipos publicados  */}
           <div>
             <p className="text-gray-500 mb-0.5">Equipos publicados</p>
             <p className="font-medium text-gray-900">
               {activeListingsCount} activos / {totalListingsCount} total
             </p>
           </div>
-          <div>
+
+          {/*  Estado de KYC  */}
+          <div> 
             <p className="text-gray-500 mb-0.5">Estado KYC</p>
             <span className="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md font-medium">
               <span className="w-1.5 h-1.5 bg-amber-500 rounded-full" />

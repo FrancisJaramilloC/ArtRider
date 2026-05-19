@@ -1,3 +1,8 @@
+/*
+ * Página de gestión de reservas para proveedores
+ * Muestra las solicitudes de reserva que los clientes han enviado
+ */
+
 export default function BookingsProviderPage() {
   return (
     <div className="space-y-6">

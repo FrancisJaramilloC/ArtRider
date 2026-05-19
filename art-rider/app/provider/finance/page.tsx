@@ -1,10 +1,11 @@
 import { Building2, CreditCard, ChevronRight, CheckCircle2, Clock } from "lucide-react";
 
+//  Pagina de finanzas para proveedores
 export default function FinancePage() {
   return (
     <div className="space-y-8 w-full pb-10">
 
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Proveedor</p>
@@ -18,21 +19,24 @@ export default function FinancePage() {
         </button>
       </div>
 
-      {/* ── KPI Cards ── */}
+      {/*  KPI Cards (Indicadores Clave de Rendimiento) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
+        {/*  Total Ingresado  */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-500 mb-4">Total Ingresado</p>
           <p className="text-3xl font-bold text-gray-900 mb-2">$0.00</p>
           <p className="text-xs text-gray-400">Desde que te uniste</p>
         </div>
 
+        {/*  Próximos Pagos  */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-500 mb-4">Próximos Pagos</p>
           <p className="text-3xl font-bold text-gray-900 mb-2">$0.00</p>
           <p className="text-xs text-gray-400">Liberación pendiente</p>
         </div>
 
+        {/*  En Tránsito  */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-500 mb-4">En Tránsito</p>
           <p className="text-3xl font-bold text-gray-900 mb-2">$0.00</p>
@@ -41,16 +45,17 @@ export default function FinancePage() {
 
       </div>
 
-      {/* ── Main Layout: Transactions & Payout Methods ── */}
+      {/*  Main Layout: Transacciones y Métodos de Pago  */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        {/* Left Column: Historial de Transacciones */}
+        {/*  Columna Izquierda: Historial de Transacciones  */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-bold text-gray-900">Historial Reciente</h2>
+          <h2 className="text-lg font-bold text-gray-900">Historial de Transacciones</h2>
 
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
             <div className="flex flex-col">
 
+              {/*  Transaccion 1  */}
               <div className="flex items-center justify-between p-5 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
@@ -70,7 +75,8 @@ export default function FinancePage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors cursor-pointer">
+              {/*  Transaccion 2  */}
+                <div className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors cursor-pointer">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
                     <Clock className="w-4 h-4 text-gray-500" />
@@ -91,6 +97,7 @@ export default function FinancePage() {
 
             </div>
 
+            {/*  Botón para ver todo el historial  */}
             <div className="p-4 bg-gray-50/50 flex justify-center border-t border-gray-100">
               <button className="text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors">
                 Ver todo el historial
@@ -99,12 +106,13 @@ export default function FinancePage() {
           </div>
         </div>
 
-        {/* Right Column: Métodos de Pago */}
+        {/*  Columna Derecha: Métodos de Pago  */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-gray-900">Métodos de Cobro</h2>
 
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
 
+            {/*  Metodo 1  */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-gray-100 rounded-xl">
@@ -120,8 +128,10 @@ export default function FinancePage() {
               </span>
             </div>
 
+            {/*  Separador  */}
             <hr className="border-gray-100" />
 
+            {/*  Metodo 2  */}
             <div className="flex items-center justify-between opacity-40">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-gray-100 rounded-xl">
@@ -134,6 +144,7 @@ export default function FinancePage() {
               </div>
             </div>
 
+            {/*  Botón para añadir nueva cuenta  */}
             <button className="w-full bg-white border-2 border-dashed border-gray-300 hover:border-gray-900 text-gray-600 hover:text-gray-900 px-4 py-3 rounded-xl text-sm font-semibold transition-all">
               Añadir nueva cuenta
             </button>

@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { User, Shield } from "lucide-react";
 
+// Componente de barra de navegacion del perfil
 export default function ProfileNav() {
   const pathname = usePathname();
 
+  // Items de navegacion del perfil
   const navItems = [
     {
       name: "Información Personal",
@@ -20,12 +22,14 @@ export default function ProfileNav() {
     },
   ];
 
+  // Renderizado del componente
   return (
     <nav className="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-4 md:pb-0 hide-scrollbar">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = pathname === item.href;
 
+        // Item de navegacion del perfil
         return (
           <Link
             key={item.href}

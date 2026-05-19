@@ -6,11 +6,13 @@ import ExploreFilterBar from "@/components/explore/ExploreFilterBar";
 import ExploreCard from "@/components/explore/ExploreCard";
 import ExploreMap from "@/components/explore/ExploreMap";
 
+// Metadata de la pagina
 export const metadata: Metadata = {
   title: "Explorar Equipos | ArtRider",
   description: "Explora equipos de alquiler en el mapa interactivo.",
 };
 
+// Componente de la pagina de exploracion
 export default async function ExplorePage(props: {
   searchParams: Promise<{ city?: string; category?: string }>;
 }) {
@@ -19,7 +21,7 @@ export default async function ExplorePage(props: {
   const category = searchParams.category ?? "all";
   const allListings = await getListings();
 
-  // Filter by city and/or category
+  // Filtrar por ciudad y/o categoría
   const listings = allListings.filter((l: any) => {
     const addr = Array.isArray(l.address) ? l.address[0] : l.address;
     const listingCity = addr?.city?.trim() || "Otras ubicaciones";
@@ -30,7 +32,7 @@ export default async function ExplorePage(props: {
     return cityOk && catOk;
   });
 
-  // Derive map center from first listing with valid coordinates
+  // Derivar centro del mapa desde la primera publicacion con coordenadas validas
   let mapCenter: [number, number] | undefined = undefined;
   const seed = listings.find((l: any) => {
     const addr = Array.isArray(l.address) ? l.address[0] : l.address;
@@ -43,13 +45,14 @@ export default async function ExplorePage(props: {
     mapCenter = [addr.longitude, addr.latitude];
   }
 
+  // renderizado de la pagina de exploracion
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white">
 
-      {/* ── Body: split 55 / 45 ── */}
+      {/* Body: split 55 / 45 */}
       <div className="flex flex-1 overflow-hidden min-h-0">
 
-        {/* ── Left 55%: catálogo scrollable ── */}
+        {/* Left 55%: catálogo scrollable */}
         <div className="w-full lg:w-[55%] h-full overflow-y-auto shrink-0 bg-white">
 
           {/* Barra de filtros — debajo del BackButton */}
@@ -86,7 +89,7 @@ export default async function ExplorePage(props: {
           )}
         </div>
 
-        {/* ── Right 45%: mapa sticky con contorno izquierdo ── */}
+        {/* Right 45%: mapa sticky con contorno izquierdo */}
         <div
           className="hidden lg:block flex-1 h-full relative"
           style={{ boxShadow: "inset 6px 0 10px -6px rgba(0,0,0,0.10)" }}

@@ -5,21 +5,25 @@ import { useRouter } from "next/navigation";
 import ListingForm from "@/components/features/listings/ListingForm";
 import Link from "next/link";
 
+//  Props del formulario de edición de listado
 type Props = {
   listing: any;
   updateAction: (prevState: any, formData: FormData) => Promise<any>;
 };
 
+//  Componente del formulario de edición de listado
 export default function EditListingClient({ listing, updateAction }: Props) {
   const [state, formAction, isPending] = useActionState(updateAction, null);
   const router = useRouter();
 
+  //  Limpieza de URLs de objetos generadas para evitar fugas de memoria
   useEffect(() => {
     if (state?.success) {
       router.push("/provider/catalog");
     }
   }, [state, router]);
 
+  //  Renderizado del formulario
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
@@ -36,12 +40,14 @@ export default function EditListingClient({ listing, updateAction }: Props) {
         <p className="text-sm text-gray-500 mt-1">Los cambios se aplican inmediatamente al guardar.</p>
       </div>
 
+      {/*  Estado de error  */}
       {state?.error && (
         <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3.5">
           <p className="text-sm text-red-600 font-medium">{state.error}</p>
         </div>
       )}
 
+      {/*  Card del formulario  */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
         <form action={formAction}>
           <ListingForm

@@ -2,6 +2,7 @@
 
 import { Fragment } from "react";
 
+//  Paso de como funciona
 const STEPS = [
   {
     n: 1,
@@ -20,6 +21,7 @@ const STEPS = [
   },
 ];
 
+//  Componente de como funciona
 export function HowItWorks() {
   return (
     <section className="bg-white py-8 sm:py-12">
@@ -47,7 +49,7 @@ export function HowItWorks() {
                 </div>
               </div>
 
-              {/* Arrow — between steps only, hidden on mobile */}
+              {/* Flecha — solo entre pasos, oculta en móvil */}
               {idx < STEPS.length - 1 && (
                 <svg
                   className="hidden md:block w-6 h-6 text-gray-300 shrink-0 mx-4"

@@ -5,7 +5,7 @@ import { signUp } from "@/services/authService";
 import Link from "next/link";
 import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 
-// ── Shared Input with Icon ────────────────────────────────────────────────────
+// componente para campos de formulario con icono
 function InputField({
   id, name, type = "text", label, placeholder, icon, required = false,
   maxLength, minLength, pattern, title, onChange, inputRef
@@ -34,6 +34,7 @@ function InputField({
   );
 }
 
+// iconos para el formulario de registro
 const IconUser = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
@@ -60,11 +61,13 @@ const IconCalendar = () => (
   </svg>
 );
 
+// componente principal de la pagina de registro
 export default function RegisterPage() {
   const [state, formAction, isPending] = useActionState(signUp, null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmRef = useRef<HTMLInputElement>(null);
 
+  // funcion para validar que las contraseñas coincidan
   const handleConfirmChange = () => {
     if (confirmRef.current && passwordRef.current) {
       if (confirmRef.current.value !== passwordRef.current.value) {
@@ -77,9 +80,9 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row-reverse bg-white font-sans">
-      {/* ── Left Panel (Brand - Right Side here) ── */}
+      {/* panel izquierdo con el logo y la marca */}
       <div className="hidden md:flex flex-col md:w-5/12 lg:w-1/2 bg-gradient-to-bl from-[#875B9A] via-[#6B427E] to-[#3A2246] text-white p-12 justify-between relative overflow-hidden">
-        {/* Background Decorative Elements */}
+        {/* elementos decorativos del panel izquierdo */}
         <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] pointer-events-none" />
         <div className="absolute top-32 -right-32 w-[30rem] h-[30rem] bg-[#C29ACF]/20 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-12 -left-12 w-[25rem] h-[25rem] bg-white/10 rounded-full blur-[90px] pointer-events-none" />
@@ -91,7 +94,7 @@ export default function RegisterPage() {
               <polyline points="9 18 15 12 9 6"/>
             </svg>
           </Link>
-          
+          {/* div con el contenido del panel izquierdo */}
           <div className="mt-8 flex flex-col items-end">
             <div className="flex items-center gap-3 mb-8 flex-row-reverse">
               <div className="w-16 h-16 rounded-full border-2 border-white/90 flex items-center justify-center shadow-lg bg-white/10 backdrop-blur-sm">
@@ -121,9 +124,9 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* ── Right Panel (Form - Left Side here) ── */}
+      {/* panel derecho con el formulario de registro */}
       <div className="flex-1 flex flex-col justify-center px-6 py-10 sm:px-12 lg:px-20 bg-gray-50 md:bg-white relative">
-        {/* Mobile Header */}
+        {/* header del panel derecho */}
         <div className="md:hidden flex items-center justify-between mb-8">
           <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -134,14 +137,15 @@ export default function RegisterPage() {
           <ArtRiderLogo />
         </div>
 
+        {/* div con el formulario de registro */}
         <div className="w-full max-w-md mx-auto">
-          {/* Header */}
+          {/* header del formulario */}
           <div className="mb-8">
             <h1 className="text-[2rem] font-extrabold text-gray-900 tracking-tight mb-2">Crear cuenta</h1>
             <p className="text-[1rem] text-gray-500 font-medium">Únete a la comunidad de ArtRider hoy.</p>
           </div>
 
-          {/* Error Banner */}
+          {/* banner de error */}
           {state?.error && (
             <div className="mb-6 rounded-2xl bg-red-50/80 backdrop-blur-sm p-4 border border-red-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
               <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
@@ -151,8 +155,9 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {/* formulario */}
           <form action={formAction} className="space-y-4">
-            {/* Name row */}
+            {/* campos de nombre y apellido */}
             <div className="grid grid-cols-2 gap-4">
               <InputField id="firstName" name="firstName" label="Nombre" placeholder="Tu nombre" icon={<IconUser />} required maxLength={50} />
               <InputField id="lastName" name="lastName" label="Apellido" placeholder="Tu apellido" icon={<IconUser />} required maxLength={50} />
@@ -168,7 +173,7 @@ export default function RegisterPage() {
 
             <InputField id="confirmPassword" name="confirmPassword" type="password" label="Confirmar contraseña" placeholder="••••••••" icon={<IconLock />} required minLength={8} maxLength={72} inputRef={confirmRef} onChange={handleConfirmChange} />
 
-            {/* Submit Button */}
+            {/* boton de envio */}
             <button
               type="submit"
               disabled={isPending}

@@ -8,8 +8,7 @@ import { togglePublish, deleteListing } from "@/services/listingsService";
 import type { Package } from "@/services/packagesService";
 import { createPackage } from "@/services/packagesService";
 
-// ── Constants ──────────────────────────────────────────────────────────────────
-
+//  Constantes para el formulario
 const CATEGORIES = [
   { value: "audio",    label: "Sonido"      },
   { value: "lighting", label: "Iluminacion" },
@@ -22,8 +21,7 @@ const CATEGORY_MAP: Record<string, string> = Object.fromEntries(
   CATEGORIES.map((c) => [c.value, c.label])
 );
 
-// ── Shared styles ──────────────────────────────────────────────────────────────
-
+//  Estilos compartidos
 const cls = {
   input:
     "block w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all",
@@ -35,12 +33,12 @@ const cls = {
     "inline-flex items-center justify-center border border-gray-200 text-sm font-semibold text-gray-700 px-4 py-2.5 rounded-xl hover:bg-gray-50 transition-colors",
 } as const;
 
-// ── Pure helpers ───────────────────────────────────────────────────────────────
-
+//  Función para formatear precios
 const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
-// ── Shared UI atoms ────────────────────────────────────────────────────────────
+//  Atoms de UI compartidos
 
+//  Shell del modal
 function ModalShell({
   title,
   subtitle,
@@ -58,6 +56,7 @@ function ModalShell({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  //  Renderizado del shell del modal
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
@@ -89,6 +88,7 @@ function ModalShell({
   );
 }
 
+//  Carga de fotos
 function PhotoUpload({ name, previewUrl, onFile }: {
   name: string;
   previewUrl: string | null;
@@ -124,6 +124,7 @@ function PhotoUpload({ name, previewUrl, onFile }: {
   );
 }
 
+//  Toggle de publicación
 function PublishToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <button type="button" role="switch" aria-checked={value} onClick={() => onChange(!value)}
@@ -140,13 +141,14 @@ function PublishToggle({ value, onChange }: { value: boolean; onChange: (v: bool
   );
 }
 
+//  Banner de error 
 function ErrorBanner({ message }: { message: string }) {
   return (
     <p className="text-xs font-medium text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">{message}</p>
   );
 }
 
-// ── Equipment selector popup (inside package modal) ────────────────────────────
+//  Selector de equipo (popup dentro del modal de paquetes)
 
 function EquipmentSelectorPopup({
   publishedListings,
@@ -164,6 +166,7 @@ function EquipmentSelectorPopup({
     !search || (l.title ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
+  //  Renderizado del selector de equipos
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-6">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
@@ -253,8 +256,7 @@ function EquipmentSelectorPopup({
   );
 }
 
-// ── Create Package Modal ───────────────────────────────────────────────────────
-
+//  Modal para crear paquetes
 function CreatePackageModal({
   publishedListings,
   onClose,
@@ -269,8 +271,10 @@ function CreatePackageModal({
   const [selectedIds, setSelectedIds]    = useState<Set<string>>(new Set());
   const [showSelector, setShowSelector]  = useState(false);
 
+  //  Lista de equipos seleccionados
   const selectedListings = publishedListings.filter((l) => selectedIds.has(l.id));
 
+  // Toggle de equipo
   function toggleListing(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -279,10 +283,12 @@ function CreatePackageModal({
     });
   }
 
+  // Eliminar equipo del paquete
   function removeListing(id: string) {
     setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
   }
 
+  // Manejar envio del formulario
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formRef.current) return;
@@ -299,6 +305,7 @@ function CreatePackageModal({
     });
   }
 
+  //  Renderizado del modal de paquetes
   return (
     <>
       {showSelector && (
@@ -354,11 +361,11 @@ function CreatePackageModal({
             </p>
           </div>
 
-          {/* Equipment selection ───────────────────────────────────────── */}
+          {/* Selection of included equipment */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className={`${cls.label} mb-0`}>
-                Equipos incluidos <span className="text-red-500">*</span>
+                Included Equipment <span className="text-red-500">*</span>
               </label>
               <span className="text-xs text-gray-400">Minimo 2</span>
             </div>
@@ -425,8 +432,7 @@ function CreatePackageModal({
   );
 }
 
-// ── Stat Card ──────────────────────────────────────────────────────────────────
-
+//  Card de estadísticas
 function StatCard({ label, value, hint, accent = false }: {
   label: string;
   value: number;
@@ -443,6 +449,7 @@ function StatCard({ label, value, hint, accent = false }: {
   );
 }
 
+//  Badge de categoría
 function CategoryBadge({ category }: { category: string | null }) {
   if (!category) return null;
   return (
@@ -452,8 +459,7 @@ function CategoryBadge({ category }: { category: string | null }) {
   );
 }
 
-// ── Equipment Card ─────────────────────────────────────────────────────────────
-
+//  Card de equipos
 function EquipmentCard({ listing, onToggle, onDelete }: {
   listing: Listing;
   onToggle: (id: string, current: boolean) => void;
@@ -511,6 +517,7 @@ function EquipmentCard({ listing, onToggle, onDelete }: {
   );
 }
 
+//  Card de nuevo equipo
 function AddNewCard({ label, hint, onClick }: { label: string; hint: string; onClick: () => void }) {
   return (
     <button onClick={onClick}
@@ -529,8 +536,7 @@ function AddNewCard({ label, hint, onClick }: { label: string; hint: string; onC
   );
 }
 
-// ── Package Card ───────────────────────────────────────────────────────────────
-
+//  Card de paquetes
 function PackageCard({ pkg, itemCount }: { pkg: Package; itemCount: number }) {
   return (
     <article className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
@@ -571,8 +577,7 @@ function PackageCard({ pkg, itemCount }: { pkg: Package; itemCount: number }) {
   );
 }
 
-// ── Main ───────────────────────────────────────────────────────────────────────
-
+//  Main
 export default function CatalogClient({
   listings: initial,
   packages: initialPackages,
@@ -589,10 +594,12 @@ export default function CatalogClient({
   const [search, setSearch]                 = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
 
+  //  Numero de equipos publicados y borradores
   const published        = listings.filter((l) => l.is_published).length;
   const drafts           = listings.filter((l) => !l.is_published).length;
   const publishedListings = listings.filter((l) => l.is_published);
 
+  //  Filtro de equipos
   const filtered = listings.filter((l) => {
     const term = search.toLowerCase();
     const matchSearch = !term || [l.title, l.brand, l.model].some((v) => v?.toLowerCase().includes(term));
@@ -600,8 +607,10 @@ export default function CatalogClient({
     return matchSearch && matchCat;
   });
 
+  //  Estado de los filtros
   const hasFilters = Boolean(search) || filterCategory !== "all";
 
+  //  Toggle de equipo
   function handleToggle(id: string, current: boolean) {
     setListings((prev) => prev.map((l) => (l.id === id ? { ...l, is_published: !current } : l)));
     setLoadingId(id);
@@ -612,6 +621,7 @@ export default function CatalogClient({
     });
   }
 
+  //  Eliminar equipo
   function handleDelete(id: string, title: string | null) {
     if (!confirm(`Eliminar "${title ?? "este equipo"}"? Esta accion es irreversible.`)) return;
     setLoadingId(id);
@@ -622,8 +632,10 @@ export default function CatalogClient({
     });
   }
 
+  //  Limpiar filtros
   const clearFilters = () => { setSearch(""); setFilterCategory("all"); };
 
+  //  Renderizado del cliente
   return (
     <>
       {/* El formulario de equipo ahora vive en /provider/catalog/new */}
@@ -636,7 +648,7 @@ export default function CatalogClient({
 
       <div className="space-y-8">
 
-        {/* Hero header */}
+        {/* Encabezado del catalogo */}
         <div className="relative rounded-2xl bg-white border border-gray-200 px-7 py-7 overflow-hidden">
           <div className="relative flex items-center justify-between gap-4">
             <div>
@@ -681,6 +693,7 @@ export default function CatalogClient({
             ))}
           </div>
 
+          {/* Barra de busqueda */}
           {activeTab === "equipos" && (
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="relative flex-1 sm:w-64">
@@ -700,9 +713,12 @@ export default function CatalogClient({
           )}
         </div>
 
-        {/* Content */}
+        {/* Contenido */}
+
+        {/* Lista de equipos */}
         {activeTab === "equipos" ? (
           <div className="space-y-3">
+            {/* Filtros */}
             {hasFilters && (
               <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-500">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</p>
@@ -712,6 +728,8 @@ export default function CatalogClient({
                 </button>
               </div>
             )}
+
+            {/* Grid de equipos */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
               <Link href="/provider/catalog/new" className="block"><AddNewCard label="Agregar equipo" hint="Publica un nuevo item en tu catalogo" onClick={() => {}} /></Link>
               {filtered.map((listing) => (
@@ -720,6 +738,8 @@ export default function CatalogClient({
                 </div>
               ))}
             </div>
+
+            {/* Sin resultados */}
             {listings.length > 0 && filtered.length === 0 && (
               <div className="flex flex-col items-center py-20 gap-2 text-center">
                 <p className="text-base font-semibold text-gray-700">Sin resultados</p>

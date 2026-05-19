@@ -1,15 +1,14 @@
 /**
- * app/listings/page.tsx — Server Component (no "use client")
+ * app/listings/page.tsx — Componente del servidor (no "use client")
  *
- * Public catalog view. Renders the full grid of published listings.
+ * Vista de catálogo público. Renderiza la cuadrícula completa de listados publicados.
  *
- * Rendering model:
- *   - This is a React Server Component: it runs only on the server.
- *   - It calls getListings() directly (no fetch(), no useEffect()).
- *   - It renders <ListingCard> Client Components, passing plain serializable
- *     objects as props. Next.js serializes those props across the Server/Client
- *     boundary automatically.
- *   - No auth gate — this route is 100% public.
+ * Modelo de renderizado:
+ *   - Este es un Componente de Servidor de React: se ejecuta solo en el servidor.
+ *   - Llama a getListings() directamente (no fetch(), no useEffect()).
+ *   - Renderiza componentes cliente <ListingCard> pasando objetos serializables.
+ *     Next.js serializa esos props automáticamente a través del límite Servidor/Cliente
+ *   - No auth gate — esta ruta es 100% pública.
  */
 
 import type { Metadata } from "next";
@@ -18,7 +17,7 @@ import { getListings } from "@/services/listingsService";
 import ListingCard from "@/components/features/listings/ListingCard";
 import { ChevronRight } from "lucide-react";
 
-// ─── SEO ──────────────────────────────────────────────────────────────────────
+//  Metadatos de la página 
 
 export const metadata: Metadata = {
   title: "Equipment Catalog | ArtRider",
@@ -26,17 +25,17 @@ export const metadata: Metadata = {
     "Browse professional audio, lighting, and instrument rental listings on ArtRider — the peer-to-peer marketplace for creative equipment.",
 };
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+//  Pagina principal  
 
 export default async function ListingsPage() {
-  // Direct async call — Server Components can be async functions.
+  // Llamada asíncrona directa — los componentes de servidor pueden ser async
   const listings = await getListings();
 
   return (
     <main
       className="min-h-screen bg-white pb-20"
     >
-      {/* ── Page header ── */}
+      {/* Header de la pagina */}
       <header
         className="pt-8 sm:pt-14 pb-6 sm:pb-10 px-4 sm:px-6 max-w-[1200px] mx-auto"
       >
@@ -71,13 +70,13 @@ export default async function ListingsPage() {
         />
       </header>
 
-      {/* ── Catalog grouped by city ── */}
+      {/*  Catalogo agrupado por ciudad  */}
       <section
         aria-label="Available equipment listings by city"
         className="max-w-[1200px] mx-auto px-4 sm:px-6 space-y-12"
       >
         {listings.length === 0 ? (
-          /* ── Empty state ── */
+          /*  Estado vacío  */
           <div
             className="flex flex-col items-center justify-center text-center bg-gray-50 border border-gray-200 rounded-2xl"
             style={{ padding: "72px 32px", gap: "16px" }}
@@ -96,7 +95,7 @@ export default async function ListingsPage() {
             </p>
           </div>
         ) : (
-          /* ── Carousels by City ── */
+          /*  Carousels por ciudad  */
           Object.entries(
             listings.reduce((acc, listing: any) => {
               const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
@@ -123,7 +122,7 @@ export default async function ListingsPage() {
                   </Link>
                 </div>
 
-                {/* Horizontal scroll container (Carousel) */}
+                {/*  Contenedor scroll horizontal (Carrusel)  */}
                 <div className="flex overflow-x-auto gap-4 sm:gap-5 pb-4 snap-x snap-mandatory scrollbar-hide -mx-4 px-4 sm:-mx-6 sm:px-6">
                   {cityListings.map((listing) => (
                     <div
@@ -138,7 +137,7 @@ export default async function ListingsPage() {
             ))
         )}
 
-        {/* Listing count footer */}
+        {/*  Footer con contador de equipos  */}
         {listings.length > 0 && (
           <p className="text-xs text-center text-gray-400 mt-10">
             Mostrando <strong className="text-gray-600">{listings.length}</strong>{" "}

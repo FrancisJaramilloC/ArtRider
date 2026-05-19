@@ -1,14 +1,14 @@
 /**
  * app/listings/loading.tsx
  *
- * Shown by Next.js automatically while listings/page.tsx is streaming.
- * Renders a grid of skeleton cards that exactly mirror the dimensions of
- * ListingCard so the layout doesn't shift when real data arrives.
+ * Mostrado por Next.js automáticamente mientras listings/page.tsx se está transmitiendo.
+ * Renderiza una cuadrícula de tarjetas esqueleto que reflejan exactamente las dimensiones de
+ * ListingCard para que el diseño no cambie cuando lleguen los datos reales.
  *
- * This is a Server Component — no "use client" needed.
+ * Este es un componente del servidor - no se necesita "use client"
  */
 
-// Number of skeleton cards to show — matches a typical above-the-fold grid
+// Numero de tarjetas skeleton a mostrar - coincide con una cuadrícula típica
 const SKELETON_COUNT = 6;
 
 function SkeletonCard() {
@@ -18,23 +18,23 @@ function SkeletonCard() {
       aria-hidden="true"
       style={{ pointerEvents: "none" }}
     >
-      {/* Image placeholder */}
+      {/*  Placeholder de imagen  */}
       <div
         className="skeleton"
         style={{ height: "176px", borderRadius: "16px 16px 0 0" }}
       />
 
-      {/* Body */}
+      {/*  Body  */}
       <div style={{ padding: "16px 20px 20px", display: "flex", flexDirection: "column", gap: "10px" }}>
-        {/* Title */}
+        {/*  Titulo  */}
         <div className="skeleton" style={{ height: "16px", width: "75%" }} />
-        {/* Subtitle */}
+        {/*  Subtitulo  */}
         <div className="skeleton" style={{ height: "12px", width: "50%" }} />
 
-        {/* Divider */}
+        {/*  Divider  */}
         <div style={{ height: "1px", background: "var(--border-subtle)", margin: "2px 0" }} />
 
-        {/* Location + price row */}
+        {/*  Ubicación + fila de precio  */}
         <div className="flex justify-between items-center">
           <div className="skeleton" style={{ height: "12px", width: "40%" }} />
           <div className="skeleton" style={{ height: "20px", width: "28%" }} />
@@ -44,6 +44,7 @@ function SkeletonCard() {
   );
 }
 
+//  Componente principal de la pagina de reservas
 export default function ListingsLoading() {
   return (
     <main

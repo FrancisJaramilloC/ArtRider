@@ -1,13 +1,13 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
-/* ── ArtRider Theme Variables ─────────────────────────────────────────────────
-   Paleta basada en la identidad de ArtRider + tokens de mapcn para
-   compatibilidad con los componentes del mapa.
-   ────────────────────────────────────────────────────────────────────────── */
+/*  Variables de tema de ArtRider
+    Paleta basada en la identidad de ArtRider + tokens de mapcn para
+    compatibilidad con los componentes del mapa.
+*/
 
 :root {
-  /* ArtRider brand */
+  /* ArtRider brand  */
   --primary-400: #a97dc4;
   --primary-500: #875b9a;
   --primary-600: #6a437a;
@@ -53,7 +53,7 @@
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
 
-  /* Sidebar */
+  /*  Barra lateral */
   --sidebar: #f9f9f9;
   --sidebar-foreground: #111111;
   --sidebar-primary: #111111;
@@ -91,7 +91,7 @@
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
 
-  /* Sidebar dark */
+  /*  Barra lateral */
   --sidebar: #1a1a1a;
   --sidebar-foreground: #f9f9f9;
   --sidebar-primary: #6366f1;
@@ -102,7 +102,7 @@
   --sidebar-ring: #6b7280;
 }
 
-/* ── Base Resets ──────────────────────────────────────────────────────────── */
+/*  Reseteos base  */
 
 *,
 *::before,
@@ -131,7 +131,7 @@ body {
     cursor: pointer;
   }
 
-  /* ── MapLibre GL overrides (de mapcn) ──────────────────────────────────── */
+  /*  MapLibre GL overrides de mapcn */
   .maplibregl-popup-content {
     background: transparent !important;
     box-shadow: none !important;
@@ -144,7 +144,7 @@ body {
   }
 }
 
-/* ── ArtRider Components ─────────────────────────────────────────────────── */
+/*  Componentes de ArtRider */
 
 .listing-card {
   background: #ffffff;
@@ -154,17 +154,20 @@ body {
   will-change: transform;
 }
 
+/* Animación de hover para las tarjetas de listados */
 .listing-card:hover {
   transform: translateY(-6px) scale(1.01);
   box-shadow: 0 20px 48px rgba(135, 91, 154, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
   border-color: #a97dc4;
 }
 
+/* Animación shimmer */
 @keyframes shimmer {
   0% { background-position: -600px 0; }
   100% { background-position: 600px 0; }
 }
 
+/* Skeleton */
 .skeleton {
   border-radius: 8px;
   background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
@@ -172,6 +175,7 @@ body {
   animation: shimmer 1.4s infinite linear;
 }
 
+/* Badge de categoría */
 .category-badge {
   display: inline-flex;
   align-items: center;
@@ -187,8 +191,7 @@ body {
   border: 1px solid rgba(135, 91, 154, 0.30);
 }
 
-/* ── mapcn Animations ────────────────────────────────────────────────────── */
-
+/* Animaciones de mapcn */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }

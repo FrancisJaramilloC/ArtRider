@@ -1,3 +1,8 @@
+/*
+ * Página principal de mensajes
+ * Muestra la bandeja de entrada y la interfaz de chat
+ */
+
 export default function MessagesCenterPage() {
   return (
     <div className="space-y-6">

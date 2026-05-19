@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState, useEffect } from "react";
 import { updateProfile } from "@/services/profileService";
 
+//  Props del formulario de perfil
 interface ProfileFormProps {
   initialData: {
     fullName: string;
@@ -15,6 +16,7 @@ interface ProfileFormProps {
   };
 }
 
+//  Componente del formulario de perfil
 export default function ProfileForm({ initialData }: ProfileFormProps) {
   const [state, formAction, isPending] = useActionState(updateProfile, null);
 
@@ -29,8 +31,8 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
     }
   };
 
+  //  Limpieza de URLs de objetos generadas para evitar fugas de memoria
   useEffect(() => {
-    // Cleanup generated object URLs to prevent memory leaks mapping isolated references
     return () => {
       if (previewUrl && previewUrl !== initialData.avatarUrl) {
         URL.revokeObjectURL(previewUrl);
@@ -38,9 +40,10 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
     }
   }, [previewUrl, initialData.avatarUrl]);
 
+  //  Renderizado del formulario
   return (
     <form action={formAction} className="space-y-6">
-      {/* ── Avatar Section ── */}
+      {/*  Seccion de avatar  */}
       <div className="flex items-center gap-6 pb-6 border-b border-gray-100">
         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#875B9A] to-[#6a437a] flex items-center justify-center shadow-md shrink-0 overflow-hidden">
           {previewUrl ? (
@@ -77,14 +80,14 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
         </div>
       </div>
 
-      {/* ── Form Card: Datos Básicos ── */}
+      {/*  Card del formulario: Datos Básicos  */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-gray-100 bg-gray-50/50">
           <h3 className="text-lg font-semibold text-gray-900">Datos Básicos</h3>
           <p className="text-sm text-gray-500 mt-0.5">La información principal asociada a tu cuenta.</p>
         </div>
 
-        {/* State Banners */}
+        {/* Banners de estado */}
         {state?.error && (
           <div className="mx-6 mt-6 rounded-md bg-red-50 p-4 border border-red-200 text-sm text-red-600 font-medium">
             {state.error}
@@ -96,6 +99,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
           </div>
         )}
 
+        {/*  Datos del formulario  */}
         <div className="p-6 space-y-5">
           <div className="grid gap-2">
             <label htmlFor="fullName" className="text-sm font-medium text-gray-700">Nombre Completo</label>
@@ -109,6 +113,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
             />
           </div>
 
+          {/*  Telefono y fecha de nacimiento  */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="grid gap-2">
               <label htmlFor="phone" className="text-sm font-medium text-gray-700">Número de Teléfono</label>
@@ -124,6 +129,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
               />
             </div>
 
+            {/*  Fecha de nacimiento  */}
             <div className="grid gap-2">
               <label htmlFor="birthDate" className="text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
               <input
@@ -141,6 +147,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
             </div>
           </div>
 
+          {/*  Correo electrónico  */}
           <div className="grid gap-2 pt-2 border-t border-gray-100">
             <label htmlFor="email" className="text-sm font-medium text-gray-700">Correo Electrónico</label>
             <input
@@ -154,6 +161,7 @@ export default function ProfileForm({ initialData }: ProfileFormProps) {
           </div>
         </div>
 
+        {/*  Boton de guardar cambios  */}
         <div className="p-5 bg-gray-50 border-t border-gray-100 flex justify-end">
           <button
             type="submit"

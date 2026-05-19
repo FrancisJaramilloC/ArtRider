@@ -5,6 +5,7 @@ import {
   Volume2, Zap, Video, Sparkles, Megaphone, Package, LayoutGrid,
 } from "lucide-react";
 
+// Filtros de categorías por icono para la página Explore
 const FILTERS = [
   { value: "all",         label: "Todos",        Icon: LayoutGrid },
   { value: "audio",       label: "Sonido",       Icon: Volume2 },
@@ -15,11 +16,13 @@ const FILTERS = [
   { value: "other",       label: "Otro",         Icon: Package },
 ] as const;
 
+// Renderizado de la barra de filtros por categoría
 export default function ExploreFilterBar({ city }: { city?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const active = searchParams.get("category") ?? "all";
 
+  // Manejo del click en un filtro
   const handleClick = (value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     if (value === "all") {
@@ -30,9 +33,9 @@ export default function ExploreFilterBar({ city }: { city?: string }) {
     if (city) params.set("city", city);
     router.push(`/explore?${params.toString()}`);
   };
-
+  
   return (
-    <div className="flex-shrink-0 border-b border-gray-100 bg-white">
+    <div className="flex-shrink-0 border-b border-gray-100 bg-white mt-12">
       <div className="flex items-center gap-6 px-6 py-3 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {FILTERS.map(({ value, label, Icon }) => {
           const isActive = active === value;

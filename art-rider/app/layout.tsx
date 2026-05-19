@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import BackButton from "@/components/BackButton";
 
+// Configuración de fuentes
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -19,12 +20,14 @@ const inter = Inter({
   weight: ["400", "500", "600", "700", "800"],
 });
 
+//  Metadata de la aplicación
 export const metadata: Metadata = {
   title: "ArtRider — Alquila Equipos Creativos para tu Evento",
   description:
     "Marketplace de alquiler de equipos de audio, iluminación y video con propietarios verificados.",
 };
 
+//  Componente de la estructura de la página principal
 export default function RootLayout({
   children,
 }: Readonly<{

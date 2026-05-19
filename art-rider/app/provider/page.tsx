@@ -4,6 +4,7 @@ import { getMyProviderProfile } from "@/services/providerService";
 import { getMyListings } from "@/services/listingsService";
 import BrandNameCard from "./BrandNameCard";
 
+//  Pagina principal del proveedor
 export default async function ProviderOverviewPage() {
   const provider = await getMyProviderProfile();
   const listings = await getMyListings();
@@ -16,10 +17,11 @@ export default async function ProviderOverviewPage() {
     ? new Date(provider.created_at).toLocaleDateString("es-EC", { year: "numeric", month: "long" })
     : "—";
 
+  //  Renderizado de la pagina principal
   return (
     <div className="space-y-8">
 
-      {/* ── Page Header ── */}
+      {/*  Encabezado de la pagina  */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Proveedor</p>
@@ -35,27 +37,30 @@ export default async function ProviderOverviewPage() {
         </Link>
       </div>
 
-      {/* ── KPI Cards ── */}
+      {/*  Cards de KPIs  */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-
+        {/*  Ingresos del mes  */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-500 mb-4">Ingresos del Mes</p>
           <p className="text-3xl font-bold text-gray-900 mb-2">$0.00</p>
           <p className="text-xs text-gray-400">Las reservas estarán disponibles pronto</p>
         </div>
 
+        {/*  Reservas pendientes  */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-500 mb-4">Reservas Pendientes</p>
           <p className="text-3xl font-bold text-gray-900 mb-2">0</p>
           <p className="text-xs text-gray-400">Sin reservas activas</p>
         </div>
 
+        {/*  Equipos activos  */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-500 mb-4">Equipos Activos</p>
           <p className="text-3xl font-bold text-gray-900 mb-2">{activeListingsCount}</p>
           <p className="text-xs text-gray-400">{totalListingsCount} en tu catálogo total</p>
         </div>
 
+        {/*  Tasa de respuesta  */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
           <p className="text-sm font-semibold text-gray-500 mb-4">Tasa de Respuesta</p>
           <p className="text-3xl font-bold text-gray-900 mb-2">—</p>
@@ -64,10 +69,10 @@ export default async function ProviderOverviewPage() {
 
       </div>
 
-      {/* ── Main Content Area ── */}
+      {/*  Seccion principal  */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
 
-        {/* Recent Activity Table */}
+        {/*  Tabla de actividades recientes  */}
         <div className="xl:col-span-2 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center">
             <div>
@@ -92,7 +97,7 @@ export default async function ProviderOverviewPage() {
           </div>
         </div>
 
-        {/* Quick Company Info */}
+        {/*  Información de la empresa  */}
         <BrandNameCard
           brandName={brandName}
           initials={initials}

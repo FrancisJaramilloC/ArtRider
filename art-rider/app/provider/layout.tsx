@@ -4,6 +4,8 @@ import ProviderLayoutClient from "./ProviderLayoutClient";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 
+
+//  Layout de la plataforma para proveedores
 export default async function ProviderLayout({
   children,
 }: {
@@ -13,12 +15,13 @@ export default async function ProviderLayout({
   const { data: { user } } = await supabase.auth.getUser();
   const provider = await getMyProviderProfile();
 
+  // Redireccion a la pagina de registro si no hay proveedor
   if (!provider) {
     redirect("/become-a-provider");
   }
 
-  // Pending State
-  if (provider.status === "pending") {
+  //  Estado de espera de proveedor
+  if (provider.status === "pending") { //Si el proveedor esta en estado pendiente muestra esta pantalla
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 items-center justify-center p-6">
         <div className="max-w-md w-full bg-white border border-gray-200 rounded-3xl p-8 shadow-xl text-center">
@@ -42,8 +45,8 @@ export default async function ProviderLayout({
     );
   }
 
-  // Suspended State
-  if (provider.status === "suspended") {
+  // Estado de cuenta suspendida
+  if (provider.status === "suspended") { // Si el proveedor esta en estado suspendido muestra esta pantalla
     return (
       <div className="min-h-screen flex flex-col bg-gray-50 items-center justify-center p-6">
         <div className="max-w-md w-full bg-white border border-red-200 rounded-3xl p-8 shadow-xl text-center">
@@ -57,7 +60,7 @@ export default async function ProviderLayout({
     );
   }
 
-  // Active State
+  // Estado activo del proveedor
   return (
     <ProviderLayoutClient provider={provider} initialUser={user ?? null}>
       {children}

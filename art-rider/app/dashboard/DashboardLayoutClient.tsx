@@ -9,21 +9,20 @@ import {
 import type { ProviderProfile } from "@/services/providerService";
 import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 
-// ── Nav structure ──────────────────────────────────────────────────────────────
-
+// estructura del nav
 const NAV_ITEMS = [
   { name: "Mi Actividad", href: "/dashboard",   icon: LayoutDashboard },
   { name: "Reservas",     href: "/bookings",   icon: CalendarDays    },
   { name: "Favoritos",    href: "/favoritos",  icon: Heart           },
 ];
 
+// links de la parte inferior del layout
 const BOTTOM_LINKS = [
   { name: "Configuración", href: "/profile", icon: Settings   },
   { name: "Ayuda",         href: "/help",    icon: HelpCircle },
 ];
 
-// ── Component ──────────────────────────────────────────────────────────────────
-
+// Componente principal del layout del dashboard
 export default function DashboardLayoutClient({
   children,
   provider,
@@ -33,12 +32,13 @@ export default function DashboardLayoutClient({
 }) {
   const pathname = usePathname();
 
+  // funcion para verificar si una ruta esta activa
   const isActive = (href: string) => pathname === href;
-
+  
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f7f8]">
 
-      {/* ── Navbar ── */}
+      {/* Navbar */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200 flex justify-center">
         <div className="w-full max-w-7xl h-16 px-6 flex items-center justify-between">
           <ArtRiderLogo subtitle="Usuario" />
@@ -70,10 +70,10 @@ export default function DashboardLayoutClient({
         </div>
       </header>
 
-      {/* ── Body ── */}
+      {/* Body */}
       <div className="flex-1 flex w-full">
 
-        {/* ── Sidebar ── */}
+        {/* Sidebar */}
         <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 fixed h-[calc(100vh-64px)]">
 
           {/* User strip */}
