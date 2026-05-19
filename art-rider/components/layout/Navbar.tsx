@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
@@ -77,7 +77,7 @@ export default function Navbar({
   const [isProvider, setIsProvider] = useState(false);
   const [isLoadingProvider, setIsLoadingProvider] = useState(!!initialUser);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   // Ref para deteccion de click fuera del menu
   const dropdownRef = useRef<HTMLDivElement>(null);

@@ -2,8 +2,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
+//  Tipos del catalogo
 export type CatalogItem = {
   id: string;
   item_type: "listing" | "package";
@@ -25,12 +24,8 @@ export type CatalogFilters = {
   maxPrice?: number;
 };
 
-// ── Read (Public) ──────────────────────────────────────────────────────────────
-
-/**
- * Fetches all published catalog items (listings + packages) from the
- * unified `catalog_items` view.
- */
+//  Obtiene todos los articulos del catalogo publicados (listings + packages) de la vista `catalog_items`
+//  Retorna: una promesa que resuelve a un array de articulos del catalogo
 export async function getCatalogItems(): Promise<CatalogItem[]> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -44,9 +39,7 @@ export async function getCatalogItems(): Promise<CatalogItem[]> {
   return (data ?? []) as CatalogItem[];
 }
 
-/**
- * Searches the unified catalog with optional filters.
- */
+//  Busca en el catalogo unificado con filtros opcionales
 export async function searchCatalog(
   filters: CatalogFilters = {}
 ): Promise<CatalogItem[]> {
@@ -57,17 +50,17 @@ export async function searchCatalog(
     .select("*")
     .eq("is_published", true);
 
-  // Filter by type
+  // Filtra por tipo
   if (filters.type) {
     query = query.eq("item_type", filters.type);
   }
 
-  // Filter by category (only applies to listings)
+  // Filtra por categoria (solo aplica a listings)
   if (filters.category) {
     query = query.eq("category", filters.category);
   }
 
-  // Filter by price range
+  // Filtra por rango de precios
   if (filters.minPrice !== undefined) {
     query = query.gte("daily_price", filters.minPrice);
   }
@@ -75,7 +68,7 @@ export async function searchCatalog(
     query = query.lte("daily_price", filters.maxPrice);
   }
 
-  // Text search on title
+  // Busqueda de texto en el titulo
   if (filters.query) {
     query = query.ilike("title", `%${filters.query}%`);
   }
@@ -84,7 +77,9 @@ export async function searchCatalog(
     ascending: false,
   });
 
+  //  Si hay un error, se lanza una excepcion
   if (error)
     throw new Error(`[catalogService] searchCatalog: ${error.message}`);
+  //  Se retorna el array de articulos del catalogo
   return (data ?? []) as CatalogItem[];
 }

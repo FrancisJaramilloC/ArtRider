@@ -5,8 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { revalidatePath } from "next/cache";
 import { getMyProviderId } from "@/services/helpers/getMyProviderId";
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
+//  Tipos del listing
 export type Listing = {
   id: string;
   provider_id: string;
@@ -28,15 +27,23 @@ export type Listing = {
   } | null;
 };
 
+//  Selecciona los listings
 const LISTING_SELECT =
   "id, provider_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
 
-// ── Read (Public) ─────────────────────────────────────────────────────────────
-// Admin client is used here so that the addresses join is not blocked by RLS.
-// The addresses table policy only allows owners to read their own rows, which
-// means anonymous/other-user requests get null for the address join.
-// These functions only return published, non-deleted listings — safe to bypass.
+//  Lee los listings publicados y no eliminados
+//  El cliente admin se usa aquí para que el join con addresses no esté bloqueado por RLS.
+//  La política de la tabla addresses solo permite a los propietarios leer sus propias filas,
+//  lo que significa que las solicitudes anónimas/de otros usuarios obtienen null para el join de direcciones.
+//  Estas funciones solo devuelven listings publicados y no eliminados, por lo que es seguro omitir.
+function normalizeListingAddress(raw: any): Listing {
+  const address = Array.isArray(raw.address)
+    ? raw.address[0] ?? null
+    : raw.address ?? null;
+  return { ...raw, address };
+}
 
+//  Selecciona todos los listings publicados y no eliminados
 export async function getListings(): Promise<Listing[]> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
@@ -46,9 +53,10 @@ export async function getListings(): Promise<Listing[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw new Error(`[listingsService] getListings: ${error.message}`);
-  return (data ?? []) as Listing[];
+  return (data ?? []).map(normalizeListingAddress);
 }
 
+//  Selecciona un listing por su ID
 export async function getListingById(id: string): Promise<Listing | null> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
@@ -62,11 +70,10 @@ export async function getListingById(id: string): Promise<Listing | null> {
     if (error.code === "PGRST116") return null;
     throw new Error(`[listingsService] getListingById: ${error.message}`);
   }
-  return data as Listing;
+  return normalizeListingAddress(data);
 }
 
-// ── Read (Provider) ───────────────────────────────────────────────────────────
-
+//  Lee los listings del proveedor autenticado
 export async function getMyListings(): Promise<Listing[]> {
   const providerId = await getMyProviderId();
   if (!providerId) return [];
@@ -79,11 +86,12 @@ export async function getMyListings(): Promise<Listing[]> {
     .order("created_at", { ascending: false });
   if (error)
     throw new Error(`[listingsService] getMyListings: ${error.message}`);
-  return (data ?? []) as Listing[];
+  return (data ?? []).map(normalizeListingAddress);
 }
 
-// ── Mutations ────────────────────────────────────────────────────────────────
+//  Funciones de mutate
 
+//  Sube la imagen de portada del listing
 async function uploadCoverImage(
   file: File,
   userId: string,
@@ -106,6 +114,7 @@ async function uploadCoverImage(
   return data.publicUrl;
 }
 
+//  Crea un nuevo listing 
 export async function createListing(prevState: any, formData: FormData) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -113,14 +122,15 @@ export async function createListing(prevState: any, formData: FormData) {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
-    if (authError || !user) return { error: "Debes iniciar sesión." };
+    if (authError || !user) return { error: "Debes iniciar sesión." }; // Error al obtener el usuario autenticado
 
     const { data: provider } = await supabase
       .from("providers").select("id, status").eq("user_id", user.id).single();
-    if (!provider) return { error: "Necesitas registrarte como proveedor primero." };
-    if (provider.status === "pending") return { error: "Tu cuenta de proveedor está pendiente de aprobación." };
-    if (provider.status === "suspended") return { error: "Tu cuenta de proveedor ha sido suspendida." };
+    if (!provider) return { error: "Necesitas registrarte como proveedor primero." }; // Error al obtener el proveedor
+    if (provider.status === "pending") return { error: "Tu cuenta de proveedor está pendiente de aprobación." }; // El proveedor no está aprobado
+    if (provider.status === "suspended") return { error: "Tu cuenta de proveedor ha sido suspendida." }; // El proveedor está suspendido
 
+    // Extrae los datos del formulario
     const title = (formData.get("title") as string)?.trim();
     const brand = (formData.get("brand") as string)?.trim();
     const model = (formData.get("model") as string)?.trim();
@@ -129,37 +139,42 @@ export async function createListing(prevState: any, formData: FormData) {
     const description = (formData.get("description") as string)?.trim();
     const publishNow = formData.get("publishNow") === "true";
 
-    // Location fields
+    // Datos de la dirección
     const city = (formData.get("city") as string)?.trim() || null;
     const state = (formData.get("state") as string)?.trim() || null;
     const latitudeRaw = formData.get("latitude") as string;
     const longitudeRaw = formData.get("longitude") as string;
 
+    // Validación de los datos del formulario
     if (!title || title.length < 3 || title.length > 100)
-      return { error: "El título debe tener entre 3 y 100 caracteres." };
-    if (!brand) return { error: "La marca es obligatoria." };
-    if (!category) return { error: "La categoría es obligatoria." };
-    if (!city) return { error: "La ciudad es obligatoria." };
+      return { error: "El título debe tener entre 3 y 100 caracteres." }; // Error al validar el título
+    if (!brand) return { error: "La marca es obligatoria." }; // La marca es obligatoria
+    if (!category) return { error: "La categoría es obligatoria." }; // La categoría es obligatoria
+    if (!city) return { error: "La ciudad es obligatoria." }; // La ciudad es obligatoria
     if (!state) return { error: "La provincia o estado es obligatorio." };
 
-    const dailyPrice = Math.round(parseFloat(dailyPriceRaw) * 100);
+    // Validación del precio
+    const dailyPrice = Math.round(parseFloat(dailyPriceRaw) * 100); // Convierte el precio a centavos
     if (isNaN(dailyPrice) || dailyPrice < 100)
-      return { error: "El precio mínimo es $1.00 por día." };
+      return { error: "El precio mínimo es $1.00 por día." }; // El precio mínimo es $1.00 por día
     if (dailyPrice > 1000000)
-      return { error: "El precio máximo es $10,000 por día." };
+      return { error: "El precio máximo es $10,000 por día." }; // El precio máximo es $10,000 por día
 
+    // Validación de la imagen de portada
     const coverFile = formData.get("coverImage") as File | null;
     if (!coverFile || coverFile.size === 0)
-      return { error: "La foto del equipo es obligatoria." };
+      return { error: "La foto del equipo es obligatoria." }; // La foto del equipo es obligatoria
     if (coverFile.size > 5 * 1024 * 1024)
-      return { error: "La imagen no puede superar los 5MB." };
+      return { error: "La imagen no puede superar los 5MB." }; // La imagen no puede superar los 5MB
 
+    // Sube la imagen de portada
     const coverImageUrl = await uploadCoverImage(coverFile, user.id);
 
-    // Build address — location is required (city + state always present at this point)
+    // Dirección del listing
     const latitude = latitudeRaw ? parseFloat(latitudeRaw) : null;
     const longitude = longitudeRaw ? parseFloat(longitudeRaw) : null;
 
+    // Payload de la dirección
     const addressPayload: Record<string, unknown> = {
       user_id: user.id,
       line1: city,
@@ -171,19 +186,23 @@ export async function createListing(prevState: any, formData: FormData) {
       longitude: longitude != null && !isNaN(longitude) && longitude !== 0 ? longitude : null,
     };
 
+    // Crea la dirección
     const { data: newAddress, error: addrError } = await supabase
       .from("addresses")
       .insert(addressPayload)
       .select("id")
       .single();
-
+    
+    // Error al crear la dirección
     if (addrError || !newAddress) {
       console.error("[listingsService] addresses insert error:", addrError);
       return { error: "Error al guardar la ubicación. Intenta de nuevo." };
     }
 
+    // ID de la dirección
     const addressId = newAddress.id;
 
+    // Crea el listing
     const { data: newListing, error: insertError } = await supabase
       .from("listings")
       .insert({
@@ -195,11 +214,13 @@ export async function createListing(prevState: any, formData: FormData) {
       .select("id")
       .single();
 
+    // Error al crear el listing
     if (insertError) {
       console.error("[listingsService] listings insert error:", insertError);
       return { error: "Error al guardar el equipo. Intenta de nuevo." };
     }
 
+    // Revalida las rutas para que se actualicen los datos
     revalidatePath("/provider/catalog");
     revalidatePath("/listings");
     revalidatePath("/map");
@@ -210,17 +231,22 @@ export async function createListing(prevState: any, formData: FormData) {
   }
 }
 
+// Actualiza un listing
 export async function updateListing(
   id: string,
   prevState: any,
   formData: FormData,
 ) {
   try {
+    // Crea el cliente de Supabase
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
+    
+    // Error al obtener el usuario autenticado
+    
     if (authError || !user) return { error: "Debes iniciar sesión." };
 
     const title = (formData.get("title") as string)?.trim();
@@ -230,20 +256,23 @@ export async function updateListing(
     const dailyPriceRaw = formData.get("dailyPrice") as string;
     const description = (formData.get("description") as string)?.trim();
 
-    // Location fields
+    // Datos de la dirección
     const city = (formData.get("city") as string)?.trim() || null;
     const state = (formData.get("state") as string)?.trim() || null;
     const latitudeRaw = formData.get("latitude") as string;
     const longitudeRaw = formData.get("longitude") as string;
 
+    // Validación de los datos
     if (!title || title.length < 3)
       return { error: "El título debe tener al menos 3 caracteres." };
     if (!category) return { error: "La categoría es obligatoria." };
 
+    // Precio diario
     const dailyPrice = Math.round(parseFloat(dailyPriceRaw) * 100);
     if (isNaN(dailyPrice) || dailyPrice < 100)
       return { error: "El precio mínimo es $1.00." };
 
+    // Payload del listing
     const payload: any = {
       title,
       brand: brand || null,
@@ -254,16 +283,18 @@ export async function updateListing(
       updated_at: new Date().toISOString(),
     };
 
-    // Handle location update
+    // Datos de la dirección
     const latitude = latitudeRaw ? parseFloat(latitudeRaw) : null;
     const longitude = longitudeRaw ? parseFloat(longitudeRaw) : null;
 
+    // Actualiza la dirección
     if (
       latitude != null &&
       longitude != null &&
       !isNaN(latitude) &&
       !isNaN(longitude)
     ) {
+      // Crea la dirección
       const { data: newAddress, error: addrError } = await supabase
         .from("addresses")
         .insert({
@@ -283,6 +314,7 @@ export async function updateListing(
       }
     }
 
+    // Sube la nueva imagen de portada
     const coverFile = formData.get("coverImage") as File | null;
     if (coverFile && coverFile.size > 0) {
       if (coverFile.size > 5 * 1024 * 1024)
@@ -291,8 +323,11 @@ export async function updateListing(
       if (url) payload.cover_image_url = url;
     }
 
+    // Obtiene el ID del proveedor
     const providerId = await getMyProviderId();
     if (!providerId) return { error: "No eres proveedor." };
+
+    // Actualiza el listing
     const { error } = await supabase
       .from("listings").update(payload).eq("id", id).eq("provider_id", providerId);
     if (error) return { error: "Error al actualizar el equipo." };
@@ -306,10 +341,13 @@ export async function updateListing(
   }
 }
 
+// Cambia el estado de publicación del listing
 export async function togglePublish(id: string, currentState: boolean) {
+  // Obtiene el ID del proveedor
   const providerId = await getMyProviderId();
   if (!providerId) return { error: "No autenticado." };
 
+  // Cliente de Supabase
   const admin = createSupabaseAdminClient();
   const { error } = await admin
     .from("listings")
@@ -319,16 +357,21 @@ export async function togglePublish(id: string, currentState: boolean) {
 
   if (error) return { error: "Error al cambiar el estado." };
 
+  // Revalida las rutas
   revalidatePath("/provider/catalog");
   revalidatePath("/listings");
   revalidatePath("/");
+
   return { success: true };
 }
 
+// Elimina un listing
 export async function deleteListing(id: string) {
+  // Obtiene el ID del proveedor
   const providerId = await getMyProviderId();
   if (!providerId) return { error: "No autenticado." };
 
+  // Cliente de Supabase
   const admin = createSupabaseAdminClient();
   const { error } = await admin
     .from("listings")
@@ -338,6 +381,7 @@ export async function deleteListing(id: string) {
 
   if (error) return { error: "Error al eliminar." };
 
+  // Revalida las rutas
   revalidatePath("/provider/catalog");
   revalidatePath("/listings");
   revalidatePath("/");

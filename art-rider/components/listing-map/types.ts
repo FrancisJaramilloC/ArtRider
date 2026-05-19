@@ -1,4 +1,4 @@
-// ── Tipos compartidos del módulo de mapa ────────────────────────────────────
+//  Tipos compartidos del módulo de mapa
 
 export type MapListing = {
   id: string;

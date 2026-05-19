@@ -12,12 +12,13 @@ export function useFlyToUser() {
   const { map, isLoaded } = useMap();
   const [hasFlown, setHasFlown] = useState(false);
 
+  //  Hook que centra el mapa en la ubicación real del usuario al cargar
   useEffect(() => {
     if (!map || !isLoaded || hasFlown) return;
     if (!("geolocation" in navigator)) return;
-
     let isMounted = true;
-
+    
+    //  Ubicacion del usuario
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         if (!isMounted) return;

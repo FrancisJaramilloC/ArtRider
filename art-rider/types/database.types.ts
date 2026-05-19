@@ -1,3 +1,4 @@
+//  Tipos para base de datos
 /**
  * database.types.ts
  *

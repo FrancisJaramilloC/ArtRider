@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+//  Tipos
 
 export type LocationData = {
   lat: number;
@@ -14,6 +14,7 @@ export type LocationData = {
   displayAddress: string;
 };
 
+//  Tipo de resultado de Nominatim
 type NominatimResult = {
   place_id: number;
   display_name: string;
@@ -28,10 +29,11 @@ type NominatimResult = {
   };
 };
 
+//  Props del componente
 type Props = {
   onChange: (location: LocationData) => void;
   defaultCenter?: [number, number]; // [lng, lat]
-  /** Pre-seeded from a saved listing — initializes the map immediately */
+  //  Locación inicial (pre-sembrada desde un listing guardado — inicializa el mapa inmediatamente)
   initialLocation?: {
     lat: number;
     lng: number;
@@ -40,45 +42,45 @@ type Props = {
   };
 };
 
-// ── Constants ────────────────────────────────────────────────────────────────
+//  Constantes
 
 const DEFAULT_CENTER: [number, number] = [-79.20422, -3.99313]; // Loja
 const DARK_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
 
-// ── Component ────────────────────────────────────────────────────────────────
-
+//  Componente principal
 export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTER, initialLocation }: Props) {
-  // Search state
+  //  Estado de búsqueda
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
-  // Map state
+  //  Estado del mapa
   const [mapReady, setMapReady] = useState(false);
   const [currentAddress, setCurrentAddress] = useState<string | null>(null);
 
-  // Refs
+  //  Refs
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  // Prevents the forward-geocode effect from firing on programmatic query changes
+  //  Previene que el efecto de geocodificación directa se ejecute en cambios de consulta programáticos
   const userTypedRef = useRef(false);
 
-  // ── Initialize Map ──────────────────────────────────────────────────────
+  //  Inicializar el mapa
 
   const initMap = useCallback(
     (center: [number, number]) => {
       if (!mapContainerRef.current) return;
 
-      // Destroy previous map if exists
+      //  Destruye el mapa anterior si existe
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
 
+      //  Crea un nuevo mapa
       const map = new maplibregl.Map({
         container: mapContainerRef.current,
         style: DARK_STYLE,
@@ -89,11 +91,12 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
         pitchWithRotate: false,
       });
 
+      //  Agrega control de navegación
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "bottom-right");
 
       map.on("load", () => setMapReady(true));
 
-      // When user finishes dragging, capture new center
+      //  Cuando el usuario termina de arrastrar, captura el nuevo centro
       map.on("moveend", () => {
         const c = map.getCenter();
         reverseGeocode(c.lat, c.lng);
@@ -105,49 +108,53 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
     []
   );
 
-  // ── One-time init from saved listing (edit mode) ───────────────────────
+  // ── Inicialización única desde el listado guardado (modo editar) ───────────────────────
 
   useEffect(() => {
     if (!initialLocation) return;
     const { lat, lng, city, state } = initialLocation;
 
-    // Initialize the map immediately — visible without any user interaction
+    //  Inicializa el mapa inmediatamente — visible sin ninguna interacción del usuario
     initMap([lng, lat]);
 
-    // Pre-fill the search bar with city + state so it's not blank
+    //  Rellena la barra de búsqueda con la ciudad + estado para que no esté vacía
     const hint = city && state ? `${city}, ${state}` : "";
     if (hint) {
       setQuery(hint);
       setCurrentAddress(hint);
     }
 
-    // Emit location data immediately so the form has valid values on load
+    //  Emite los datos de ubicación inmediatamente para que el formulario tenga valores válidos al cargar
     if (city && state) {
       onChange({ lat, lng, city, state, displayAddress: hint });
     }
 
-    // Fire reverse geocode to replace the hint with the real street address
+    //  Emite los datos de ubicación inmediatamente para que el formulario tenga valores válidos al cargar
     reverseGeocode(lat, lng);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Nominatim: Forward Geocoding (Search) ───────────────────────────────
+  //  Nominatim: Forward Geocoding (Search)
 
   useEffect(() => {
-    // Skip search when query was set programmatically (e.g., init from saved listing)
+    //  Omite la búsqueda cuando la consulta se estableció programáticamente (por ejemplo, inicialización desde el listado guardado)
     if (!userTypedRef.current) return;
 
+    //  Si la consulta es menor a 3 caracteres, muestra los resultados
     if (query.length < 3) {
       setResults([]);
       setShowResults(false);
       return;
     }
 
+    //  Limpia el debounce
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
+    //  Busca las sugerencias
     debounceRef.current = setTimeout(async () => {
       setIsSearching(true);
       try {
+        //  Parametros de búsqueda
         const params = new URLSearchParams({
           format: "json",
           q: query,
@@ -173,11 +180,12 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
     };
   }, [query]);
 
-  // ── Nominatim: Reverse Geocoding (Map drag) ─────────────────────────────
+  //  Nominatim: Reverse Geocoding (Map drag)
 
   const reverseGeocode = useCallback(
     async (lat: number, lng: number) => {
       try {
+        //  Parametros de búsqueda
         const params = new URLSearchParams({
           format: "json",
           lat: String(lat),
@@ -189,6 +197,7 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
         });
         const data = await res.json();
 
+        //  Extracción de datos
         const city =
           data.address?.city ||
           data.address?.town ||
@@ -197,9 +206,11 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
         const state = data.address?.state || "Sin estado";
         const displayAddress = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
+        //  Actualiza el estado
         setCurrentAddress(displayAddress);
         onChange({ lat, lng, city, state, displayAddress });
       } catch {
+        //  Manejo de errores
         onChange({
           lat,
           lng,
@@ -212,25 +223,30 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
     [onChange]
   );
 
-  // ── Select a suggestion ─────────────────────────────────────────────────
+  //  Selección de sugerencia
 
+  // Cuando el usuario selecciona una sugerencia de la lista
   function handleSelect(result: NominatimResult) {
     const lat = parseFloat(result.lat);
     const lng = parseFloat(result.lon);
 
+    // Actualiza el estado
     setQuery(result.display_name);
     setShowResults(false);
     setCurrentAddress(result.display_name);
 
+    // Extracción de datos
     const city =
       result.address?.city ||
       result.address?.town ||
       result.address?.village ||
       "Sin ciudad";
     const state = result.address?.state || result.address?.county || "Sin estado";
-
+    
+    // Emite los datos de ubicación al componente padre
     onChange({ lat, lng, city, state, displayAddress: result.display_name });
 
+    // Mueve el mapa al punto seleccionado
     if (mapRef.current) {
       mapRef.current.flyTo({ center: [lng, lat], zoom: 17, duration: 1200 });
     } else {
@@ -238,8 +254,7 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
     }
   }
 
-  // ── Close dropdown on outside click ─────────────────────────────────────
-
+  // Cierra el dropdown al hacer clic fuera
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
@@ -250,7 +265,7 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ── Render ──────────────────────────────────────────────────────────────
+  // Renderizado del componente
 
   return (
     <div className="space-y-4">
@@ -258,10 +273,10 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
         Ubicación del equipo
       </label>
 
-      {/* Search input */}
+      {/* Input de búsqueda */}
       <div ref={searchContainerRef} className="relative">
         <div className="relative">
-          {/* Search icon */}
+          {/* Icono de búsqueda */}
           <svg
             className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -269,6 +284,8 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.35-4.35" strokeLinecap="round" />
           </svg>
+
+          {/* Input de búsqueda */}
           <input
             type="text"
             value={query}
@@ -284,7 +301,7 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
           )}
         </div>
 
-        {/* Suggestions dropdown */}
+        {/* Sugerencias de búsqueda */}
         {showResults && (
           <div className="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
             {results.map((r) => (
@@ -294,10 +311,12 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
                 onClick={() => handleSelect(r)}
                 className="w-full text-left px-5 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 flex items-start gap-3"
               >
+                {/* Icono de ubicación */}
                 <svg className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" strokeLinecap="round" strokeLinejoin="round" />
                   <circle cx="12" cy="10" r="3" />
                 </svg>
+                {/* Dirección de la ubicación */}
                 <span className="text-base text-gray-700 leading-snug line-clamp-2">
                   {r.display_name}
                 </span>
@@ -307,20 +326,20 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
         )}
       </div>
 
-      {/* Map with fixed center pin */}
+      {/* Dirección de la ubicación */}
       {(mapReady || currentAddress) && (
         <p className="text-sm text-gray-500 font-medium truncate px-1">
           📍 {currentAddress}
         </p>
       )}
 
+      {/* Mapa con pin central fijo (CSS only - siempre centrado) */}
       <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-sm" style={{ height: 400 }}>
         <div ref={mapContainerRef} className="w-full h-full" />
 
-        {/* Fixed center pin (CSS only — always centered) */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
           <div className="flex flex-col items-center -mt-8">
-            {/* Pin head */}
+            {/* Pin principal */}
             <div className="w-8 h-8 rounded-full bg-[#875B9A] border-[3px] border-white shadow-lg shadow-[#875B9A]/30 flex items-center justify-center">
               <div className="w-2 h-2 rounded-full bg-white" />
             </div>
@@ -331,7 +350,7 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
           </div>
         </div>
 
-        {/* Hint overlay (before map is initialized) */}
+        {/* Pista overlay (cuando no se ha inicializado el mapa) */}
         {!mapRef.current && (
           <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
             <div className="text-center px-6">
@@ -345,7 +364,7 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
           </div>
         )}
 
-        {/* Drag hint (after map is ready) */}
+        {/* Pista Drag para ajustar (después de que el mapa está listo) */}
         {mapReady && (
           <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-full">
             Arrastra el mapa para ajustar

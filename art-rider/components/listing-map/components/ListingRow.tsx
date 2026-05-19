@@ -24,6 +24,7 @@ export function ListingRow({ listing, isActive, onHover, onLeave, onClick }: Lis
           : "hover:bg-zinc-800/50"
       }`}
     >
+      {/* Imagen del listing */}
       <div className="w-24 h-[68px] bg-zinc-800 rounded-lg overflow-hidden relative shrink-0">
         {listing.cover_image_url ? (
           <Image
@@ -40,6 +41,7 @@ export function ListingRow({ listing, isActive, onHover, onLeave, onClick }: Lis
           </div>
         )}
       </div>
+      {/* Informacion del listing */}
       <div className="flex flex-col flex-1 justify-center min-w-0">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-0.5">
           {CATEGORY_LABELS[listing.category] ?? listing.category}

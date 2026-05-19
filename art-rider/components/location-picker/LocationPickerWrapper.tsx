@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 
+//  Componente LocationPicker cargado dinámicamente sin SSR
 const LocationPicker = dynamic(() => import("./LocationPicker"), {
   ssr: false,
   loading: () => (

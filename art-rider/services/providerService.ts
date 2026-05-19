@@ -3,7 +3,7 @@
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { revalidatePath } from "next/cache";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// Tipos de servicio
 
 export type ProviderProfile = {
   id: string;
@@ -14,11 +14,10 @@ export type ProviderProfile = {
   created_at: string;
 };
 
-// ── Queries ──────────────────────────────────────────────────────────────────
-
+// Consultas
 /**
- * Returns the provider profile for the currently authenticated user.
- * Returns null if the user is not yet registered as a provider.
+ * Retorna el perfil del proveedor para el usuario autenticado.
+ * Retorna null si el usuario no está registrado como proveedor.
  */
 export async function getMyProviderProfile(): Promise<ProviderProfile | null> {
   const supabase = await createSupabaseServerClient();
@@ -27,8 +26,9 @@ export async function getMyProviderProfile(): Promise<ProviderProfile | null> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return null;
+  if (!user) return null; //comprobar que el usuario este autenticado
 
+  // Obtener el perfil del proveedor
   const { data, error } = await supabase
     .from("providers")
     .select("*")
@@ -37,19 +37,19 @@ export async function getMyProviderProfile(): Promise<ProviderProfile | null> {
 
   if (error) {
     // PGRST116 = no rows found — user is not a provider yet
-    if (error.code === "PGRST116") return null;
-    throw new Error(`[providerService] getMyProviderProfile failed: ${error.message}`);
+    if (error.code === "PGRST116") return null; //si no se encuentra el proveedor
+    throw new Error(`[providerService] getMyProviderProfile failed: ${error.message}`); //error al obtener el perfil
   }
 
   return data as ProviderProfile;
 }
 
-// ── Mutations ────────────────────────────────────────────────────────────────
+// Crear
 
 /**
- * Registers the authenticated user as a provider.
- * Status begins as 'pending' and requires manual admin approval + KYC before
- * the provider can publish listings.
+ * Registra al usuario autenticado como proveedor.
+ * El estado comienza como 'pendiente' y requiere aprobación manual del administrador + KYC antes
+ * de que el proveedor pueda publicar equipos.
  */
 export async function becomeProvider(prevState: any, formData: FormData) {
   try {
@@ -60,88 +60,93 @@ export async function becomeProvider(prevState: any, formData: FormData) {
       error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user) {
+    if (authError || !user) { //comprobar que el usuario este autenticado
       return { error: "Debes iniciar sesión para registrarte como proveedor." };
     }
 
+    // Obtener los datos del formulario
     const brandName = (formData.get("brandName") as string)?.trim();
     const bio = (formData.get("bio") as string)?.trim() ?? "";
 
-    // Validations
-    if (!brandName) {
+    // Validaciones
+    if (!brandName) { //comprobar que el nombre del negocio no sea nulo
       return { error: "El nombre de tu negocio es obligatorio." };
     }
-    if (brandName.length < 2 || brandName.length > 80) {
+    if (brandName.length < 2 || brandName.length > 80) { //comprobar que el nombre del negocio tenga entre 2 y 80 caracteres
       return { error: "El nombre del negocio debe tener entre 2 y 80 caracteres." };
     }
-    if (bio && bio.length > 500) {
+    if (bio && bio.length > 500) { //comprobar que la descripcion no supere los 500 caracteres
       return { error: "La descripción no puede superar los 500 caracteres." };
     }
 
-    // Check if already registered
-    const { data: existing } = await supabase
+    // Comprobar si el proveedor ya está registrado
+    const { data: existing } = await supabase //comprobar que el proveedor no esté registrado
       .from("providers")
       .select("id")
       .eq("user_id", user.id)
       .single();
 
-    if (existing) {
+    if (existing) { //si el proveedor ya está registrado
       return { error: "Ya tienes un perfil de proveedor registrado." };
     }
 
-    const { error: insertError } = await supabase.from("providers").insert({
+    // Insertar el perfil del proveedor
+    const { error: insertError } = await supabase.from("providers").insert({ //insertar el perfil del proveedor
       user_id: user.id,
       brand_name: brandName,
       bio: bio || null,
       status: "pending",
     });
 
-    if (insertError) {
+    if (insertError) { //comprobar si hubo un error al insertar el perfil
       console.error("[providerService] becomeProvider insert error:", insertError);
       return { error: "No se pudo registrar tu perfil. Por favor intenta más tarde." };
     }
 
-    revalidatePath("/dashboard");
+    revalidatePath("/dashboard"); //revalidar el path del dashboard
     revalidatePath("/become-a-provider");
 
     return { success: true };
-  } catch (error: any) {
-    console.error("[providerService] becomeProvider unexpected error:", error);
+  } catch (error: any) { //catch de errores inesperados
+    console.error("[providerService] becomeProvider unexpected error:", error); 
     return { error: "Ocurrió un error inesperado. Por favor intenta más tarde." };
   }
 }
 
+
+// Actualizar el nombre de la marca del proveedor
 export async function updateProviderBrandName(
   newBrandName: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient(); //crear el cliente de supabase
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getUser(); //obtener el usuario autenticado
 
-    if (authError || !user) {
+    if (authError || !user) { //comprobar que el usuario este autenticado
       return { success: false, error: "No autenticado." };
     }
 
-    const trimmed = newBrandName.trim();
+    const trimmed = newBrandName.trim(); //recortar el nombre de la marca
     if (!trimmed || trimmed.length < 2 || trimmed.length > 80) {
       return { success: false, error: "El nombre debe tener entre 2 y 80 caracteres." };
     }
 
+    // Actualizar el nombre de la marca del proveedor
     const { error } = await supabase
       .from("providers")
       .update({ brand_name: trimmed })
       .eq("user_id", user.id);
 
-    if (error) {
+    if (error) { //comprobar si hubo un error al actualizar el nombre
       return { success: false, error: "No se pudo actualizar el nombre." };
     }
 
-    revalidatePath("/provider");
+    revalidatePath("/provider"); //revalidar el path
     return { success: true };
-  } catch {
+  } catch { //catch de errores inesperados
     return { success: false, error: "Error inesperado." };
   }
 }

@@ -2,21 +2,24 @@
 
 import * as React from "react"
 import { Popover as PopoverPrimitive } from "radix-ui"
-
+// Utilidad para combinar clases CSS
 import { cn } from "@/lib/utils"
 
+// Componente Popover: wrapper del componente de Radix UI
 function Popover({
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
   return <PopoverPrimitive.Root data-slot="popover" {...props} />
 }
 
+// Componente PopoverTrigger: disparador del popover
 function PopoverTrigger({
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
 }
 
+// Componente PopoverContent: contenido del popover
 function PopoverContent({
   className,
   align = "center",
@@ -39,12 +42,14 @@ function PopoverContent({
   )
 }
 
+// Componente PopoverAnchor: ancla del popover
 function PopoverAnchor({
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
   return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
 }
 
+// Componente PopoverHeader: cabecera del popover
 function PopoverHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -55,6 +60,7 @@ function PopoverHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+// Componente PopoverTitle: título del popover
 function PopoverTitle({ className, ...props }: React.ComponentProps<"h2">) {
   return (
     <div
@@ -65,6 +71,7 @@ function PopoverTitle({ className, ...props }: React.ComponentProps<"h2">) {
   )
 }
 
+// Componente PopoverDescription: descripción del popover
 function PopoverDescription({
   className,
   ...props

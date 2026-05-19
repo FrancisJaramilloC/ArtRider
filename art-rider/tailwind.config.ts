@@ -1,3 +1,4 @@
+// Configuración de Tailwind CSS
 import type { Config } from "tailwindcss";
 
 const config: Config = {

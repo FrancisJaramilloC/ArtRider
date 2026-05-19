@@ -1,3 +1,4 @@
+//  Tipos de TS para el dominio de Listings.
 /**
  * Shared TypeScript types for the Listings domain.
  *

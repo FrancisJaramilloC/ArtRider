@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { revalidatePath } from "next/cache";
 import { getMyProviderId } from "@/services/helpers/getMyProviderId";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+// Tipos
 
 export type Package = {
   id: string;
@@ -24,7 +24,7 @@ export type PackageItem = {
   quantity: number;
 };
 
-// ── Read ───────────────────────────────────────────────────────────────────────
+// Consultas
 
 export async function getMyPackages(): Promise<Package[]> {
   const providerId = await getMyProviderId();
@@ -42,8 +42,11 @@ export async function getMyPackages(): Promise<Package[]> {
   return (data ?? []) as Package[];
 }
 
-// ── Create ─────────────────────────────────────────────────────────────────────
+// Crear
 
+/**
+ * Crea un nuevo paquete con los equipos especificados.
+ */
 export async function createPackage(
   _prevState: unknown,
   formData: FormData
@@ -51,7 +54,7 @@ export async function createPackage(
   try {
     const supabase = await createSupabaseServerClient();
     const providerId = await getMyProviderId();
-    if (!providerId) return { error: "Debes ser proveedor para crear paquetes." };
+    if (!providerId) return { error: "Debes ser proveedor para crear paquetes." }; //comprobar que el usuario sea proveedor
 
     const title       = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
@@ -59,6 +62,7 @@ export async function createPackage(
     const publishNow  = formData.get("publishNow") === "true";
     const listingIds  = formData.getAll("listingIds") as string[];
 
+    // Validación de datos
     if (!title || title.length < 3)
       return { error: "El titulo debe tener al menos 3 caracteres." };
     if (listingIds.length < 2)
@@ -68,7 +72,7 @@ export async function createPackage(
     if (isNaN(dailyPrice) || dailyPrice < 100)
       return { error: "El precio minimo es $1.00 por dia." };
 
-    // Verify all listings belong to this owner and are published
+    // Verificar que todos los equipos pertenezcan al proveedor y estén publicados
     const { data: ownedListings } = await supabase
       .from("listings")
       .select("id")
@@ -80,7 +84,7 @@ export async function createPackage(
     if (!ownedListings || ownedListings.length !== listingIds.length)
       return { error: "Algunos equipos seleccionados no son validos. Solo puedes agregar equipos publicados." };
 
-    // Insert package
+    // Insertar paquete
     const { data: pkg, error: insertError } = await supabase
       .from("packages")
       .insert({
@@ -95,7 +99,7 @@ export async function createPackage(
 
     if (insertError || !pkg) return { error: "Error al crear el paquete." };
 
-    // Insert package items
+    // Insertar items del paquete
     const items = listingIds.map((lid) => ({
       package_id: pkg.id,
       listing_id: lid,
@@ -106,13 +110,13 @@ export async function createPackage(
     if (itemsError) return { error: "Error al vincular los equipos al paquete." };
 
     revalidatePath("/provider/catalog");
-    return { success: true, id: pkg.id };
+    return { success: true, id: pkg.id }; //revalidar el path
   } catch {
     return { error: "Error inesperado. Intenta de nuevo." };
   }
 }
 
-// ── Delete ─────────────────────────────────────────────────────────────────────
+// Eliminar
 
 export async function deletePackage(id: string): Promise<{ error?: string }> {
   const providerId = await getMyProviderId();
@@ -130,23 +134,26 @@ export async function deletePackage(id: string): Promise<{ error?: string }> {
   return {};
 }
 
-// ── Toggle publish ─────────────────────────────────────────────────────────────
+// Cambiar estado de publicacion
 
 export async function togglePackagePublish(
   id: string,
   current: boolean
 ): Promise<{ error?: string }> {
   const providerId = await getMyProviderId();
-  if (!providerId) return { error: "No autenticado." };
+  if (!providerId) return { error: "No autenticado." }; //comprobar que el usuario sea proveedor
   const supabase = await createSupabaseServerClient();
 
+  // Actualizar el estado del paquete
   const { error } = await supabase
     .from("packages")
     .update({ is_published: !current, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("provider_id", providerId);
 
-  if (error) return { error: "Error al cambiar el estado del paquete." };
+  // Manejar errores
+  if (error) return { error: "Error al cambiar el estado del paquete." }; 
+  //revalidar el path
   revalidatePath("/provider/catalog");
   return {};
 }

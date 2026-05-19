@@ -15,8 +15,7 @@ import { MapEffects } from "./hooks/MapEffects";
 import { PricePill } from "./components/PricePill";
 import { PopupCard } from "./components/PopupCard";
 
-// ── Main Component ─────────────────────────────────────────────────────────────
-
+// Componente principal
 export default function MapClient({
   currentListing,
   nearbyListings,
@@ -24,26 +23,33 @@ export default function MapClient({
   currentListing: MapListing;
   nearbyListings: MapListing[];
 }) {
+  //  Estados
   const [activeId, setActiveId] = useState<string | null>(currentListing.id);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  //  Validacion de listings
   const validListings = useMemo(
     () => nearbyListings.filter((l) => l.address?.latitude != null && l.address?.longitude != null),
     [nearbyListings]
   );
 
+  //  Toggle selected
   const toggleSelected = (id: string) => {
     setSelectedId((prev) => (prev === id ? null : id));
   };
 
+  //  Coordenadas del listing actual
   const addrLng = currentListing.address?.longitude;
   const addrLat = currentListing.address?.latitude;
   const hasValidCoords =
     addrLng != null && addrLat != null && !(addrLng === 0 && addrLat === 0);
+
+  //  Centro del mapa
   const centerCoords: [number, number] = hasValidCoords
     ? [addrLng, addrLat]
     : DEFAULT_CENTER;
 
+  //  Renderizado del componente
   return (
     <div className="w-full h-full relative group">
       <Map
@@ -55,6 +61,7 @@ export default function MapClient({
         {/* Efectos: labels mejorados (sin flyToUser) */}
         <MapEffects />
 
+        {/* Controles del mapa */}
         <MapControls position="bottom-right" showZoom showFullscreen />
 
         {/* Marcador Principal (El equipo actual) */}
@@ -66,6 +73,7 @@ export default function MapClient({
             onMouseEnter={() => setActiveId(currentListing.id)}
             onMouseLeave={() => setActiveId(null)}
           >
+            {/* Contenido del marcador */}
             <MarkerContent>
               <div
                 className={`
@@ -77,13 +85,16 @@ export default function MapClient({
                   }
                 `}
               >
+                {/* Precio */}
                 ${Math.round(currentListing.daily_price / 100)}
               </div>
             </MarkerContent>
+            {/* Tooltip del marcador */}
             <MarkerTooltip offset={20}>
               <p className="font-medium">{currentListing.title}</p>
               <p className="mt-0.5 opacity-70">Ubicación exacta</p>
             </MarkerTooltip>
+            {/* Popup del marcador */}
             <MarkerPopup closeButton>
               <PopupCard listing={currentListing} />
             </MarkerPopup>
@@ -93,9 +104,9 @@ export default function MapClient({
         {/* Marcadores Secundarios (Equipos en la zona) */}
         {validListings.map((listing) => {
           if (listing.id === currentListing.id) return null;
-          
-          const isActive = activeId === listing.id || selectedId === listing.id;
 
+          const isActive = activeId === listing.id || selectedId === listing.id;
+          //  Renderizado de marcadores secundarios
           return (
             <MapMarker
               key={listing.id}
@@ -105,15 +116,17 @@ export default function MapClient({
               onMouseEnter={() => setActiveId(listing.id)}
               onMouseLeave={() => setActiveId(null)}
             >
+              {/* Contenido del marcador */}
               <MarkerContent>
                 <PricePill price={listing.daily_price} isActive={isActive} />
               </MarkerContent>
 
+              {/* Tooltip del marcador */}
               <MarkerTooltip offset={20}>
                 <p className="font-medium">{listing.title}</p>
                 <p className="mt-0.5 opacity-70">{listing.address.city}</p>
               </MarkerTooltip>
-
+              {/* Popup del marcador */}
               <MarkerPopup closeButton>
                 <PopupCard listing={listing} />
               </MarkerPopup>

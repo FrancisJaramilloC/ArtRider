@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from '@/lib/supabaseServer';
 import { createSupabaseAdminClient } from '@/lib/supabaseAdmin';
 import { redirect } from 'next/navigation';
 
+//  Función de registro
 export async function signUp(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
@@ -15,26 +16,28 @@ export async function signUp(prevState: any, formData: FormData) {
   const phone = formData.get('phone') as string;
   const birthDate = formData.get('birthDate') as string;
 
+  //  Valida que todos los campos requeridos sean completados.
   if (!email || !password || !confirmPassword || !firstName || !lastName || !phone || !birthDate) {
     return { error: 'All fields are required.' };
   }
 
+  //  Valida que las contraseñas coincidan
   if (password !== confirmPassword) {
     return { error: 'Las contraseñas no coinciden. Por favor verifícalas.' };
   }
 
-  // Parameter Constraints: Name Lengths
+  //  Valida la longitud de los nombres y apellidos
   if (firstName.length < 2 || firstName.length > 50 || lastName.length < 2 || lastName.length > 50) {
     return { error: 'Nombres y apellidos deben tener entre 2 y 50 caracteres.' };
   }
 
-  // Parameter Constraints: Phone Format
+  //  Valida el formato del teléfono
   const phoneRegex = /^\+?[0-9\s\-()]{10,15}$/;
   if (!phoneRegex.test(phone)) {
     return { error: 'El formato de teléfono ingresado es inválido.' };
   }
 
-  // Parameter Constraints: Birth Date Legitimacy
+  //  Valida la legitimidad de la fecha de nacimiento
   const dob = new Date(birthDate);
   const today = new Date();
   
@@ -42,7 +45,7 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: 'Por favor ingresa una fecha de nacimiento legítima.' };
   }
 
-  // Exact 15+ Age Verification
+  //  Verifica que el usuario sea mayor de 18 años
   let age = today.getFullYear() - dob.getFullYear();
   const monthDifference = today.getMonth() - dob.getMonth();
   if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < dob.getDate())) {
@@ -53,13 +56,14 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: 'Debes ser mayor de 18 años para utilizar ArtRider.' };
   }
 
+  //  Intenta crear la cuenta
   try {
     const supabase = await createSupabaseServerClient();
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
     });
-
+    
     if (authError) {
       console.error('SignUp Auth Error Full:', authError);
       return { error: authError.message };
@@ -87,7 +91,7 @@ export async function signUp(prevState: any, formData: FormData) {
       if (insertError) {
         console.error('Profiles Table Insert Error Full (Admin):', insertError);
         
-        // Handle Unique Constraint Violation (Postgres Code 23505)
+        //  Maneja la violación de restricción única (Postgres Code 23505)
         if (insertError.code === '23505') {
           if (insertError.message.includes('phone')) {
             return { error: 'Este número de teléfono ya está registrado con otra cuenta.' };
@@ -106,19 +110,22 @@ export async function signUp(prevState: any, formData: FormData) {
     return { error: 'We could not create your account at this time. Please try again.' };
   }
 
-  // Redirect runs outside try-catch to avoid being caught natively by Next.js
+  //  Redirige al usuario a la página de inicio
   redirect('/login');
 }
 
+//  Función de inicio de sesión
 export async function signIn(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const redirectUrl = (formData.get('redirectUrl') as string) || '/';
 
+  //  Valida que todos los campos requeridos sean completados.
   if (!email || !password) {
-    return { error: 'Email and password are required.' };
+    return { error: 'El correo electrónico y la contraseña son obligatorios.' };
   }
 
+  //  Intenta iniciar sesión
   try {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.signInWithPassword({
@@ -126,30 +133,34 @@ export async function signIn(prevState: any, formData: FormData) {
       password,
     });
 
+    //  Maneja los errores de inicio de sesión
     if (error) {
-      console.error('SignIn Error:', error.message);
-      return { error: 'Invalid email or password. Please try again.' };
+      console.error('Error de inicio de sesión:', error.message);
+      return { error: 'El correo electrónico o la contraseña son incorrectos. Por favor intenta de nuevo.' };
     }
   } catch (error: any) {
-    console.error('Technical Error during signIn:', error.message || error);
+    console.error('Error técnico durante el inicio de sesión:', error.message || error);
     // User Friendly Fallback protecting system traces
-    return { error: 'An unexpected error occurred during sign in. Please try again later.' };
+    return { error: 'Un error inesperado ocurrió durante el inicio de sesión. Por favor intenta de nuevo.' };
   }
 
+  //  Redirige al usuario a la página de inicio
   redirect(redirectUrl);
 }
 
+//  Función de cierre de sesión
 export async function signOut() {
   try {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.signOut();
     
     if (error) {
-      console.error('SignOut Error:', error.message);
+      console.error('Error al cerrar sesión:', error.message);
     }
   } catch (error: any) {
-    console.error('Technical Error during signOut:', error.message || error);
+    console.error('Error técnico al cerrar sesión:', error.message || error);
   }
 
+  //  Redirige al usuario a la página de inicio de sesión
   redirect('/login');
 }
