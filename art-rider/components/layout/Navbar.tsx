@@ -7,6 +7,7 @@ import { User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import { getMyProviderProfile } from "@/services/providerService";
 import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 // Componente para un item del menu
 function MenuItem({
@@ -247,6 +248,9 @@ export default function Navbar({
               Conviértete en proveedor
             </Link>
           )}
+
+          {/* Icono de notificaciones (solo si hay usuario) */}
+          {user && <NotificationBell />}
 
           {/* Trigger + Contenedor del dropdown */}
           <div className="relative flex items-center gap-2.5" ref={dropdownRef}>
