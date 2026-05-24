@@ -6,6 +6,10 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import MapWrapper from "@/components/listing-map/MapWrapper";
+import NoImagePlaceholder from "@/components/listing-map/NoImagePlaceholder";
+import { BookingCard } from "@/components/features/bookings/BookingCard";
+
+export const revalidate = 0;
 
 // Tipos
 
@@ -391,68 +395,13 @@ export default async function ListingDetailPage({
 
           {/*  Columna derecha  */}
           <div className="hidden lg:block">
-            <div className="sticky top-24 border border-gray-200 rounded-2xl p-6 shadow-sm">
-              {/*  Precio  */}
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold text-gray-900">
-                  {priceDisplay}
-                </span>
-                <span className="text-sm text-gray-500">/ día</span>
-              </div>
-
-              {/*  Rating bajo el precio  */}
-              {reviews.length > 0 && (
-                <div className="flex items-center gap-1 text-xs text-gray-500 mt-1 mb-5">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#111827" aria-hidden="true">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                  <span className="font-semibold">{avgRating.toFixed(1)}</span>
-                  <span className="text-gray-300 mx-0.5">·</span>
-                  <span>{reviews.length} reseña{reviews.length !== 1 ? "s" : ""}</span>
-                </div>
-              )}
-
-              {/* CTA */}
-              <div className={reviews.length > 0 ? "" : "mt-5"}>
-                <button
-                  disabled
-                  title="Reservas disponibles próximamente"
-                  className="w-full rounded-xl bg-[#875B9A] text-white py-3.5 text-sm font-semibold opacity-60 cursor-not-allowed"
-                >
-                  Reservar — Próximamente
-                </button>
-                <p className="text-[0.68rem] text-center text-gray-400 mt-2 leading-snug">
-                  Las reservas en línea estarán disponibles muy pronto.
-                </p>
-              </div>
-            </div>
+            <BookingCard listingId={listing.id} dailyPrice={listing.daily_price} />
           </div>
         </div>
 
         {/*  Precio y reserva en móvil  */}
         <div className="block lg:hidden mt-10 pt-6 border-t border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-bold text-gray-900">
-                {priceDisplay}
-              </span>
-              <span className="text-sm text-gray-500">/ día</span>
-            </div>
-            {reviews.length > 0 && (
-              <span className="flex items-center gap-1 text-xs text-gray-500">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="#111827" aria-hidden="true">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-                {avgRating.toFixed(1)} · {reviews.length} reseñas
-              </span>
-            )}
-          </div>
-          <button
-            disabled
-            className="w-full rounded-xl bg-[#875B9A] text-white py-3.5 text-sm font-semibold opacity-60 cursor-not-allowed"
-          >
-            Reservar — Próximamente
-          </button>
+          <BookingCard listingId={listing.id} dailyPrice={listing.daily_price} />
         </div>
 
       </div>

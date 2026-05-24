@@ -238,3 +238,261 @@ export async function archiveBookingWithReview(
     return { success: false, error: "Error inesperado al archivar la reserva" }; // Se retorna un error inesperado
   }
 }
+
+// ── New Actions (Phase 2) ──────────────────────────────────────────────────
+
+export async function calculateBookingPrice(
+  listingId: string,
+  startDateStr: string,
+  endDateStr: string
+) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: listing, error } = await supabase
+      .from("listings")
+      .select("daily_price")
+      .eq("id", listingId)
+      .single();
+
+    if (error || !listing) return { error: "Listing not found" };
+
+    const start = new Date(startDateStr);
+    const end = new Date(endDateStr);
+    const timeDiff = end.getTime() - start.getTime();
+    let days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    if (days <= 0) days = 1;
+
+    const subtotal = listing.daily_price * days;
+    const serviceFeePercent = 0.05; // 5% ArtRider fee
+    const serviceFee = Math.round(subtotal * serviceFeePercent);
+    const total = subtotal + serviceFee;
+
+    return {
+      days,
+      dailyPrice: listing.daily_price,
+      subtotal,
+      serviceFee,
+      total,
+    };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
+export async function createBooking(
+  listingId: string,
+  startDateStr: string,
+  endDateStr: string
+) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Not authenticated" };
+
+    // Get listing and price
+    const { data: listing, error: listingError } = await supabase
+      .from("listings")
+      .select("id, provider_id, daily_price, title, provider:providers(user_id)")
+      .eq("id", listingId)
+      .single();
+
+    if (listingError || !listing) return { error: "Listing not found" };
+
+    // Prevent booking own equipment
+    if ((listing.provider as any).user_id === user.id) {
+      return { error: "Cannot book your own equipment" };
+    }
+
+    const priceCalc = await calculateBookingPrice(listingId, startDateStr, endDateStr);
+    if ("error" in priceCalc) return { error: priceCalc.error };
+
+    // Create booking
+    // Note: Triggers in DB automatically handle snapshots
+    const { data: booking, error: bookingError } = await supabase
+      .from("bookings")
+      .insert({
+        client_id: user.id,
+        provider_id: listing.provider_id,
+        start_date: startDateStr,
+        end_date: endDateStr,
+        total_price: priceCalc.total,
+        status: "AWAITING_SIGNATURES",
+      })
+      .select()
+      .single();
+
+    if (bookingError) {
+      console.error("Booking error:", bookingError);
+      return { error: bookingError.message };
+    }
+
+    // Assign unit to booking (picking the first available unit for simplicity)
+    const { data: units } = await supabase
+      .from("equipment_units")
+      .select("id")
+      .eq("listing_id", listingId)
+      .eq("internal_status", "AVAILABLE")
+      .limit(1);
+
+    if (units && units.length > 0) {
+      await supabase.from("booking_units").insert({
+        booking_id: booking.id,
+        equipment_unit_id: units[0].id,
+        locked_daily_price: priceCalc.dailyPrice,
+      });
+    }
+
+    // Fetch user profile for notification
+    const { data: clientProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
+
+    // Trigger notification via our server action (safe inside server context)
+    const { createNotification } = await import("./notificationsService");
+    await createNotification({
+      userId: (listing.provider as any).user_id,
+      type: "booking_request",
+      title: "Nueva solicitud de reserva",
+      body: `${clientProfile?.full_name || "Un usuario"} quiere reservar ${listing.title}`,
+      href: "/provider/bookingsProvider",
+    });
+
+    // We can also send the email here
+    const { resend, RESEND_FROM_EMAIL } = await import("@/lib/resend");
+    const { emailTemplates } = await import("@/lib/email-templates");
+    
+    const { data: providerProfile } = await supabase
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", (listing.provider as any).user_id)
+      .single();
+      
+    if (resend && providerProfile?.email) {
+      await resend.emails.send({
+        from: `ArtRider <${RESEND_FROM_EMAIL}>`,
+        to: providerProfile.email,
+        subject: "Nueva solicitud de alquiler en ArtRider",
+        html: emailTemplates.bookingRequest(
+          providerProfile.full_name || "Proveedor",
+          listing.title,
+          clientProfile?.full_name || "Un cliente"
+        ),
+      });
+    }
+
+    return { success: true, bookingId: booking.id };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
+export async function updateBookingStatus(
+  bookingId: string,
+  status: BookingStatus
+) {
+  try {
+    const providerId = await getMyProviderId();
+    if (!providerId) return { error: "Not authorized as provider" };
+    
+    const supabase = await createSupabaseServerClient();
+    
+    // Check ownership
+    const { data: booking, error: fetchError } = await supabase
+      .from("bookings")
+      .select("id, client_id, provider_id")
+      .eq("id", bookingId)
+      .single();
+      
+    if (fetchError || !booking || booking.provider_id !== providerId) {
+      return { error: "Booking not found or not owned" };
+    }
+
+    const { error: updateError } = await supabase
+      .from("bookings")
+      .update({ status })
+      .eq("id", bookingId)
+      .eq("provider_id", providerId);
+
+    if (updateError) return { error: updateError.message };
+
+    // Fetch details for notifications
+    const { data: listingData } = await supabase
+      .from("booking_units")
+      .select("listing:listings(title)")
+      .eq("booking_id", bookingId)
+      .limit(1)
+      .single();
+      
+    const listingTitle = (listingData?.listing as any)?.title || "un equipo";
+    const { createNotification } = await import("./notificationsService");
+
+    if (status === "PAID" || status === "ACTIVE") {
+      // In a real flow, 'AWAITING_SIGNATURES' -> Client pays/signs -> 'PAID'
+      // For this phase, accepting directly sets to PAID or ACTIVE.
+      await createNotification({
+        userId: booking.client_id,
+        type: "booking_confirmed",
+        title: "¡Reserva confirmada!",
+        body: "Tu solicitud para " + listingTitle + " fue aceptada.",
+        href: "/bookings",
+      });
+    } else if (status === "CANCELLED") {
+      await createNotification({
+        userId: booking.client_id,
+        type: "booking_cancelled",
+        title: "Reserva cancelada",
+        body: "Tu solicitud para " + listingTitle + " fue rechazada por el proveedor.",
+        href: "/bookings",
+      });
+    }
+
+    return { success: true };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}
+
+export async function cancelBooking(bookingId: string) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Not authenticated" };
+
+    const { data: booking, error: fetchError } = await supabase
+      .from("bookings")
+      .select("id, client_id, status, provider:providers(user_id)")
+      .eq("id", bookingId)
+      .single();
+
+    if (fetchError || !booking || booking.client_id !== user.id) {
+      return { error: "Not authorized" };
+    }
+
+    if (booking.status !== "AWAITING_SIGNATURES") {
+      return { error: "Only pending bookings can be cancelled by client." };
+    }
+
+    const { error: updateError } = await supabase
+      .from("bookings")
+      .update({ status: "CANCELLED" })
+      .eq("id", bookingId)
+      .eq("client_id", user.id);
+
+    if (updateError) return { error: updateError.message };
+
+    const { createNotification } = await import("./notificationsService");
+    await createNotification({
+      userId: (booking.provider as any).user_id,
+      type: "booking_cancelled",
+      title: "Reserva cancelada",
+      body: "El cliente ha cancelado la solicitud de reserva.",
+      href: "/provider/bookingsProvider",
+    });
+
+    return { success: true };
+  } catch (e: any) {
+    return { error: e.message };
+  }
+}

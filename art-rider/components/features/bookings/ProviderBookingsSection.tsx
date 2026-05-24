@@ -97,20 +97,50 @@ export default function ProviderBookingsSection({
                   </span>
                 </div>
 
-                {/* Renderizado de la fecha de la reserva */}
+                {/* Renderizado de la fecha de la reserva y acciones */}
                 <div className="mt-3 flex items-center justify-between">
                   <p className="text-xs text-gray-400">
                     Reservado el {formatDate(booking.created_at)}
                   </p>
-                  {showArchive && (
-                    <button
-                      type="button"
-                      onClick={() => onArchive(booking.id, clientName)}
-                      className="border border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
-                    >
-                      Archivar alquiler
-                    </button>
-                  )}
+                  <div className="flex gap-2">
+                    {booking.status === "AWAITING_SIGNATURES" && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const { updateBookingStatus } = await import("@/services/bookingsService");
+                            const res = await updateBookingStatus(booking.id, "PAID");
+                            if (res.error) alert("Error: " + res.error);
+                            else window.location.reload();
+                          }}
+                          className="bg-green-600 text-white hover:bg-green-700 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
+                        >
+                          Aceptar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const { updateBookingStatus } = await import("@/services/bookingsService");
+                            const res = await updateBookingStatus(booking.id, "CANCELLED");
+                            if (res.error) alert("Error: " + res.error);
+                            else window.location.reload();
+                          }}
+                          className="bg-red-50 text-red-600 hover:bg-red-100 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
+                        >
+                          Rechazar
+                        </button>
+                      </>
+                    )}
+                    {showArchive && (
+                      <button
+                        type="button"
+                        onClick={() => onArchive(booking.id, clientName)}
+                        className="border border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white rounded-full px-4 py-1.5 text-xs font-semibold transition-colors"
+                      >
+                        Archivar alquiler
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
