@@ -44,7 +44,7 @@ export function useEnhancedLabels() {
           map.setPaintProperty(config.layerId, "text-halo-width", config.haloWidth);
 
           // Letter-spacing (solo si se define)
-          if (config.letterSpacing) {
+          if ((config as any).letterSpacing) {
             map.setLayoutProperty(config.layerId, "text-letter-spacing", [
               "interpolate",
               ["linear"],

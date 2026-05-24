@@ -17,7 +17,8 @@ interface PageProps {
 }
 
 export default async function NewBookingPage({ searchParams }: PageProps) {
-  const { listing: listingId, start, end } = searchParams;
+  const params = await searchParams;
+  const { listing: listingId, start, end } = params;
 
   if (!listingId || !start || !end) {
     redirect("/explore");

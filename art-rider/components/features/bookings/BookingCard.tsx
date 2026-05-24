@@ -51,8 +51,11 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
   const handleReserve = () => {
     if (!dateRange.from || !dateRange.to) return;
     
-    // Check Identity if required
-    if (needsKyc && kycStatus !== "verified") {
+    // Check Identity if required (Total amount >= $50.00)
+    const totalAmount = dailyPrice * days;
+    const requiresKyc = totalAmount >= 5000;
+
+    if (requiresKyc && kycStatus !== "verified") {
       setShowKycModal(true);
       return;
     }

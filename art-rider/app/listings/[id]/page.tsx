@@ -6,7 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import MapWrapper from "@/components/listing-map/MapWrapper";
-import NoImagePlaceholder from "@/components/listing-map/NoImagePlaceholder";
 import { BookingCard } from "@/components/features/bookings/BookingCard";
 
 export const revalidate = 0;
@@ -80,7 +79,8 @@ function StarRow({ rating }: { rating: number }) {
   );
 }
 
-// Sin imagen placeholder
+
+
 function NoImagePlaceholder({ icon }: { icon: string }) {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gray-100 text-gray-300">
