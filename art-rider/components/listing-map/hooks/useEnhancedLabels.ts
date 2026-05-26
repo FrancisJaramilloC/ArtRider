@@ -49,7 +49,7 @@ export function useEnhancedLabels() {
               "interpolate",
               ["linear"],
               ["zoom"],
-              ...config.letterSpacing,
+              ...(config as any).letterSpacing,
             ]);
           }
 

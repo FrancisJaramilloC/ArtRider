@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { getMyProviderId } from "@/services/helpers/getMyProviderId";
+import { checkAvailability } from "@/services/availabilityService";
 
 //  Tipos para las reservas
 export type BookingStatus =
@@ -305,6 +306,12 @@ export async function createBooking(
 
     const priceCalc = await calculateBookingPrice(listingId, startDateStr, endDateStr);
     if ("error" in priceCalc) return { error: priceCalc.error };
+
+    // Validate date availability on the backend
+    const isAvailable = await checkAvailability(listingId, startDateStr, endDateStr);
+    if (!isAvailable) {
+      return { error: "Las fechas seleccionadas ya no están disponibles o tienen conflicto de solapamiento." };
+    }
 
     // Create booking
     // Note: Triggers in DB automatically handle snapshots

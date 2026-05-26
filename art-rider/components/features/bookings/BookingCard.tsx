@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { DayPicker } from "react-day-picker";
-import "react-day-picker/dist/style.css";
+import { Calendar } from "@/components/ui/calendar";
 import { getUnavailableDates } from "@/services/availabilityService";
 import { getMyVerificationStatus, requiresVerification } from "@/services/identityService";
 import { VerificationModal } from "@/components/features/identity/VerificationModal";
@@ -84,25 +83,20 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
               {dateRange.from && dateRange.to ? ` - ${format(dateRange.to, "dd MMM yyyy", { locale: es })}` : ""}
             </span>
           </div>
-          <Calendar className="w-5 h-5 text-gray-400" />
+          <CalendarIcon className="w-5 h-5 text-gray-400" />
         </button>
       </div>
 
       {isDatePickerOpen && (
         <div className="mb-4 flex justify-center bg-white border border-gray-100 rounded-xl p-2 shadow-sm">
-          <DayPicker
+          <Calendar
             mode="range"
             selected={dateRange as any}
             onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
             disabled={[{ before: new Date() }, ...disabledDates]}
             locale={es}
             numberOfMonths={1}
-            className="font-sans text-sm"
-            classNames={{
-              day_selected: "bg-[#875B9A] text-white hover:bg-[#6a437a] focus:bg-[#875B9A]",
-              day_today: "font-bold text-[#875B9A]",
-              day: "h-9 w-9 p-0 font-normal hover:bg-gray-100 rounded-full",
-            }}
+            className="w-full flex justify-center"
           />
         </div>
       )}
