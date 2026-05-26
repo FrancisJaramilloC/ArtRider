@@ -1,13 +1,12 @@
-/*
- * Página de gestión de reservas para proveedores
- * Muestra las solicitudes de reserva que los clientes han enviado
- */
+import { getProviderBookings } from "@/services/bookingsService";
+import ProviderBookingsWrapper from "./ProviderBookingsWrapper";
 
-export default function BookingsProviderPage() {
+export const dynamic = "force-dynamic";
+
+export default async function BookingsProviderPage() {
+  const bookings = await getProviderBookings();
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Gestión de Reservas</h1>
-      <p className="text-gray-500">Aquí aceptas o rechazas las solicitudes de los clientes.</p>
-    </div>
+    <ProviderBookingsWrapper bookings={bookings} />
   );
 }

@@ -31,13 +31,24 @@ export default async function NewBookingPage({ searchParams }: PageProps) {
     redirect(`/login?redirect=/bookings/new?listing=${listingId}&start=${start}&end=${end}`);
   }
 
-  const { data: listing } = await supabase
+  const { data: rawListing } = await supabase
     .from("listings")
-    .select("*, provider:providers(brand_name)")
+    .select("*")
     .eq("id", listingId)
     .single();
 
-  if (!listing) redirect("/explore");
+  if (!rawListing) redirect("/explore");
+
+  const { data: providerData } = await supabase
+    .from("providers")
+    .select("brand_name")
+    .eq("id", rawListing.provider_id)
+    .single();
+
+  const listing = {
+    ...rawListing,
+    provider: providerData ? { brand_name: providerData.brand_name } : undefined
+  };
 
   const priceCalc = await calculateBookingPrice(listingId, start, end);
   if ("error" in priceCalc) {
