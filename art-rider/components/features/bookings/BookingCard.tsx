@@ -45,7 +45,7 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
   }, [listingId, dailyPrice]);
 
   const days = dateRange.from && dateRange.to
-    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from))
+    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
     : 0;
 
   const handleReserve = () => {
@@ -89,7 +89,22 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
       </div>
 
       {isDatePickerOpen && (
-        <div className="mb-4 flex justify-center bg-white border border-gray-100 rounded-xl p-2 shadow-sm">
+        <div 
+          className="mb-4 flex justify-center bg-white border border-gray-100 rounded-xl p-2 shadow-sm"
+          style={{
+            "--rdp-accent-color": "#875B9A",
+            "--rdp-accent-background-color": "rgba(135, 91, 154, 0.1)",
+            "--rdp-range_start-color": "white",
+            "--rdp-range_start-background": "#875B9A",
+            "--rdp-range_end-color": "white",
+            "--rdp-range_end-background": "#875B9A",
+            "--rdp-range_middle-color": "#875B9A",
+            "--rdp-range_middle-background-color": "rgba(135, 91, 154, 0.1)",
+            "--rdp-today-color": "#875B9A",
+            "--rdp-selected-color": "#875B9A",
+            "--rdp-selected-background-color": "rgba(135, 91, 154, 0.1)"
+          } as React.CSSProperties}
+        >
           <DayPicker
             mode="range"
             selected={dateRange as any}
@@ -99,9 +114,15 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
             numberOfMonths={1}
             className="font-sans text-sm"
             classNames={{
-              day_selected: "bg-[#875B9A] text-white hover:bg-[#6a437a] focus:bg-[#875B9A]",
-              day_today: "font-bold text-[#875B9A]",
-              day: "h-9 w-9 p-0 font-normal hover:bg-gray-100 rounded-full",
+              day_selected: "!bg-[#875B9A]/10 !text-[#875B9A] font-bold hover:!bg-[#875B9A]/20",
+              day_range_middle: "!bg-[#875B9A]/10 !text-[#875B9A] rounded-none",
+              day_range_start: "!bg-[#875B9A]/20 !text-[#875B9A] hover:!bg-[#875B9A]/30 rounded-l-full",
+              day_range_end: "!bg-[#875B9A]/20 !text-[#875B9A] hover:!bg-[#875B9A]/30 rounded-r-full",
+              day_today: "font-bold !text-[#875B9A]",
+              day: "h-9 w-9 p-0 font-normal hover:!bg-[#875B9A]/10 rounded-full transition-colors",
+              nav_button: "text-[#875B9A] hover:bg-[#875B9A]/10 rounded-full p-1 transition-colors",
+              nav_button_previous: "text-[#875B9A]",
+              nav_button_next: "text-[#875B9A]",
             }}
           />
         </div>

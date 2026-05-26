@@ -224,3 +224,21 @@ body {
   --delay: 100ms;
   animation-delay: calc(var(--stagger) * var(--delay));
 }
+
+/* react-day-picker v9 overrides */
+.rdp-root {
+  --rdp-accent-color: #875B9A !important;
+  --rdp-accent-background-color: rgba(135, 91, 154, 0.1) !important;
+  
+  --rdp-range_start-color: white !important;
+  --rdp-range_start-background: #875B9A !important;
+  
+  --rdp-range_end-color: white !important;
+  --rdp-range_end-background: #875B9A !important;
+  
+  --rdp-range_middle-color: #875B9A !important;
+  --rdp-range_middle-background-color: rgba(135, 91, 154, 0.1) !important;
+  
+  --rdp-today-color: #875B9A !important;
+  --rdp-selected-color: #875B9A !important;
+}
