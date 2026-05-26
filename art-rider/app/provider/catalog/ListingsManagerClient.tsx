@@ -49,7 +49,7 @@ export default function ListingsManagerClient({ listings: initial }: { listings:
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {/* Lista de equipos */}
-      {listings.map((listing) => {
+      {listings.map((listing, index) => {
         const isLoading = loadingId === listing.id;
         const priceDisplay = `$${(listing.daily_price / 100).toFixed(2)}`;
 
@@ -62,7 +62,14 @@ export default function ListingsManagerClient({ listings: initial }: { listings:
             {/* Cover */}
             <div className="relative w-full h-40 bg-gray-100">
               {listing.cover_image_url ? (
-                <Image src={listing.cover_image_url} alt={listing.title ?? "Equipo"} fill className="object-cover" />
+                <Image
+                  src={listing.cover_image_url}
+                  alt={listing.title ?? "Equipo"}
+                  fill
+                  priority={index < 3}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                  className="object-cover"
+                />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-300">
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

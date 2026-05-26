@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
 import { getMyProviderProfile } from "@/services/providerService";
 import { getMyListings } from "@/services/listingsService";
 import BrandNameCard from "./BrandNameCard";
@@ -28,13 +27,6 @@ export default async function ProviderOverviewPage() {
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Centro de Operaciones</h1>
           <p className="text-gray-500 mt-1 text-sm">Hola, {brandName}. Aquí tienes el resumen de tu negocio de hoy.</p>
         </div>
-        <Link
-          href="/provider/catalog/new"
-          className="inline-flex items-center justify-center gap-2 bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm self-start sm:self-auto"
-        >
-          <Plus size={18} />
-          Añadir Nuevo Equipo
-        </Link>
       </div>
 
       {/*  Cards de KPIs  */}

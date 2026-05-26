@@ -14,9 +14,11 @@ export type Listing = {
   model: string | null;
   category: string | null;
   cover_image_url: string | null;
+  gallery_images: string[] | null;
   daily_price: number;
   description: string | null;
   is_published: boolean;
+  availability_status: "available" | "maintenance" | "private_use";
   created_at: string;
   address_id?: string | null;
   address?: {
@@ -29,7 +31,7 @@ export type Listing = {
 
 //  Selecciona los listings
 const LISTING_SELECT =
-  "id, provider_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
+  "id, provider_id, title, brand, model, category, cover_image_url, gallery_images, daily_price, description, is_published, availability_status, created_at, address_id, address:addresses(latitude, longitude, city, state)";
 
 //  Lee los listings publicados y no eliminados
 //  El cliente admin se usa aquí para que el join con addresses no esté bloqueado por RLS.
@@ -114,7 +116,18 @@ async function uploadCoverImage(
   return data.publicUrl;
 }
 
-//  Crea un nuevo listing 
+/** Sube hasta 5 imágenes de galería adicionales. Retorna un array de URLs públicas. */
+async function uploadGalleryImages(files: File[], userId: string): Promise<string[]> {
+  const urls: string[] = [];
+  for (const file of files.slice(0, 5)) {
+    if (!file || file.size === 0 || file.size > 5 * 1024 * 1024) continue;
+    const url = await uploadCoverImage(file, userId);
+    if (url) urls.push(url);
+  }
+  return urls;
+}
+
+//  Crea un nuevo listing
 export async function createListing(prevState: any, formData: FormData) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -170,6 +183,10 @@ export async function createListing(prevState: any, formData: FormData) {
     // Sube la imagen de portada
     const coverImageUrl = await uploadCoverImage(coverFile, user.id);
 
+    // Sube imágenes de galería adicionales (opcionales, máx. 5)
+    const galleryFiles = formData.getAll("galleryImages") as File[];
+    const galleryImageUrls = await uploadGalleryImages(galleryFiles, user.id);
+
     // Dirección del listing
     const latitude = latitudeRaw ? parseFloat(latitudeRaw) : null;
     const longitude = longitudeRaw ? parseFloat(longitudeRaw) : null;
@@ -208,6 +225,7 @@ export async function createListing(prevState: any, formData: FormData) {
       .insert({
         provider_id: provider.id, title, brand, model: model || null,
         category, cover_image_url: coverImageUrl,
+        gallery_images: galleryImageUrls.length > 0 ? galleryImageUrls : null,
         daily_price: dailyPrice, description: description || null, is_published: publishNow,
         address_id: addressId,
       })
@@ -323,6 +341,14 @@ export async function updateListing(
       if (url) payload.cover_image_url = url;
     }
 
+    // Sube nuevas imágenes de galería (si se enviaron)
+    const galleryFiles = formData.getAll("galleryImages") as File[];
+    const validGallery = galleryFiles.filter((f) => f && f.size > 0);
+    if (validGallery.length > 0) {
+      const galleryUrls = await uploadGalleryImages(validGallery, user.id);
+      if (galleryUrls.length > 0) payload.gallery_images = galleryUrls;
+    }
+
     // Obtiene el ID del proveedor
     const providerId = await getMyProviderId();
     if (!providerId) return { error: "No eres proveedor." };
@@ -363,6 +389,42 @@ export async function togglePublish(id: string, currentState: boolean) {
   revalidatePath("/");
 
   return { success: true };
+}
+
+// ─── Disponibilidad ────────────────────────────────────────────────────────────
+
+export type AvailabilityStatus = "available" | "maintenance" | "private_use";
+
+/**
+ * Actualiza el estado de disponibilidad de un equipo.
+ * Si el estado no es "available", también lo despublica.
+ */
+export async function updateListingAvailability(
+  id: string,
+  status: AvailabilityStatus
+): Promise<{ error?: string }> {
+  const providerId = await getMyProviderId();
+  if (!providerId) return { error: "No autenticado." };
+
+  const admin = createSupabaseAdminClient();
+  const patch: Record<string, unknown> = {
+    availability_status: status,
+    updated_at: new Date().toISOString(),
+  };
+  // Despublicar si no está disponible
+  if (status !== "available") patch.is_published = false;
+
+  const { error } = await admin
+    .from("listings")
+    .update(patch)
+    .eq("id", id)
+    .eq("provider_id", providerId);
+
+  if (error) return { error: "Error al actualizar la disponibilidad." };
+  revalidatePath("/provider/inventory");
+  revalidatePath("/provider/catalog");
+  revalidatePath("/listings");
+  return {};
 }
 
 // Elimina un listing

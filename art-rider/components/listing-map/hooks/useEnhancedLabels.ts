@@ -43,8 +43,10 @@ export function useEnhancedLabels() {
           map.setPaintProperty(config.layerId, "text-color", config.textColor);
           map.setPaintProperty(config.layerId, "text-halo-width", config.haloWidth);
 
-          // Letter-spacing (solo si se define)
-          if ((config as any).letterSpacing) {
+          // Letter-spacing (solo si se define en la config)
+          // `config.letterSpacing` es `readonly number[] | undefined` gracias a
+          // RoadLabelConfig — no necesitamos `as any` ni type assertions.
+          if (config.letterSpacing) {
             map.setLayoutProperty(config.layerId, "text-letter-spacing", [
               "interpolate",
               ["linear"],
