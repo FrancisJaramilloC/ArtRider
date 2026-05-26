@@ -44,7 +44,7 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
   }, [listingId, dailyPrice]);
 
   const days = dateRange.from && dateRange.to
-    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from))
+    ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
     : 0;
 
   const handleReserve = () => {

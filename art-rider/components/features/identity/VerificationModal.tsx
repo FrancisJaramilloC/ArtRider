@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ShieldAlert, X, Loader2, CheckCircle2 } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
 
 interface VerificationModalProps {
   isOpen: boolean;
@@ -13,38 +13,28 @@ interface VerificationModalProps {
 export function VerificationModal({ isOpen, onClose, onVerified }: VerificationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  // Estado local para mostrar un check luego de que el usuario regrese exitoso de Stripe
+  // Estado local para mostrar un check luego de que el usuario regrese exitoso
   const [success, setSuccess] = useState(false); 
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const handleVerify = async () => {
     setIsLoading(true);
     setError("");
 
     try {
-      // 1. Obtener client_secret de la API
-      const res = await fetch("/api/stripe/create-verification", { method: "POST" });
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.error || "Error al iniciar verificación");
-
-      // 2. Inicializar Stripe y abrir el modal de verificación de Identity
-      const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-      if (!stripe) throw new Error("Stripe no cargó");
-
-      const { error: stripeError } = await stripe.verifyIdentity(data.client_secret);
-
-      if (stripeError) {
-        setError(stripeError.message || "La verificación fue cancelada o falló");
-      } else {
-        // Stripe cerró el modal y retornó éxito.
-        // En un flujo real, el webhook actualiza la DB.
-        setSuccess(true);
-        setTimeout(() => {
-          onVerified(); // Le avisa al padre (BookingCard) que la verificación local fue exitosa
-        }, 2000);
-      }
+      // Por ahora no usaremos Stripe para identidad, simulamos el proceso exitoso
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      setSuccess(true);
+      setTimeout(() => {
+        onVerified();
+      }, 2000);
     } catch (e: any) {
       setError(e.message || "Ocurrió un error inesperado");
     } finally {
@@ -52,8 +42,8 @@ export function VerificationModal({ isOpen, onClose, onVerified }: VerificationM
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
       <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in-95 duration-200">
         <button
           onClick={onClose}
@@ -106,17 +96,14 @@ export function VerificationModal({ isOpen, onClose, onVerified }: VerificationM
                     <span>Iniciando verificación...</span>
                   </>
                 ) : (
-                  <span>Verificar con Stripe</span>
+                  <span>Verificar identidad</span>
                 )}
               </button>
-
-              <p className="text-xs text-gray-400 mt-4">
-                Tus datos están protegidos y encriptados por Stripe Identity.
-              </p>
             </>
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

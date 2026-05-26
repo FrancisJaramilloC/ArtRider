@@ -260,7 +260,7 @@ export async function calculateBookingPrice(
     const start = new Date(startDateStr);
     const end = new Date(endDateStr);
     const timeDiff = end.getTime() - start.getTime();
-    let days = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    let days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
     if (days <= 0) days = 1;
 
     const subtotal = listing.daily_price * days;
