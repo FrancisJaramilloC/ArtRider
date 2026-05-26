@@ -45,8 +45,9 @@ export function useNotifications() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const channelName = `notifications-${user.id}-${Math.random()}`;
       channel = supabase
-        .channel(`notifications:${user.id}`)
+        .channel(channelName)
         .on(
           "postgres_changes",
           {
