@@ -3,7 +3,7 @@ import type { BookingWithDetails, BookingStatus } from "@/services/bookingsServi
 
 // Configuración de estados de reserva
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
-  AWAITING_SIGNATURES: { label: "Esperando firmas", className: "bg-amber-50 text-amber-700" },
+  AWAITING_SIGNATURES: { label: "Pendiente",          className: "bg-[#F9F5FB] text-[#875B9A]" },
   PAID:               { label: "Pagado",            className: "bg-blue-50 text-blue-700"  },
   ACTIVE:             { label: "Activo",             className: "bg-emerald-50 text-emerald-700" },
   COMPLETED:          { label: "Completado",         className: "bg-violet-50 text-violet-700"  },
