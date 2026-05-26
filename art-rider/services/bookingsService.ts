@@ -55,7 +55,16 @@ function mapRawToBookingWithDetails(
     created_at: raw.created_at,
     archived_at: raw.archived_at ?? null,
     client_profile: includeClientProfile ? (raw.client_profile ?? null) : null,
-    booking_units: (raw.booking_units ?? []) as BookingUnit[],
+    booking_units: raw.snapshot_listing ? [{
+      id: "mock",
+      listing_id: raw.snapshot_listing.id,
+      quantity: 1,
+      listing: {
+        id: raw.snapshot_listing.id,
+        title: raw.snapshot_listing.title,
+        price_per_day: raw.snapshot_listing.daily_price,
+      }
+    }] : [],
     payment_confirmed: (raw.payments ?? [])[0]?.status === "CAPTURED",
     provider_has_reviewed: (raw.reviews ?? []).some(
       (r: any) => r.author_id === provider_id
@@ -75,7 +84,7 @@ export async function getClientBookings(): Promise<BookingWithDetails[]> {
     const { data, error } = await supabase
       .from("bookings")
       .select(
-        `id, status, start_date, end_date, total_price, client_id, provider_id, created_at, archived_at, booking_units(id, listing_id, quantity, listing:listings(id, title, price_per_day)), payments(status), reviews(id, author_id)`
+        `id, status, start_date, end_date, total_price, client_id, provider_id, created_at, archived_at, snapshot_listing, payments(status), reviews(id, author_id)`
       )
       .eq("client_id", user.id)
       .neq("status", "ARCHIVED")
@@ -101,7 +110,7 @@ export async function getProviderBookings(): Promise<BookingWithDetails[]> {
     const { data, error } = await supabase
       .from("bookings")
       .select(
-        `id, status, start_date, end_date, total_price, client_id, provider_id, created_at, archived_at, booking_units(id, listing_id, quantity, listing:listings(id, title, price_per_day)), client_profile:profiles!client_id(id, full_name, avatar_url), payments(status), reviews(id, author_id)`
+        `id, status, start_date, end_date, total_price, client_id, provider_id, created_at, archived_at, snapshot_listing, client_profile:profiles!client_id(id, full_name, avatar_url), payments(status), reviews(id, author_id)`
       )
       .eq("provider_id", providerId)
       .neq("status", "ARCHIVED")
