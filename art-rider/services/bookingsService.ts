@@ -1,6 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { getMyProviderId } from "@/services/helpers/getMyProviderId";
 import { checkAvailability } from "@/services/availabilityService";
 
@@ -352,60 +353,80 @@ export async function createBooking(
     }
 
     // Assign unit to booking (picking the first available unit for simplicity)
-    const { data: units } = await supabase
+    const adminSupabase = createSupabaseAdminClient();
+    const { data: units, error: selectUnitErr } = await adminSupabase
       .from("equipment_units")
       .select("id")
       .eq("listing_id", listingId)
       .eq("internal_status", "AVAILABLE")
       .limit(1);
 
-    if (units && units.length > 0) {
-      await supabase.from("booking_units").insert({
-        booking_id: booking.id,
-        equipment_unit_id: units[0].id,
-        locked_daily_price: priceCalc.dailyPrice,
-      });
+    if (selectUnitErr) {
+      console.error("Error selecting equipment unit:", selectUnitErr);
+      return { error: "Error al verificar la unidad física disponible: " + selectUnitErr.message };
     }
 
-    // Fetch user profile for notification
-    const { data: clientProfile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", user.id)
-      .single();
+    if (!units || units.length === 0) {
+      return { error: "No hay unidades físicas disponibles para este equipo en el inventario." };
+    }
 
-    // Trigger notification via our server action (safe inside server context)
-    const { createNotification } = await import("./notificationsService");
-    await createNotification({
-      userId: provider.user_id,
-      type: "booking_request",
-      title: "Nueva solicitud de reserva",
-      body: `${clientProfile?.full_name || "Un usuario"} quiere reservar ${listing.title}`,
-      href: "/provider/bookingsProvider",
+    const { error: unitInsertError } = await adminSupabase.from("booking_units").insert({
+      booking_id: booking.id,
+      equipment_unit_id: units[0].id,
+      locked_daily_price: priceCalc.dailyPrice,
     });
 
-    // We can also send the email here
-    const { resend, RESEND_FROM_EMAIL } = await import("@/lib/resend");
-    const { emailTemplates } = await import("@/lib/email-templates");
-    
-    const { data: providerProfile } = await supabase
-      .from("profiles")
-      .select("email, full_name")
-      .eq("id", provider.user_id)
-      .single();
-      
-    if (resend && providerProfile?.email) {
-      await resend.emails.send({
-        from: `ArtRider <${RESEND_FROM_EMAIL}>`,
-        to: providerProfile.email,
-        subject: "Nueva solicitud de alquiler en ArtRider",
-        html: emailTemplates.bookingRequest(
-          providerProfile.full_name || "Proveedor",
-          listing.title,
-          clientProfile?.full_name || "Un cliente"
-        ),
-      });
+    if (unitInsertError) {
+      console.error("Booking unit insert error:", unitInsertError);
+      return { error: "No se pudo asignar el equipo físico a la reserva: " + unitInsertError.message };
     }
+
+    // Trigger notification and email in the background asynchronously to speed up response
+    (async () => {
+      try {
+        // Fetch user profile for notification
+        const { data: clientProfile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+
+        // Trigger notification via our server action (safe inside server context)
+        const { createNotification } = await import("./notificationsService");
+        await createNotification({
+          userId: provider.user_id,
+          type: "booking_request",
+          title: "Nueva solicitud de reserva",
+          body: `${clientProfile?.full_name || "Un usuario"} quiere reservar ${listing.title}`,
+          href: "/provider/bookingsProvider",
+        });
+
+        // We can also send the email here
+        const { resend, RESEND_FROM_EMAIL } = await import("@/lib/resend");
+        const { emailTemplates } = await import("@/lib/email-templates");
+        
+        const { data: providerProfile } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", provider.user_id)
+          .single();
+          
+        if (resend && providerProfile?.email) {
+          await resend.emails.send({
+            from: `ArtRider <${RESEND_FROM_EMAIL}>`,
+            to: providerProfile.email,
+            subject: "Nueva solicitud de alquiler en ArtRider",
+            html: emailTemplates.bookingRequest(
+              providerProfile.full_name || "Proveedor",
+              listing.title,
+              clientProfile?.full_name || "Un cliente"
+            ),
+          });
+        }
+      } catch (err) {
+        console.error("Error sending background notifications/emails:", err);
+      }
+    })();
 
     return { success: true, bookingId: booking.id };
   } catch (e: any) {
@@ -503,7 +524,7 @@ export async function cancelBooking(bookingId: string) {
       .single();
 
     if (booking.status !== "AWAITING_SIGNATURES") {
-      return { error: "Only pending bookings can be cancelled by client." };
+      return { error: "Solo se pueden cancelar reservas pendientes." };
     }
 
     const { error: updateError } = await supabase

@@ -15,6 +15,13 @@ interface BookingCardProps {
   dailyPrice: number;
 }
 
+const getLocalDateString = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
 export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
@@ -31,7 +38,16 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
   const router = useRouter();
 
   useEffect(() => {
-    getUnavailableDates(listingId).then(setDisabledDates);
+    getUnavailableDates(listingId).then((dates) => {
+      const localDates = dates.map((d) => {
+        const dateObj = new Date(d);
+        const y = dateObj.getUTCFullYear();
+        const m = dateObj.getUTCMonth();
+        const day = dateObj.getUTCDate();
+        return new Date(y, m, day);
+      });
+      setDisabledDates(localDates);
+    });
     
     // Check KYC status and if this listing requires it
     const checkKyc = async () => {
@@ -59,8 +75,8 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
       return;
     }
 
-    const startStr = dateRange.from.toISOString().split("T")[0];
-    const endStr = dateRange.to.toISOString().split("T")[0];
+    const startStr = getLocalDateString(dateRange.from);
+    const endStr = getLocalDateString(dateRange.to);
     router.push(`/bookings/new?listing=${listingId}&start=${startStr}&end=${endStr}`);
   };
 
@@ -92,7 +108,28 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
           <Calendar
             mode="range"
             selected={dateRange as any}
-            onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+            onSelect={(range: any) => {
+              if (range?.from && range?.to) {
+                let hasBlockedDate = false;
+                let curr = new Date(range.from);
+                const end = new Date(range.to);
+                while (curr <= end) {
+                  const currStr = getLocalDateString(curr);
+                  const isBlocked = disabledDates.some((d) => getLocalDateString(d) === currStr);
+                  if (isBlocked) {
+                    hasBlockedDate = true;
+                    break;
+                  }
+                  curr.setDate(curr.getDate() + 1);
+                }
+                if (hasBlockedDate) {
+                  // Si el rango cruza un día bloqueado, reiniciamos el rango al último día clickeado
+                  setDateRange({ from: range.to, to: undefined });
+                  return;
+                }
+              }
+              setDateRange(range || { from: undefined, to: undefined });
+            }}
             disabled={[{ before: new Date() }, ...disabledDates]}
             locale={es}
             numberOfMonths={1}

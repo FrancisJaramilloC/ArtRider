@@ -220,6 +220,21 @@ export async function createListing(prevState: any, formData: FormData) {
       return { error: "Error al guardar el equipo. Intenta de nuevo." };
     }
 
+    // Crear una unidad por defecto para el listing
+    const shortId = newListing.id.split("-")[0].toUpperCase();
+    const { error: unitError } = await supabase
+      .from("equipment_units")
+      .insert({
+        listing_id: newListing.id,
+        serial_number: `SN-${shortId}`,
+        condition: "GOOD",
+        internal_status: "AVAILABLE",
+      });
+
+    if (unitError) {
+      console.error("[listingsService] default equipment unit insert error:", unitError);
+    }
+
     // Revalida las rutas para que se actualicen los datos
     revalidatePath("/provider/catalog");
     revalidatePath("/listings");

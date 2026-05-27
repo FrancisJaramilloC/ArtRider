@@ -1,10 +1,10 @@
 "use server";
 
-import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 
 export async function getUnavailableDates(listingId: string): Promise<Date[]> {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = createSupabaseAdminClient();
     
     // Get all units for this listing
     const { data: units, error: unitsError } = await supabase

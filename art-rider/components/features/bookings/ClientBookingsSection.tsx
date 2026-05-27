@@ -1,5 +1,10 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { BookingWithDetails, BookingStatus } from "@/services/bookingsService";
+import { cancelBooking } from "@/services/bookingsService";
 
 // Configuración de estados de reserva
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
@@ -14,11 +19,32 @@ const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }>
 
 // Formateo de fechas
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("es-EC", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  if (!dateStr) return "";
+  
+  // If it's a timestamp (like created_at), parse normally
+  if (dateStr.includes("T")) {
+    return new Date(dateStr).toLocaleDateString("es-EC", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  // Literal date YYYY-MM-DD
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const localDate = new Date(year, month, day);
+    return localDate.toLocaleDateString("es-EC", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+  
+  return dateStr;
 }
 
 // Props de la sección de reservas del cliente
@@ -28,6 +54,26 @@ interface ClientBookingsSectionProps {
 
 // Componente de la sección de reservas del cliente
 export default function ClientBookingsSection({ bookings }: ClientBookingsSectionProps) {
+  const [isCancelling, setIsCancelling] = useState<string | null>(null);
+  const router = useRouter();
+
+  const handleCancel = async (bookingId: string) => {
+    if (!confirm("¿Estás seguro de que deseas cancelar esta reserva?")) return;
+    setIsCancelling(bookingId);
+    try {
+      const res = await cancelBooking(bookingId);
+      if (res.error) {
+        alert("Error: " + res.error);
+      } else {
+        router.refresh();
+      }
+    } catch (err: any) {
+      alert("Ocurrió un error inesperado al cancelar.");
+    } finally {
+      setIsCancelling(null);
+    }
+  };
+
   return (
     <section>
       <h2 className="text-2xl font-bold text-gray-900">Mis Alquileres</h2>
@@ -78,9 +124,21 @@ export default function ClientBookingsSection({ bookings }: ClientBookingsSectio
                 </span>
               </div>
 
-              <p className="text-xs text-gray-400 mt-2">
-                Reservado el {formatDate(booking.created_at)}
-              </p>
+              <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3">
+                <p className="text-xs text-gray-400">
+                  Reservado el {formatDate(booking.created_at)}
+                </p>
+                {(booking.status === "AWAITING_SIGNATURES") && (
+                  <button
+                    type="button"
+                    disabled={isCancelling === booking.id}
+                    onClick={() => handleCancel(booking.id)}
+                    className="bg-red-50 text-red-600 hover:bg-red-100 disabled:bg-gray-100 disabled:text-gray-400 rounded-full px-4 py-1.5 text-xs font-semibold transition-colors shrink-0"
+                  >
+                    {isCancelling === booking.id ? "Cancelando..." : "Cancelar reserva"}
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
