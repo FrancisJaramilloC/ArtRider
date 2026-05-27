@@ -14,6 +14,7 @@ export type Listing = {
   model: string | null;
   category: string | null;
   cover_image_url: string | null;
+  gallery_images?: string[] | null; // columna opcional hasta que migración 002 esté ejecutada
   daily_price: number;
   description: string | null;
   is_published: boolean;
@@ -28,6 +29,9 @@ export type Listing = {
 };
 
 //  Selecciona los listings
+// gallery_images omitido del SELECT hasta ejecutar migración 002 en Supabase.
+// Una vez que ejecutes: ALTER TABLE listings ADD COLUMN IF NOT EXISTS gallery_images TEXT[] DEFAULT '{}'
+// vuelve a añadir gallery_images a esta cadena.
 const LISTING_SELECT =
   "id, provider_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
 
@@ -114,7 +118,18 @@ async function uploadCoverImage(
   return data.publicUrl;
 }
 
-//  Crea un nuevo listing 
+/** Sube hasta 5 imágenes de galería adicionales. Retorna un array de URLs públicas. */
+async function uploadGalleryImages(files: File[], userId: string): Promise<string[]> {
+  const urls: string[] = [];
+  for (const file of files.slice(0, 5)) {
+    if (!file || file.size === 0 || file.size > 5 * 1024 * 1024) continue;
+    const url = await uploadCoverImage(file, userId);
+    if (url) urls.push(url);
+  }
+  return urls;
+}
+
+//  Crea un nuevo listing
 export async function createListing(prevState: any, formData: FormData) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -170,6 +185,10 @@ export async function createListing(prevState: any, formData: FormData) {
     // Sube la imagen de portada
     const coverImageUrl = await uploadCoverImage(coverFile, user.id);
 
+    // Sube imágenes de galería adicionales (opcionales, máx. 5)
+    const galleryFiles = formData.getAll("galleryImages") as File[];
+    const galleryImageUrls = await uploadGalleryImages(galleryFiles, user.id);
+
     // Dirección del listing
     const latitude = latitudeRaw ? parseFloat(latitudeRaw) : null;
     const longitude = longitudeRaw ? parseFloat(longitudeRaw) : null;
@@ -208,6 +227,8 @@ export async function createListing(prevState: any, formData: FormData) {
       .insert({
         provider_id: provider.id, title, brand, model: model || null,
         category, cover_image_url: coverImageUrl,
+        // gallery_images: columna pendiente — añadir tras ejecutar migración 002
+        // ...(galleryImageUrls.length > 0 ? { gallery_images: galleryImageUrls } : {}),
         daily_price: dailyPrice, description: description || null, is_published: publishNow,
         address_id: addressId,
       })
@@ -323,6 +344,14 @@ export async function updateListing(
       if (url) payload.cover_image_url = url;
     }
 
+    // gallery_images pendiente hasta migración 002 — descomentar cuando esté ejecutada
+    // const galleryFiles = formData.getAll("galleryImages") as File[];
+    // const validGallery = galleryFiles.filter((f) => f && f.size > 0);
+    // if (validGallery.length > 0) {
+    //   const galleryUrls = await uploadGalleryImages(validGallery, user.id);
+    //   if (galleryUrls.length > 0) payload.gallery_images = galleryUrls;
+    // }
+
     // Obtiene el ID del proveedor
     const providerId = await getMyProviderId();
     if (!providerId) return { error: "No eres proveedor." };
@@ -364,6 +393,11 @@ export async function togglePublish(id: string, currentState: boolean) {
 
   return { success: true };
 }
+
+// ─── Tipos reutilizables ──────────────────────────────────────────────────────
+// La disponibilidad operativa se gestiona a través de availability_calendar
+// (status: BOOKED | BLOCKED | MAINTENANCE) — no se necesita columna en listings.
+export type AvailabilityStatus = "available" | "maintenance" | "private_use";
 
 // Elimina un listing
 export async function deleteListing(id: string) {

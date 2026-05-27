@@ -1,151 +1,142 @@
 import { Building2, CreditCard, ChevronRight, CheckCircle2, Clock } from "lucide-react";
 
-//  Pagina de finanzas para proveedores
 export default function FinancePage() {
   return (
-    <div className="space-y-8 w-full pb-10">
+    <div className="space-y-6 w-full pb-8">
 
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-1">Proveedor</p>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Finanzas</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Controla tus ingresos, pagos pendientes y el historial de tus transacciones.
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Proveedor</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Finanzas</h1>
+          <p className="text-[13px] text-slate-500 mt-0.5">
+            Controla tus ingresos, pagos pendientes y el historial de transacciones.
           </p>
         </div>
-        <button className="bg-gray-900 hover:bg-gray-700 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors self-start md:self-auto">
+        <button className="bg-slate-900 hover:bg-black text-white px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors self-start sm:self-auto shrink-0">
           Retirar Fondos
         </button>
       </div>
 
-      {/*  KPI Cards (Indicadores Clave de Rendimiento) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-        {/*  Total Ingresado  */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-          <p className="text-sm font-semibold text-gray-500 mb-4">Total Ingresado</p>
-          <p className="text-3xl font-bold text-gray-900 mb-2">$0.00</p>
-          <p className="text-xs text-gray-400">Desde que te uniste</p>
+        <div className="bg-white rounded-xl border border-slate-100 px-4 py-4">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Ingresado</p>
+          <p className="text-2xl font-black text-slate-900 leading-none">$0.00</p>
+          <p className="text-[10px] text-slate-400 mt-1">Desde que te uniste</p>
         </div>
 
-        {/*  Próximos Pagos  */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-          <p className="text-sm font-semibold text-gray-500 mb-4">Próximos Pagos</p>
-          <p className="text-3xl font-bold text-gray-900 mb-2">$0.00</p>
-          <p className="text-xs text-gray-400">Liberación pendiente</p>
+        <div className="bg-white rounded-xl border border-slate-100 px-4 py-4">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">Próximos Pagos</p>
+          <p className="text-2xl font-black text-slate-900 leading-none">$0.00</p>
+          <p className="text-[10px] text-slate-400 mt-1">Liberación pendiente</p>
         </div>
 
-        {/*  En Tránsito  */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-          <p className="text-sm font-semibold text-gray-500 mb-4">En Tránsito</p>
-          <p className="text-3xl font-bold text-gray-900 mb-2">$0.00</p>
-          <p className="text-xs text-gray-400">En cuenta bancaria</p>
+        <div className="bg-white rounded-xl border border-slate-100 px-4 py-4">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">En Tránsito</p>
+          <p className="text-2xl font-black text-slate-900 leading-none">$0.00</p>
+          <p className="text-[10px] text-slate-400 mt-1">En cuenta bancaria</p>
         </div>
 
       </div>
 
-      {/*  Main Layout: Transacciones y Métodos de Pago  */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Main layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/*  Columna Izquierda: Historial de Transacciones  */}
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-bold text-gray-900">Historial de Transacciones</h2>
+        {/* Historial */}
+        <div className="lg:col-span-2 space-y-3">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Historial de Transacciones</p>
 
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-            <div className="flex flex-col">
+          <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
 
-              {/*  Transaccion 1  */}
-              <div className="flex items-center justify-between p-5 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-4 h-4 text-gray-500" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">Pago Liberado</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Alquiler: Lentes Sony G-Master</p>
-                  </div>
+            {/* Fila 1 */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" />
                 </div>
-                <div className="text-right flex items-center gap-3">
-                  <div>
-                    <p className="font-bold text-gray-900 text-sm">+$120.00</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Hoy, 10:30 AM</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300" />
+                <div>
+                  <p className="font-semibold text-slate-900 text-[12px]">Pago Liberado</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Alquiler: Lentes Sony G-Master</p>
                 </div>
               </div>
-
-              {/*  Transaccion 2  */}
-                <div className="flex items-center justify-between p-5 hover:bg-gray-50 transition-colors cursor-pointer">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center shrink-0">
-                    <Clock className="w-4 h-4 text-gray-500" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">Retención por Seguro</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Depósito de garantía: DJI Ronin 4D</p>
-                  </div>
+              <div className="text-right flex items-center gap-2">
+                <div>
+                  <p className="font-bold text-slate-900 text-[12px]">+$120.00</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Hoy, 10:30</p>
                 </div>
-                <div className="text-right flex items-center gap-3">
-                  <div>
-                    <p className="font-bold text-gray-900 text-sm">+$500.00</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Ayer, 16:45 PM</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300" />
-                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
               </div>
-
             </div>
 
-            {/*  Botón para ver todo el historial  */}
-            <div className="p-4 bg-gray-50/50 flex justify-center border-t border-gray-100">
-              <button className="text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors">
+            {/* Fila 2 */}
+            <div className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900 text-[12px]">Retención por Seguro</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Depósito de garantía: DJI Ronin 4D</p>
+                </div>
+              </div>
+              <div className="text-right flex items-center gap-2">
+                <div>
+                  <p className="font-bold text-slate-900 text-[12px]">+$500.00</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Ayer, 16:45</p>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-4 py-2.5 border-t border-slate-100 flex justify-center">
+              <button className="text-[11px] font-medium text-slate-500 hover:text-slate-800 transition-colors duration-150">
                 Ver todo el historial
               </button>
             </div>
+
           </div>
         </div>
 
-        {/*  Columna Derecha: Métodos de Pago  */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-gray-900">Métodos de Cobro</h2>
+        {/* Métodos de Cobro */}
+        <div className="space-y-3">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Métodos de Cobro</p>
 
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
+          <div className="bg-white rounded-xl border border-slate-100 px-4 py-4 space-y-4">
 
-            {/*  Metodo 1  */}
+            {/* Método 1 */}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gray-100 rounded-xl">
-                  <Building2 className="w-5 h-5 text-gray-700" />
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-slate-50 rounded-lg">
+                  <Building2 className="w-4 h-4 text-slate-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 text-sm">Transferencia Local</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Banco Pichincha **** 4589</p>
+                  <p className="font-semibold text-slate-900 text-[12px]">Transferencia Local</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Banco Pichincha **** 4589</p>
                 </div>
               </div>
-              <span className="bg-gray-100 text-gray-600 text-[0.65rem] font-bold px-2 py-1 rounded uppercase tracking-wider">
+              <span className="bg-slate-100 text-slate-500 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
                 Predeterminado
               </span>
             </div>
 
-            {/*  Separador  */}
-            <hr className="border-gray-100" />
+            <hr className="border-slate-100" />
 
-            {/*  Metodo 2  */}
-            <div className="flex items-center justify-between opacity-40">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gray-100 rounded-xl">
-                  <CreditCard className="w-5 h-5 text-gray-700" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 text-sm">Stripe Connect</p>
-                  <p className="text-xs text-gray-500 mt-0.5">No configurado</p>
-                </div>
+            {/* Método 2 */}
+            <div className="flex items-center gap-2.5 opacity-40">
+              <div className="p-2 bg-slate-50 rounded-lg">
+                <CreditCard className="w-4 h-4 text-slate-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 text-[12px]">Stripe Connect</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">No configurado</p>
               </div>
             </div>
 
-            {/*  Botón para añadir nueva cuenta  */}
-            <button className="w-full bg-white border-2 border-dashed border-gray-300 hover:border-gray-900 text-gray-600 hover:text-gray-900 px-4 py-3 rounded-xl text-sm font-semibold transition-all">
+            {/* Añadir cuenta */}
+            <button className="w-full border border-dashed border-slate-200 hover:border-slate-400 text-slate-500 hover:text-slate-800 px-3 py-2 rounded-lg text-[11px] font-medium transition-all duration-150">
               Añadir nueva cuenta
             </button>
 

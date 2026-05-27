@@ -273,8 +273,24 @@ export default async function ListingDetailPage({
 
           {/*  MiniGalería de Imágenes  */}
           <div className="grid grid-rows-2 gap-2">
-            <div className="bg-gray-100" aria-hidden="true" />
-            <div className="bg-gray-100" aria-hidden="true" />
+            {[0, 1].map((idx) => {
+              const galleryUrl = listing.gallery_images?.[idx] ?? null;
+              return (
+                <div key={idx} className={`relative bg-gray-100 overflow-hidden${idx === 0 ? " rounded-tr-2xl" : " rounded-br-2xl"}`}>
+                  {galleryUrl ? (
+                    <Image
+                      src={galleryUrl}
+                      alt={`${listing.title ?? "Equipo"} — foto ${idx + 2}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1200px) 40vw, 480px"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100" aria-hidden="true" />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 

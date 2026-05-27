@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Volume2, Zap, Video, Sparkles, Megaphone, Package, MapPin, ChevronLeft, ChevronRight, Loader2, Check, LocateFixed, Camera, X, AlertCircle,} from "lucide-react";
 import LocationPickerWrapper from "@/components/location-picker/LocationPickerWrapper";
 import type { LocationData } from "@/components/location-picker/LocationPicker";
@@ -33,6 +33,8 @@ type WizardData = {
   description: string;
   // URL del objeto para la vista previa de la UI: el archivo real vive en la entrada DOM dentro del formulario oculto
   previewUrl: string | null;
+  // URLs de vista previa de hasta 5 fotos adicionales de galería
+  galleryPreviews: string[];
   dailyPrice: string;
   city: string;
   state: string;
@@ -75,6 +77,11 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
    * click() on this ref to open the OS file picker.
    */
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /*
+   * galleryInputRef — input para hasta 5 fotos adicionales de galería (multiple).
+   * También vive dentro del formulario oculto para que requestSubmit() las incluya.
+   */
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Estado que almacena los datos del formulario
   const [data, setData] = useState<WizardData>({
@@ -84,6 +91,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
     model: "",
     description: "",
     previewUrl: null,
+    galleryPreviews: [],
     dailyPrice: "",
     city: "",
     state: "",
@@ -158,7 +166,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
     formRef.current?.requestSubmit();
   };
 
-  // Manejo del archivo
+  // Manejo del archivo de portada
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -171,10 +179,27 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
     update({ previewUrl: URL.createObjectURL(file) });
   };
 
-  // Limpia la foto
+  // Limpia la foto de portada
   const clearPhoto = () => {
     update({ previewUrl: null });
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // Manejo de las imágenes de galería adicionales (máx. 5)
+  const handleGalleryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []).slice(0, 5);
+    const validFiles = files.filter((f) => f.size <= 5 * 1024 * 1024);
+    const previews = validFiles.map((f) => URL.createObjectURL(f));
+    // Revocar previews anteriores para evitar fugas de memoria
+    data.galleryPreviews.forEach((url) => URL.revokeObjectURL(url));
+    update({ galleryPreviews: previews });
+  };
+
+  // Limpia todas las fotos de galería
+  const clearGallery = () => {
+    data.galleryPreviews.forEach((url) => URL.revokeObjectURL(url));
+    update({ galleryPreviews: [] });
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
   };
 
   // Detección de ubicación (GPS)
@@ -243,13 +268,23 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         <input type="hidden" name="latitude"    value={data.latitude  ?? ""}    onChange={() => {}} />
         <input type="hidden" name="longitude"   value={data.longitude ?? ""}    onChange={() => {}} />
 
-        {/* File input — debe estar aquí para que el navegador incluya el archivo en FormData */}
+        {/* File input de portada — debe estar aquí para que el navegador incluya el archivo en FormData */}
         <input
           ref={fileInputRef}
           type="file"
           name="coverImage"
           accept="image/jpeg,image/png,image/webp"
           onChange={handleFileChange}
+        />
+
+        {/* File input de galería — múltiples archivos adicionales */}
+        <input
+          ref={galleryInputRef}
+          type="file"
+          name="galleryImages"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={handleGalleryChange}
         />
       </form>
 
@@ -281,7 +316,9 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
           <StepPhotos
             data={data}
             fileInputRef={fileInputRef}
+            galleryInputRef={galleryInputRef}
             clearPhoto={clearPhoto}
+            clearGallery={clearGallery}
             errors={errors}
           />
         )}
@@ -502,74 +539,129 @@ function StepDetails({
 // ── Paso 3: Fotos ────────────────────────────────────────────────────────────
 
 function StepPhotos({
-  data, fileInputRef, clearPhoto, errors,
+  data, fileInputRef, galleryInputRef, clearPhoto, clearGallery, errors,
 }: {
   data: WizardData;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
+  galleryInputRef: React.RefObject<HTMLInputElement | null>;
   clearPhoto: () => void;
+  clearGallery: () => void;
   errors: StepErrors;
 }) {
+  const MAX_GALLERY = 5;
+  const gallerySlots = Array.from({ length: MAX_GALLERY }, (_, i) => data.galleryPreviews[i] ?? null);
+
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className="space-y-6 max-w-xl">
       <div>
         <h1 className="text-4xl font-bold text-gray-900 mb-3 leading-tight">
-          Añade una foto de tu equipo
+          Fotos del equipo
         </h1>
         <p className="text-gray-500 text-base">
-          Las buenas fotos generan más reservas. Usa luz natural y fondo limpio.
+          La portada es obligatoria. Puedes añadir hasta 5 fotos adicionales. Usa luz natural y fondo limpio.
         </p>
       </div>
 
-      {/* Dropzone — al hacer click se abre el input de archivo */}
-      <div
-        onClick={() => fileInputRef.current?.click()}
-        className={`relative w-full rounded-3xl border-2 border-dashed overflow-hidden cursor-pointer group transition-all duration-200 aspect-video ${
-          data.previewUrl
-            ? "border-[#875B9A]"
-            : errors.imageFile
-            ? "border-red-300 bg-red-50 flex items-center justify-center"
-            : "border-gray-200 bg-gray-50 hover:border-[#875B9A]/60 hover:bg-[#875B9A]/3 flex items-center justify-center"
-        }`}
-      >
-        {data.previewUrl ? (
-          <>
-            <Image src={data.previewUrl} alt="Vista previa" fill className="object-cover" />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
-              <Camera className="w-7 h-7 text-white" />
-              <span className="text-white text-sm font-semibold">Cambiar foto</span>
+      {/* ── Portada (obligatoria) ── */}
+      <div>
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Portada <span className="text-red-400">*</span></p>
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          className={`relative w-full rounded-3xl border-2 border-dashed overflow-hidden cursor-pointer group transition-all duration-200 aspect-video ${
+            data.previewUrl
+              ? "border-[#875B9A]"
+              : errors.imageFile
+              ? "border-red-300 bg-red-50 flex items-center justify-center"
+              : "border-gray-200 bg-gray-50 hover:border-[#875B9A]/60 hover:bg-[#875B9A]/3 flex items-center justify-center"
+          }`}
+        >
+          {data.previewUrl ? (
+            <>
+              <Image src={data.previewUrl} alt="Vista previa portada" fill className="object-cover" />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                <Camera className="w-7 h-7 text-white" />
+                <span className="text-white text-sm font-semibold">Cambiar portada</span>
+              </div>
+            </>
+          ) : (
+            <div className={`flex flex-col items-center gap-3 p-8 text-center transition-colors ${
+              errors.imageFile ? "text-red-400" : "text-gray-400 group-hover:text-[#875B9A]"
+            }`}>
+              <Camera className="w-10 h-10" strokeWidth={1.5} />
+              <div>
+                <p className="text-sm font-semibold">Portada obligatoria</p>
+                <p className="text-xs mt-1 text-gray-400">JPG, PNG, WebP — máx. 5 MB</p>
+              </div>
             </div>
-          </>
-        ) : (
-          <div className={`flex flex-col items-center gap-3 p-8 text-center transition-colors ${
-            errors.imageFile ? "text-red-400" : "text-gray-400 group-hover:text-[#875B9A]"
-          }`}>
-            <Camera className="w-10 h-10" strokeWidth={1.5} />
-            <div>
-              <p className="text-sm font-semibold">Haz clic para subir una foto</p>
-              <p className="text-xs mt-1 text-gray-400">JPG, PNG, WebP — máximo 5 MB</p>
-            </div>
-          </div>
+          )}
+        </div>
+        {errors.imageFile && (
+          <p className="flex items-center gap-1.5 text-sm text-red-500 mt-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {errors.imageFile}
+          </p>
+        )}
+        {data.previewUrl && (
+          <button
+            type="button"
+            onClick={clearPhoto}
+            className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition-colors mt-2"
+          >
+            <X className="w-4 h-4" />
+            Eliminar portada
+          </button>
         )}
       </div>
 
-      {/* Error si no hay foto */}
-      {errors.imageFile && (
-        <p className="flex items-center gap-1.5 text-sm text-red-500">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          {errors.imageFile}
+      {/* ── Galería adicional (hasta 5) ── */}
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">
+            Fotos adicionales <span className="text-gray-300 font-normal normal-case tracking-normal">(opcionales, máx. 5)</span>
+          </p>
+          {data.galleryPreviews.length > 0 && (
+            <button
+              type="button"
+              onClick={clearGallery}
+              className="text-xs text-gray-400 hover:text-red-400 transition-colors"
+            >
+              Limpiar galería
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-5 gap-2">
+          {gallerySlots.map((previewUrl, i) => (
+            <div
+              key={i}
+              onClick={() => galleryInputRef.current?.click()}
+              className={`relative aspect-square rounded-xl border-2 border-dashed overflow-hidden cursor-pointer group transition-all duration-200 ${
+                previewUrl
+                  ? "border-[#875B9A]/40"
+                  : "border-gray-200 bg-gray-50 hover:border-[#875B9A]/40 hover:bg-[#875B9A]/3 flex items-center justify-center"
+              }`}
+            >
+              {previewUrl ? (
+                <>
+                  <Image src={previewUrl} alt={`Foto ${i + 2}`} fill className="object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="w-4 h-4 text-white" />
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-1 p-2 text-gray-300 group-hover:text-[#875B9A] transition-colors">
+                  <Camera className="w-5 h-5" strokeWidth={1.5} />
+                  <span className="text-[9px] font-semibold">{i + 2}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400 mt-2">
+          {data.galleryPreviews.length > 0
+            ? `${data.galleryPreviews.length} foto${data.galleryPreviews.length !== 1 ? "s" : ""} adicional${data.galleryPreviews.length !== 1 ? "es" : ""} seleccionada${data.galleryPreviews.length !== 1 ? "s" : ""}`
+            : "Haz clic en cualquier casilla para agregar fotos"}
         </p>
-      )}
-
-      {data.previewUrl && (
-        <button
-          type="button"
-          onClick={clearPhoto}
-          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-500 transition-colors"
-        >
-          <X className="w-4 h-4" />
-          Eliminar foto
-        </button>
-      )}
+      </div>
     </div>
   );
 }
@@ -705,8 +797,8 @@ function StepPrice({
             value={[data.city, data.state].filter(Boolean).join(", ")}
           />
           <ReviewRow
-            label="Foto"
-            value={data.previewUrl ? "✓ Lista" : "—"}
+            label="Fotos"
+            value={data.previewUrl ? `✓ ${1 + data.galleryPreviews.length} foto${1 + data.galleryPreviews.length !== 1 ? "s" : ""}` : "—"}
             valueClass={data.previewUrl ? "text-green-600 font-semibold" : "text-gray-400"}
           />
         </div>

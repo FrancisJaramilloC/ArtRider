@@ -16,13 +16,30 @@ export const CATEGORY_LABELS: Record<string, string> = {
 export const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
 
 /**
- * Configuración de labels mejorados para el estilo CARTO Dark Matter.
- * Cada entrada define cómo se muestra un tipo de calle en el mapa.
+ * Forma de cada entrada de configuración de road labels.
+ *
+ * - `letterSpacing` es opcional: solo las vías principales lo usan.
+ * - `textSize` y `letterSpacing` son pares [zoom, value, zoom, value, ...]
+ *   que MapLibre interpola linealmente.
+ *
+ * Al tipar el array como `readonly RoadLabelConfig[]` (en lugar de `as const`)
+ * evitamos que TypeScript infiera 4 tipos literales distintos en la unión,
+ * lo que haría inaccesible `letterSpacing` en los miembros que no lo definen.
  */
-export const ROAD_LABEL_CONFIG = [
+export type RoadLabelConfig = {
+  readonly layerId: string;
+  readonly zoomRange: readonly [number, number];
+  readonly textSize: readonly number[];
+  readonly textColor: string;
+  readonly haloWidth: number;
+  /** Pares [zoom, spacing] para interpolación lineal. Omitir si no aplica. */
+  readonly letterSpacing?: readonly number[];
+};
+
+export const ROAD_LABEL_CONFIG: readonly RoadLabelConfig[] = [
   {
     layerId: "roadname_major",
-    zoomRange: [10, 24] as [number, number],
+    zoomRange: [10, 24],
     textSize: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
     textColor: "rgba(220, 220, 220, 1)",
     haloWidth: 2,
@@ -30,23 +47,23 @@ export const ROAD_LABEL_CONFIG = [
   },
   {
     layerId: "roadname_pri",
-    zoomRange: [12, 24] as [number, number],
+    zoomRange: [12, 24],
     textSize: [12, 10, 14, 13, 16, 15, 18, 17],
     textColor: "rgba(200, 200, 200, 1)",
     haloWidth: 1.5,
   },
   {
     layerId: "roadname_sec",
-    zoomRange: [14, 24] as [number, number],
+    zoomRange: [14, 24],
     textSize: [14, 9, 15, 11, 16, 13, 18, 15],
     textColor: "rgba(170, 170, 170, 1)",
     haloWidth: 1.5,
   },
   {
     layerId: "roadname_minor",
-    zoomRange: [15, 24] as [number, number],
+    zoomRange: [15, 24],
     textSize: [15, 9, 16, 11, 17, 12, 18, 14],
     textColor: "rgba(155, 155, 155, 1)",
     haloWidth: 1.5,
   },
-] as const;
+];
