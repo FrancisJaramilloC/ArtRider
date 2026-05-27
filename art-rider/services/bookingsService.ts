@@ -332,6 +332,38 @@ export async function createBooking(
       return { error: "Las fechas seleccionadas ya no están disponibles o tienen conflicto de solapamiento." };
     }
 
+    // Check if this user already has a pending booking request ('AWAITING_SIGNATURES') for this same listing on overlapping dates
+    const adminSupabase = createSupabaseAdminClient();
+    const { data: existingPending, error: pendingErr } = await adminSupabase
+      .from("booking_units")
+      .select(`
+        id,
+        booking:bookings!inner(id, client_id, start_date, end_date, status),
+        equipment_unit:equipment_units!inner(listing_id)
+      `)
+      .eq("bookings.client_id", user.id)
+      .eq("bookings.status", "AWAITING_SIGNATURES")
+      .eq("equipment_units.listing_id", listingId);
+
+    if (pendingErr) {
+      console.error("Error checking existing pending bookings:", pendingErr);
+    } else if (existingPending && existingPending.length > 0) {
+      const startReq = new Date(startDateStr);
+      const endReq = new Date(endDateStr);
+
+      const hasOverlap = existingPending.some((ep: any) => {
+        const b = ep.booking;
+        if (!b) return false;
+        const bStart = new Date(b.start_date);
+        const bEnd = new Date(b.end_date);
+        return (startReq <= bEnd && endReq >= bStart);
+      });
+
+      if (hasOverlap) {
+        return { error: "Ya tienes una solicitud de reserva pendiente para este equipo en el rango de fechas seleccionado." };
+      }
+    }
+
     // Create booking
     // Note: Triggers in DB automatically handle snapshots
     const { data: booking, error: bookingError } = await supabase
@@ -353,7 +385,6 @@ export async function createBooking(
     }
 
     // Assign unit to booking (picking the first available unit for simplicity)
-    const adminSupabase = createSupabaseAdminClient();
     const { data: units, error: selectUnitErr } = await adminSupabase
       .from("equipment_units")
       .select("id")

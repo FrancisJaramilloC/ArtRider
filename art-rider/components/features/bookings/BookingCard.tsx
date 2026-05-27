@@ -108,7 +108,7 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
           <Calendar
             mode="range"
             selected={dateRange as any}
-            onSelect={(range: any) => {
+            onSelect={(range: any, selectedDay: Date) => {
               if (range?.from && range?.to) {
                 let hasBlockedDate = false;
                 let curr = new Date(range.from);
@@ -123,14 +123,23 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
                   curr.setDate(curr.getDate() + 1);
                 }
                 if (hasBlockedDate) {
-                  // Si el rango cruza un día bloqueado, reiniciamos el rango al último día clickeado
-                  setDateRange({ from: range.to, to: undefined });
+                  // Si el rango cruza un día bloqueado, reiniciamos el rango al día clickeado
+                  setDateRange({ from: selectedDay, to: undefined });
                   return;
                 }
               }
               setDateRange(range || { from: undefined, to: undefined });
             }}
-            disabled={[{ before: new Date() }, ...disabledDates]}
+            disabled={[
+              {
+                before: (() => {
+                  const d = new Date();
+                  d.setHours(0, 0, 0, 0);
+                  return d;
+                })()
+              },
+              ...disabledDates
+            ]}
             locale={es}
             numberOfMonths={1}
             className="w-full flex justify-center"
