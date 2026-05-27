@@ -2,58 +2,14 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
-import type { Listing, AvailabilityStatus } from "@/services/listingsService";
-import { updateListingAvailability } from "@/services/listingsService";
+import { togglePublish } from "@/services/listingsService";
+import { togglePackagePublish } from "@/services/packagesService";
+import type { Listing } from "@/services/listingsService";
 import type { Package } from "@/services/packagesService";
-import { updatePackageAvailability } from "@/services/packagesService";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const STATUS_LABELS: Record<AvailabilityStatus, string> = {
-  available:    "Disponible",
-  maintenance:  "En mantenimiento",
-  private_use:  "Uso privado",
-};
-
-const STATUS_COLORS: Record<AvailabilityStatus, string> = {
-  available:   "bg-emerald-100 text-emerald-700 border-emerald-200",
-  maintenance: "bg-amber-100  text-amber-700  border-amber-200",
-  private_use: "bg-gray-100   text-gray-600   border-gray-200",
-};
-
-const STATUS_DOT: Record<AvailabilityStatus, string> = {
-  available:   "bg-emerald-500",
-  maintenance: "bg-amber-400",
-  private_use: "bg-gray-400",
-};
-
 const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
-// ─── StatusSelector ───────────────────────────────────────────────────────────
-
-function StatusSelector({
-  value,
-  onChange,
-  loading,
-}: {
-  value: AvailabilityStatus;
-  onChange: (s: AvailabilityStatus) => void;
-  loading: boolean;
-}) {
-  return (
-    <select
-      value={value}
-      disabled={loading}
-      onChange={(e) => onChange(e.target.value as AvailabilityStatus)}
-      className={`text-xs font-semibold rounded-xl border px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#875B9A] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${STATUS_COLORS[value]}`}
-      aria-label="Estado de disponibilidad"
-    >
-      {(Object.keys(STATUS_LABELS) as AvailabilityStatus[]).map((s) => (
-        <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-      ))}
-    </select>
-  );
-}
 
 // ─── ItemRow ─────────────────────────────────────────────────────────────────
 
@@ -64,10 +20,9 @@ function ItemRow({
   imageUrl,
   dailyPrice,
   isPublished,
-  availabilityStatus,
   badge,
   loading,
-  onStatusChange,
+  onTogglePublish,
 }: {
   id: string;
   title: string;
@@ -75,23 +30,38 @@ function ItemRow({
   imageUrl: string | null;
   dailyPrice: number;
   isPublished: boolean;
-  availabilityStatus: AvailabilityStatus;
   badge?: string;
   loading: boolean;
-  onStatusChange: (id: string, status: AvailabilityStatus) => void;
+  onTogglePublish: (id: string, current: boolean) => void;
 }) {
   return (
-    <div className={`flex items-center gap-4 px-5 py-4 rounded-2xl border transition-all ${loading ? "opacity-50 pointer-events-none" : "bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm"}`}>
+    <div
+      className={`flex items-center gap-4 px-5 py-4 rounded-2xl border transition-all ${
+        loading
+          ? "opacity-50 pointer-events-none"
+          : "bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm"
+      }`}
+    >
       {/* Thumbnail */}
       <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
         {imageUrl ? (
           <Image src={imageUrl} alt={title} fill sizes="56px" className="object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#d1d5db"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
             </svg>
           </div>
         )}
@@ -107,28 +77,87 @@ function ItemRow({
             </span>
           )}
         </div>
-        {subtitle && (
-          <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>
-        )}
+        {subtitle && <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>}
         <div className="flex items-center gap-2 mt-1">
           <span className="text-sm font-black text-gray-900">{formatPrice(dailyPrice)}</span>
           <span className="text-xs text-gray-400">/ día</span>
-          {/* Publicación status */}
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isPublished ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-400"}`}>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              isPublished ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-400"
+            }`}
+          >
             {isPublished ? "Publicado" : "Borrador"}
           </span>
         </div>
       </div>
 
-      {/* Availability dot + selector */}
-      <div className="flex items-center gap-2.5 shrink-0">
-        <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[availabilityStatus]}`} />
-        <StatusSelector
-          value={availabilityStatus}
-          onChange={(s) => onStatusChange(id, s)}
-          loading={loading}
+      {/* Toggle publicación */}
+      <button
+        onClick={() => onTogglePublish(id, isPublished)}
+        className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all shrink-0 ${
+          isPublished
+            ? "border-gray-200 text-gray-500 hover:border-red-200 hover:text-red-500 hover:bg-red-50"
+            : "border-[#875B9A]/30 text-[#875B9A] hover:bg-[#875B9A]/5"
+        }`}
+      >
+        {isPublished ? "Ocultar" : "Publicar"}
+      </button>
+    </div>
+  );
+}
+
+// ─── Nota disponibilidad ──────────────────────────────────────────────────────
+
+function CalendarNote() {
+  return (
+    <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-2xl px-5 py-4">
+      <svg
+        className="w-4 h-4 text-blue-500 mt-0.5 shrink-0"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={1.5}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
         />
+      </svg>
+      <div>
+        <p className="text-xs font-semibold text-blue-800">Bloqueo por fechas</p>
+        <p className="text-xs text-blue-600 mt-0.5">
+          Los bloqueos de mantenimiento y uso privado por fechas específicas se gestionan
+          automáticamente desde <strong>availability_calendar</strong> (MAINTENANCE / BLOCKED).
+          Usa el panel de reservas para ver rangos bloqueados.
+        </p>
       </div>
+    </div>
+  );
+}
+
+// ─── EmptyState ───────────────────────────────────────────────────────────────
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center py-16 gap-2 text-center">
+      <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#9ca3af"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="2" y="7" width="20" height="14" rx="2" />
+          <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+        </svg>
+      </div>
+      <p className="text-sm text-gray-500 font-medium">{message}</p>
     </div>
   );
 }
@@ -148,93 +177,83 @@ export default function InventoryClient({
   const [activeTab, setActiveTab] = useState<"equipos" | "paquetes">("equipos");
   const [, startTransition]       = useTransition();
 
-  // Availability stats
-  const availableListings   = listings.filter((l) => (l.availability_status ?? "available") === "available").length;
-  const maintenanceListings = listings.filter((l) => l.availability_status === "maintenance").length;
-  const privateListings     = listings.filter((l) => l.availability_status === "private_use").length;
+  // KPIs
+  const publishedListings  = listings.filter((l) => l.is_published).length;
+  const draftListings      = listings.filter((l) => !l.is_published).length;
+  const publishedPackages  = packages.filter((p) => p.is_published).length;
 
-  const availablePackages   = packages.filter((p) => (p.availability_status ?? "available") === "available").length;
-
-  function handleListingStatus(id: string, status: AvailabilityStatus) {
-    // Optimistic update
-    setListings((prev) => prev.map((l) =>
-      l.id === id
-        ? { ...l, availability_status: status, is_published: status === "available" ? l.is_published : false }
-        : l
-    ));
+  function handleListingToggle(id: string, current: boolean) {
+    setListings((prev) => prev.map((l) => (l.id === id ? { ...l, is_published: !current } : l)));
     setLoadingId(id);
     startTransition(async () => {
-      const res = await updateListingAvailability(id, status);
+      const res = await togglePublish(id, current);
       if (res.error) {
-        // Revert on error — re-fetch would be ideal but we just keep optimistic state
-        console.error(res.error);
+        setListings((prev) => prev.map((l) => (l.id === id ? { ...l, is_published: current } : l)));
       }
       setLoadingId(null);
     });
   }
 
-  function handlePackageStatus(id: string, status: AvailabilityStatus) {
-    setPackages((prev) => prev.map((p) =>
-      p.id === id
-        ? { ...p, availability_status: status, is_published: status === "available" ? p.is_published : false }
-        : p
-    ));
+  function handlePackageToggle(id: string, current: boolean) {
+    setPackages((prev) => prev.map((p) => (p.id === id ? { ...p, is_published: !current } : p)));
     setLoadingId(id);
     startTransition(async () => {
-      const res = await updatePackageAvailability(id, status);
-      if (res.error) console.error(res.error);
+      const res = await togglePackagePublish(id, current);
+      if (res.error) {
+        setPackages((prev) => prev.map((p) => (p.id === id ? { ...p, is_published: current } : p)));
+      }
       setLoadingId(null);
     });
   }
 
   return (
     <div className="space-y-8">
-
       {/* Header */}
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Panel de proveedor</p>
-        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Disponibilidad</h1>
+        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+          Panel de proveedor
+        </p>
+        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Inventario</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Controla el estado operativo de cada equipo y paquete. Cambiar a &ldquo;En mantenimiento&rdquo; o &ldquo;Uso privado&rdquo; lo despublica automáticamente.
+          Controla la visibilidad de equipos y paquetes. Los bloqueos por fecha se gestionan desde
+          el calendario de disponibilidad.
         </p>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border border-gray-100 px-5 py-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Disponibles</p>
-          <p className="text-3xl font-black text-emerald-600">{availableListings}</p>
-          <p className="text-xs text-gray-400 mt-1">equipos activos</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+            Equipos
+          </p>
+          <p className="text-3xl font-black text-gray-900">{listings.length}</p>
+          <p className="text-xs text-gray-400 mt-1">total registrados</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 px-5 py-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Mantenimiento</p>
-          <p className="text-3xl font-black text-amber-500">{maintenanceListings}</p>
-          <p className="text-xs text-gray-400 mt-1">equipos en servicio</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+            Publicados
+          </p>
+          <p className="text-3xl font-black text-emerald-600">{publishedListings}</p>
+          <p className="text-xs text-gray-400 mt-1">equipos visibles</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 px-5 py-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Uso privado</p>
-          <p className="text-3xl font-black text-gray-500">{privateListings}</p>
-          <p className="text-xs text-gray-400 mt-1">no disponibles</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+            Borradores
+          </p>
+          <p className="text-3xl font-black text-amber-500">{draftListings}</p>
+          <p className="text-xs text-gray-400 mt-1">equipos ocultos</p>
         </div>
         <div className="bg-white rounded-2xl border border-gray-100 px-5 py-5 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Paquetes activos</p>
-          <p className="text-3xl font-black text-[#875B9A]">{availablePackages}</p>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">
+            Paquetes activos
+          </p>
+          <p className="text-3xl font-black text-[#875B9A]">{publishedPackages}</p>
           <p className="text-xs text-gray-400 mt-1">de {packages.length} total</p>
         </div>
       </div>
 
-      {/* Leyenda */}
-      <div className="flex flex-wrap gap-4 text-xs">
-        {(Object.entries(STATUS_LABELS) as [AvailabilityStatus, string][]).map(([s, label]) => (
-          <div key={s} className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${STATUS_DOT[s]}`} />
-            <span className="text-gray-600 font-medium">{label}</span>
-            {s !== "available" && (
-              <span className="text-gray-400">— se despublica al seleccionar</span>
-            )}
-          </div>
-        ))}
-      </div>
+      {/* Nota sobre availability_calendar */}
+      <CalendarNote />
 
       {/* Tabs */}
       <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 w-fit">
@@ -242,10 +261,18 @@ export default function InventoryClient({
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${activeTab === tab ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${
+              activeTab === tab
+                ? "bg-white shadow-sm text-gray-900"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${activeTab === tab ? "bg-gray-900 text-white" : "bg-gray-200 text-gray-500"}`}>
+            <span
+              className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${
+                activeTab === tab ? "bg-gray-900 text-white" : "bg-gray-200 text-gray-500"
+              }`}
+            >
               {tab === "equipos" ? listings.length : packages.length}
             </span>
           </button>
@@ -267,10 +294,9 @@ export default function InventoryClient({
                 imageUrl={l.cover_image_url}
                 dailyPrice={l.daily_price}
                 isPublished={l.is_published}
-                availabilityStatus={(l.availability_status ?? "available") as AvailabilityStatus}
                 badge={l.category ?? undefined}
                 loading={loadingId === l.id}
-                onStatusChange={handleListingStatus}
+                onTogglePublish={handleListingToggle}
               />
             ))
           )}
@@ -289,28 +315,14 @@ export default function InventoryClient({
                 imageUrl={p.cover_image_url}
                 dailyPrice={p.daily_price}
                 isPublished={p.is_published}
-                availabilityStatus={(p.availability_status ?? "available") as AvailabilityStatus}
                 badge="Paquete"
                 loading={loadingId === p.id}
-                onStatusChange={handlePackageStatus}
+                onTogglePublish={handlePackageToggle}
               />
             ))
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="flex flex-col items-center py-16 gap-2 text-center">
-      <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-        </svg>
-      </div>
-      <p className="text-sm text-gray-500 font-medium">{message}</p>
     </div>
   );
 }

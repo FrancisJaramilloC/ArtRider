@@ -14,11 +14,10 @@ export type Listing = {
   model: string | null;
   category: string | null;
   cover_image_url: string | null;
-  gallery_images: string[] | null;
+  gallery_images?: string[] | null; // columna opcional hasta que migración 002 esté ejecutada
   daily_price: number;
   description: string | null;
   is_published: boolean;
-  availability_status: "available" | "maintenance" | "private_use";
   created_at: string;
   address_id?: string | null;
   address?: {
@@ -30,8 +29,11 @@ export type Listing = {
 };
 
 //  Selecciona los listings
+// gallery_images omitido del SELECT hasta ejecutar migración 002 en Supabase.
+// Una vez que ejecutes: ALTER TABLE listings ADD COLUMN IF NOT EXISTS gallery_images TEXT[] DEFAULT '{}'
+// vuelve a añadir gallery_images a esta cadena.
 const LISTING_SELECT =
-  "id, provider_id, title, brand, model, category, cover_image_url, gallery_images, daily_price, description, is_published, availability_status, created_at, address_id, address:addresses(latitude, longitude, city, state)";
+  "id, provider_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
 
 //  Lee los listings publicados y no eliminados
 //  El cliente admin se usa aquí para que el join con addresses no esté bloqueado por RLS.
@@ -225,7 +227,8 @@ export async function createListing(prevState: any, formData: FormData) {
       .insert({
         provider_id: provider.id, title, brand, model: model || null,
         category, cover_image_url: coverImageUrl,
-        gallery_images: galleryImageUrls.length > 0 ? galleryImageUrls : null,
+        // gallery_images: columna pendiente — añadir tras ejecutar migración 002
+        // ...(galleryImageUrls.length > 0 ? { gallery_images: galleryImageUrls } : {}),
         daily_price: dailyPrice, description: description || null, is_published: publishNow,
         address_id: addressId,
       })
@@ -341,13 +344,13 @@ export async function updateListing(
       if (url) payload.cover_image_url = url;
     }
 
-    // Sube nuevas imágenes de galería (si se enviaron)
-    const galleryFiles = formData.getAll("galleryImages") as File[];
-    const validGallery = galleryFiles.filter((f) => f && f.size > 0);
-    if (validGallery.length > 0) {
-      const galleryUrls = await uploadGalleryImages(validGallery, user.id);
-      if (galleryUrls.length > 0) payload.gallery_images = galleryUrls;
-    }
+    // gallery_images pendiente hasta migración 002 — descomentar cuando esté ejecutada
+    // const galleryFiles = formData.getAll("galleryImages") as File[];
+    // const validGallery = galleryFiles.filter((f) => f && f.size > 0);
+    // if (validGallery.length > 0) {
+    //   const galleryUrls = await uploadGalleryImages(validGallery, user.id);
+    //   if (galleryUrls.length > 0) payload.gallery_images = galleryUrls;
+    // }
 
     // Obtiene el ID del proveedor
     const providerId = await getMyProviderId();
@@ -391,41 +394,10 @@ export async function togglePublish(id: string, currentState: boolean) {
   return { success: true };
 }
 
-// ─── Disponibilidad ────────────────────────────────────────────────────────────
-
+// ─── Tipos reutilizables ──────────────────────────────────────────────────────
+// La disponibilidad operativa se gestiona a través de availability_calendar
+// (status: BOOKED | BLOCKED | MAINTENANCE) — no se necesita columna en listings.
 export type AvailabilityStatus = "available" | "maintenance" | "private_use";
-
-/**
- * Actualiza el estado de disponibilidad de un equipo.
- * Si el estado no es "available", también lo despublica.
- */
-export async function updateListingAvailability(
-  id: string,
-  status: AvailabilityStatus
-): Promise<{ error?: string }> {
-  const providerId = await getMyProviderId();
-  if (!providerId) return { error: "No autenticado." };
-
-  const admin = createSupabaseAdminClient();
-  const patch: Record<string, unknown> = {
-    availability_status: status,
-    updated_at: new Date().toISOString(),
-  };
-  // Despublicar si no está disponible
-  if (status !== "available") patch.is_published = false;
-
-  const { error } = await admin
-    .from("listings")
-    .update(patch)
-    .eq("id", id)
-    .eq("provider_id", providerId);
-
-  if (error) return { error: "Error al actualizar la disponibilidad." };
-  revalidatePath("/provider/inventory");
-  revalidatePath("/provider/catalog");
-  revalidatePath("/listings");
-  return {};
-}
 
 // Elimina un listing
 export async function deleteListing(id: string) {

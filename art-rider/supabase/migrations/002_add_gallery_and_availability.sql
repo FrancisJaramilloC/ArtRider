@@ -1,23 +1,17 @@
--- ─── Migration 002: Gallery images + Availability status ─────────────────────
+-- ─── Migration 002: Gallery images ─────────────────────────────────────────
 -- Run in Supabase Dashboard → SQL Editor
+--
+-- NOTA: availability_status NO se agrega a listings/packages.
+-- La disponibilidad operativa (MAINTENANCE, BLOCKED) se gestiona
+-- a través de availability_calendar.status (ENUM ya existente).
 
--- Gallery images (up to 6 per listing/package; cover_image_url is [0])
+-- Gallery images (hasta 6 por listing/package; cover_image_url es [0])
 ALTER TABLE listings
   ADD COLUMN IF NOT EXISTS gallery_images TEXT[] DEFAULT '{}';
 
 ALTER TABLE packages
   ADD COLUMN IF NOT EXISTS gallery_images TEXT[] DEFAULT '{}';
 
--- cover_image_url for packages (may already exist — safe to run)
+-- cover_image_url para packages (puede ya existir vía 20260526 — seguro ejecutar)
 ALTER TABLE packages
   ADD COLUMN IF NOT EXISTS cover_image_url TEXT;
-
--- Availability status (available | maintenance | private_use)
--- Setting maintenance or private_use auto-unpublishes the item via app logic.
-ALTER TABLE listings
-  ADD COLUMN IF NOT EXISTS availability_status TEXT NOT NULL DEFAULT 'available'
-  CHECK (availability_status IN ('available', 'maintenance', 'private_use'));
-
-ALTER TABLE packages
-  ADD COLUMN IF NOT EXISTS availability_status TEXT NOT NULL DEFAULT 'available'
-  CHECK (availability_status IN ('available', 'maintenance', 'private_use'));

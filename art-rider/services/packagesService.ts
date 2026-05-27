@@ -16,7 +16,6 @@ export type Package = {
   is_published: boolean;
   cover_image_url: string | null;
   gallery_images: string[] | null;
-  availability_status: "available" | "maintenance" | "private_use";
   created_at: string;
   items?: PackageItem[];
 };
@@ -126,41 +125,6 @@ export async function getMyPackages(): Promise<Package[]> {
 
   if (error) throw new Error(`[packagesService] getMyPackages: ${error.message}`);
   return (data ?? []) as Package[];
-}
-
-// ─── Disponibilidad ───────────────────────────────────────────────────────────
-
-export type AvailabilityStatus = "available" | "maintenance" | "private_use";
-
-/**
- * Actualiza el estado de disponibilidad de un paquete.
- * Si el estado no es "available", también despublica el paquete.
- */
-export async function updatePackageAvailability(
-  id: string,
-  status: AvailabilityStatus
-): Promise<{ error?: string }> {
-  const providerId = await getMyProviderId();
-  if (!providerId) return { error: "No autenticado." };
-  const supabase = await createSupabaseServerClient();
-
-  const isPublished = status === "available" ? undefined : false;
-  const patch: Record<string, unknown> = {
-    availability_status: status,
-    updated_at: new Date().toISOString(),
-  };
-  if (isPublished !== undefined) patch.is_published = isPublished;
-
-  const { error } = await supabase
-    .from("packages")
-    .update(patch)
-    .eq("id", id)
-    .eq("provider_id", providerId);
-
-  if (error) return { error: "Error al actualizar la disponibilidad." };
-  revalidatePath("/provider/inventory");
-  revalidatePath("/provider/catalog");
-  return {};
 }
 
 /**
@@ -290,7 +254,8 @@ export async function createPackage(
         daily_price: dailyPrice,
         is_published: publishNow,
         ...(coverImageUrl !== null ? { cover_image_url: coverImageUrl } : {}),
-        gallery_images: galleryImageUrls.length > 0 ? galleryImageUrls : null,
+        // gallery_images pendiente hasta migración 002
+        // ...(galleryImageUrls.length > 0 ? { gallery_images: galleryImageUrls } : {}),
       })
       .select("id")
       .single();
@@ -390,11 +355,12 @@ export async function updatePackage(
     // Subir nuevas imágenes de galería si se enviaron
     const galleryFiles = formData.getAll("galleryImages") as File[];
     const validGallery = galleryFiles.filter((f) => f && f.size > 0);
-    let galleryUpdate: Record<string, unknown> = {};
-    if (validGallery.length > 0 && user) {
-      const urls = await uploadPackageGallery(validGallery, user.id);
-      if (urls.length > 0) galleryUpdate = { gallery_images: urls };
-    }
+    // gallery_images pendiente hasta migración 002 — descomentar cuando esté ejecutada
+    // let galleryUpdate: Record<string, unknown> = {};
+    // if (validGallery.length > 0 && user) {
+    //   const urls = await uploadPackageGallery(validGallery, user.id);
+    //   if (urls.length > 0) galleryUpdate = { gallery_images: urls };
+    // }
 
     // Actualizar paquete con admin client para evitar problemas de RLS en UPDATE
     const admin = createSupabaseAdminClient();
@@ -406,7 +372,6 @@ export async function updatePackage(
         daily_price: dailyPrice,
         is_published: publishNow,
         cover_image_url: coverImageUrl,
-        ...galleryUpdate,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
