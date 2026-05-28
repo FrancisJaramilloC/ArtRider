@@ -17,6 +17,8 @@ export interface HomepageListingCardProps {
   badge?: string;
   icon: string;
   imageUrl?: string | null;
+  /** Sobrescribe el href por defecto (/listings/:id). Útil para paquetes. */
+  href?: string;
 }
 
 // Componente de la card de equipo
@@ -31,10 +33,11 @@ export default function HomepageListingCard({
   badge,
   icon,
   imageUrl,
+  href,
 }: HomepageListingCardProps) {
   return (
     <Link
-      href={`/listings/${id}`}
+      href={href ?? `/listings/${id}`}
       className="group flex flex-col h-full w-full outline-none focus-visible:ring-2 focus-visible:ring-[#875B9A] rounded-2xl"
     >
       {/* ── Area de la imagen (Aspecto 1:1 estricto) ── */}

@@ -25,11 +25,12 @@ export async function getUnavailableDates(listingId: string): Promise<Date[]> {
       
     if (bookingsError || !bookingUnits) return [];
 
-    // Also get manual blocks from availability_calendar
+    // Get manual blocks from availability_calendar (MAINTENANCE + BLOCKED only — BOOKED already covered via bookingUnits above)
     const { data: calendarBlocks, error: calendarError } = await supabase
       .from("availability_calendar")
-      .select("start_date, end_date")
-      .in("equipment_unit_id", unitIds);
+      .select("start_date, end_date, status")
+      .in("equipment_unit_id", unitIds)
+      .in("status", ["MAINTENANCE", "BLOCKED"]);
 
     const blockedDates = new Set<string>();
 

@@ -3,6 +3,7 @@ import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/features/home/HeroSection";
 import CategoryCard from "@/components/features/home/CategoryCard";
 import HomepageListingCard from "@/components/features/home/HomepageListingCard";
+import ScrollableCarousel from "@/components/ui/ScrollableCarousel";
 import { HowItWorks } from "@/components/features/home/HowItWorks";
 import { BecomeProviderCTA } from "@/components/features/home/BecomeProviderCTA";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
@@ -97,15 +98,15 @@ export default async function HomePage() {
   }
 
   //  Obtención de paquetes reales publicados (vista pública de todos los proveedores)
-  let realPackages: { id: string; title: string; daily_price: number }[] = [];
+  let realPackages: { id: string; title: string; daily_price: number; cover_image_url: string | null }[] = [];
   try {
     const { data } = await supabase
       .from("packages")
-      .select("id, title, daily_price")
+      .select("id, title, daily_price, cover_image_url")
       .eq("is_published", true)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
-    realPackages = (data ?? []) as { id: string; title: string; daily_price: number }[];
+    realPackages = (data ?? []) as { id: string; title: string; daily_price: number; cover_image_url: string | null }[];
   } catch {
     // falló silenciosamente — la sección se oculta si está vacía
   }
@@ -120,6 +121,8 @@ export default async function HomePage() {
     rating: 0,
     reviewCount: 0,
     icon: "📦",
+    imageUrl: pkg.cover_image_url ?? null,
+    href: `/packages/${pkg.id}`,
   }));
 
   //  Agrupar listados por ciudad para la página de inicio
@@ -192,14 +195,14 @@ export default async function HomePage() {
                       <ChevronRight className="w-5 h-5" />
                     </span>
                   </Link>
-                  {/* Renderizado de la lista de equipos por ciudad*/}
-                  <div className="-mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pb-4 overflow-x-auto flex gap-4 md:gap-5 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {/* Carrusel con flechas de navegación */}
+                  <ScrollableCarousel>
                     {cityListings.map((item) => (
                       <div key={item.id} className="w-[280px] sm:w-[320px] shrink-0 snap-start">
                         <HomepageListingCard {...item} />
                       </div>
                     ))}
-                  </div>
+                  </ScrollableCarousel>
                 </div>
               ))
             ) : (
@@ -230,11 +233,13 @@ export default async function HomePage() {
               ctaHref="/listings?type=packages"
             />
             {featuredPackages.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
+              <ScrollableCarousel>
                 {featuredPackages.map((item) => (
-                  <HomepageListingCard key={item.id} {...item} />
+                  <div key={item.id} className="w-[280px] sm:w-[320px] shrink-0">
+                    <HomepageListingCard {...item} />
+                  </div>
                 ))}
-              </div>
+              </ScrollableCarousel>
             ) : (
               //Renderizado de la tarjeta de listado por ciudad
               <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 py-12 px-6 text-center">
