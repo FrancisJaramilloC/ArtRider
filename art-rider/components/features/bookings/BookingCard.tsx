@@ -29,6 +29,7 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
   const [needsKyc, setNeedsKyc] = useState(false);
   const [showKycModal, setShowKycModal] = useState(false);
 
+  const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
     ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
     : 0;
 
-  const handleReserve = () => {
+  const handleReserve = async () => {
     if (!dateRange.from || !dateRange.to) return;
     
     // Check Identity if required (Total amount >= $50.00)
@@ -60,9 +61,33 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
       return;
     }
 
-    const startStr = dateRange.from.toISOString().split("T")[0];
-    const endStr = dateRange.to.toISOString().split("T")[0];
-    router.push(`/bookings/new?listing=${listingId}&start=${startStr}&end=${endStr}`);
+    setIsProcessing(true);
+    try {
+      const response = await fetch("/api/kushki/charge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: "dummy-kushki-token",
+          amount: totalAmount,
+          listingId: listingId,
+          startDate: dateRange.from.toISOString(),
+          endDate: dateRange.to.toISOString(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        alert(result.error || "Error al procesar el pago");
+        setIsProcessing(false);
+        return;
+      }
+
+      router.push(`/bookings/success?id=${result.bookingId}`);
+    } catch (e: any) {
+      alert(e.message);
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -130,10 +155,10 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
 
       <button
         onClick={handleReserve}
-        disabled={!dateRange.from || !dateRange.to}
-        className="w-full bg-[#875B9A] hover:bg-[#6a437a] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl transition-colors shadow-md disabled:shadow-none"
+        disabled={!dateRange.from || !dateRange.to || isProcessing}
+        className="w-full bg-[#111111] hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl transition-colors shadow-soft-premium disabled:shadow-none"
       >
-        Reservar
+        {isProcessing ? "Procesando Kushki..." : "Proceder al Pago (Kushki)"}
       </button>
 
       {days > 0 && (

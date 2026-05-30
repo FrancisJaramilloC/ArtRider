@@ -59,29 +59,29 @@ export default function ProviderLayoutClient({
       <div className="flex-1 flex w-full">
 
         {/*  Barra lateral — top-16 = altura exacta del Navbar (h-16)  */}
-        <aside className="hidden md:flex flex-col w-56 bg-white border-r border-slate-100 fixed top-16 h-[calc(100vh-4rem)]">
+        <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-100 fixed top-16 h-[calc(100vh-4rem)]">
 
           {/*  Brand strip  */}
-          <div className="px-4 pt-5 pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center shrink-0">
-                <Store size={13} className="text-white" />
+          <div className="px-5 pt-6 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center shrink-0">
+                <Store size={15} className="text-white" />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-bold text-gray-900 truncate">{provider.brand_name}</p>
-                <p className="text-[10px] text-gray-400">Proveedor</p>
+                <p className="text-[13px] font-bold text-gray-900 truncate">{provider.brand_name}</p>
+                <p className="text-[11px] text-gray-400">Proveedor</p>
               </div>
             </div>
           </div>
 
           {/*  Nav  */}
-          <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
             {NAV_SECTIONS.map((section) => (
               <div key={section.label}>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 px-2 mb-1">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 px-3 mb-2">
                   {section.label}
                 </p>
-                <div className="space-y-px">
+                <div className="space-y-1">
                   {section.items.map((item) => {
                     const active = isActive(item.href);
                     const Icon   = item.icon;
@@ -89,15 +89,15 @@ export default function ProviderLayoutClient({
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] font-medium transition-all ${
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                           active
                             ? "bg-slate-100 text-gray-900 font-semibold"
                             : "text-slate-500 hover:bg-slate-50 hover:text-gray-900"
                         }`}
                       >
-                        <Icon size={14} className={active ? "text-gray-900" : "text-slate-400"} />
+                        <Icon size={18} className={active ? "text-gray-900" : "text-slate-400"} />
                         {item.name}
-                        {active && <span className="ml-auto w-1 h-1 rounded-full bg-gray-900" />}
+                        {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-gray-900" />}
                       </Link>
                     );
                   })}
@@ -107,16 +107,16 @@ export default function ProviderLayoutClient({
           </nav>
 
           {/*  Bottom links  */}
-          <div className="border-t border-slate-100 px-2 py-3 space-y-px">
+          <div className="border-t border-slate-100 px-3 py-4 space-y-1">
             {BOTTOM_LINKS.map((item) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[12px] text-slate-500 hover:bg-slate-50 hover:text-gray-900 transition-all"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-500 hover:bg-slate-50 hover:text-gray-900 transition-all"
                 >
-                  <Icon size={14} className="text-slate-400" />
+                  <Icon size={18} className="text-slate-400" />
                   {item.name}
                 </Link>
               );
@@ -126,8 +126,8 @@ export default function ProviderLayoutClient({
         </aside>
 
         {/*  Contenido principal  */}
-        <main className="flex-1 min-w-0 md:ml-56 p-5 lg:p-7">
-          <div className="max-w-screen-2xl mx-auto w-full">
+        <main className="flex-1 min-w-0 md:ml-64 p-5 lg:p-8">
+          <div key={pathname} className="max-w-screen-2xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
             {children}
           </div>
         </main>

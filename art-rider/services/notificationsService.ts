@@ -25,11 +25,13 @@ export type AppNotification = {
   created_at: string;
 };
 
-// ── Read operations ──────────────────────────────────────────────────────────
+//Operaciones para obtener notificaciones
 
 export async function getMyNotifications(): Promise<AppNotification[]> {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const { data, error } = await supabase
@@ -48,7 +50,9 @@ export async function getMyNotifications(): Promise<AppNotification[]> {
 
 export async function getUnreadCount(): Promise<number> {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return 0;
 
   const { count, error } = await supabase
@@ -64,11 +68,13 @@ export async function getUnreadCount(): Promise<number> {
   return count || 0;
 }
 
-// ── Write operations ─────────────────────────────────────────────────────────
+//Operaciones para marcar notificaciones como leidas
 
 export async function markAsRead(id: string) {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
@@ -78,14 +84,16 @@ export async function markAsRead(id: string) {
     .eq("user_id", user.id);
 
   if (error) return { error: "Failed to mark as read" };
-  
+
   revalidatePath("/notifications", "layout");
   return { success: true };
 }
 
 export async function markAllAsRead() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
@@ -95,13 +103,12 @@ export async function markAllAsRead() {
     .eq("is_read", false);
 
   if (error) return { error: "Failed to mark all as read" };
-  
+
   revalidatePath("/notifications", "layout");
   return { success: true };
 }
 
-// ── Internal helper for server-side creation ───────────────────────────────
-// Uses admin client to bypass RLS since users cannot insert notifications directly
+//Funcion para crear notificaciones
 
 export async function createNotification(payload: {
   userId: string;
@@ -112,7 +119,7 @@ export async function createNotification(payload: {
   metadata?: any;
 }) {
   const admin = createSupabaseAdminClient();
-  
+
   const { error } = await admin.from("notifications").insert({
     user_id: payload.userId,
     type: payload.type,
@@ -126,6 +133,6 @@ export async function createNotification(payload: {
     console.error("[notificationsService] createNotification error:", error);
     return { error: error.message };
   }
-  
+
   return { success: true };
 }
