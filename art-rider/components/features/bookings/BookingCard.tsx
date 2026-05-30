@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
@@ -33,7 +33,13 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
   const router = useRouter();
 
   useEffect(() => {
-    getUnavailableDates(listingId).then(setDisabledDates);
+    getUnavailableDates(listingId).then((dateStrings) => {
+      const localDates = dateStrings.map(d => {
+        const [y, m, day] = d.split('-');
+        return new Date(parseInt(y), parseInt(m) - 1, parseInt(day));
+      });
+      setDisabledDates(localDates);
+    });
     
     // Check KYC status and if this listing requires it
     const checkKyc = async () => {
@@ -133,7 +139,19 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
           <DayPicker
             mode="range"
             selected={dateRange as any}
-            onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+            onSelect={(range: any) => {
+              if (range?.from && range?.to) {
+                const days = eachDayOfInterval({ start: range.from, end: range.to });
+                const hasDisabled = days.some(day => 
+                  disabledDates.some(disabledDate => isSameDay(day, disabledDate))
+                );
+                if (hasDisabled) {
+                  setDateRange({ from: range.from, to: undefined });
+                  return;
+                }
+              }
+              setDateRange(range || { from: undefined, to: undefined });
+            }}
             disabled={[{ before: new Date() }, ...disabledDates]}
             locale={es}
             numberOfMonths={1}

@@ -2,7 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 
-export async function getUnavailableDates(listingId: string): Promise<Date[]> {
+export async function getUnavailableDates(listingId: string): Promise<string[]> {
   try {
     const supabase = createSupabaseAdminClient();
     
@@ -58,7 +58,7 @@ export async function getUnavailableDates(listingId: string): Promise<Date[]> {
       });
     }
 
-    return Array.from(blockedDates).map(dateStr => new Date(dateStr));
+    return Array.from(blockedDates);
   } catch (e) {
     console.error("[availabilityService] error:", e);
     return [];
@@ -72,10 +72,8 @@ export async function checkAvailability(listingId: string, startDateStr: string,
   
   let curr = new Date(start);
   while (curr <= end) {
-    const isBlocked = unavailableDates.some(
-      d => d.toISOString().split("T")[0] === curr.toISOString().split("T")[0]
-    );
-    if (isBlocked) return false;
+    const dateStr = curr.toISOString().split("T")[0];
+    if (unavailableDates.includes(dateStr)) return false;
     curr.setDate(curr.getDate() + 1);
   }
   
