@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar } from "@/components/ui/calendar";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
 import { getUnavailableDates } from "@/services/availabilityService";
 import { getMyVerificationStatus, requiresVerification } from "@/services/identityService";
 import { VerificationModal } from "@/components/features/identity/VerificationModal";
@@ -14,13 +15,6 @@ interface BookingCardProps {
   listingId: string;
   dailyPrice: number;
 }
-
-const getLocalDateString = (d: Date) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-};
 
 export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -39,16 +33,7 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
   const router = useRouter();
 
   useEffect(() => {
-    getUnavailableDates(listingId).then((dates) => {
-      const localDates = dates.map((d) => {
-        const dateObj = new Date(d);
-        const y = dateObj.getUTCFullYear();
-        const m = dateObj.getUTCMonth();
-        const day = dateObj.getUTCDate();
-        return new Date(y, m, day);
-      });
-      setDisabledDates(localDates);
-    });
+    getUnavailableDates(listingId).then(setDisabledDates);
     
     // Check KYC status and if this listing requires it
     const checkKyc = async () => {
@@ -76,7 +61,6 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
       return;
     }
 
-<<<<<<< HEAD
     setIsProcessing(true);
     try {
       const response = await fetch("/api/kushki/charge", {
@@ -104,11 +88,6 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
       alert(e.message);
       setIsProcessing(false);
     }
-=======
-    const startStr = getLocalDateString(dateRange.from);
-    const endStr = getLocalDateString(dateRange.to);
-    router.push(`/bookings/new?listing=${listingId}&start=${startStr}&end=${endStr}`);
->>>>>>> origin/develop
   };
 
   return (
@@ -130,50 +109,46 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
               {dateRange.from && dateRange.to ? ` - ${format(dateRange.to, "dd MMM yyyy", { locale: es })}` : ""}
             </span>
           </div>
-          <CalendarIcon className="w-5 h-5 text-gray-400" />
+          <Calendar className="w-5 h-5 text-gray-400" />
         </button>
       </div>
 
       {isDatePickerOpen && (
-        <div className="mb-4 flex justify-center bg-white border border-gray-100 rounded-xl p-2 shadow-sm">
-          <Calendar
+        <div 
+          className="mb-4 flex justify-center bg-white border border-gray-100 rounded-xl p-2 shadow-sm"
+          style={{
+            "--rdp-accent-color": "#875B9A",
+            "--rdp-accent-background-color": "rgba(135, 91, 154, 0.1)",
+            "--rdp-range_start-color": "white",
+            "--rdp-range_start-background": "#875B9A",
+            "--rdp-range_end-color": "white",
+            "--rdp-range_end-background": "#875B9A",
+            "--rdp-range_middle-color": "#875B9A",
+            "--rdp-range_middle-background-color": "rgba(135, 91, 154, 0.1)",
+            "--rdp-today-color": "#875B9A",
+            "--rdp-selected-color": "#875B9A",
+            "--rdp-selected-background-color": "rgba(135, 91, 154, 0.1)"
+          } as React.CSSProperties}
+        >
+          <DayPicker
             mode="range"
             selected={dateRange as any}
-            onSelect={(range: any, selectedDay: Date) => {
-              if (range?.from && range?.to) {
-                let hasBlockedDate = false;
-                let curr = new Date(range.from);
-                const end = new Date(range.to);
-                while (curr <= end) {
-                  const currStr = getLocalDateString(curr);
-                  const isBlocked = disabledDates.some((d) => getLocalDateString(d) === currStr);
-                  if (isBlocked) {
-                    hasBlockedDate = true;
-                    break;
-                  }
-                  curr.setDate(curr.getDate() + 1);
-                }
-                if (hasBlockedDate) {
-                  // Si el rango cruza un día bloqueado, reiniciamos el rango al día clickeado
-                  setDateRange({ from: selectedDay, to: undefined });
-                  return;
-                }
-              }
-              setDateRange(range || { from: undefined, to: undefined });
-            }}
-            disabled={[
-              {
-                before: (() => {
-                  const d = new Date();
-                  d.setHours(0, 0, 0, 0);
-                  return d;
-                })()
-              },
-              ...disabledDates
-            ]}
+            onSelect={(range: any) => setDateRange(range || { from: undefined, to: undefined })}
+            disabled={[{ before: new Date() }, ...disabledDates]}
             locale={es}
             numberOfMonths={1}
-            className="w-full flex justify-center"
+            className="font-sans text-sm"
+            classNames={{
+              day_selected: "!bg-[#875B9A]/10 !text-[#875B9A] font-bold hover:!bg-[#875B9A]/20",
+              day_range_middle: "!bg-[#875B9A]/10 !text-[#875B9A] rounded-none",
+              day_range_start: "!bg-[#875B9A]/20 !text-[#875B9A] hover:!bg-[#875B9A]/30 rounded-l-full",
+              day_range_end: "!bg-[#875B9A]/20 !text-[#875B9A] hover:!bg-[#875B9A]/30 rounded-r-full",
+              day_today: "font-bold !text-[#875B9A]",
+              day: "h-9 w-9 p-0 font-normal hover:!bg-[#875B9A]/10 rounded-full transition-colors",
+              nav_button: "text-[#875B9A] hover:bg-[#875B9A]/10 rounded-full p-1 transition-colors",
+              nav_button_previous: "text-[#875B9A]",
+              nav_button_next: "text-[#875B9A]",
+            }}
           />
         </div>
       )}
