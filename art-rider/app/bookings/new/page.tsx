@@ -55,8 +55,12 @@ export default async function NewBookingPage({ searchParams }: PageProps) {
     redirect(`/listings/${listingId}`);
   }
 
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+  const parseLocalDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+  const startDate = parseLocalDate(start);
+  const endDate = parseLocalDate(end);
 
   return (
     <main className="min-h-screen bg-white py-10">

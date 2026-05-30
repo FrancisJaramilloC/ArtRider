@@ -1,7 +1,9 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { getMyProviderId } from "@/services/helpers/getMyProviderId";
+import { checkAvailability } from "@/services/availabilityService";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -351,7 +353,50 @@ export async function createBooking(
     const priceCalc = await calculateBookingPrice(listingId, startDateStr, endDateStr);
     if ("error" in priceCalc) return { error: priceCalc.error };
 
+<<<<<<< HEAD
     // Insertar booking
+=======
+    // Validate date availability on the backend
+    const isAvailable = await checkAvailability(listingId, startDateStr, endDateStr);
+    if (!isAvailable) {
+      return { error: "Las fechas seleccionadas ya no están disponibles o tienen conflicto de solapamiento." };
+    }
+
+    // Check if this user already has a pending booking request ('AWAITING_SIGNATURES') for this same listing on overlapping dates
+    const adminSupabase = createSupabaseAdminClient();
+    const { data: existingPending, error: pendingErr } = await adminSupabase
+      .from("booking_units")
+      .select(`
+        id,
+        booking:bookings!inner(id, client_id, start_date, end_date, status),
+        equipment_unit:equipment_units!inner(listing_id)
+      `)
+      .eq("bookings.client_id", user.id)
+      .eq("bookings.status", "AWAITING_SIGNATURES")
+      .eq("equipment_units.listing_id", listingId);
+
+    if (pendingErr) {
+      console.error("Error checking existing pending bookings:", pendingErr);
+    } else if (existingPending && existingPending.length > 0) {
+      const startReq = new Date(startDateStr);
+      const endReq = new Date(endDateStr);
+
+      const hasOverlap = existingPending.some((ep: any) => {
+        const b = ep.booking;
+        if (!b) return false;
+        const bStart = new Date(b.start_date);
+        const bEnd = new Date(b.end_date);
+        return (startReq <= bEnd && endReq >= bStart);
+      });
+
+      if (hasOverlap) {
+        return { error: "Ya tienes una solicitud de reserva pendiente para este equipo en el rango de fechas seleccionado." };
+      }
+    }
+
+    // Create booking
+    // Note: Triggers in DB automatically handle snapshots
+>>>>>>> origin/develop
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .insert({
@@ -367,14 +412,20 @@ export async function createBooking(
 
     if (bookingError) return { error: bookingError.message };
 
+<<<<<<< HEAD
     // Asignar primera unidad disponible
     const { data: units } = await supabase
+=======
+    // Assign unit to booking (picking the first available unit for simplicity)
+    const { data: units, error: selectUnitErr } = await adminSupabase
+>>>>>>> origin/develop
       .from("equipment_units")
       .select("id")
       .eq("listing_id", listingId)
       .eq("internal_status", "AVAILABLE")
       .limit(1);
 
+<<<<<<< HEAD
     if (units?.length) {
       await supabase.from("booking_units").insert({
         booking_id: booking.id,
@@ -404,6 +455,74 @@ export async function createBooking(
 
     // Email al proveedor (no bloquea la respuesta)
     sendProviderEmail(supabase, provider.user_id, listing.title, clientName).catch(() => {});
+=======
+    if (selectUnitErr) {
+      console.error("Error selecting equipment unit:", selectUnitErr);
+      return { error: "Error al verificar la unidad física disponible: " + selectUnitErr.message };
+    }
+
+    if (!units || units.length === 0) {
+      return { error: "No hay unidades físicas disponibles para este equipo en el inventario." };
+    }
+
+    const { error: unitInsertError } = await adminSupabase.from("booking_units").insert({
+      booking_id: booking.id,
+      equipment_unit_id: units[0].id,
+      locked_daily_price: priceCalc.dailyPrice,
+    });
+
+    if (unitInsertError) {
+      console.error("Booking unit insert error:", unitInsertError);
+      return { error: "No se pudo asignar el equipo físico a la reserva: " + unitInsertError.message };
+    }
+>>>>>>> origin/develop
+
+    // Trigger notification and email in the background asynchronously to speed up response
+    (async () => {
+      try {
+        // Fetch user profile for notification
+        const { data: clientProfile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+
+        // Trigger notification via our server action (safe inside server context)
+        const { createNotification } = await import("./notificationsService");
+        await createNotification({
+          userId: provider.user_id,
+          type: "booking_request",
+          title: "Nueva solicitud de reserva",
+          body: `${clientProfile?.full_name || "Un usuario"} quiere reservar ${listing.title}`,
+          href: "/provider/bookingsProvider",
+        });
+
+        // We can also send the email here
+        const { resend, RESEND_FROM_EMAIL } = await import("@/lib/resend");
+        const { emailTemplates } = await import("@/lib/email-templates");
+        
+        const { data: providerProfile } = await supabase
+          .from("profiles")
+          .select("email, full_name")
+          .eq("id", provider.user_id)
+          .single();
+          
+        if (resend && providerProfile?.email) {
+          await resend.emails.send({
+            from: `ArtRider <${RESEND_FROM_EMAIL}>`,
+            to: providerProfile.email,
+            subject: "Nueva solicitud de alquiler en ArtRider",
+            html: emailTemplates.bookingRequest(
+              providerProfile.full_name || "Proveedor",
+              listing.title,
+              clientProfile?.full_name || "Un cliente"
+            ),
+          });
+        }
+      } catch (err) {
+        console.error("Error sending background notifications/emails:", err);
+      }
+    })();
 
     return { success: true, bookingId: booking.id };
   } catch (e: any) {
@@ -536,6 +655,13 @@ export async function cancelBooking(bookingId: string) {
       .eq("id", booking.provider_id)
       .single();
 
+<<<<<<< HEAD
+=======
+    if (booking.status !== "AWAITING_SIGNATURES") {
+      return { error: "Solo se pueden cancelar reservas pendientes." };
+    }
+
+>>>>>>> origin/develop
     const { error: updateError } = await supabase
       .from("bookings")
       .update({ status: "CANCELLED" })

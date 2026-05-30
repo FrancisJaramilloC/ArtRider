@@ -130,14 +130,14 @@ function Calendar({
         ),
         //  Inicio del rango
         range_start: cn(
-          "relative isolate z-0 rounded-l-[var(--cell-radius)] bg-muted after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-muted",
+          "relative isolate z-0 rounded-l-[var(--cell-radius)] bg-[#875B9A]/10 after:absolute after:inset-y-0 after:right-0 after:w-4 after:bg-[#875B9A]/10",
           defaultClassNames.range_start
         ),
         //  Medio del rango
-        range_middle: cn("rounded-none", defaultClassNames.range_middle),
+        range_middle: cn("rounded-none bg-[#875B9A]/10", defaultClassNames.range_middle),
         //  Fin del rango
         range_end: cn(
-          "relative isolate z-0 rounded-r-[var(--cell-radius)] bg-muted after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-muted",
+          "relative isolate z-0 rounded-r-[var(--cell-radius)] bg-[#875B9A]/10 after:absolute after:inset-y-0 after:left-0 after:w-4 after:bg-[#875B9A]/10",
           defaultClassNames.range_end
         ),
         //  Día de hoy
@@ -238,7 +238,7 @@ function CalendarDayButton({
       data-range-end={modifiers.range_end}
       data-range-middle={modifiers.range_middle}
       className={cn(
-        "relative isolate z-10 flex aspect-square size-auto w-full min-w-[var(--cell-size)] flex-col gap-1 border-0 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-ring group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-ring/50 data-[range-end=true]:rounded-[var(--cell-radius)] data-[range-end=true]:rounded-r-[var(--cell-radius)] data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-muted data-[range-middle=true]:text-foreground data-[range-start=true]:rounded-[var(--cell-radius)] data-[range-start=true]:rounded-l-[var(--cell-radius)] data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground dark:hover:text-foreground [&>span]:text-xs [&>span]:opacity-70",
+        "relative isolate z-10 flex aspect-square size-auto w-full min-w-[var(--cell-size)] flex-col gap-1 border-0 leading-none font-normal group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:border-[#875B9A] group-data-[focused=true]/day:ring-[3px] group-data-[focused=true]/day:ring-[#875B9A]/50 data-[range-end=true]:rounded-[var(--cell-radius)] data-[range-end=true]:rounded-r-[var(--cell-radius)] data-[range-end=true]:bg-[#875B9A] data-[range-end=true]:text-white data-[range-end=true]:hover:bg-[#6a437a] data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-[#875B9A]/10 data-[range-middle=true]:text-[#875B9A] data-[range-middle=true]:hover:bg-[#875B9A]/20 data-[range-start=true]:rounded-[var(--cell-radius)] data-[range-start=true]:rounded-l-[var(--cell-radius)] data-[range-start=true]:bg-[#875B9A] data-[range-start=true]:text-white data-[range-start=true]:hover:bg-[#6a437a] data-[selected-single=true]:bg-[#875B9A] data-[selected-single=true]:text-white data-[selected-single=true]:hover:bg-[#6a437a] dark:hover:text-[#875B9A] hover:bg-[#875B9A]/15 hover:text-[#875B9A] [&>span]:text-xs [&>span]:opacity-70",
         defaultClassNames.day,
         className
       )}
