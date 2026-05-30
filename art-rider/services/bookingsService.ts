@@ -3,7 +3,8 @@
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { getMyProviderId } from "@/services/helpers/getMyProviderId";
 
-//  Tipos para las reservas
+// ── Tipos ──────────────────────────────────────────────────────────────────
+
 export type BookingStatus =
   | "AWAITING_SIGNATURES"
   | "PAID"
@@ -13,15 +14,20 @@ export type BookingStatus =
   | "CANCELLED"
   | "ARCHIVED";
 
-//  Tipos para las unidades de reserva
 export interface BookingUnit {
   id: string;
   listing_id: string;
   quantity: number;
-  listing: { id: string; title: string; price_per_day: number } | null;
+  locked_daily_price: number;
+  listing: {
+    id: string;
+    title: string;
+    price_per_day: number;
+    image_urls?: string[] | null;
+    location?: string | null;
+  } | null;
 }
 
-//  Tipos para los detalles de la reserva
 export interface BookingWithDetails {
   id: string;
   status: BookingStatus;
@@ -38,12 +44,84 @@ export interface BookingWithDetails {
   provider_has_reviewed: boolean;
 }
 
-//  Función auxiliar interna
-function mapRawToBookingWithDetails(
-  raw: any,
-  provider_id: string,
-  includeClientProfile: boolean
-): BookingWithDetails {
+// ── Constantes reutilizables ───────────────────────────────────────────────
+
+// Campos base compartidos por getClientBookings y getProviderBookings
+const BOOKING_BASE_FIELDS = `
+  id, status, start_date, end_date, total_price,
+  client_id, provider_id, created_at, archived_at,
+  snapshot_listing, payments(status), reviews(id, author_id),
+  booking_units(
+    id, locked_daily_price,
+    equipment_unit:equipment_units(
+      id, listing:listings(id, title, cover_image_url, address:addresses(city))
+    )
+  )
+`.replace(/\s+/g, " ").trim();
+
+// Campos extra para la vista de proveedor (incluye perfil del cliente)
+const PROVIDER_EXTRA = "client_profile:profiles!client_id(id, full_name, avatar_url)";
+
+// ── Helpers internos ───────────────────────────────────────────────────────
+
+/** Agrupa booking_units por listing y cuenta cantidad */
+function buildUnitsFromRaw(rawUnits: any[]): BookingUnit[] {
+  const grouped = new Map<string, BookingUnit>();
+
+  for (const u of rawUnits) {
+    const listing = u.equipment_unit?.listing;
+    const id = listing?.id;
+    if (!id) continue;
+
+    const existing = grouped.get(id);
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      grouped.set(id, {
+        id: u.id,
+        listing_id: id,
+        quantity: 1,
+        locked_daily_price: u.locked_daily_price,
+        listing: {
+          id,
+          title: listing.title,
+          price_per_day: u.locked_daily_price,
+          image_urls: listing.cover_image_url ? [listing.cover_image_url] : null,
+          location: listing.address?.city ?? null,
+        },
+      });
+    }
+  }
+
+  return Array.from(grouped.values());
+}
+
+/** Construye unidades desde el snapshot (fallback para datos legacy) */
+function buildUnitsFromSnapshot(snap: any): BookingUnit[] {
+  return [{
+    id: "snapshot",
+    listing_id: snap.id,
+    quantity: 1,
+    locked_daily_price: snap.daily_price,
+    listing: {
+      id: snap.id,
+      title: snap.title,
+      price_per_day: snap.daily_price,
+      image_urls: snap.cover_image_url ? [snap.cover_image_url] : (snap.image_urls ?? null),
+      location: snap.location ?? null,
+    },
+  }];
+}
+
+/** Transforma un registro crudo de Supabase a BookingWithDetails */
+function mapRawToBooking(raw: any, includeClientProfile: boolean): BookingWithDetails {
+  // Prioriza booking_units reales; fallback a snapshot_listing
+  const units = raw.booking_units?.length
+    ? buildUnitsFromRaw(raw.booking_units)
+    : raw.snapshot_listing
+      ? buildUnitsFromSnapshot(raw.snapshot_listing)
+      : [];
+
   return {
     id: raw.id,
     status: raw.status as BookingStatus,
@@ -55,52 +133,45 @@ function mapRawToBookingWithDetails(
     created_at: raw.created_at,
     archived_at: raw.archived_at ?? null,
     client_profile: includeClientProfile ? (raw.client_profile ?? null) : null,
-    booking_units: raw.snapshot_listing ? [{
-      id: "mock",
-      listing_id: raw.snapshot_listing.id,
-      quantity: 1,
-      listing: {
-        id: raw.snapshot_listing.id,
-        title: raw.snapshot_listing.title,
-        price_per_day: raw.snapshot_listing.daily_price,
-      }
-    }] : [],
+    booking_units: units,
     payment_confirmed: (raw.payments ?? [])[0]?.status === "CAPTURED",
     provider_has_reviewed: (raw.reviews ?? []).some(
-      (r: any) => r.author_id === provider_id
+      (r: any) => r.author_id === raw.provider_id
     ),
   };
 }
 
-//  Función para obtener las reservas del cliente
+/** Calcula días entre dos fechas (mínimo 1) */
+function countDays(startStr: string, endStr: string): number {
+  const ms = new Date(endStr).getTime() - new Date(startStr).getTime();
+  const days = Math.ceil(ms / 86_400_000) + 1;
+  return days > 0 ? days : 1;
+}
+
+// ── Consultas de lectura ───────────────────────────────────────────────────
+
+/** Reservas del usuario autenticado como cliente */
 export async function getClientBookings(): Promise<BookingWithDetails[]> {
   try {
     const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
     const { data, error } = await supabase
       .from("bookings")
-      .select(
-        `id, status, start_date, end_date, total_price, client_id, provider_id, created_at, archived_at, snapshot_listing, payments(status), reviews(id, author_id)`
-      )
+      .select(BOOKING_BASE_FIELDS)
       .eq("client_id", user.id)
       .neq("status", "ARCHIVED")
       .order("created_at", { ascending: false });
 
     if (error) return [];
-
-    return (data ?? []).map((raw) =>
-      mapRawToBookingWithDetails(raw, raw.provider_id, false)
-    );
+    return (data ?? []).map((r) => mapRawToBooking(r, false));
   } catch {
     return [];
   }
 }
 
-//  Función para obtener las reservas del proveedor
+/** Reservas dirigidas al proveedor autenticado */
 export async function getProviderBookings(): Promise<BookingWithDetails[]> {
   try {
     const providerId = await getMyProviderId();
@@ -109,116 +180,89 @@ export async function getProviderBookings(): Promise<BookingWithDetails[]> {
 
     const { data, error } = await supabase
       .from("bookings")
-      .select(
-        `id, status, start_date, end_date, total_price, client_id, provider_id, created_at, archived_at, snapshot_listing, client_profile:profiles!client_id(id, full_name, avatar_url), payments(status), reviews(id, author_id)`
-      )
+      .select(`${BOOKING_BASE_FIELDS}, ${PROVIDER_EXTRA}`)
       .eq("provider_id", providerId)
       .neq("status", "ARCHIVED")
       .order("created_at", { ascending: false });
 
     if (error) return [];
-
-    return (data ?? []).map((raw) =>
-      mapRawToBookingWithDetails(raw, raw.provider_id, true)
-    );
+    return (data ?? []).map((r) => mapRawToBooking(r, true));
   } catch {
     return [];
   }
 }
 
-//  Función para verificar la elegibilidad de archivo
+// ── Archivado y reseña ─────────────────────────────────────────────────────
+
+/** Verifica si una reserva puede ser archivada por el proveedor */
 export async function checkArchivingEligibility(
   bookingId: string
 ): Promise<{ eligible: boolean; reason?: string }> {
-  try {
-    //  Crea el cliente de Supabase
-    const supabase = await createSupabaseServerClient();
-    //  Obtiene el usuario
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return { eligible: false, reason: "No tienes permiso para esta reserva" };
+  const DENY = (reason: string) => ({ eligible: false, reason });
 
-    //  Obtiene la reserva
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return DENY("No tienes permiso para esta reserva");
+
     const { data: booking, error } = await supabase
       .from("bookings")
       .select("id, status, provider_id, client_id, payments(status), reviews(id, author_id)")
       .eq("id", bookingId)
       .single();
 
-    //  Maneja los errores de la reserva
-    if (error || !booking) {
-      return { eligible: false, reason: "No tienes permiso para esta reserva" };
-    }
+    if (error || !booking) return DENY("No tienes permiso para esta reserva");
 
-    //  Obtiene el id del proveedor
     const providerId = await getMyProviderId();
-    if (!providerId || booking.provider_id !== providerId) { //  Verifica que el proveedor tenga permiso para esta reserva
-      return { eligible: false, reason: "No tienes permiso para esta reserva" };
-    }
+    if (!providerId || booking.provider_id !== providerId)
+      return DENY("No tienes permiso para esta reserva");
 
-    if (booking.status !== "COMPLETED") { //  Verifica que la reserva esté completada
-      return { eligible: false, reason: "El alquiler debe estar completado" };
-    }
+    if (booking.status !== "COMPLETED")
+      return DENY("El alquiler debe estar completado");
 
     const hasCapturedPayment = (booking.payments ?? []).some(
-      (p: any) => p.status === "CAPTURED" //  Verifica que el pago haya sido capturado
+      (p: any) => p.status === "CAPTURED"
     );
-    if (!hasCapturedPayment) {
-      return { eligible: false, reason: "El pago aún no ha sido capturado" };
-    }
+    if (!hasCapturedPayment) return DENY("El pago aún no ha sido capturado");
 
-    const providerAlreadyReviewed = (booking.reviews ?? []).some(
-      (r: any) => r.author_id === booking.provider_id //  Verifica que el proveedor no haya reseñado la reserva
+    const alreadyReviewed = (booking.reviews ?? []).some(
+      (r: any) => r.author_id === booking.provider_id
     );
-    if (providerAlreadyReviewed) { // Si el proveedor ya ha reseñado la reserva, no se puede archivar
-      return { eligible: false, reason: "Esta reserva ya ha sido reseñada" };
-    }
+    if (alreadyReviewed) return DENY("Esta reserva ya ha sido reseñada");
 
-    return { eligible: true }; // Si todas las verificaciones pasan, la reserva es elegible para ser archivada
-  } catch { // Si hay algun error inesperado al verificar la reserva
-    return { eligible: false, reason: "Error inesperado al verificar la reserva" }; // Se retorna un error inesperado
+    return { eligible: true };
+  } catch {
+    return DENY("Error inesperado al verificar la reserva");
   }
 }
 
-//  Función para archivar una reserva con reseña
+/** Archiva la reserva y guarda la reseña del proveedor */
 export async function archiveBookingWithReview(
   bookingId: string,
   review: { rating: number; content: string }
 ): Promise<{ success: boolean; error?: string }> {
-  try { 
-    // Inicia el cliente de Supabase
+  try {
     const supabase = await createSupabaseServerClient();
-    // Obtiene el usuario
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: "No tienes permiso para esta reserva" }; // Si el usuario no tiene permiso para esta reserva
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "No tienes permiso para esta reserva" };
 
-    // Obtiene la reserva
     const { data: booking, error: fetchError } = await supabase
       .from("bookings")
       .select("id, provider_id, client_id, status")
       .eq("id", bookingId)
       .single();
 
-    if (fetchError || !booking) { // Si hay un error al obtener la reserva o la reserva no existe
-      return { success: false, error: "No tienes permiso para esta reserva" }; // Se retorna un error
-    }
+    if (fetchError || !booking) return { success: false, error: "No tienes permiso para esta reserva" };
 
-    // Obtiene el id del proveedor
     const providerId = await getMyProviderId();
-    if (!providerId || booking.provider_id !== providerId) { // Si el proveedor no tiene permiso para esta reserva
-      return { success: false, error: "No tienes permiso para esta reserva" }; // Se retorna un error
-    }
+    if (!providerId || booking.provider_id !== providerId)
+      return { success: false, error: "No tienes permiso para esta reserva" };
 
-    // Verifica la elegibilidad de la reserva para ser archivada
+    // Validar elegibilidad antes de proceder
     const eligibility = await checkArchivingEligibility(bookingId);
-    if (!eligibility.eligible) { // Si la reserva no es elegible para ser archivada
-      return { success: false, error: eligibility.reason }; // Se retorna un error
-    }
+    if (!eligibility.eligible) return { success: false, error: eligibility.reason };
 
-    // Inserta la reseña
+    // Insertar reseña
     const { error: reviewError } = await supabase.from("reviews").insert({
       booking_id: bookingId,
       author_id: user.id,
@@ -226,30 +270,27 @@ export async function archiveBookingWithReview(
       rating: review.rating,
       content: review.content,
     });
+    if (reviewError) return { success: false, error: "No se pudo guardar la reseña" };
 
-    if (reviewError) { // Si hay un error al insertar la reseña
-      return { success: false, error: "No se pudo guardar la reseña" }; // Se retorna un error
-    }
-
-    // Actualiza la reserva como archivada
+    // Marcar como archivada
     const { error: updateError } = await supabase
       .from("bookings")
       .update({ status: "ARCHIVED", archived_at: new Date().toISOString() })
       .eq("id", bookingId)
       .eq("provider_id", providerId);
 
-    if (updateError) { // Si hay un error al actualizar la reserva como archivada
-      return { success: false, error: "No se pudo archivar la reserva" }; // Se retorna un error
-    }
-
-    return { success: true }; // Si todas las verificaciones pasan, la reserva es elegible para ser archivada
-  } catch { // Si hay algun error inesperado al archivar la reserva
-    return { success: false, error: "Error inesperado al archivar la reserva" }; // Se retorna un error inesperado
+    if (updateError) return { success: false, error: "No se pudo archivar la reserva" };
+    return { success: true };
+  } catch {
+    return { success: false, error: "Error inesperado al archivar la reserva" };
   }
 }
 
-// ── New Actions (Phase 2) ──────────────────────────────────────────────────
+// ── Cálculo de precio ──────────────────────────────────────────────────────
 
+const SERVICE_FEE_RATE = 0.05; // 5% comisión ArtRider
+
+/** Calcula precio total de una reserva (subtotal + comisión) */
 export async function calculateBookingPrice(
   listingId: string,
   startDateStr: string,
@@ -265,29 +306,19 @@ export async function calculateBookingPrice(
 
     if (error || !listing) return { error: "Listing not found" };
 
-    const start = new Date(startDateStr);
-    const end = new Date(endDateStr);
-    const timeDiff = end.getTime() - start.getTime();
-    let days = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
-    if (days <= 0) days = 1;
-
+    const days = countDays(startDateStr, endDateStr);
     const subtotal = listing.daily_price * days;
-    const serviceFeePercent = 0.05; // 5% ArtRider fee
-    const serviceFee = Math.round(subtotal * serviceFeePercent);
-    const total = subtotal + serviceFee;
+    const serviceFee = Math.round(subtotal * SERVICE_FEE_RATE);
 
-    return {
-      days,
-      dailyPrice: listing.daily_price,
-      subtotal,
-      serviceFee,
-      total,
-    };
+    return { days, dailyPrice: listing.daily_price, subtotal, serviceFee, total: subtotal + serviceFee };
   } catch (e: any) {
     return { error: e.message };
   }
 }
 
+// ── Crear reserva ──────────────────────────────────────────────────────────
+
+/** Crea una reserva completa: inserta booking + unit + notificación + email */
 export async function createBooking(
   listingId: string,
   startDateStr: string,
@@ -298,7 +329,7 @@ export async function createBooking(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Not authenticated" };
 
-    // Get listing and price
+    // Obtener listing y provider en paralelo
     const { data: listing, error: listingError } = await supabase
       .from("listings")
       .select("id, provider_id, daily_price, title")
@@ -307,7 +338,6 @@ export async function createBooking(
 
     if (listingError || !listing) return { error: "Listing not found" };
 
-    // Get provider's user_id separately to avoid relation errors
     const { data: provider, error: providerErr } = await supabase
       .from("providers")
       .select("user_id")
@@ -315,17 +345,13 @@ export async function createBooking(
       .single();
 
     if (providerErr || !provider) return { error: "Provider not found" };
+    if (provider.user_id === user.id) return { error: "Cannot book your own equipment" };
 
-    // Prevent booking own equipment
-    if (provider.user_id === user.id) {
-      return { error: "Cannot book your own equipment" };
-    }
-
+    // Calcular precio
     const priceCalc = await calculateBookingPrice(listingId, startDateStr, endDateStr);
     if ("error" in priceCalc) return { error: priceCalc.error };
 
-    // Create booking
-    // Note: Triggers in DB automatically handle snapshots
+    // Insertar booking
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .insert({
@@ -339,12 +365,9 @@ export async function createBooking(
       .select()
       .single();
 
-    if (bookingError) {
-      console.error("Booking error:", bookingError);
-      return { error: bookingError.message };
-    }
+    if (bookingError) return { error: bookingError.message };
 
-    // Assign unit to booking (picking the first available unit for simplicity)
+    // Asignar primera unidad disponible
     const { data: units } = await supabase
       .from("equipment_units")
       .select("id")
@@ -352,7 +375,7 @@ export async function createBooking(
       .eq("internal_status", "AVAILABLE")
       .limit(1);
 
-    if (units && units.length > 0) {
+    if (units?.length) {
       await supabase.from("booking_units").insert({
         booking_id: booking.id,
         equipment_unit_id: units[0].id,
@@ -360,45 +383,27 @@ export async function createBooking(
       });
     }
 
-    // Fetch user profile for notification
+    // Obtener nombre del cliente para la notificación
     const { data: clientProfile } = await supabase
       .from("profiles")
       .select("full_name")
       .eq("id", user.id)
       .single();
 
-    // Trigger notification via our server action (safe inside server context)
+    const clientName = clientProfile?.full_name || "Un usuario";
+
+    // Notificación in-app al proveedor
     const { createNotification } = await import("./notificationsService");
     await createNotification({
       userId: provider.user_id,
       type: "booking_request",
       title: "Nueva solicitud de reserva",
-      body: `${clientProfile?.full_name || "Un usuario"} quiere reservar ${listing.title}`,
+      body: `${clientName} quiere reservar ${listing.title}`,
       href: "/provider/bookingsProvider",
     });
 
-    // We can also send the email here
-    const { resend, RESEND_FROM_EMAIL } = await import("@/lib/resend");
-    const { emailTemplates } = await import("@/lib/email-templates");
-    
-    const { data: providerProfile } = await supabase
-      .from("profiles")
-      .select("email, full_name")
-      .eq("id", provider.user_id)
-      .single();
-      
-    if (resend && providerProfile?.email) {
-      await resend.emails.send({
-        from: `ArtRider <${RESEND_FROM_EMAIL}>`,
-        to: providerProfile.email,
-        subject: "Nueva solicitud de alquiler en ArtRider",
-        html: emailTemplates.bookingRequest(
-          providerProfile.full_name || "Proveedor",
-          listing.title,
-          clientProfile?.full_name || "Un cliente"
-        ),
-      });
-    }
+    // Email al proveedor (no bloquea la respuesta)
+    sendProviderEmail(supabase, provider.user_id, listing.title, clientName).catch(() => {});
 
     return { success: true, bookingId: booking.id };
   } catch (e: any) {
@@ -406,6 +411,39 @@ export async function createBooking(
   }
 }
 
+/** Envía email de notificación al proveedor (fire-and-forget) */
+async function sendProviderEmail(
+  supabase: any,
+  providerUserId: string,
+  listingTitle: string,
+  clientName: string
+) {
+  const { resend, RESEND_FROM_EMAIL } = await import("@/lib/resend");
+  const { emailTemplates } = await import("@/lib/email-templates");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("email, full_name")
+    .eq("id", providerUserId)
+    .single();
+
+  if (!resend || !profile?.email) return;
+
+  await resend.emails.send({
+    from: `ArtRider <${RESEND_FROM_EMAIL}>`,
+    to: profile.email,
+    subject: "Nueva solicitud de alquiler en ArtRider",
+    html: emailTemplates.bookingRequest(
+      profile.full_name || "Proveedor",
+      listingTitle,
+      clientName
+    ),
+  });
+}
+
+// ── Actualizar estado ──────────────────────────────────────────────────────
+
+/** Actualiza estado de reserva y notifica al cliente */
 export async function updateBookingStatus(
   bookingId: string,
   status: BookingStatus
@@ -413,19 +451,18 @@ export async function updateBookingStatus(
   try {
     const providerId = await getMyProviderId();
     if (!providerId) return { error: "Not authorized as provider" };
-    
+
     const supabase = await createSupabaseServerClient();
-    
-    // Check ownership
+
+    // Verificar propiedad
     const { data: booking, error: fetchError } = await supabase
       .from("bookings")
       .select("id, client_id, provider_id")
       .eq("id", bookingId)
       .single();
-      
-    if (fetchError || !booking || booking.provider_id !== providerId) {
+
+    if (fetchError || !booking || booking.provider_id !== providerId)
       return { error: "Booking not found or not owned" };
-    }
 
     const { error: updateError } = await supabase
       .from("bookings")
@@ -435,25 +472,24 @@ export async function updateBookingStatus(
 
     if (updateError) return { error: updateError.message };
 
-    // Fetch details for notifications
+    // Obtener título del equipo para la notificación
     const { data: listingData } = await supabase
       .from("booking_units")
       .select("listing:listings(title)")
       .eq("booking_id", bookingId)
       .limit(1)
       .single();
-      
-    const listingTitle = (listingData?.listing as any)?.title || "un equipo";
+
+    const title = (listingData?.listing as any)?.title || "un equipo";
     const { createNotification } = await import("./notificationsService");
 
+    // Notificar al cliente según el estado
     if (status === "PAID" || status === "ACTIVE") {
-      // In a real flow, 'AWAITING_SIGNATURES' -> Client pays/signs -> 'PAID'
-      // For this phase, accepting directly sets to PAID or ACTIVE.
       await createNotification({
         userId: booking.client_id,
         type: "booking_confirmed",
         title: "¡Reserva confirmada!",
-        body: "Tu solicitud para " + listingTitle + " fue aceptada.",
+        body: `Tu solicitud para ${title} fue aceptada.`,
         href: "/bookings",
       });
     } else if (status === "CANCELLED") {
@@ -461,7 +497,7 @@ export async function updateBookingStatus(
         userId: booking.client_id,
         type: "booking_cancelled",
         title: "Reserva cancelada",
-        body: "Tu solicitud para " + listingTitle + " fue rechazada por el proveedor.",
+        body: `Tu solicitud para ${title} fue rechazada por el proveedor.`,
         href: "/bookings",
       });
     }
@@ -472,6 +508,9 @@ export async function updateBookingStatus(
   }
 }
 
+// ── Cancelar reserva (cliente) ─────────────────────────────────────────────
+
+/** Cliente cancela su propia reserva pendiente */
 export async function cancelBooking(bookingId: string) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -484,20 +523,18 @@ export async function cancelBooking(bookingId: string) {
       .eq("id", bookingId)
       .single();
 
-    if (fetchError || !booking || booking.client_id !== user.id) {
+    if (fetchError || !booking || booking.client_id !== user.id)
       return { error: "Not authorized" };
-    }
 
-    // Get provider separately
+    if (booking.status !== "AWAITING_SIGNATURES")
+      return { error: "Only pending bookings can be cancelled by client." };
+
+    // Obtener user_id del proveedor para notificación
     const { data: provider } = await supabase
       .from("providers")
       .select("user_id")
       .eq("id", booking.provider_id)
       .single();
-
-    if (booking.status !== "AWAITING_SIGNATURES") {
-      return { error: "Only pending bookings can be cancelled by client." };
-    }
 
     const { error: updateError } = await supabase
       .from("bookings")

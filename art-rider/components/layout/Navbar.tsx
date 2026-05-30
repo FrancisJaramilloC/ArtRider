@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { getMyProviderProfile } from "@/services/providerService";
 import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 import { NotificationBell } from "@/components/layout/NotificationBell";
@@ -12,9 +12,9 @@ import { NotificationBell } from "@/components/layout/NotificationBell";
 // ─── Nav links (landing only) ─────────────────────────────────────────────────
 
 const LANDING_LINKS = [
-  { label: "Categorías", href: "#categorias" },
-  { label: "Equipos",    href: "#equipos"    },
-  { label: "Paquetes",   href: "#paquetes"   },
+  { label: "Categorías", sectionId: "categorias" },
+  { label: "Equipos",    sectionId: "equipos"    },
+  { label: "Paquetes",   sectionId: "paquetes"   },
 ];
 
 // ─── Dropdown atoms ───────────────────────────────────────────────────────────
@@ -143,14 +143,21 @@ export default function Navbar({
         {/* ── Center nav (landing only) ─────────────────────────────────────── */}
         {!hideNavLinks && (
           <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-7">
-            {LANDING_LINKS.map(({ label, href }) => (
-              <Link
+            {LANDING_LINKS.map(({ label, sectionId }) => (
+              <button
                 key={label}
-                href={href}
+                onClick={() => {
+                  const el = document.getElementById(sectionId);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  } else {
+                    router.push(`/#${sectionId}`);
+                  }
+                }}
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg px-2.5 py-1.5 transition-all"
               >
                 {label}
-              </Link>
+              </button>
             ))}
             {user && (
               <Link
