@@ -127,7 +127,14 @@ export default function ProviderLayoutClient({
 
         {/*  Contenido principal  */}
         <main className="flex-1 min-w-0 md:ml-64 p-5 lg:p-8">
-          <div key={pathname} className="max-w-screen-2xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
+          <div className="max-w-screen-2xl mx-auto w-full transition-all duration-700 ease-out animate-in fade-in slide-in-from-bottom-4" style={{ animationName: `enter-${pathname.replace(/[^a-zA-Z0-9]/g, '')}` }}>
+            {/* Truco CSS: Al cambiar el animationName basado en el pathname, forzamos a que la animación se repita sin destruir el DOM */}
+            <style>{`
+              @keyframes enter-${pathname.replace(/[^a-zA-Z0-9]/g, '')} {
+                from { opacity: 0; transform: translateY(16px); }
+                to { opacity: 1; transform: translateY(0); }
+              }
+            `}</style>
             {children}
           </div>
         </main>

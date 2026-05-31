@@ -6,6 +6,7 @@ import { es } from "date-fns/locale";
 import { ChevronLeft, Check, Clock, Phone, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import KushkiPaymentForm from "./KushkiPaymentForm";
 
 interface BookingFlowClientProps {
   listing: {
@@ -14,6 +15,7 @@ interface BookingFlowClientProps {
     description: string | null;
     price_per_day: number;
     provider?: { brand_name: string };
+    cover_image_url?: string;
   };
   initialStart?: string;
   initialEnd?: string;
@@ -34,7 +36,7 @@ export default function BookingFlowClient({
 
   const successRef = useRef<HTMLDivElement>(null);
 
-  const handleBooking = async () => {
+  const handleBooking = async (token: string) => {
     if (!initialStart || !initialEnd) return;
     setIsSubmitting(true);
     try {
@@ -42,7 +44,7 @@ export default function BookingFlowClient({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          token: "dummy-kushki-token", // Kushki.js generará esto
+          token,
           amount: priceCalc.total,
           listingId: listing.id,
           startDate: initialStart,
@@ -122,49 +124,108 @@ export default function BookingFlowClient({
   const endDateObj = initialEnd ? new Date(initialEnd) : null;
 
   return (
-    <div className="max-w-2xl mx-auto pb-32">
-      {/* Navbar Minimalista */}
-      <div className="flex items-center mb-12">
+    <div className="max-w-6xl mx-auto pb-32">
+      <div className="flex items-center mb-10">
         <Link
           href={`/listings/${listing.id}`}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-soft-premium text-[#111111] hover:scale-105 transition-transform"
         >
           <ChevronLeft className="w-5 h-5" />
         </Link>
+        <h1 className="text-3xl font-bold text-[#111111] ml-6">Confirma y paga</h1>
       </div>
 
-      {/* Resumen Ciego Directo */}
-      <div className="bg-white p-8 rounded-[24px] shadow-soft-premium mb-8 animate-fade-up relative overflow-hidden">
-        {/* Ticket perforations */}
-        <div className="absolute top-0 left-8 w-[calc(100%-4rem)] border-t-2 border-dashed border-gray-200" />
-        
-        <h2 className="text-2xl font-bold text-[#111111] text-center mt-4 mb-8">Resumen de Reserva</h2>
-        
-        <div className="space-y-4 mb-8">
-          <div className="flex justify-between items-center">
-            <span className="text-[#8E8E93]">Servicio</span>
-            <span className="font-semibold text-[#111111] text-right">{listing.title}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-[#8E8E93]">Fechas</span>
-            <span className="font-semibold text-[#111111] text-right">
-              {startDateObj && format(startDateObj, "d MMM", { locale: es })} -{" "}
-              {endDateObj && format(endDateObj, "d MMM", { locale: es })}
-            </span>
-          </div>
-          <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-            <span className="text-lg font-bold text-[#111111]">Total a pagar</span>
-            <span className="text-2xl font-bold text-[#111111]">${(priceCalc.total / 100).toFixed(2)}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+        <div className="space-y-8 animate-fade-up">
+          <div className="bg-white p-8 rounded-[24px] shadow-sm border border-gray-100">
+            <h2 className="text-xl font-bold text-[#111111] mb-6">1. Agrega un método de pago</h2>
+            
+            <div className="border border-gray-200 rounded-2xl overflow-hidden mb-6">
+              <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-[#111111]">Tarjeta de crédito o débito</span>
+                    <div className="flex gap-1 mt-1 text-[10px] font-bold text-gray-500 uppercase">
+                       <span className="px-1 border border-gray-200 rounded bg-white text-blue-800">VISA</span>
+                       <span className="px-1 border border-gray-200 rounded bg-white text-red-600">Mastercard</span>
+                       <span className="px-1 border border-gray-200 rounded bg-white text-blue-500">AMEX</span>
+                       <span className="px-1 border border-gray-200 rounded bg-white text-gray-700">Diners</span>
+                       <span className="px-1 border border-gray-200 rounded bg-white text-orange-500">Discover</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-1 bg-white">
+                {isSubmitting ? (
+                  <div className="p-4">
+                    <button
+                      disabled
+                      className="w-full bg-[#111111] text-white font-bold py-5 rounded-2xl shadow-soft-premium disabled:opacity-70"
+                    >
+                      Procesando Pago...
+                    </button>
+                  </div>
+                ) : (
+                  <KushkiPaymentForm 
+                    amount={priceCalc.total} 
+                    onSuccess={handleBooking} 
+                    onError={(err) => alert(err)} 
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        <button
-          onClick={handleBooking}
-          disabled={isSubmitting}
-          className="w-full bg-[#111111] text-white font-bold py-5 rounded-2xl shadow-soft-premium hover:bg-black transition-all hover:scale-[1.02] disabled:opacity-70 disabled:hover:scale-100"
-        >
-          {isSubmitting ? "Procesando..." : "Proceder al Pago (Kushki)"}
-        </button>
+        <div className="relative animate-fade-up" style={{ animationDelay: '100ms' }}>
+          <div className="bg-white p-6 rounded-[24px] shadow-soft-premium border border-gray-100 sticky top-28">
+            <div className="flex gap-4 mb-6 pb-6 border-b border-gray-100">
+              <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 relative">
+                {listing.cover_image_url ? (
+                  <img src={listing.cover_image_url} alt={listing.title} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">Sin foto</div>
+                )}
+              </div>
+              <div>
+                <h3 className="font-bold text-lg text-[#111111] leading-tight mb-1">{listing.title}</h3>
+                <p className="text-sm text-[#8E8E93]">Ofrecido por {listing.provider?.brand_name || "Proveedor"}</p>
+              </div>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <h4 className="font-semibold text-[#111111]">Detalles de la reserva</h4>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-[#8E8E93]">Fechas</span>
+                <span className="font-medium text-[#111111] text-right">
+                  {startDateObj && format(startDateObj, "d MMM", { locale: es })} –{" "}
+                  {endDateObj && format(endDateObj, "d MMM", { locale: es })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-[#8E8E93]">Duración</span>
+                <span className="font-medium text-[#111111] text-right">{priceCalc.days} días</span>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-gray-100 space-y-3 mb-6">
+              <h4 className="font-semibold text-[#111111]">Información del precio</h4>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">${(priceCalc.dailyPrice / 100).toFixed(2)} x {priceCalc.days} días</span>
+                <span className="text-[#111111]">${(priceCalc.total / 100).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-6 border-t border-gray-200">
+              <span className="text-lg font-bold text-[#111111]">Total (USD)</span>
+              <span className="text-2xl font-bold text-[#111111]">${(priceCalc.total / 100).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

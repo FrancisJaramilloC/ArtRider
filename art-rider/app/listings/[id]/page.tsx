@@ -1,9 +1,9 @@
 import { getListingById } from "@/services/listingsService";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
+import { getUnavailableDates } from "@/services/availabilityService";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import type { Metadata } from "next";
 import MapWrapper from "@/components/listing-map/MapWrapper";
 import { BookingCard } from "@/components/features/bookings/BookingCard";
@@ -119,6 +119,7 @@ export default async function ListingDetailPage({
   if (!listing) notFound();
 
   const supabase = await createSupabaseServerClient();
+  const unavailableDates = await getUnavailableDates(listing.id);
 
   //  Datos del proveedor
   let providerName: string | null = null;
@@ -179,25 +180,7 @@ export default async function ListingDetailPage({
 
   return (
     <main className="min-h-screen bg-white">
-      {/*  Navegación de retorno  */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-2">
-        <Link
-          href="/listings"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
-        >
-          <svg
-            width="16" height="16" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          Volver al catálogo
-        </Link>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-24">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-24">
 
         {/*  BLOQUE DE TÍTULO  */}
         <div className="mb-5">
@@ -246,6 +229,7 @@ export default async function ListingDetailPage({
                 fill
                 className="object-cover"
                 priority
+                sizes="100vw"
               />
             ) : (
               <NoImagePlaceholder icon={catIcon} />
@@ -409,15 +393,14 @@ export default async function ListingDetailPage({
             )}
           </div>
 
-          {/*  Columna derecha  */}
-          <div className="hidden lg:block">
-            <BookingCard listingId={listing.id} dailyPrice={listing.daily_price} />
+          {/*  Columna derecha (se muestra en desktop; en mobile se coloca debajo)  */}
+          <div>
+            <BookingCard 
+              listingId={listing.id} 
+              dailyPrice={listing.daily_price} 
+              initialDisabledDates={unavailableDates}
+            />
           </div>
-        </div>
-
-        {/*  Precio y reserva en móvil  */}
-        <div className="block lg:hidden mt-10 pt-6 border-t border-gray-100">
-          <BookingCard listingId={listing.id} dailyPrice={listing.daily_price} />
         </div>
 
       </div>
