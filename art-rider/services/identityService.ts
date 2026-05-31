@@ -26,7 +26,4 @@ export async function getMyVerificationStatus(): Promise<"pending" | "verified" 
   }
 }
 
-export async function requiresVerification(dailyPriceCents: number): Promise<boolean> {
-  // If the listing costs more than $50/day, it requires verification
-  return dailyPriceCents >= THRESHOLD_CENTS;
 }

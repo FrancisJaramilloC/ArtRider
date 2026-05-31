@@ -322,7 +322,8 @@ export async function calculateBookingPrice(
 export async function createBooking(
   listingId: string,
   startDateStr: string,
-  endDateStr: string
+  endDateStr: string,
+  kushkiTicket?: string
 ) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -361,6 +362,7 @@ export async function createBooking(
         end_date: endDateStr,
         total_price: priceCalc.total,
         status: "AWAITING_SIGNATURES",
+        kushki_ticket: kushkiTicket
       })
       .select()
       .single();
@@ -457,12 +459,44 @@ export async function updateBookingStatus(
     // Verificar propiedad
     const { data: booking, error: fetchError } = await supabase
       .from("bookings")
-      .select("id, client_id, provider_id")
+      .select("id, client_id, provider_id, kushki_ticket, total_price")
       .eq("id", bookingId)
       .single();
 
     if (fetchError || !booking || booking.provider_id !== providerId)
       return { error: "Booking not found or not owned" };
+
+    if (status === "CANCELLED" && booking.kushki_ticket) {
+      // Reembolsar cobro en Kushki
+      const privateKey = process.env.KUSHKI_PRIVATE_MERCHANT_ID;
+      if (privateKey) {
+        try {
+          const voidRes = await fetch(`https://api-uat.kushkipagos.com/v1/charges/${booking.kushki_ticket}`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              "Private-Merchant-Id": privateKey
+            },
+            body: JSON.stringify({
+              fullResponse: "v2",
+              amount: {
+                subtotalIva: 0,
+                subtotalIva0: booking.total_price,
+                ice: 0,
+                iva: 0,
+                currency: "USD"
+              }
+            })
+          });
+          const voidData = await voidRes.json();
+          if (!voidRes.ok || !voidData.isSuccessful) {
+            console.error("Kushki Void Error:", voidData);
+          }
+        } catch (err) {
+          console.error("Error al anular transacción:", err);
+        }
+      }
+    }
 
     const { error: updateError } = await supabase
       .from("bookings")
