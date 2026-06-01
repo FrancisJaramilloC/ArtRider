@@ -28,6 +28,7 @@ export interface LandingCardItem {
   city: string;
   isTop?: boolean;
   href: string;
+  rating?: number;
 }
 
 export default function LandingCard({ item }: { item: LandingCardItem }) {
