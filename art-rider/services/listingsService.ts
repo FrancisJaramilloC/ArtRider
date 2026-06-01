@@ -29,12 +29,8 @@ export type Listing = {
   rating?: number;
 };
 
-//  Selecciona los listings
-// gallery_images omitido del SELECT hasta ejecutar migración 002 en Supabase.
-// Una vez que ejecutes: ALTER TABLE listings ADD COLUMN IF NOT EXISTS gallery_images TEXT[] DEFAULT '{}'
-// vuelve a añadir gallery_images a esta cadena.
 const LISTING_SELECT =
-  "id, provider_id, title, brand, model, category, cover_image_url, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
+  "id, provider_id, title, brand, model, category, cover_image_url, gallery_images, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
 
 //  Lee los listings publicados y no eliminados
 //  El cliente admin se usa aquí para que el join con addresses no esté bloqueado por RLS.

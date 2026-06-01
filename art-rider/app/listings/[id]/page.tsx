@@ -10,9 +10,10 @@ import MapWrapper from "@/components/listing-map/MapWrapper";
 import { BookingCard } from "@/components/features/bookings/BookingCard";
 import Navbar from "@/components/layout/Navbar";
 import ListingGallery from "./ListingGallery";
+import ListingActions from "./ListingActions";
 import {
   Star, MapPin, ShieldCheck, ArrowLeft, ChevronRight,
-  Share2, Heart, Truck, Headphones, Zap, Check,
+  Share2, Truck, Headphones, Zap,
   Volume2, Lightbulb, Video, Sparkles, Megaphone, Package,
 } from "lucide-react";
 
@@ -263,9 +264,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             <button className="flex items-center gap-1.5 text-[13.5px] font-bold text-gray-700 px-3.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
               <Share2 size={16} /> Compartir
             </button>
-            <button className="flex items-center gap-1.5 text-[13.5px] font-bold text-gray-700 px-3.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
-              <Heart size={16} /> Guardar
-            </button>
+            <ListingActions listingId={listing.id} />
           </div>
         </div>
 

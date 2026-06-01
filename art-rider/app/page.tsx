@@ -65,6 +65,7 @@ export default async function HomePage() {
       rating: ratingsMap[listing.id] ?? 0,
       isTop: false,
       href: `/listings/${listing.id}`,
+      tipo: "equipo",
     });
   }
 
@@ -87,6 +88,7 @@ export default async function HomePage() {
     rating: 0,
     isTop: false,
     href: `/packages/${pkg.id}`,
+    tipo: "paquete",
   }));
 
   return (

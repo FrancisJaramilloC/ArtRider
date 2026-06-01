@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { getPackageById } from "@/services/packagesService";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import PackageMapWrapper from "@/components/listing-map/PackageMapWrapper";
+import PackageActions from "./PackageActions";
 
 type Review = {
   id: string;
@@ -158,9 +159,12 @@ export default async function PackageDetailPage({
           <span className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-[#875B9A] bg-[#875B9A]/8 px-3 py-1.5 rounded-full">
             📦 Paquete completo
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-3 leading-tight">
-            {pkg.title}
-          </h1>
+          <div className="flex items-start justify-between gap-4 mt-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+              {pkg.title}
+            </h1>
+            <PackageActions packageId={pkg.id} />
+          </div>
           <div className="flex items-center gap-3 mt-1.5 flex-wrap">
             <p className="text-sm text-gray-500">
               {itemCount} equipo{itemCount !== 1 ? "s" : ""} incluido{itemCount !== 1 ? "s" : ""}

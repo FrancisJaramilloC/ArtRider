@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, Star, MapPin, Volume2, Zap, Video, Sparkles, Megaphone, Package } from "lucide-react";
+import { Star, MapPin } from "lucide-react";
+import { useFavorito } from "@/hooks/useFavorito";
+import type { FavoritoTipo } from "@/services/favoritosService";
 
 const CAT_LABELS: Record<string, string> = {
   audio: "Sonido", lighting: "Iluminación", video: "Video",
@@ -28,32 +29,13 @@ export interface LandingCardItem {
   city: string;
   isTop?: boolean;
   href: string;
+  /** "equipo" por defecto — pasar "paquete" para tarjetas de paquetes */
+  tipo?: FavoritoTipo;
   rating?: number;
 }
 
 export default function LandingCard({ item }: { item: LandingCardItem }) {
-  const [fav, setFav] = useState(false);
-
-  useEffect(() => {
-    try {
-      const favs = JSON.parse(localStorage.getItem("artrider:favs") || "[]");
-      setFav(favs.includes(item.id));
-    } catch {}
-  }, [item.id]);
-
-  const toggleFav = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setFav(prev => {
-      const next = !prev;
-      try {
-        const favs: string[] = JSON.parse(localStorage.getItem("artrider:favs") || "[]");
-        const updated = next ? [...favs, item.id] : favs.filter(id => id !== item.id);
-        localStorage.setItem("artrider:favs", JSON.stringify(updated));
-      } catch {}
-      return next;
-    });
-  };
+  const { esFavorito, toggleFavorito } = useFavorito(item.id, item.tipo ?? "equipo");
 
   const catLabel  = CAT_LABELS[item.category ?? ""] ?? item.category ?? "Equipo";
   const gradient  = CAT_GRADIENTS[item.category ?? ""] ?? CAT_GRADIENTS.other;
@@ -83,15 +65,15 @@ export default function LandingCard({ item }: { item: LandingCardItem }) {
 
         {/* Heart */}
         <button
-          onClick={toggleFav}
-          aria-label="Guardar"
+          onClick={toggleFavorito}
+          aria-label={esFavorito ? "Quitar de favoritos" : "Guardar en favoritos"}
           className="absolute right-2.5 top-2.5 w-[34px] h-[34px] flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
         >
-          <Heart
-            size={22}
-            strokeWidth={2}
-            className={fav ? "fill-[#875B9A] text-[#875B9A]" : "fill-black/30 text-white"}
-          />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className={esFavorito ? "stroke-[#C026D3]" : "stroke-white"}>
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+              fill={esFavorito ? "#C026D3" : "rgba(0,0,0,0.3)"} />
+          </svg>
         </button>
 
         {/* Top badge */}
