@@ -4,12 +4,14 @@ import Navbar from "@/components/layout/Navbar";
 import MessagesClient from "@/components/messages/MessagesClient";
 import { getConversations } from "@/services/messagesService";
 
-export default async function MessagesPage() {
+export default async function MensajesPage() {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?redirect=/messages");
+    redirect("/login?redirect=/mensajes");
   }
 
   const conversations = await getConversations(user.id);

@@ -1,268 +1,118 @@
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import HeroSection from "@/components/features/home/HeroSection";
-import CategoryCard from "@/components/features/home/CategoryCard";
-import HomepageListingCard from "@/components/features/home/HomepageListingCard";
-import ScrollableCarousel from "@/components/ui/ScrollableCarousel";
-import { HowItWorks } from "@/components/features/home/HowItWorks";
-import { BecomeProviderCTA } from "@/components/features/home/BecomeProviderCTA";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { getListings } from "@/services/listingsService";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import LandingHero from "@/components/features/home/LandingHero";
+import LandingCategoryStrip from "@/components/features/home/LandingCategoryStrip";
+import LandingCarousel from "@/components/features/home/LandingCarousel";
+import LandingHowItWorks from "@/components/features/home/LandingHowItWorks";
+import LandingFooter from "@/components/features/home/LandingFooter";
+import type { LandingCardItem } from "@/components/features/home/LandingCard";
 
-// Metadata de la página
 export const metadata: Metadata = {
   title: "ArtRider — Alquila Equipos Creativos para tu Evento",
   description:
     "Marketplace de alquiler de equipos de audio, iluminación y video. Conecta con propietarios verificados y reserva con confianza.",
 };
 
-//  Mapas de categorías
-const CATEGORY_ICONS: Record<string, string> = {
-  audio: "🔊", lighting: "💡", video: "🎥", effects: "✨", other: "📦",
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  audio: "Sonido", lighting: "Iluminación", video: "Video", effects: "Efectos", other: "Otro",
-};
-
-//  Encabezado de sección compartido
-function SectionHeader({
-  title,
-  subtitle,
-  centered = false,
-  ctaLabel,
-  ctaHref,
-}: {
-  title: string;
-  subtitle?: string;
-  centered?: boolean;
-  ctaLabel?: string;
-  ctaHref?: string;
-}) {
-  return ( 
-    <div className={`flex ${centered ? "flex-col items-center text-center" : "flex-row flex-wrap items-center justify-between"} mb-5 sm:mb-8 gap-3 sm:gap-4`}>
-      <div>
-        <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="text-sm text-gray-500 mt-1">
-            {subtitle}
-          </p>
-        )}
-      </div>
-
-      {ctaLabel && ctaHref && (
-        <a
-          href={ctaHref}
-          className="text-[#875B9A] hover:text-[#6a437a] hover:bg-purple-50 px-4 py-2 rounded-lg text-[0.95rem] font-semibold transition-colors shrink-0"
-        >
-          {ctaLabel}
-        </a>
-      )}
-    </div>
-  );
-}
-
-//  Página principal
 export default async function HomePage() {
+  // Auth
   const supabase = await createSupabaseServerClient();
-  const { data: authData } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  //  Verificación de proveedor (lado del servidor) — determina la visibilidad del CTA
-  let isProvider = false;
-  if (authData?.user) {
-    const { data: providerRow } = await supabase
-      .from("providers")
-      .select("id")
-      .eq("user_id", authData.user.id)
-      .maybeSingle();
-    isProvider = !!providerRow;
-  }
+  // Listings
+  let listings: Awaited<ReturnType<typeof getListings>> = [];
+  try { listings = await getListings(); } catch {}
 
-  //  Obtención de listados reales publicados
-  let realListings: {
-    id: string;
-    title: string | null;
-    category: string | null;
-    daily_price: number;
-    cover_image_url: string | null;
-  }[] = [];
+  // Packages
+  let packages: { id: string; title: string; daily_price: number; cover_image_url: string | null }[] = [];
   try {
-    realListings = await getListings();
-  } catch {
-    // falló silenciosamente — la sección se oculta si está vacía
-  }
-
-  //  Obtención de paquetes reales publicados (vista pública de todos los proveedores)
-  let realPackages: { id: string; title: string; daily_price: number; cover_image_url: string | null }[] = [];
-  try {
-    const { data } = await supabase
+    const admin = createSupabaseAdminClient();
+    const { data } = await admin
       .from("packages")
       .select("id, title, daily_price, cover_image_url")
       .eq("is_published", true)
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
-    realPackages = (data ?? []) as { id: string; title: string; daily_price: number; cover_image_url: string | null }[];
-  } catch {
-    // falló silenciosamente — la sección se oculta si está vacía
+    packages = (data ?? []) as typeof packages;
+  } catch {}
+
+  // ── Group listings by city (dynamic — new cities auto-appear) ──
+  const cityMap = new Map<string, LandingCardItem[]>();
+  for (const listing of listings) {
+    const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
+    const city = addr?.city?.trim();
+    if (!city) continue;
+    if (!cityMap.has(city)) cityMap.set(city, []);
+    cityMap.get(city)!.push({
+      id: listing.id,
+      title: listing.title ?? "Equipo sin título",
+      category: listing.category,
+      cover_image_url: listing.cover_image_url,
+      daily_price: listing.daily_price,
+      city,
+      isTop: false,
+      href: `/listings/${listing.id}`,
+    });
   }
 
-  //  Mapear a formato de tarjeta para paquetes
-  const featuredPackages = realPackages.slice(0, 8).map((pkg) => ({
+  // Cities sorted by listing count desc, min 2 listings to show
+  const cities = Array.from(cityMap.entries())
+    .filter(([, items]) => items.length >= 1)
+    .sort(([, a], [, b]) => b.length - a.length);
+
+  // City names for the hero dropdown
+  const cityNames = cities.map(([city]) => city);
+
+  // ── Packages as LandingCardItem ──
+  const packageItems: LandingCardItem[] = packages.slice(0, 8).map(pkg => ({
     id: pkg.id,
     title: pkg.title,
-    categoryLabel: "Paquete Completo",
-    location: "Ecuador",
-    price: `$${(pkg.daily_price / 100).toFixed(0)}`,
-    rating: 0,
-    reviewCount: 0,
-    icon: "📦",
-    imageUrl: pkg.cover_image_url ?? null,
+    category: null,
+    cover_image_url: pkg.cover_image_url,
+    daily_price: pkg.daily_price,
+    city: "Ecuador",
+    isTop: false,
     href: `/packages/${pkg.id}`,
   }));
 
-  //  Agrupar listados por ciudad para la página de inicio
-  const listingsByCity = realListings.reduce((acc, listing: any) => {
-    const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
-    const city = addr?.city?.trim() || "Otras ubicaciones";
-    
-    //Renderizado de la tarjeta de listado por ciudad
-    if (!acc[city]) acc[city] = []; //Verifica si la ciudad existe en el acumulador
-    acc[city].push({
-      id: listing.id,
-      title: listing.title ?? "Equipo sin título",
-      categoryLabel: CATEGORY_LABELS[listing.category ?? ""] ?? listing.category ?? "Equipo",
-      location: city,
-      price: `$${(listing.daily_price / 100).toFixed(0)}`,
-      rating: 0,
-      reviewCount: 0,
-      icon: CATEGORY_ICONS[listing.category ?? ""] ?? "📦",
-      imageUrl: listing.cover_image_url || null,
-    });
-    return acc;
-  }, {} as Record<string, any[]>);
-
-  const sortedCities = Object.entries(listingsByCity).sort(([, a], [, b]) => b.length - a.length);
-
-  //  Categorías estáticas
-  const CATEGORIES = [
-    { title: "Sonido",      imageSrc: "/category-sonido.png",      href: "/listings?category=audio" },
-    { title: "Iluminación", imageSrc: "/category-iluminacion.png", href: "/listings?category=lighting" },
-    { title: "Publicidad",  imageSrc: "/category-publicidad.png",  href: "/listings?category=advertising" },
-    { title: "Video",       imageSrc: "/category-video.png",       href: "/listings?category=video" },
-    { title: "Efectos",     imageSrc: "/category-efectos.png",     href: "/listings?category=effects" },
-  ];
-  // Renderizado de la página principal
   return (
     <>
-      <Navbar initialUser={authData?.user || null} />
+      <Navbar initialUser={user} />
+
       <main>
-        <HeroSection />
+        {/* Hero */}
+        <LandingHero cities={cityNames} />
 
-        {/* ── Explora por categoría ── */}
-        <section id="categorias" className="bg-white py-8 sm:py-12 scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <SectionHeader
-              title="Explora por categoría"
-              subtitle="Encuentra exactamente lo que necesitas para tu evento"
-            />
-            <div className="-mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pb-4 overflow-x-auto flex gap-4 md:gap-5 scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              {CATEGORIES.map((cat) => (
-                <CategoryCard key={cat.title} {...cat} />
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Category strip */}
+        <LandingCategoryStrip />
 
-        {/* ── Equipos destacados por ciudad ── */}
-        <section id="equipos" className="bg-white py-8 sm:py-12 scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden space-y-12">
-            {sortedCities.length > 0 ? (
-              sortedCities.map(([city, cityListings]) => (
-                <div key={city} className="space-y-5">
-                  <Link
-                    href={`/explore?city=${encodeURIComponent(city)}`}
-                    className="group inline-flex items-center gap-3 hover:opacity-80 transition-opacity"
-                  >
-                    <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight">
-                      Equipos populares en {city}
-                    </h2>
-                    <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 group-hover:bg-[#875B9A] group-hover:text-white transition-colors">
-                      <ChevronRight className="w-5 h-5" />
-                    </span>
-                  </Link>
-                  {/* Carrusel con flechas de navegación */}
-                  <ScrollableCarousel>
-                    {cityListings.map((item) => (
-                      <div key={item.id} className="w-[280px] sm:w-[320px] shrink-0 snap-start">
-                        <HomepageListingCard {...item} />
-                      </div>
-                    ))}
-                  </ScrollableCarousel>
-                </div>
-              ))
-            ) : (
-              //Renderizado de la tarjeta de listado por ciudad
-              <div>
-                <SectionHeader title="Equipos destacados" />
-                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 py-12 px-6 text-center">
-                  <span className="text-3xl" aria-hidden="true">🎛️</span>
-                  <p className="text-sm font-medium text-gray-500">
-                    Aún no hay equipos disponibles.
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Los proveedores pueden publicar sus equipos desde su panel de control.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
+        {/* One carousel per city — fully dynamic */}
+        {cities.map(([city, items]) => (
+          <LandingCarousel
+            key={city}
+            title={`Equipos populares en ${city}`}
+            viewAllHref={`/explore?city=${encodeURIComponent(city)}`}
+            items={items}
+          />
+        ))}
 
-        {/* ── Paquetes destacados — always visible ── */}
-        <section id="paquetes" className="bg-white py-8 sm:py-12 scroll-mt-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-hidden">
-            <SectionHeader
-              title="Paquetes destacados elaborados por expertos"
-              subtitle="Combos listos para rentar que ahorran dinero y tiempo"
-              ctaLabel={realPackages.length > 0 ? `Mostrar (${realPackages.length})` : undefined}
-              ctaHref="/listings?type=packages"
-            />
-            {featuredPackages.length > 0 ? (
-              <ScrollableCarousel>
-                {featuredPackages.map((item) => (
-                  <div key={item.id} className="w-[280px] sm:w-[320px] shrink-0">
-                    <HomepageListingCard {...item} />
-                  </div>
-                ))}
-              </ScrollableCarousel>
-            ) : (
-              //Renderizado de la tarjeta de listado por ciudad
-              <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 py-12 px-6 text-center">
-                <span className="text-3xl" aria-hidden="true">📦</span>
-                <p className="text-sm font-medium text-gray-500">
-                  Aún no hay paquetes disponibles.
-                </p>
-                <p className="text-xs text-gray-400">
-                  Los proveedores pueden crear paquetes desde su panel de control.
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
+        {/* Packages */}
+        {packageItems.length > 0 && (
+          <LandingCarousel
+            title="Paquetes destacados"
+            subtitle="Combos listos para rentar que ahorran dinero y tiempo"
+            viewAllHref="/packages"
+            items={packageItems}
+          />
+        )}
 
-        <HowItWorks />
-
-        {/* ── CTA para convertirse en proveedor — escondido para proveedores existentes ── */}
-        {!isProvider && <BecomeProviderCTA />}
-
+        {/* How it works */}
+        <LandingHowItWorks />
       </main>
 
-      <Footer />
+      <LandingFooter />
     </>
   );
 }
