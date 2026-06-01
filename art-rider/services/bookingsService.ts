@@ -42,6 +42,10 @@ export interface BookingWithDetails {
   booking_units: BookingUnit[];
   payment_confirmed: boolean;
   provider_has_reviewed: boolean;
+  client_has_reviewed: boolean;
+  client_review_rating: number | null;
+  client_avg_rating: number;
+  client_review_count: number;
 }
 
 // ── Constantes reutilizables ───────────────────────────────────────────────
@@ -50,7 +54,7 @@ export interface BookingWithDetails {
 const BOOKING_BASE_FIELDS = `
   id, status, start_date, end_date, total_price,
   client_id, provider_id, created_at, archived_at,
-  snapshot_listing, payments(status), reviews(id, author_id),
+  snapshot_listing, payments(status), reviews(id, author_id, rating),
   booking_units(
     id, locked_daily_price,
     equipment_unit:equipment_units(
@@ -138,6 +142,14 @@ function mapRawToBooking(raw: any, includeClientProfile: boolean): BookingWithDe
     provider_has_reviewed: (raw.reviews ?? []).some(
       (r: any) => r.author_id === raw.provider_id
     ),
+    client_has_reviewed: (raw.reviews ?? []).some(
+      (r: any) => r.author_id === raw.client_id
+    ),
+    client_review_rating: (raw.reviews ?? []).find(
+      (r: any) => r.author_id === raw.client_id
+    )?.rating ?? null,
+    client_avg_rating: 0,
+    client_review_count: 0,
   };
 }
 
@@ -186,7 +198,34 @@ export async function getProviderBookings(): Promise<BookingWithDetails[]> {
       .order("created_at", { ascending: false });
 
     if (error) return [];
-    return (data ?? []).map((r) => mapRawToBooking(r, true));
+
+    const bookings = (data ?? []).map((r) => mapRawToBooking(r, true));
+
+    // Enriquecer con rating promedio de cada cliente
+    const clientIds = [...new Set(bookings.map((b) => b.client_id))];
+    if (clientIds.length) {
+      const { data: clientReviews } = await supabase
+        .from("reviews")
+        .select("target_id, rating")
+        .in("target_id", clientIds);
+
+      const ratingAcc: Record<string, { sum: number; count: number }> = {};
+      for (const r of clientReviews ?? []) {
+        if (!ratingAcc[r.target_id]) ratingAcc[r.target_id] = { sum: 0, count: 0 };
+        ratingAcc[r.target_id].sum += r.rating;
+        ratingAcc[r.target_id].count += 1;
+      }
+
+      for (const booking of bookings) {
+        const acc = ratingAcc[booking.client_id];
+        if (acc) {
+          booking.client_avg_rating = acc.sum / acc.count;
+          booking.client_review_count = acc.count;
+        }
+      }
+    }
+
+    return bookings;
   } catch {
     return [];
   }
@@ -219,11 +258,6 @@ export async function checkArchivingEligibility(
 
     if (booking.status !== "COMPLETED")
       return DENY("El alquiler debe estar completado");
-
-    const hasCapturedPayment = (booking.payments ?? []).some(
-      (p: any) => p.status === "CAPTURED"
-    );
-    if (!hasCapturedPayment) return DENY("El pago aún no ha sido capturado");
 
     const alreadyReviewed = (booking.reviews ?? []).some(
       (r: any) => r.author_id === booking.provider_id
@@ -262,15 +296,17 @@ export async function archiveBookingWithReview(
     const eligibility = await checkArchivingEligibility(bookingId);
     if (!eligibility.eligible) return { success: false, error: eligibility.reason };
 
-    // Insertar reseña
-    const { error: reviewError } = await supabase.from("reviews").insert({
+    // Insertar reseña (admin bypasa RLS — validación ya ocurrió arriba)
+    const { createSupabaseAdminClient } = await import("@/lib/supabaseAdmin");
+    const adminSupabase = createSupabaseAdminClient();
+    const { error: reviewError } = await adminSupabase.from("reviews").insert({
       booking_id: bookingId,
       author_id: user.id,
       target_id: booking.client_id,
       rating: review.rating,
-      content: review.content,
+      comment: review.content,
     });
-    if (reviewError) return { success: false, error: "No se pudo guardar la reseña" };
+    if (reviewError) return { success: false, error: reviewError.message };
 
     // Marcar como archivada
     const { error: updateError } = await supabase
@@ -352,7 +388,7 @@ export async function createBooking(
     const priceCalc = await calculateBookingPrice(listingId, startDateStr, endDateStr);
     if ("error" in priceCalc) return { error: priceCalc.error };
 
-    // Insertar booking
+    // Insertar booking — snapshot_listing garantiza que siempre podamos vincular reseñas al listing
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .insert({
@@ -362,7 +398,8 @@ export async function createBooking(
         end_date: endDateStr,
         total_price: priceCalc.total,
         status: "AWAITING_SIGNATURES",
-        kushki_ticket: kushkiTicket
+        snapshot_listing: { id: listingId, title: listing.title, daily_price: priceCalc.dailyPrice },
+        kushki_ticket: kushkiTicket,
       })
       .select()
       .single();

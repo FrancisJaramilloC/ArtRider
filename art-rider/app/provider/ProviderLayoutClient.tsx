@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Store, CalendarDays, Package,
-  DollarSign, HelpCircle, Settings,
+  DollarSign, HelpCircle, Settings, Star,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import type { User } from "@supabase/supabase-js";
@@ -24,6 +24,7 @@ const NAV_SECTIONS = [
     label: "Negocio", //  Seccion de negocio
     items: [
       { name: "Reservas",  href: "/provider/bookingsProvider", icon: CalendarDays },
+      { name: "Reseñas",   href: "/provider/reviews",          icon: Star         },
       { name: "Finanzas",  href: "/provider/finance",          icon: DollarSign   },
     ],
   },

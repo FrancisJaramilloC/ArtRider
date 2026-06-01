@@ -92,7 +92,6 @@ export default function ProviderBookingsSection({ bookings, onArchive }: Props) 
 
             const showArchive =
               booking.status === "COMPLETED" &&
-              booking.payment_confirmed &&
               !booking.provider_has_reviewed;
 
             return (
@@ -114,12 +113,23 @@ export default function ProviderBookingsSection({ bookings, onArchive }: Props) 
                     </div>
 
                     <div>
-                      {/* Nombre del cliente + badge */}
-                      <div className="flex items-center gap-2">
+                      {/* Nombre del cliente + badge + rating */}
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-bold text-[#111111]">{displayName}</p>
                         <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded-full ${STATUS_CONFIG[booking.status].className}`}>
                           {STATUS_CONFIG[booking.status].label}
                         </span>
+                        {booking.client_review_count > 0 && (
+                          <span className="flex items-center gap-0.5 text-[10px] text-[#8E8E93] font-medium">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="#F59E0B" aria-hidden="true">
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                            {booking.client_avg_rating.toFixed(1)} ({booking.client_review_count})
+                          </span>
+                        )}
+                        {booking.client_review_count === 0 && (
+                          <span className="text-[10px] text-[#8E8E93]">Sin reseñas</span>
+                        )}
                       </div>
 
                       {/* Equipos reservados + ciudad */}

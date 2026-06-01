@@ -22,9 +22,10 @@ export const revalidate = 0;
 type Review = {
   id: string;
   rating: number;
-  content: string;
+  comment: string;
   created_at: string;
-  reviewer_id: string;
+  author_id: string;
+  profiles: { full_name: string | null } | null;
 };
 
 // ── Maps ───────────────────────────────────────────────────────────────────────
@@ -96,17 +97,79 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     }
   } catch { /* silent */ }
 
-  // Reviews
+  // Reviews — solo de este listing, via booking_id linkado al listing
   let reviews: Review[] = [];
   try {
-    const { data } = await supabase
-      .from("reviews")
-      .select("id, rating, content, created_at, reviewer_id")
-      .eq("listing_id", listing.id)
-      .order("created_at", { ascending: false })
-      .limit(6);
-    reviews = (data ?? []) as Review[];
-  } catch { /* silent */ }
+    const adminSupabase = createSupabaseAdminClient();
+
+    // Obtener user_id del proveedor
+    const { data: providerRow } = await adminSupabase
+      .from("providers")
+      .select("user_id")
+      .eq("id", listing.provider_id)
+      .maybeSingle();
+
+    if (providerRow?.user_id) {
+      // Cuántos listings tiene el proveedor (para el fallback de bookings sin link)
+      const { data: providerListings } = await adminSupabase
+        .from("listings")
+        .select("id")
+        .eq("provider_id", listing.provider_id);
+      const providerHasOneListing = (providerListings ?? []).length === 1;
+
+      // Reseñas del proveedor (target_id = provider.user_id) con su booking_id
+      const { data: allReviews } = await adminSupabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, author_id, booking_id, profiles!author_id(full_name)")
+        .eq("target_id", providerRow.user_id)
+        .order("created_at", { ascending: false });
+
+      if (allReviews?.length) {
+        const reviewBookingIds = allReviews.map((r: any) => r.booking_id).filter(Boolean);
+
+        if (reviewBookingIds.length) {
+          // Bookings con snapshot_listing + booking_units → equipment_unit alias igual que BOOKING_BASE_FIELDS
+          const { data: bookings } = await adminSupabase
+            .from("bookings")
+            .select("id, snapshot_listing, booking_units(equipment_unit_id, equipment_unit:equipment_units(listing_id))")
+            .in("id", reviewBookingIds);
+
+          const listingBookingIds = new Set<string>();
+          for (const b of bookings ?? []) {
+            const snapshotId = (b.snapshot_listing as any)?.id;
+            const units = (b as any).booking_units ?? [];
+            const hasSnapshotLink = !!snapshotId;
+            const hasUnitLink = units.some((bu: any) => bu.equipment_unit?.listing_id);
+
+            if (!hasSnapshotLink && !hasUnitLink) {
+              // Booking legacy sin ningún link — solo añadir si el proveedor
+              // tiene UN ÚNICO listing (podemos inferir que es este)
+              if (providerHasOneListing) listingBookingIds.add(b.id);
+              continue;
+            }
+            if (snapshotId === listing.id) {
+              listingBookingIds.add(b.id);
+              continue;
+            }
+            if (units.some((bu: any) => bu.equipment_unit?.listing_id === listing.id)) {
+              listingBookingIds.add(b.id);
+            }
+          }
+
+          reviews = allReviews
+            .filter((r: any) => listingBookingIds.has(r.booking_id))
+            .map((r: any) => ({
+              id: r.id,
+              rating: r.rating,
+              comment: r.comment,
+              created_at: r.created_at,
+              author_id: r.author_id,
+              profiles: Array.isArray(r.profiles) ? (r.profiles[0] ?? null) : r.profiles,
+            })) as Review[];
+        }
+      }
+    }
+  } catch { /* fail silently */ }
 
   // Nearby listings for map
   let nearbyListings: any[] = [];
@@ -129,6 +192,9 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   const avgRating = avgRatingOf(reviews);
   const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
   const city = addr?.city ?? null;
+
+  // Paleta de colores para avatares de reseñas
+  const avatarColors = ["#7c3aed", "#db2f8e", "#2563eb", "#0891b2", "#059669", "#d97706"];
 
   return (
     <div className="min-h-screen bg-white">
@@ -301,33 +367,45 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                   Sé el primero en reseñar este equipo.
                 </p>
               ) : (
-                <div className="grid grid-cols-2 gap-x-10 gap-y-7">
-                  {reviews.map((rv) => {
-                    const initials = "C";
-                    const colors = ["#7c3aed", "#db2f8e", "#2563eb", "#0891b2", "#059669", "#d97706"];
-                    const color = colors[rv.id.charCodeAt(0) % colors.length];
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-2 pt-6 border-t border-gray-200">
+                  {reviews.map((review) => {
+                    const displayName = review.profiles?.full_name ?? "Cliente verificado";
+                    const initial = displayName.charAt(0).toUpperCase();
+                    const color = avatarColors[review.id.charCodeAt(0) % avatarColors.length];
                     return (
-                      <article key={rv.id} className="flex flex-col">
-                        <div className="flex items-center gap-3 mb-2.5">
+                      <article key={review.id} className="flex flex-col gap-2.5">
+                        {/* Encabezado del reseñador */}
+                        <div className="flex items-center gap-3">
                           <span
                             className="w-[42px] h-[42px] rounded-full flex items-center justify-center text-[14px] font-bold text-white flex-shrink-0 select-none"
                             style={{ background: color }}
                           >
-                            {initials}
+                            {initial}
                           </span>
                           <div>
-                            <strong className="block text-[14.5px] font-bold text-gray-900">Cliente verificado</strong>
-                            <em className="block text-[12.5px] text-gray-400 not-italic">{timeAgo(rv.created_at)}</em>
+                            <strong className="block text-[14.5px] font-bold text-gray-900">
+                              {displayName}
+                            </strong>
+                            <em className="block text-[12.5px] text-gray-400 not-italic">
+                              {timeAgo(review.created_at)}
+                            </em>
                           </div>
                         </div>
-                        {/* Stars */}
-                        <div className="flex items-center gap-0.5 mb-2">
-                          {[1,2,3,4,5].map(s => (
-                            <Star key={s} size={12} strokeWidth={0}
-                              className={s <= Math.round(rv.rating) ? "fill-[#875B9A]" : "fill-gray-200"} />
+                        {/* Estrellas */}
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              size={12}
+                              strokeWidth={0}
+                              className={s <= Math.round(review.rating) ? "fill-[#875B9A]" : "fill-gray-200"}
+                            />
                           ))}
                         </div>
-                        <p className="text-[14px] leading-[1.6] text-gray-600">{rv.content}</p>
+                        {/* Texto de la reseña */}
+                        <p className="text-[14px] leading-[1.6] text-gray-600">
+                          {review.comment}
+                        </p>
                       </article>
                     );
                   })}
