@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Search, LayoutGrid, Volume2, Zap, Video, Sparkles,
   Megaphone, Package, SlidersHorizontal, Star, ChevronDown, Check, X, ShieldCheck,
@@ -308,21 +308,7 @@ export default function ExploreClient({
   const [panelOpen, setPanelOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [favs, setFavs]         = useState<string[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
-
-  // Load favs
-  useEffect(() => {
-    try { setFavs(JSON.parse(localStorage.getItem("artrider:favs") || "[]")); } catch {}
-  }, []);
-
-  const toggleFav = useCallback((id: string) => {
-    setFavs(prev => {
-      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      localStorage.setItem("artrider:favs", JSON.stringify(next));
-      return next;
-    });
-  }, []);
 
   // Filtered + sorted listings
   const filtered = useMemo(() => {
@@ -410,10 +396,8 @@ export default function ExploreClient({
                   <div key={listing.id} data-id={listing.id}>
                     <ExploreCard
                       listing={listing}
-                      isFav={favs.includes(listing.id)}
                       isHovered={hoveredId === listing.id}
                       isSelected={selectedId === listing.id}
-                      onFav={() => toggleFav(listing.id)}
                       onHover={() => setHoveredId(listing.id)}
                       onLeave={() => setHoveredId(null)}
                       onSelect={() => setSelectedId(s => s === listing.id ? null : listing.id)}

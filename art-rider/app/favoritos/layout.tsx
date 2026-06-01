@@ -19,11 +19,11 @@ export default async function FavoritosLayout({
 
   // renderizado del layout principal de la pagina de favoritos
   return (
-    <div className="min-h-screen flex flex-col bg-[#f7f7f8]">
+    <div className="min-h-screen flex flex-col bg-white">
       <Navbar initialUser={data?.user || null} />
-      <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
+      <div className="flex-1">
         {children}
-      </main>
+      </div>
     </div>
   );
 }

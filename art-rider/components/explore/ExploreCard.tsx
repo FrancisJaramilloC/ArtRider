@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, Star, MapPin } from "lucide-react";
+import { Star, MapPin } from "lucide-react";
 import type { Listing } from "@/services/listingsService";
+import { useFavorito } from "@/hooks/useFavorito";
 
 const CAT_LABELS: Record<string, string> = {
   audio:       "Sonido",
@@ -25,19 +26,18 @@ const CAT_GRADIENTS: Record<string, string> = {
 
 interface ExploreCardProps {
   listing: Listing;
-  isFav?: boolean;
   isHovered?: boolean;
   isSelected?: boolean;
-  onFav?: () => void;
   onHover?: () => void;
   onLeave?: () => void;
   onSelect?: () => void;
 }
 
 export default function ExploreCard({
-  listing, isFav, isHovered, isSelected,
-  onFav, onHover, onLeave, onSelect,
+  listing, isHovered, isSelected,
+  onHover, onLeave, onSelect,
 }: ExploreCardProps) {
+  const { esFavorito, toggleFavorito } = useFavorito(listing.id, "equipo");
   const addr     = Array.isArray(listing.address) ? listing.address[0] : listing.address;
   const city     = addr?.city?.trim() || "Ecuador";
   const catLabel = CAT_LABELS[listing.category ?? ""] ?? listing.category ?? "Equipo";
@@ -69,15 +69,15 @@ export default function ExploreCard({
 
         {/* Heart */}
         <button
-          onClick={e => { e.stopPropagation(); onFav?.(); }}
-          aria-label="Guardar"
+          onClick={toggleFavorito}
+          aria-label={esFavorito ? "Quitar de favoritos" : "Guardar en favoritos"}
           className="absolute top-2.5 right-2.5 w-8 h-8 flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
         >
-          <Heart
-            size={22}
-            strokeWidth={2}
-            className={isFav ? "fill-[#875B9A] text-[#875B9A]" : "fill-black/30 text-white"}
-          />
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className={esFavorito ? "stroke-[#C026D3]" : "stroke-white"}>
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+              fill={esFavorito ? "#C026D3" : "rgba(0,0,0,0.3)"} />
+          </svg>
         </button>
       </div>
 

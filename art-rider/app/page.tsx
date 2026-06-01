@@ -54,6 +54,7 @@ export default async function HomePage() {
       city,
       isTop: false,
       href: `/listings/${listing.id}`,
+      tipo: "equipo",
     });
   }
 
@@ -75,6 +76,7 @@ export default async function HomePage() {
     city: "Ecuador",
     isTop: false,
     href: `/packages/${pkg.id}`,
+    tipo: "paquete",
   }));
 
   return (

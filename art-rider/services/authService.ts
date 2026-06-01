@@ -118,7 +118,8 @@ export async function signUp(prevState: any, formData: FormData) {
 export async function signIn(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const redirectUrl = (formData.get('redirectUrl') as string) || '/';
+  const rawRedirect = (formData.get('redirectUrl') as string) || '/';
+  const redirectUrl = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/';
 
   //  Valida que todos los campos requeridos sean completados.
   if (!email || !password) {

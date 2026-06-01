@@ -1,18 +1,9 @@
 "use client";
 
-/**
- * ListingCard.tsx — Componente del lado del cliente
- *
- * Renderiza un único listado en la cuadrícula del catálogo público.
- * Recibe un objeto `Listing` como prop, reenviado desde el componente del lado del servidor
- * padre (app/listings/page.tsx).
- *
- * Interactividad: animación de elevación al pasar el cursor (CSS), navegación a la página de detalles (Link).
- */
-
 import Link from "next/link";
 import Image from "next/image";
 import type { Listing } from "@/services/listingsService";
+import FavoriteButton from "@/components/ui/FavoriteButton";
 
 // Helpers
 
@@ -97,15 +88,18 @@ export default function ListingCard({ listing }: ListingCardProps) {
           </div>
         )}
 
-        {/* Renderizado de la categoría*/}
         {categoryLabel && (
-          <span
-            className="category-badge absolute"
-            style={{ top: "12px", left: "12px" }}
-          >
+          <span className="category-badge absolute" style={{ top: "12px", left: "12px" }}>
             {categoryLabel}
           </span>
         )}
+
+        <FavoriteButton
+          itemId={listing.id}
+          tipo="equipo"
+          size={20}
+          className="absolute top-2.5 right-2.5 w-8 h-8"
+        />
       </div>
 
       {/* Cuerpo de la tarjeta */}
