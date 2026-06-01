@@ -1,99 +1,46 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar } from "lucide-react";
+import { Calendar, ChevronRight } from "lucide-react";
 import { format, differenceInDays, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
-import { getUnavailableDates } from "@/services/availabilityService";
-import { getMyVerificationStatus, requiresVerification } from "@/services/identityService";
-import { VerificationModal } from "@/components/features/identity/VerificationModal";
 
 interface BookingCardProps {
   listingId: string;
   dailyPrice: number;
+  initialDisabledDates: string[];
 }
 
-export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
+export function BookingCard({ listingId, dailyPrice, initialDisabledDates }: BookingCardProps) {
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
     to: undefined,
   });
-  const [disabledDates, setDisabledDates] = useState<Date[]>([]);
+  const [disabledDates] = useState<Date[]>(() => {
+    return initialDisabledDates.map((d) => {
+      const [y, m, day] = d.split("-");
+      return new Date(parseInt(y), parseInt(m) - 1, parseInt(day));
+    });
+  });
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  
-  // KYC State
-  const [kycStatus, setKycStatus] = useState<"pending" | "verified" | "rejected" | "none">("none");
-  const [needsKyc, setNeedsKyc] = useState(false);
-  const [showKycModal, setShowKycModal] = useState(false);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    getUnavailableDates(listingId).then((dateStrings) => {
-      const localDates = dateStrings.map(d => {
-        const [y, m, day] = d.split('-');
-        return new Date(parseInt(y), parseInt(m) - 1, parseInt(day));
-      });
-      setDisabledDates(localDates);
-    });
-    
-    // Check KYC status and if this listing requires it
-    const checkKyc = async () => {
-      const status = await getMyVerificationStatus();
-      setKycStatus(status);
-      const reqKyc = await requiresVerification(dailyPrice);
-      setNeedsKyc(reqKyc);
-    };
-    checkKyc();
-  }, [listingId, dailyPrice]);
 
   const days = dateRange.from && dateRange.to
     ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
     : 0;
 
-  const handleReserve = async () => {
+  const handleReserve = () => {
     if (!dateRange.from || !dateRange.to) return;
-    
-    // Check Identity if required (Total amount >= $50.00)
-    const totalAmount = dailyPrice * days;
-    const requiresKyc = totalAmount >= 5000;
 
-    if (requiresKyc && kycStatus !== "verified") {
-      setShowKycModal(true);
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      const response = await fetch("/api/kushki/charge", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token: "dummy-kushki-token",
-          amount: totalAmount,
-          listingId: listingId,
-          startDate: dateRange.from.toISOString(),
-          endDate: dateRange.to.toISOString(),
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || result.error) {
-        alert(result.error || "Error al procesar el pago");
-        setIsProcessing(false);
-        return;
-      }
-
-      router.push(`/bookings/success?id=${result.bookingId}`);
-    } catch (e: any) {
-      alert(e.message);
-      setIsProcessing(false);
-    }
+    // Redirect to checkout page with dates
+    const startStr = dateRange.from.toISOString();
+    const endStr = dateRange.to.toISOString();
+    router.push(`/checkout/${listingId}?start=${startStr}&end=${endStr}`);
   };
 
   return (
@@ -174,9 +121,10 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
       <button
         onClick={handleReserve}
         disabled={!dateRange.from || !dateRange.to || isProcessing}
-        className="w-full bg-[#111111] hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl transition-colors shadow-soft-premium disabled:shadow-none"
+        className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#875B9A] to-[#6a437a] disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-bold py-[15px] px-4 rounded-[13px] transition-all shadow-[0_10px_24px_-8px_rgba(135,91,154,.55)] disabled:shadow-none hover:brightness-105 active:scale-[.98]"
       >
-        {isProcessing ? "Procesando Kushki..." : "Proceder al Pago (Kushki)"}
+        Proceder al pago
+        <ChevronRight size={17} strokeWidth={2.2} />
       </button>
 
       {days > 0 && (
@@ -191,16 +139,6 @@ export function BookingCard({ listingId, dailyPrice }: BookingCardProps) {
           </div>
         </div>
       )}
-
-      <VerificationModal 
-        isOpen={showKycModal} 
-        onClose={() => setShowKycModal(false)}
-        onVerified={() => {
-          setShowKycModal(false);
-          setKycStatus("verified");
-          handleReserve();
-        }}
-      />
     </div>
   );
 }
