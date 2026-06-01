@@ -28,6 +28,7 @@ export interface LandingCardItem {
   city: string;
   isTop?: boolean;
   href: string;
+  rating?: number;
 }
 
 export default function LandingCard({ item }: { item: LandingCardItem }) {
@@ -112,7 +113,7 @@ export default function LandingCard({ item }: { item: LandingCardItem }) {
           </h3>
           <span className="flex items-center gap-1 text-[13px] font-semibold flex-shrink-0 mt-0.5 text-gray-900">
             <Star size={12} strokeWidth={0} className="fill-gray-900" />
-            —
+            {item.rating && item.rating > 0 ? item.rating.toFixed(1) : "Nuevo"}
           </span>
         </div>
         <p className="flex items-center gap-1 mt-1 text-[12.5px] text-gray-400 font-medium">
