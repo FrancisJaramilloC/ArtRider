@@ -20,7 +20,7 @@ export default function BackButton() {
   if (!mounted) return null;
 
   // No lo mostramos en el root principal ni en el home del dashboard
-  if (pathname === "/" || pathname === "/dashboard" || pathname === "/login" || pathname === "/register") {
+  if (pathname === "/" || pathname === "/dashboard" || pathname === "/login" || pathname === "/register" || pathname.startsWith("/explore") || pathname.startsWith("/listings/") || pathname.startsWith("/mensajes") || pathname.startsWith("/messages")) {
     return null;
   }
 

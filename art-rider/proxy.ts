@@ -1,97 +1,82 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Configurar rutas protegidas y rutas de autenticación
-export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
+export default async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  // Crear el cliente de supabase con cookies
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-          supabaseResponse = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          supabaseResponse.cookies.set({
-            name,
-            value,
-            ...options,
-          });
-        },
-        remove(name: string, options: any) {
-          request.cookies.set({
-            name,
-            value: "",
-            ...options,
-          });
-          supabaseResponse = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          supabaseResponse.cookies.set({
-            name,
-            value: "",
-            ...options,
-          });
-        },
-      },
-    }
-  );
-
-  // Obtener el usuario autenticado
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Definir rutas protegidas y rutas de autenticación
-  const protectedRoutes = ["/dashboard", "/bookings", "/profile"];
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  );
-
-  // Comprobar si la ruta es una ruta de autenticación
-  const isAuthRoute =
-    request.nextUrl.pathname.startsWith("/login") ||
-    request.nextUrl.pathname.startsWith("/register");
-
-  //  Redirigir al usuario a la ruta de inicio si no está autenticado y intenta acceder a una ruta protegida
-  if (!user && isProtectedRoute) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
-    return NextResponse.redirect(loginUrl);
+  // Skip RSC requests and prefetch requests — these are internal App Router
+  // navigation signals. Intercepting them with async auth causes the router
+  // to dispatch actions before its client-side state is initialized (E668).
+  const isRSC = request.headers.get("RSC") === "1";
+  const isPrefetch = request.headers.get("Next-Router-Prefetch") === "1";
+  if (isRSC || isPrefetch) {
+    return NextResponse.next();
   }
 
-  // Redirigir al usuario a la ruta de inicio si está autenticado y intenta acceder a una ruta de autenticación
-  if (user && isAuthRoute) {
-    const homeUrl = request.nextUrl.clone();
-    homeUrl.pathname = "/";
-    return NextResponse.redirect(homeUrl);
+  let supabaseResponse = NextResponse.next({
+    request: { headers: request.headers },
+  });
+
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            request.cookies.set({ name, value, ...options });
+            supabaseResponse = NextResponse.next({
+              request: { headers: request.headers },
+            });
+            supabaseResponse.cookies.set({ name, value, ...options });
+          },
+          remove(name: string, options: any) {
+            request.cookies.set({ name, value: "", ...options });
+            supabaseResponse = NextResponse.next({
+              request: { headers: request.headers },
+            });
+            supabaseResponse.cookies.set({ name, value: "", ...options });
+          },
+        },
+      }
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const protectedRoutes = ["/dashboard", "/bookings", "/profile"];
+    const isProtectedRoute = protectedRoutes.some((route) =>
+      pathname.startsWith(route)
+    );
+    const isAuthRoute =
+      pathname.startsWith("/login") || pathname.startsWith("/register");
+
+    if (!user && isProtectedRoute) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (user && isAuthRoute) {
+      const homeUrl = request.nextUrl.clone();
+      homeUrl.pathname = "/";
+      return NextResponse.redirect(homeUrl);
+    }
+  } catch {
+    // Auth check failed — pass through without redirecting
   }
 
   return supabaseResponse;
 }
 
-// Configuración del middleware para que se ejecute en todas las rutas
 export const config = {
+  // Exclude ALL _next/ internals (static, image, data, RSC chunks, etc.)
+  // and API routes — these don't need session refresh via proxy.
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/|api/|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

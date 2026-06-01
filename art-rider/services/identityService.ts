@@ -25,5 +25,3 @@ export async function getMyVerificationStatus(): Promise<"pending" | "verified" 
     return "none";
   }
 }
-
-}

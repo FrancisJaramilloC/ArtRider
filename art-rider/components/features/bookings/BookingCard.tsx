@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar } from "lucide-react";
+import { Calendar, ChevronRight } from "lucide-react";
 import { format, differenceInDays, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { DayPicker } from "react-day-picker";
@@ -121,9 +121,10 @@ export function BookingCard({ listingId, dailyPrice, initialDisabledDates }: Boo
       <button
         onClick={handleReserve}
         disabled={!dateRange.from || !dateRange.to || isProcessing}
-        className="w-full bg-[#111111] hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl transition-colors shadow-soft-premium disabled:shadow-none"
+        className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#875B9A] to-[#6a437a] disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-bold py-[15px] px-4 rounded-[13px] transition-all shadow-[0_10px_24px_-8px_rgba(135,91,154,.55)] disabled:shadow-none hover:brightness-105 active:scale-[.98]"
       >
-        Proceder al Pago
+        Proceder al pago
+        <ChevronRight size={17} strokeWidth={2.2} />
       </button>
 
       {days > 0 && (
