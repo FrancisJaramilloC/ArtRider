@@ -15,9 +15,10 @@ export const revalidate = 0;
 type Review = {
   id: string;
   rating: number;
-  content: string;
+  comment: string;
   created_at: string;
-  reviewer_id: string;
+  author_id: string;
+  profiles: { full_name: string | null } | null;
 };
 
 // Label maps
@@ -135,16 +136,79 @@ export default async function ListingDetailPage({
     }
   } catch { /* fail silently */ }
 
-  //  Datos de las reseñas
+  //  Datos de las reseñas — solo de este listing
   let reviews: Review[] = [];
   try {
-    const { data } = await supabase
-      .from("reviews")
-      .select("id, rating, content, created_at, reviewer_id")
-      .eq("listing_id", listing.id)
-      .order("created_at", { ascending: false });
-    reviews = (data ?? []) as Review[];
-  } catch { /* table may not exist yet */ }
+    const adminSupabase = createSupabaseAdminClient();
+
+    // Obtener user_id del proveedor
+    const { data: providerRow } = await adminSupabase
+      .from("providers")
+      .select("user_id")
+      .eq("id", listing.provider_id)
+      .maybeSingle();
+
+    if (providerRow?.user_id) {
+      // Cuántos listings tiene el proveedor (para el fallback de bookings sin link)
+      const { data: providerListings } = await adminSupabase
+        .from("listings")
+        .select("id")
+        .eq("provider_id", listing.provider_id);
+      const providerHasOneListing = (providerListings ?? []).length === 1;
+
+      // Reseñas del proveedor (target_id = provider.user_id) con su booking_id
+      const { data: allReviews } = await adminSupabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, author_id, booking_id, profiles!author_id(full_name)")
+        .eq("target_id", providerRow.user_id)
+        .order("created_at", { ascending: false });
+
+      if (allReviews?.length) {
+        const reviewBookingIds = allReviews.map((r: any) => r.booking_id).filter(Boolean);
+
+        if (reviewBookingIds.length) {
+          // Bookings con snapshot_listing + booking_units → equipment_unit alias igual que BOOKING_BASE_FIELDS
+          const { data: bookings } = await adminSupabase
+            .from("bookings")
+            .select("id, snapshot_listing, booking_units(equipment_unit_id, equipment_unit:equipment_units(listing_id))")
+            .in("id", reviewBookingIds);
+
+          const listingBookingIds = new Set<string>();
+          for (const b of bookings ?? []) {
+            const snapshotId = (b.snapshot_listing as any)?.id;
+            const units = (b as any).booking_units ?? [];
+            const hasSnapshotLink = !!snapshotId;
+            const hasUnitLink = units.some((bu: any) => bu.equipment_unit?.listing_id);
+
+            if (!hasSnapshotLink && !hasUnitLink) {
+              // Booking legacy sin ningún link — solo añadir si el proveedor
+              // tiene UN ÚNICO listing (podemos inferir que es este)
+              if (providerHasOneListing) listingBookingIds.add(b.id);
+              continue;
+            }
+            if (snapshotId === listing.id) {
+              listingBookingIds.add(b.id);
+              continue;
+            }
+            if (units.some((bu: any) => bu.equipment_unit?.listing_id === listing.id)) {
+              listingBookingIds.add(b.id);
+            }
+          }
+
+          reviews = allReviews
+            .filter((r: any) => listingBookingIds.has(r.booking_id))
+            .map((r: any) => ({
+              id: r.id,
+              rating: r.rating,
+              comment: r.comment,
+              created_at: r.created_at,
+              author_id: r.author_id,
+              profiles: Array.isArray(r.profiles) ? (r.profiles[0] ?? null) : r.profiles,
+            })) as Review[];
+        }
+      }
+    }
+  } catch { /* fail silently */ }
 
   const avgRating =
     reviews.length > 0
@@ -366,12 +430,12 @@ export default async function ListingDetailPage({
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
                           <span className="text-sm font-semibold text-gray-500 select-none">
-                            C
+                            {(review.profiles?.full_name ?? "C").charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-gray-900">
-                            Cliente verificado
+                            {review.profiles?.full_name ?? "Cliente verificado"}
                           </p>
                           <p className="text-xs text-gray-400">
                             {timeAgo(review.created_at)}
@@ -382,7 +446,7 @@ export default async function ListingDetailPage({
                       <StarRow rating={review.rating} />
                       {/*  Texto de la reseña  */}
                       <p className="text-sm text-gray-700 leading-relaxed">
-                        {review.content}
+                        {review.comment}
                       </p>
                     </div>
                   ))}

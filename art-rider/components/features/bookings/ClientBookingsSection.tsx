@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { BookingWithDetails, BookingStatus } from "@/services/bookingsService";
 
-// Mapa de estados → etiqueta visible + estilos
 const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }> = {
   AWAITING_SIGNATURES: { label: "Enviado al proveedor", className: "bg-[#FAFAFC] text-[#8E8E93]" },
   PAID:               { label: "Aprobado / Pagado",     className: "bg-blue-50 text-blue-700"     },
@@ -12,39 +11,35 @@ const STATUS_CONFIG: Record<BookingStatus, { label: string; className: string }>
   ARCHIVED:           { label: "Archivado",             className: "bg-gray-100 text-gray-400"    },
 } as const;
 
-// Formato de fecha compacto en español
 const MONTHS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"] as const;
 function fmtDate(dateStr: string): string {
   const d = new Date(dateStr);
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
-// Extrae imagen de portada del primer equipo
 function getCoverImage(booking: BookingWithDetails): string | null {
   return booking.booking_units[0]?.listing?.image_urls?.[0] ?? null;
 }
 
 interface Props {
   bookings: BookingWithDetails[];
+  onReview: (bookingId: string, listingTitle: string) => void;
 }
 
-export default function ClientBookingsSection({ bookings }: Props) {
+export default function ClientBookingsSection({ bookings, onReview }: Props) {
   if (bookings.length === 0) return <EmptyState />;
 
   return (
     <section className="pb-24">
       <div className="space-y-4 mt-6">
         {bookings.map((b) => (
-          <BookingCard key={b.id} booking={b} />
+          <BookingCard key={b.id} booking={b} onReview={onReview} />
         ))}
       </div>
     </section>
   );
 }
 
-// ── Subcomponentes ─────────────────────────────────────────────────────────
-
-/** Estado vacío con CTA al catálogo */
 function EmptyState() {
   return (
     <section className="pb-24">
@@ -62,11 +57,43 @@ function EmptyState() {
   );
 }
 
-/** Tarjeta individual de reserva del cliente */
-function BookingCard({ booking }: { booking: BookingWithDetails }) {
+function StarDisplay({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <svg
+          key={star}
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill={star <= rating ? "#F59E0B" : "#E5E7EB"}
+          aria-hidden="true"
+        >
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+function BookingCard({
+  booking,
+  onReview,
+}: {
+  booking: BookingWithDetails;
+  onReview: (bookingId: string, listingTitle: string) => void;
+}) {
   const isPending = booking.status === "AWAITING_SIGNATURES";
+  const firstUnit = booking.booking_units[0];
+  const canReview = booking.status === "COMPLETED" && !booking.client_has_reviewed;
+  const hasReviewed = booking.status === "COMPLETED" && booking.client_has_reviewed;
   const cover = getCoverImage(booking);
   const { label, className: badgeCls } = STATUS_CONFIG[booking.status];
+
+  const handleReview = () => {
+    const listingTitle = firstUnit?.listing?.title ?? "Equipo alquilado";
+    onReview(booking.id, listingTitle);
+  };
 
   return (
     <div className="bg-white rounded-[16px] p-5 sm:p-6 shadow-sm border border-gray-100 transition-all duration-300 hover:border-gray-200">
@@ -83,12 +110,10 @@ function BookingCard({ booking }: { booking: BookingWithDetails }) {
           </div>
 
           <div>
-            {/* Badge de estado */}
             <span className={`inline-block px-3 py-1 text-[10px] uppercase font-bold rounded-full tracking-wider mb-2 ${badgeCls}`}>
               {label}
             </span>
 
-            {/* Nombre del equipo + ciudad */}
             {booking.booking_units.map((u) => (
               <div key={u.id}>
                 <span className="block text-lg font-bold text-[#111111] leading-tight">
@@ -102,25 +127,45 @@ function BookingCard({ booking }: { booking: BookingWithDetails }) {
               </div>
             ))}
 
-            {/* Rango de fechas */}
             <p className="text-sm text-[#8E8E93] mt-2">
               {fmtDate(booking.start_date)} - {fmtDate(booking.end_date)}
             </p>
           </div>
         </div>
 
-        {/* Precio + meta */}
-        <div className="flex flex-col sm:items-end w-full sm:w-auto">
+        {/* Precio + acciones */}
+        <div className="flex flex-col sm:items-end w-full sm:w-auto gap-2">
           <span className="font-bold text-2xl text-[#111111]">
             ${(booking.total_price / 100).toFixed(2)}
           </span>
-          <p className="text-xs text-[#8E8E93] mt-2 sm:text-right">
+          <p className="text-xs text-[#8E8E93] sm:text-right">
             Solicitado el {fmtDate(booking.created_at)}
           </p>
+
           {isPending && (
-            <p className="text-xs font-semibold text-[#875B9A] mt-3 sm:text-right bg-[#F9F5FB] px-3 py-1.5 rounded-lg inline-block w-fit sm:w-auto">
+            <p className="text-xs font-semibold text-[#875B9A] mt-1 sm:text-right bg-[#F9F5FB] px-3 py-1.5 rounded-lg inline-block w-fit sm:w-auto">
               Esperando confirmación del proveedor
             </p>
+          )}
+
+          {canReview && (
+            <button
+              type="button"
+              onClick={handleReview}
+              className="mt-1 flex items-center gap-1.5 px-4 py-2 bg-[#875B9A] text-white text-xs font-semibold rounded-full hover:bg-[#6a437a] transition-colors shadow-sm"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+              </svg>
+              Dejar reseña
+            </button>
+          )}
+
+          {hasReviewed && (
+            <div className="mt-1 flex items-center gap-1.5">
+              <StarDisplay rating={booking.client_review_rating ?? 5} />
+              <span className="text-xs text-[#8E8E93]">Reseña enviada</span>
+            </div>
           )}
         </div>
 

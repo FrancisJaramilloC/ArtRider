@@ -8,6 +8,7 @@ import { HowItWorks } from "@/components/features/home/HowItWorks";
 import { BecomeProviderCTA } from "@/components/features/home/BecomeProviderCTA";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { getListings } from "@/services/listingsService";
+import { getAverageRatingForListings } from "@/services/reviewService";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -125,6 +126,15 @@ export default async function HomePage() {
     href: `/packages/${pkg.id}`,
   }));
 
+  //  Ratings reales por listing
+  const listingIds = realListings.map((l) => l.id);
+  let ratingsMap: Record<string, number> = {};
+  try {
+    ratingsMap = await getAverageRatingForListings(listingIds);
+  } catch {
+    // falla silenciosa — cards muestran "Nuevo"
+  }
+
   //  Agrupar listados por ciudad para la página de inicio
   const listingsByCity = realListings.reduce((acc, listing: any) => {
     const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
@@ -138,7 +148,7 @@ export default async function HomePage() {
       categoryLabel: CATEGORY_LABELS[listing.category ?? ""] ?? listing.category ?? "Equipo",
       location: city,
       price: `$${(listing.daily_price / 100).toFixed(0)}`,
-      rating: 0,
+      rating: ratingsMap[listing.id] ?? 0,
       reviewCount: 0,
       icon: CATEGORY_ICONS[listing.category ?? ""] ?? "📦",
       imageUrl: listing.cover_image_url || null,

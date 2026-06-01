@@ -39,7 +39,11 @@ export default function ProviderBookingsWrapper({ bookings }: { bookings: Bookin
       {reviewModal && (
         <ReviewModal
           bookingId={reviewModal.bookingId}
-          clientName={reviewModal.clientName}
+          subjectName={reviewModal.clientName}
+          title="Reseña del cliente"
+          description={`Califica tu experiencia con ${reviewModal.clientName} antes de archivar`}
+          submitLabel="Enviar y archivar"
+          placeholder="Cuéntanos sobre la experiencia con este cliente..."
           onSubmit={handleReviewSubmit}
           onClose={() => setReviewModal(null)}
           isSubmitting={isSubmitting}
