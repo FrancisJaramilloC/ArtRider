@@ -26,6 +26,7 @@ export type Listing = {
     city: string;
     state: string;
   } | null;
+  rating?: number;
 };
 
 const LISTING_SELECT =

@@ -2,34 +2,41 @@
 
 import { useState } from "react";
 
-// Props del modal de reseña
 interface ReviewModalProps {
   bookingId: string;
-  clientName: string;
+  subjectName: string;
   onSubmit: (review: { rating: number; content: string }) => Promise<void>;
   onClose: () => void;
   isSubmitting: boolean;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
+  placeholder?: string;
 }
 
-// Modal de reseña
 export default function ReviewModal({
-  bookingId,
-  clientName,
+  bookingId: _bookingId,
+  subjectName,
   onSubmit,
   onClose,
   isSubmitting,
+  title = "Deja tu reseña",
+  description,
+  submitLabel = "Enviar reseña",
+  placeholder = "Cuéntanos sobre tu experiencia...",
 }: ReviewModalProps) {
   const [rating, setRating] = useState(0);
+  const [hovered, setHovered] = useState(0);
   const [content, setContent] = useState("");
 
-  // Deshabilitar el boton de enviar si la reseña no esta completa
   const isDisabled = isSubmitting || rating === 0 || content.trim() === "";
 
-  // Funcion para manejar el envio de la reseña
   const handleSubmit = async () => {
     if (isDisabled) return;
     await onSubmit({ rating, content });
   };
+
+  const activeRating = hovered || rating;
 
   return (
     <div
@@ -40,12 +47,12 @@ export default function ReviewModal({
         className="max-w-md w-full bg-white rounded-3xl p-8 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="font-semibold text-xl text-gray-900">Reseña del cliente</h2>
+        <h2 className="font-semibold text-xl text-gray-900">{title}</h2>
         <p className="text-sm text-gray-500 mt-1 mb-6">
-          Califica tu experiencia con {clientName} antes de archivar
+          {description ?? `Califica tu experiencia con ${subjectName}`}
         </p>
 
-        {/* Renderizado de estrellas para calificar */}
+        {/* Estrellas interactivas */}
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">Calificación</p>
           <div className="flex gap-1">
@@ -54,31 +61,38 @@ export default function ReviewModal({
                 key={star}
                 type="button"
                 onClick={() => setRating(star)}
-                className="text-3xl leading-none transition-colors"
-                style={{ color: star <= rating ? "#F59E0B" : "#E5E7EB" }}
+                onMouseEnter={() => setHovered(star)}
+                onMouseLeave={() => setHovered(0)}
+                className="text-3xl leading-none transition-all duration-100 hover:scale-110"
+                style={{ color: star <= activeRating ? "#F59E0B" : "#E5E7EB" }}
                 aria-label={`${star} estrella${star > 1 ? "s" : ""}`}
               >
                 ★
               </button>
             ))}
           </div>
+          {rating > 0 && (
+            <p className="text-xs text-gray-400 mt-1.5">
+              {["", "Pésimo", "Malo", "Regular", "Bueno", "Excelente"][rating]}
+            </p>
+          )}
         </div>
 
-        {/* Campo de texto para la reseña */}
+        {/* Comentario */}
         <div className="mt-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Comentario
           </label>
           <textarea
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-[#875B9A]/30"
-            placeholder="Cuentanos sobre la experiencia con este cliente..."
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700 min-h-[100px] resize-none focus:outline-none focus:ring-2 focus:ring-[#875B9A]/30 transition-shadow"
+            placeholder={placeholder}
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
         </div>
 
-        {/* Botones de cancelar y enviar */}
-          <div className="mt-6 flex gap-3">
+        {/* Acciones */}
+        <div className="mt-6 flex gap-3">
           <button
             type="button"
             onClick={onClose}
@@ -92,7 +106,7 @@ export default function ReviewModal({
             disabled={isDisabled}
             className="flex-1 bg-[#6a437a] text-white rounded-full py-2.5 text-sm font-semibold hover:bg-[#5c3569] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Enviar y archivar
+            {isSubmitting ? "Enviando..." : submitLabel}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import Navbar from "@/components/layout/Navbar";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { getListings } from "@/services/listingsService";
+import { getAverageRatingForListings } from "@/services/reviewService";
 import type { Metadata } from "next";
 import LandingHero from "@/components/features/home/LandingHero";
 import LandingCategoryStrip from "@/components/features/home/LandingCategoryStrip";
@@ -38,6 +39,15 @@ export default async function HomePage() {
     packages = (data ?? []) as typeof packages;
   } catch {}
 
+  // Ratings reales por listing
+  let ratingsMap: Record<string, number> = {};
+  try {
+    const listingIds = listings.map((l) => l.id);
+    ratingsMap = await getAverageRatingForListings(listingIds);
+  } catch {
+    // falla silenciosa — cards muestran "Nuevo"
+  }
+
   // ── Group listings by city (dynamic — new cities auto-appear) ──
   const cityMap = new Map<string, LandingCardItem[]>();
   for (const listing of listings) {
@@ -52,13 +62,14 @@ export default async function HomePage() {
       cover_image_url: listing.cover_image_url,
       daily_price: listing.daily_price,
       city,
+      rating: ratingsMap[listing.id] ?? 0,
       isTop: false,
       href: `/listings/${listing.id}`,
       tipo: "equipo",
     });
   }
 
-  // Cities sorted by listing count desc, min 2 listings to show
+  // Cities sorted by listing count desc, min 1 listing to show
   const cities = Array.from(cityMap.entries())
     .filter(([, items]) => items.length >= 1)
     .sort(([, a], [, b]) => b.length - a.length);
@@ -74,6 +85,7 @@ export default async function HomePage() {
     cover_image_url: pkg.cover_image_url,
     daily_price: pkg.daily_price,
     city: "Ecuador",
+    rating: 0,
     isTop: false,
     href: `/packages/${pkg.id}`,
     tipo: "paquete",

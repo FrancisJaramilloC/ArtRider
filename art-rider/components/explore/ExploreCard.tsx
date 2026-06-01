@@ -102,7 +102,7 @@ export default function ExploreCard({
               </h3>
               <span className="flex items-center gap-1 text-[13px] font-semibold flex-shrink-0 mt-0.5">
                 <Star size={12} strokeWidth={0} className="fill-gray-900" />
-                —
+                {listing.rating && listing.rating > 0 ? listing.rating.toFixed(1) : "Nuevo"}
               </span>
             </div>
 
