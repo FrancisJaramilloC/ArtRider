@@ -8,6 +8,7 @@ import {
 import type { Listing } from "@/services/listingsService";
 import ExploreCard from "./ExploreCard";
 import ExploreMap from "./ExploreMap";
+import { EVENT_TYPES } from "@/lib/eventCategoryMap";
 
 // ── Category config ────────────────────────────────────────────────────────────
 const CATEGORIES = [
@@ -35,12 +36,13 @@ interface Filters {
 
 // ── Sub-bar ────────────────────────────────────────────────────────────────────
 function SubBar({
-  active, onPick, query, onQuery,
+  active, onPick, query, onQuery, suggestedCategories = [],
 }: {
   active: string;
   onPick: (id: string) => void;
   query: string;
   onQuery: (v: string) => void;
+  suggestedCategories?: readonly string[];
 }) {
   return (
     <div className="flex items-center gap-5 px-8 h-[70px] border-b border-gray-100 bg-white flex-shrink-0 z-30">
@@ -69,7 +71,7 @@ function SubBar({
               key={id}
               onClick={() => onPick(id)}
               className={`
-                flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap
+                relative flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap
                 border transition-all duration-150 flex-shrink-0
                 ${isActive
                   ? "bg-gradient-to-r from-[#875B9A] to-[#6a437a] text-white border-transparent shadow-[0_6px_16px_-6px_rgba(135,91,154,0.55)]"
@@ -79,6 +81,9 @@ function SubBar({
             >
               <Icon size={17} strokeWidth={1.8} className={isActive ? "text-white" : "text-gray-400"} />
               {label}
+              {suggestedCategories.includes(id) && !isActive && (
+                <span className="absolute bottom-[2px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#875B9A]" />
+              )}
             </button>
           );
         })}
@@ -296,19 +301,36 @@ export default function ExploreClient({
   listings,
   initialCity,
   initialCategory,
+  initialQuery,
+  initialEventType,
+  initialStart,
+  initialEnd,
 }: {
   listings: Listing[];
   initialCity?: string;
   initialCategory?: string;
+  initialQuery?: string;
+  initialEventType?: string;
+  initialStart?: string;
+  initialEnd?: string;
 }) {
   const [cat, setCat]           = useState(initialCategory ?? "all");
-  const [query, setQuery]       = useState("");
+  const [query, setQuery]       = useState(initialQuery ?? "");
   const [sort, setSort]         = useState<SortId>("rec");
   const [filters, setFilters]   = useState<Filters>({ maxPrice: null, superhost: false });
   const [panelOpen, setPanelOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  // Maintain dates in state even if not used directly for filtering yet
+  const [startDate, setStartDate] = useState(initialStart ?? null);
+  const [endDate, setEndDate] = useState(initialEnd ?? null);
+
+  const activeEvent = useMemo(() => {
+    if (!initialEventType) return null;
+    return EVENT_TYPES.find(e => e.id === initialEventType) || null;
+  }, [initialEventType]);
 
   // Filtered + sorted listings
   const filtered = useMemo(() => {
@@ -321,11 +343,24 @@ export default function ExploreClient({
     );
     // maxPrice is in dollars; daily_price in cents
     if (filters.maxPrice !== null) list = list.filter(l => l.daily_price <= filters.maxPrice! * 100);
+    
     // sort
     if (sort === "price_asc")  list = [...list].sort((a, b) => a.daily_price - b.daily_price);
-    if (sort === "price_desc") list = [...list].sort((a, b) => b.daily_price - a.daily_price);
+    else if (sort === "price_desc") list = [...list].sort((a, b) => b.daily_price - a.daily_price);
+    else {
+      // "rec" sort -> if we have an active event, boost relevant categories to top
+      if (activeEvent) {
+        const catSet = new Set<string>(activeEvent.categories);
+        list = [...list].sort((a, b) => {
+          const aMatch = catSet.has(a.category || "") ? 1 : 0;
+          const bMatch = catSet.has(b.category || "") ? 1 : 0;
+          return bMatch - aMatch;
+        });
+      }
+    }
+    
     return list;
-  }, [listings, cat, query, filters, sort]);
+  }, [listings, cat, query, filters, sort, activeEvent]);
 
   // Scroll selected card into view
   useEffect(() => {
@@ -350,7 +385,13 @@ export default function ExploreClient({
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden bg-white">
       {/* Sub-bar: search + categories */}
-      <SubBar active={cat} onPick={c => { setCat(c); setSelectedId(null); }} query={query} onQuery={setQuery} />
+      <SubBar 
+        active={cat} 
+        onPick={c => { setCat(c); setSelectedId(null); }} 
+        query={query} 
+        onQuery={setQuery} 
+        suggestedCategories={activeEvent ? activeEvent.categories : []}
+      />
 
       {/* Filter row */}
       <FilterRow
@@ -370,10 +411,21 @@ export default function ExploreClient({
             {/* List header */}
             <div className="mb-6">
               <h1 className="text-[25px] font-black tracking-tight text-gray-900">
-                Equipos para eventos en{" "}
-                <span className="bg-gradient-to-r from-[#875B9A] to-[#6a437a] bg-clip-text text-transparent">
-                  {displayCity}
-                </span>
+                {activeEvent ? (
+                  <>
+                    Equipos para tu {activeEvent.label.toLowerCase()} en{" "}
+                    <span className="bg-gradient-to-r from-[#875B9A] to-[#6a437a] bg-clip-text text-transparent">
+                      {displayCity}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Equipos para eventos en{" "}
+                    <span className="bg-gradient-to-r from-[#875B9A] to-[#6a437a] bg-clip-text text-transparent">
+                      {displayCity}
+                    </span>
+                  </>
+                )}
               </h1>
               <p className="text-[13.5px] text-gray-400 font-medium mt-1.5">
                 Alquila directo a productores locales verificados.

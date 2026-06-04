@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ExplorePage(props: {
-  searchParams: Promise<{ city?: string; category?: string }>;
+  searchParams: Promise<{ city?: string; category?: string; q?: string; eventType?: string; start?: string; end?: string }>;
 }) {
   const searchParams = await props.searchParams;
 
@@ -35,6 +35,10 @@ export default async function ExplorePage(props: {
           listings={listingsWithRatings}
           initialCity={searchParams.city}
           initialCategory={searchParams.category}
+          initialQuery={searchParams.q}
+          initialEventType={searchParams.eventType}
+          initialStart={searchParams.start}
+          initialEnd={searchParams.end}
         />
       </Suspense>
     </div>
