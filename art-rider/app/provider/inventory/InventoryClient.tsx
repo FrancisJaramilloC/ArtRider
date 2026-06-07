@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { togglePublish } from "@/services/listingsService";
 import { togglePackagePublish } from "@/services/packagesService";
 import type { Listing } from "@/services/listingsService";
@@ -15,6 +16,7 @@ const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
 function ItemRow({
   id,
+  href,
   title,
   subtitle,
   imageUrl,
@@ -25,6 +27,7 @@ function ItemRow({
   onTogglePublish,
 }: {
   id: string;
+  href: string;
   title: string;
   subtitle?: string | null;
   imageUrl: string | null;
@@ -42,54 +45,59 @@ function ItemRow({
           : "bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm"
       }`}
     >
-      {/* Thumbnail */}
-      <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-        {imageUrl ? (
-          <Image src={imageUrl} alt={title} fill sizes="56px" className="object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#d1d5db"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <polyline points="21 15 16 10 5 21" />
-            </svg>
-          </div>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-semibold text-gray-900 truncate">{title}</p>
-          {badge && (
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full shrink-0">
-              {badge}
-            </span>
+      {/* Thumbnail + Info — navegables */}
+      <Link href={href} className="flex items-center gap-4 flex-1 min-w-0 group">
+        {/* Thumbnail */}
+        <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+          {imageUrl ? (
+            <Image src={imageUrl} alt={title} fill sizes="56px" className="object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#d1d5db"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+            </div>
           )}
         </div>
-        {subtitle && <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>}
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-sm font-black text-gray-900">{formatPrice(dailyPrice)}</span>
-          <span className="text-xs text-gray-400">/ día</span>
-          <span
-            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-              isPublished ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-400"
-            }`}
-          >
-            {isPublished ? "Publicado" : "Borrador"}
-          </span>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-[#875B9A] transition-colors">
+              {title}
+            </p>
+            {badge && (
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full shrink-0">
+                {badge}
+              </span>
+            )}
+          </div>
+          {subtitle && <p className="text-xs text-gray-400 truncate mt-0.5">{subtitle}</p>}
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-sm font-black text-gray-900">{formatPrice(dailyPrice)}</span>
+            <span className="text-xs text-gray-400">/ día</span>
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                isPublished ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              {isPublished ? "Publicado" : "Borrador"}
+            </span>
+          </div>
         </div>
-      </div>
+      </Link>
 
       {/* Toggle publicación */}
       <button
@@ -289,6 +297,7 @@ export default function InventoryClient({
               <ItemRow
                 key={l.id}
                 id={l.id}
+                href={`/listings/${l.id}`}
                 title={l.title ?? "Sin título"}
                 subtitle={[l.brand, l.model].filter(Boolean).join(" · ")}
                 imageUrl={l.cover_image_url}
@@ -310,6 +319,7 @@ export default function InventoryClient({
               <ItemRow
                 key={p.id}
                 id={p.id}
+                href={`/packages/${p.id}`}
                 title={p.title}
                 subtitle={`${p.items?.length ?? 0} equipo${(p.items?.length ?? 0) !== 1 ? "s" : ""} incluido${(p.items?.length ?? 0) !== 1 ? "s" : ""}`}
                 imageUrl={p.cover_image_url}

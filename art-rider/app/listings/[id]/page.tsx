@@ -172,19 +172,6 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     }
   } catch { /* fail silently */ }
 
-  // Nearby listings for map
-  let nearbyListings: any[] = [];
-  try {
-    const admin = createSupabaseAdminClient();
-    const { data } = await admin
-      .from("listings")
-      .select("*, address:addresses(latitude, longitude, city, state)")
-      .eq("is_published", true)
-      .not("address_id", "is", null)
-      .limit(20);
-    nearbyListings = data ?? [];
-  } catch { /* silent */ }
-
   // Derived values
   const price = listing.daily_price / 100;
   const catLabel = CAT_LABELS[listing.category ?? ""] ?? listing.category ?? "Equipo";
@@ -425,7 +412,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                 <div className="h-[420px] rounded-[18px] overflow-hidden border border-gray-100">
                   <MapWrapper
                     currentListing={listing as any}
-                    nearbyListings={nearbyListings as any}
+                    nearbyListings={[]}
                   />
                 </div>
               </section>

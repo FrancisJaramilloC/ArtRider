@@ -103,23 +103,27 @@ export default async function HomePage() {
         <LandingCategoryStrip />
 
         {/* One carousel per city — fully dynamic */}
-        {cities.map(([city, items]) => (
-          <LandingCarousel
-            key={city}
-            title={`Equipos populares en ${city}`}
-            viewAllHref={`/explore?city=${encodeURIComponent(city)}`}
-            items={items}
-          />
-        ))}
+        <section id="equipos" className="scroll-mt-16">
+          {cities.map(([city, items]) => (
+            <LandingCarousel
+              key={city}
+              title={`Equipos populares en ${city}`}
+              viewAllHref={`/explore?city=${encodeURIComponent(city)}`}
+              items={items}
+            />
+          ))}
+        </section>
 
         {/* Packages */}
         {packageItems.length > 0 && (
-          <LandingCarousel
-            title="Paquetes destacados"
-            subtitle="Combos listos para rentar que ahorran dinero y tiempo"
-            viewAllHref="/packages"
-            items={packageItems}
-          />
+          <section id="paquetes" className="scroll-mt-16">
+            <LandingCarousel
+              title="Paquetes destacados"
+              subtitle="Combos listos para rentar que ahorran dinero y tiempo"
+              viewAllHref="/packages"
+              items={packageItems}
+            />
+          </section>
         )}
 
         {/* How it works */}
