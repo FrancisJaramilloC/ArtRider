@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState } from "react";
 import {
   Map,
   MapMarker,
@@ -12,26 +12,17 @@ import {
 import type { MapListing } from "./types";
 import { DEFAULT_CENTER } from "./constants";
 import { MapEffects } from "./hooks/MapEffects";
-import { PricePill } from "./components/PricePill";
 import { PopupCard } from "./components/PopupCard";
 
 // Componente principal
 export default function MapClient({
   currentListing,
-  nearbyListings,
 }: {
   currentListing: MapListing;
-  nearbyListings: MapListing[];
 }) {
   //  Estados
   const [activeId, setActiveId] = useState<string | null>(currentListing.id);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  //  Validacion de listings
-  const validListings = useMemo(
-    () => nearbyListings.filter((l) => l.address?.latitude != null && l.address?.longitude != null),
-    [nearbyListings]
-  );
 
   //  Toggle selected
   const toggleSelected = (id: string) => {
@@ -77,17 +68,14 @@ export default function MapClient({
             <MarkerContent>
               <div
                 className={`
-                  px-3 py-1.5 rounded-full text-sm font-bold tracking-tight shadow-md transition-all duration-200
+                  w-4 h-4 rounded-full shadow-md transition-all duration-200
                   ${
                     activeId === currentListing.id || selectedId === currentListing.id
-                      ? "bg-[#875B9A] text-white border-white scale-110 shadow-lg shadow-[#875B9A]/30 z-50 relative"
-                      : "bg-[#875B9A]/90 text-white border border-[#875B9A] hover:bg-[#875B9A] hover:scale-105"
+                      ? "bg-[#875B9A] scale-125 shadow-lg shadow-[#875B9A]/30 z-50 relative"
+                      : "bg-[#875B9A]/90 hover:bg-[#875B9A] hover:scale-110"
                   }
                 `}
-              >
-                {/* Precio */}
-                ${Math.round(currentListing.daily_price / 100)}
-              </div>
+              />
             </MarkerContent>
             {/* Tooltip del marcador */}
             <MarkerTooltip offset={20}>
@@ -101,38 +89,6 @@ export default function MapClient({
           </MapMarker>
         )}
 
-        {/* Marcadores Secundarios (Equipos en la zona) */}
-        {validListings.map((listing) => {
-          if (listing.id === currentListing.id) return null;
-
-          const isActive = activeId === listing.id || selectedId === listing.id;
-          //  Renderizado de marcadores secundarios
-          return (
-            <MapMarker
-              key={listing.id}
-              longitude={listing.address.longitude}
-              latitude={listing.address.latitude}
-              onClick={() => toggleSelected(listing.id)}
-              onMouseEnter={() => setActiveId(listing.id)}
-              onMouseLeave={() => setActiveId(null)}
-            >
-              {/* Contenido del marcador */}
-              <MarkerContent>
-                <PricePill price={listing.daily_price} isActive={isActive} />
-              </MarkerContent>
-
-              {/* Tooltip del marcador */}
-              <MarkerTooltip offset={20}>
-                <p className="font-medium">{listing.title}</p>
-                <p className="mt-0.5 opacity-70">{listing.address.city}</p>
-              </MarkerTooltip>
-              {/* Popup del marcador */}
-              <MarkerPopup closeButton>
-                <PopupCard listing={listing} />
-              </MarkerPopup>
-            </MapMarker>
-          );
-        })}
       </Map>
 
       {/* Gradient fade */}
