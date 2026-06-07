@@ -13,9 +13,9 @@ const CATS = [
 export default function LandingCategoryStrip() {
   return (
     <nav
-      id="cats"
+      id="categorias"
       aria-label="Categorías"
-      className="flex items-center gap-2 max-w-[1240px] mx-auto px-8 py-[14px] mt-2 border-b border-gray-100 overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+      className="flex items-center gap-2 max-w-[1240px] mx-auto px-8 py-[14px] mt-2 border-b border-gray-100 overflow-x-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] scroll-mt-16"
     >
       {CATS.map(({ id, label, Icon }, i) => {
         const href = id === "all" ? "/explore" : `/explore?category=${id}`;
