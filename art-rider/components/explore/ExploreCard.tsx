@@ -49,10 +49,13 @@ export default function ExploreCard({
       className={`cursor-pointer group ${isSelected ? "ring-2 ring-[#875B9A] ring-offset-2 rounded-2xl" : ""}`}
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
-      onClick={onSelect}
     >
       {/* Photo */}
-      <div className={`relative aspect-[4/3] rounded-2xl overflow-hidden mb-3 bg-gradient-to-br ${gradient}`}>
+      <Link
+        href={`/listings/${listing.id}`}
+        onClick={onSelect}
+        className={`relative block aspect-[4/3] rounded-2xl overflow-hidden mb-3 bg-gradient-to-br ${gradient}`}
+      >
         {listing.cover_image_url ? (
           <Image
             src={listing.cover_image_url}
@@ -69,7 +72,7 @@ export default function ExploreCard({
 
         {/* Heart */}
         <button
-          onClick={toggleFavorito}
+          onClick={e => { e.preventDefault(); e.stopPropagation(); toggleFavorito(); }}
           aria-label={esFavorito ? "Quitar de favoritos" : "Guardar en favoritos"}
           className="absolute top-2.5 right-2.5 w-8 h-8 flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
         >
@@ -79,14 +82,13 @@ export default function ExploreCard({
               fill={esFavorito ? "#C026D3" : "rgba(0,0,0,0.3)"} />
           </svg>
         </button>
-      </div>
+      </Link>
 
       {/* Body */}
       <Link
         href={`/listings/${listing.id}`}
-        onClick={e => e.stopPropagation()}
+        onClick={onSelect}
         className="block outline-none"
-        tabIndex={-1}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
