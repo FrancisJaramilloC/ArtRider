@@ -39,10 +39,12 @@ export async function POST(request: Request) {
 
     const kushkiData = await kushkiRes.json();
 
-    if (!kushkiRes.ok || !kushkiData.isSuccessful) {
+    const isApproved = kushkiRes.ok && kushkiData.ticketNumber && kushkiData.details?.transactionStatus === 'APPROVAL';
+
+    if (!isApproved) {
       console.error("Kushki Error:", kushkiData);
       return NextResponse.json({ 
-        error: kushkiData.message || kushkiData.details?.responseMessage || "El pago fue rechazado por el banco" 
+        error: kushkiData.message || kushkiData.details?.responseText || "El pago fue rechazado por el banco" 
       }, { status: 400 });
     }
 

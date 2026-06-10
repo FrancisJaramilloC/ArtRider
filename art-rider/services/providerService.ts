@@ -14,12 +14,14 @@ export type ProviderProfile = {
   created_at: string;
 };
 
+import { cache } from "react";
+
 // Consultas
 /**
  * Retorna el perfil del proveedor para el usuario autenticado.
  * Retorna null si el usuario no está registrado como proveedor.
  */
-export async function getMyProviderProfile(): Promise<ProviderProfile | null> {
+export const getMyProviderProfile = cache(async function getMyProviderProfile(): Promise<ProviderProfile | null> {
   const supabase = await createSupabaseServerClient();
 
   const {
@@ -42,7 +44,7 @@ export async function getMyProviderProfile(): Promise<ProviderProfile | null> {
   }
 
   return data as ProviderProfile;
-}
+});
 
 // Crear
 

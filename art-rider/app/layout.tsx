@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import BackButton from "@/components/BackButton";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 
 // Configuración de fuentes
 const geistSans = Geist({
@@ -40,8 +41,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white">
-        <BackButton />
-        {children}
+        <NotificationProvider>
+          <BackButton />
+          {children}
+        </NotificationProvider>
       </body>
     </html>
   );
