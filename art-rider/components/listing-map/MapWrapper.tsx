@@ -27,8 +27,7 @@ function normalizeListing(listing: any) {
 }
 
 // Wrapper principal (maneja la data de Supabase)
-export default function MapWrapper({ currentListing, nearbyListings }: any) {
+export default function MapWrapper({ currentListing }: any) {
   const safeCurrent = normalizeListing(currentListing);
-  const safeNearby = (nearbyListings || []).map(normalizeListing);
-  return <MapClient currentListing={safeCurrent} nearbyListings={safeNearby} />;
+  return <MapClient currentListing={safeCurrent} />;
 }
