@@ -335,6 +335,13 @@ export default function ExploreClient({
   // Filtered + sorted listings
   const filtered = useMemo(() => {
     let list = listings.filter(l => cat === "all" || l.category === cat);
+    
+    // Filter by city if one was passed in the URL
+    if (initialCity) {
+      const targetCity = initialCity.trim().toLowerCase();
+      list = list.filter(l => l.address?.city?.toLowerCase() === targetCity);
+    }
+
     const q = query.trim().toLowerCase();
     if (q) list = list.filter(l =>
       l.title?.toLowerCase().includes(q) ||

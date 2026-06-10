@@ -104,53 +104,240 @@ function EventIcon({ id }: { id: string }) {
   );
 }
 
-// ── SVG illustrations for city regions ────────────────────────────────────────
+// ── SVG illustrations for cities (equipment-rental themed) ────────────────────
 
-function CityIcon({ state }: { state: string }) {
+function CityIcon({ city }: { city: string; state: string }) {
   const SIZE = 48;
   const common = { width: SIZE, height: SIZE, viewBox: "0 0 48 48", fill: "none", xmlns: "http://www.w3.org/2000/svg" };
-  const s = state.toLowerCase();
+  const c = city.toLowerCase().trim();
 
-  // Costa
-  if (["guayas", "manabí", "santa elena", "esmeraldas", "el oro", "los ríos"].some(r => s.includes(r))) {
+  // ── Loja — Speaker + sound waves
+  if (c === "loja") {
     return (
-      <div className="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center shrink-0">
+      <div className="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
         <svg {...common}>
-          <path d="M6 32c4-2 8 2 12 0s8-4 12-2 8 2 12 0" stroke="#875B9A" strokeWidth="1.5" fill="none" />
-          <path d="M6 36c4-2 8 2 12 0s8-4 12-2 8 2 12 0" stroke="#a97dc4" strokeWidth="1.2" fill="none" />
-          <path d="M30 10v22" stroke="#875B9A" strokeWidth="1.5" />
-          <path d="M30 10c3 2 7 2 7 6s-4 4-7 4" stroke="#6a437a" strokeWidth="1.5" fill="none" />
-          <circle cx="16" cy="26" r="6" stroke="#a97dc4" strokeWidth="1.3" fill="none" />
+          {/* Speaker cabinet */}
+          <rect x="10" y="8" width="18" height="32" rx="3" stroke="#875B9A" strokeWidth="1.5" />
+          {/* Woofer */}
+          <circle cx="19" cy="28" r="7" stroke="#875B9A" strokeWidth="1.5" />
+          <circle cx="19" cy="28" r="3" stroke="#a97dc4" strokeWidth="1.2" />
+          <circle cx="19" cy="28" r="1" fill="#875B9A" />
+          {/* Tweeter */}
+          <circle cx="19" cy="16" r="3.5" stroke="#a97dc4" strokeWidth="1.3" />
+          <circle cx="19" cy="16" r="1.5" fill="#a97dc4" />
+          {/* Sound waves */}
+          <path d="M32 18c2 2 3 5 3 8s-1 6-3 8" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+          <path d="M36 14c3 4 5 8 5 12s-2 8-5 12" stroke="#a97dc4" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+          <path d="M40 10c4 5 6 11 6 16s-2 11-6 16" stroke="#875B9A" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.4" />
         </svg>
       </div>
     );
   }
 
-  // Oriente
-  if (["zamora chinchipe", "zamora", "morona santiago", "pastaza", "napo", "sucumbíos", "orellana"].some(r => s.includes(r))) {
+  // ── Zamora — Stage light / PAR can + beam
+  if (c === "zamora") {
     return (
       <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
         <svg {...common}>
-          <path d="M10 38c2-10 4-20 8-26" stroke="#6a437a" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M18 12c-6 2-8 6-6 10 2-2 6-3 8-2-4 0-7 3-6 7 3-2 7-2 9 0-3-1-5 2-4 5" stroke="#875B9A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-          <path d="M28 38c2-8 3-16 5-22" stroke="#a97dc4" strokeWidth="1.3" strokeLinecap="round" />
-          <path d="M33 16c4 1 6 4 5 8-2-1-5-1-7 1 3-1 5 2 4 5" stroke="#a97dc4" strokeWidth="1.3" fill="none" strokeLinecap="round" />
-          <path d="M6 38h36" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Truss bar */}
+          <path d="M6 8h36" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M8 8v3" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
+          <path d="M40 8v3" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
+          {/* PAR can housing */}
+          <path d="M16 11l-4 14h24l-4-14" stroke="#875B9A" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+          {/* Lens */}
+          <ellipse cx="24" cy="25" rx="10" ry="3" stroke="#a97dc4" strokeWidth="1.3" />
+          {/* Light beam */}
+          <path d="M14 28l-6 14" stroke="#875B9A" strokeWidth="1.3" strokeLinecap="round" opacity="0.5" />
+          <path d="M34 28l6 14" stroke="#875B9A" strokeWidth="1.3" strokeLinecap="round" opacity="0.5" />
+          <path d="M24 28v14" stroke="#a97dc4" strokeWidth="1.5" strokeLinecap="round" opacity="0.4" />
+          {/* Light glow dots */}
+          <circle cx="24" cy="22" r="1.5" fill="#875B9A" opacity="0.6" />
+          <circle cx="20" cy="23" r="1" fill="#a97dc4" opacity="0.5" />
+          <circle cx="28" cy="23" r="1" fill="#a97dc4" opacity="0.5" />
         </svg>
       </div>
     );
   }
 
-  // Sierra (default)
+  // ── Vilcabamba — Microphone + stand
+  if (c === "vilcabamba") {
+    return (
+      <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+        <svg {...common}>
+          {/* Mic head */}
+          <rect x="18" y="6" width="12" height="18" rx="6" stroke="#875B9A" strokeWidth="1.5" />
+          {/* Grille lines */}
+          <path d="M20 10h8" stroke="#a97dc4" strokeWidth="1" strokeLinecap="round" />
+          <path d="M20 13h8" stroke="#a97dc4" strokeWidth="1" strokeLinecap="round" />
+          <path d="M20 16h8" stroke="#a97dc4" strokeWidth="1" strokeLinecap="round" />
+          <path d="M20 19h8" stroke="#a97dc4" strokeWidth="1" strokeLinecap="round" />
+          {/* Mic clip */}
+          <path d="M14 20c0 6 5 10 10 10s10-4 10-10" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+          {/* Stand */}
+          <path d="M24 30v10" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Base */}
+          <path d="M16 40h16" stroke="#a97dc4" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Sound indicator */}
+          <circle cx="8" cy="14" r="1.5" fill="#a97dc4" opacity="0.6" />
+          <circle cx="40" cy="14" r="1.5" fill="#875B9A" opacity="0.6" />
+        </svg>
+      </div>
+    );
+  }
+
+  // ── Cuenca — Mixing console / DJ mixer
+  if (c === "cuenca") {
+    return (
+      <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+        <svg {...common}>
+          {/* Console body */}
+          <path d="M6 18l4-6h28l4 6v18H6z" stroke="#875B9A" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+          {/* Faders */}
+          <path d="M14 20v12" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
+          <rect x="12" y="22" width="4" height="3" rx="1" fill="#875B9A" />
+          <path d="M21 20v12" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
+          <rect x="19" y="26" width="4" height="3" rx="1" fill="#a97dc4" />
+          <path d="M28 20v12" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
+          <rect x="26" y="24" width="4" height="3" rx="1" fill="#875B9A" />
+          <path d="M35 20v12" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
+          <rect x="33" y="21" width="4" height="3" rx="1" fill="#a97dc4" />
+          {/* Knobs row */}
+          <circle cx="14" cy="16" r="1.5" stroke="#875B9A" strokeWidth="1" />
+          <circle cx="21" cy="16" r="1.5" stroke="#a97dc4" strokeWidth="1" />
+          <circle cx="28" cy="16" r="1.5" stroke="#875B9A" strokeWidth="1" />
+          <circle cx="35" cy="16" r="1.5" stroke="#a97dc4" strokeWidth="1" />
+        </svg>
+      </div>
+    );
+  }
+
+  // ── Quito — LED screen / video panel
+  if (c === "quito") {
+    return (
+      <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+        <svg {...common}>
+          {/* Screen frame */}
+          <rect x="6" y="8" width="36" height="24" rx="2" stroke="#875B9A" strokeWidth="1.5" />
+          {/* Screen inner */}
+          <rect x="9" y="11" width="30" height="18" rx="1" stroke="#a97dc4" strokeWidth="1" />
+          {/* LED pixel grid */}
+          <circle cx="14" cy="16" r="1" fill="#875B9A" opacity="0.7" />
+          <circle cx="19" cy="16" r="1" fill="#a97dc4" opacity="0.7" />
+          <circle cx="24" cy="16" r="1" fill="#875B9A" opacity="0.5" />
+          <circle cx="29" cy="16" r="1" fill="#a97dc4" opacity="0.7" />
+          <circle cx="34" cy="16" r="1" fill="#875B9A" opacity="0.7" />
+          <circle cx="14" cy="21" r="1" fill="#a97dc4" opacity="0.5" />
+          <circle cx="19" cy="21" r="1" fill="#875B9A" opacity="0.7" />
+          <circle cx="24" cy="21" r="1" fill="#a97dc4" opacity="0.7" />
+          <circle cx="29" cy="21" r="1" fill="#875B9A" opacity="0.5" />
+          <circle cx="34" cy="21" r="1" fill="#a97dc4" opacity="0.5" />
+          <circle cx="14" cy="26" r="1" fill="#875B9A" opacity="0.5" />
+          <circle cx="24" cy="26" r="1" fill="#875B9A" opacity="0.7" />
+          <circle cx="34" cy="26" r="1" fill="#a97dc4" opacity="0.7" />
+          {/* Stand */}
+          <path d="M24 32v6" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M18 38h12" stroke="#a97dc4" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Stand legs */}
+          <path d="M18 38l-2 4" stroke="#875B9A" strokeWidth="1.2" strokeLinecap="round" />
+          <path d="M30 38l2 4" stroke="#875B9A" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+      </div>
+    );
+  }
+
+  // ── Guayaquil — Moving head light
+  if (c === "guayaquil") {
+    return (
+      <div className="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center shrink-0">
+        <svg {...common}>
+          {/* Yoke */}
+          <path d="M16 10v16" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M32 10v16" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Base bar */}
+          <path d="M12 10h24" stroke="#a97dc4" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Light head */}
+          <ellipse cx="24" cy="22" rx="10" ry="6" stroke="#875B9A" strokeWidth="1.5" />
+          {/* Lens */}
+          <circle cx="24" cy="22" r="4" stroke="#a97dc4" strokeWidth="1.3" />
+          <circle cx="24" cy="22" r="1.5" fill="#875B9A" />
+          {/* Light beam (angled) */}
+          <path d="M20 28l-8 14" stroke="#a97dc4" strokeWidth="1.5" strokeLinecap="round" opacity="0.35" />
+          <path d="M24 28l0 14" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" opacity="0.25" />
+          <path d="M28 28l8 14" stroke="#a97dc4" strokeWidth="1.5" strokeLinecap="round" opacity="0.35" />
+          {/* Clamp */}
+          <rect x="20" y="6" width="8" height="4" rx="1" stroke="#6a437a" strokeWidth="1.2" />
+        </svg>
+      </div>
+    );
+  }
+
+  // ── Ambato — Smoke/fog machine + effects
+  if (c === "ambato") {
+    return (
+      <div className="w-12 h-12 rounded-xl bg-pink-50 flex items-center justify-center shrink-0">
+        <svg {...common}>
+          {/* Machine body */}
+          <rect x="8" y="24" width="24" height="14" rx="3" stroke="#875B9A" strokeWidth="1.5" />
+          {/* Nozzle */}
+          <rect x="32" y="28" width="8" height="6" rx="2" stroke="#a97dc4" strokeWidth="1.3" />
+          {/* Control panel */}
+          <circle cx="15" cy="31" r="2" stroke="#a97dc4" strokeWidth="1.2" />
+          <circle cx="22" cy="31" r="2" stroke="#875B9A" strokeWidth="1.2" />
+          <rect x="27" y="30" width="3" height="2" rx="0.5" fill="#a97dc4" />
+          {/* Smoke clouds */}
+          <circle cx="38" cy="22" r="3" stroke="#875B9A" strokeWidth="1.2" fill="none" opacity="0.6" />
+          <circle cx="34" cy="18" r="4" stroke="#a97dc4" strokeWidth="1.2" fill="none" opacity="0.5" />
+          <circle cx="40" cy="14" r="3.5" stroke="#875B9A" strokeWidth="1" fill="none" opacity="0.4" />
+          <circle cx="30" cy="12" r="3" stroke="#a97dc4" strokeWidth="1" fill="none" opacity="0.3" />
+          <circle cx="36" cy="8" r="2.5" stroke="#875B9A" strokeWidth="0.8" fill="none" opacity="0.25" />
+        </svg>
+      </div>
+    );
+  }
+
+  // ── Manta — DJ turntable + headphones
+  if (c === "manta") {
+    return (
+      <div className="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center shrink-0">
+        <svg {...common}>
+          {/* Turntable base */}
+          <rect x="6" y="18" width="28" height="22" rx="3" stroke="#875B9A" strokeWidth="1.5" />
+          {/* Platter */}
+          <circle cx="20" cy="30" r="8" stroke="#875B9A" strokeWidth="1.3" />
+          <circle cx="20" cy="30" r="4" stroke="#a97dc4" strokeWidth="1" />
+          <circle cx="20" cy="30" r="1.5" fill="#875B9A" />
+          {/* Tonearm */}
+          <path d="M30 22l4-4" stroke="#a97dc4" strokeWidth="1.3" strokeLinecap="round" />
+          <path d="M30 22l-4 6" stroke="#875B9A" strokeWidth="1.3" strokeLinecap="round" />
+          <circle cx="34" cy="18" r="1.5" stroke="#a97dc4" strokeWidth="1" />
+          {/* Headphones */}
+          <path d="M34 26c0-5 3-8 6-8s6 3 6 8" stroke="#875B9A" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+          <rect x="33" y="26" width="3" height="5" rx="1" fill="#a97dc4" />
+          <rect x="44" y="26" width="3" height="5" rx="1" fill="#a97dc4" />
+          {/* Cushions */}
+          <rect x="32" y="26" width="5" height="6" rx="2" stroke="#875B9A" strokeWidth="1" fill="none" />
+          <rect x="43" y="26" width="5" height="6" rx="2" stroke="#875B9A" strokeWidth="1" fill="none" />
+        </svg>
+      </div>
+    );
+  }
+
+  // ── Default fallback — Generic speaker + light bolt
   return (
     <div className="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center shrink-0">
       <svg {...common}>
-        <path d="M4 36l10-18 6 8 8-16 8 12 8-4v18H4z" stroke="#875B9A" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
-        <path d="M14 18l2-3 2 3" stroke="#a97dc4" strokeWidth="1.2" fill="none" />
-        <path d="M28 10l3-4 3 4" stroke="#a97dc4" strokeWidth="1.2" fill="none" />
-        <rect x="20" y="28" width="6" height="8" rx="1" stroke="#875B9A" strokeWidth="1.3" />
-        <path d="M23 28v-4" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
-        <circle cx="23" cy="22" r="1.5" stroke="#a97dc4" strokeWidth="1.2" />
+        {/* Speaker */}
+        <rect x="8" y="12" width="14" height="24" rx="2" stroke="#875B9A" strokeWidth="1.5" />
+        <circle cx="15" cy="28" r="5" stroke="#875B9A" strokeWidth="1.3" />
+        <circle cx="15" cy="28" r="2" stroke="#a97dc4" strokeWidth="1" />
+        <circle cx="15" cy="17" r="2.5" stroke="#a97dc4" strokeWidth="1.2" />
+        {/* Lightning bolt (effects) */}
+        <path d="M30 10l-4 12h8l-4 12" stroke="#875B9A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        {/* Light rays */}
+        <path d="M36 8l2-2" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M38 14h3" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M36 20l2 2" stroke="#a97dc4" strokeWidth="1.2" strokeLinecap="round" />
       </svg>
     </div>
   );
@@ -379,7 +566,7 @@ export default function SearchDiscoveryPanel({
                         onClick={() => onSelectCity(city)}
                         className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-gray-50 transition-colors duration-150"
                       >
-                        <CityIcon state={city.state} />
+                        <CityIcon city={city.city} state={city.state} />
                         <div className="min-w-0 flex-1">
                           <p className="text-[14px] font-semibold text-gray-900">
                             {city.city}, {city.state}
@@ -409,7 +596,7 @@ export default function SearchDiscoveryPanel({
                     onClick={() => onSelectCity(city)}
                     className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left hover:bg-gray-50 transition-colors duration-150"
                   >
-                    <CityIcon state={city.state} />
+                    <CityIcon city={city.city} state={city.state} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[14px] font-semibold text-gray-900">
                         {city.city}, {city.state}

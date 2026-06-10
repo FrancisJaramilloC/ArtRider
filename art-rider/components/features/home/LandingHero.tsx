@@ -93,7 +93,7 @@ export default function LandingHero({ cities }: LandingHeroProps) {
       </p>
 
       {/* Search bar */}
-      <div className="relative mt-7 mx-auto max-w-[800px]">
+      <div className="relative mt-7 max-w-[800px] mx-auto lg:ml-[8%] lg:mr-auto">
         <div
           className={`flex items-center h-[66px] rounded-full transition-all duration-200 border ${
             panelStep
@@ -191,7 +191,7 @@ export default function LandingHero({ cities }: LandingHeroProps) {
                 <>
                   <p className="text-[11.5px] font-extrabold text-gray-800 tracking-wide leading-none">Dónde</p>
                   <p className="text-[13.5px] font-medium text-gray-500 whitespace-nowrap mt-1">
-                    Explora destinos
+                    Tu ciudad
                   </p>
                 </>
               )}
@@ -199,10 +199,9 @@ export default function LandingHero({ cities }: LandingHeroProps) {
             <button
               type="button"
               onClick={handleSearch}
-              className="shrink-0 h-[48px] px-[22px] mr-[9px] bg-gradient-to-r from-[#875B9A] to-[#6a437a] text-white text-[15px] font-bold rounded-full shadow-[0_8px_20px_-8px_rgba(135,91,154,.6)] hover:brightness-105 active:scale-[.97] transition-all flex items-center gap-2"
+              className="shrink-0 w-[48px] h-[48px] mr-[9px] bg-gradient-to-r from-[#875B9A] to-[#6a437a] text-white rounded-full shadow-[0_8px_20px_-8px_rgba(135,91,154,.6)] hover:brightness-105 active:scale-[.97] transition-all flex items-center justify-center"
             >
-              <Search size={16} strokeWidth={2.5} />
-              Buscar
+              <Search size={18} strokeWidth={2.5} />
             </button>
           </div>
         </div>

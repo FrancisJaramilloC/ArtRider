@@ -21,8 +21,9 @@ export default async function BecomeProviderLayout({
   const { data } = await supabase.auth.getUser();
 
   // Si el usuario ya está autenticado y ya es proveedor, redirigirlo a su panel.
+  let profile = null;
   if (data?.user) {
-    const profile = await getMyProviderProfile();
+    profile = await getMyProviderProfile();
     if (profile) {
       redirect("/provider");
     }
@@ -31,7 +32,7 @@ export default async function BecomeProviderLayout({
   // renderizado del layout principal de la pagina de registro
   return (
     <>
-      <Navbar initialUser={data?.user || null} />
+      <Navbar initialUser={data?.user || null} initialIsProvider={!!profile} />
       <main className="flex-1 flex flex-col">{children}</main>
       <Footer />
     </>

@@ -25,9 +25,11 @@ export type AppNotification = {
   created_at: string;
 };
 
+import { cache } from "react";
+
 //Operaciones para obtener notificaciones
 
-export async function getMyNotifications(): Promise<AppNotification[]> {
+export const getMyNotifications = cache(async function getMyNotifications(): Promise<AppNotification[]> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -46,9 +48,9 @@ export async function getMyNotifications(): Promise<AppNotification[]> {
     return [];
   }
   return data as AppNotification[];
-}
+});
 
-export async function getUnreadCount(): Promise<number> {
+export const getUnreadCount = cache(async function getUnreadCount(): Promise<number> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -66,7 +68,7 @@ export async function getUnreadCount(): Promise<number> {
     return 0;
   }
   return count || 0;
-}
+});
 
 //Operaciones para marcar notificaciones como leidas
 
