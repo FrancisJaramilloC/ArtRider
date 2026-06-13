@@ -29,8 +29,21 @@ export type Listing = {
   rating?: number;
 };
 
+// Tipo extendido con datos del proveedor (join)
+export type ListingWithProvider = Listing & {
+  provider?: {
+    brand_name: string | null;
+    created_at: string;
+    user_id: string;
+  } | null;
+};
+
 const LISTING_SELECT =
   "id, provider_id, title, brand, model, category, cover_image_url, gallery_images, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
+
+// Select extendido con join al proveedor — usado en la página de detalle
+const LISTING_DETAIL_SELECT =
+  "id, provider_id, title, brand, model, category, cover_image_url, gallery_images, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state), provider:providers(brand_name, created_at, user_id)";
 
 //  Lee los listings publicados y no eliminados
 //  El cliente admin se usa aquí para que el join con addresses no esté bloqueado por RLS.
@@ -72,6 +85,28 @@ export async function getListingById(id: string): Promise<Listing | null> {
     throw new Error(`[listingsService] getListingById: ${error.message}`);
   }
   return normalizeListingAddress(data);
+}
+
+//  Selecciona un listing con datos del proveedor (JOIN) — para la página de detalle
+export async function getListingByIdWithProvider(id: string): Promise<ListingWithProvider | null> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("listings")
+    .select(LISTING_DETAIL_SELECT)
+    .eq("id", id)
+    .eq("is_published", true)
+    .is("deleted_at", null)
+    .single();
+  if (error) {
+    if (error.code === "PGRST116") return null;
+    throw new Error(`[listingsService] getListingByIdWithProvider: ${error.message}`);
+  }
+  const normalized = normalizeListingAddress(data);
+  // Normalizar provider (Supabase puede devolver array en vez de objeto)
+  const provider = Array.isArray((data as any).provider)
+    ? (data as any).provider[0] ?? null
+    : (data as any).provider ?? null;
+  return { ...normalized, provider };
 }
 
 //  Lee los listings del proveedor autenticado

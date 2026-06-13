@@ -4,9 +4,20 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { getPackageById } from "@/services/packagesService";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
-import PackageMapWrapper from "@/components/listing-map/PackageMapWrapper";
+import dynamic from "next/dynamic";
 import PackageActions from "./PackageActions";
 
+const PackageMapWrapper = dynamic(() => import("@/components/listing-map/PackageMapWrapper"), {
+  loading: () => (
+    <div className="w-full h-full bg-gray-50 rounded-[18px] animate-pulse flex items-center justify-center border border-gray-100">
+      <div className="flex gap-1.5">
+        <span className="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
+        <span className="w-2 h-2 rounded-full bg-gray-300 animate-pulse [animation-delay:150ms]" />
+        <span className="w-2 h-2 rounded-full bg-gray-300 animate-pulse [animation-delay:300ms]" />
+      </div>
+    </div>
+  )
+});
 type Review = {
   id: string;
   rating: number;
