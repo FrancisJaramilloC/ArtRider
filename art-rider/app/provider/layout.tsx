@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import ProviderLayoutClient from "./ProviderLayoutClient";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 
 
 //  Layout de la plataforma para proveedores
@@ -60,9 +61,28 @@ export default async function ProviderLayout({
     );
   }
 
+  // Unread messages count for sidebar badge
+  let unreadMessages = 0;
+  try {
+    const admin = createSupabaseAdminClient();
+    const { data: convos } = await admin
+      .from("conversations")
+      .select("id")
+      .eq("provider_id", provider.id);
+    if (convos?.length) {
+      const { count } = await admin
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .in("conversation_id", convos.map(c => c.id))
+        .eq("read", false)
+        .neq("sender_id", user?.id ?? "");
+      unreadMessages = count ?? 0;
+    }
+  } catch { /* silent */ }
+
   // Estado activo del proveedor
   return (
-    <ProviderLayoutClient provider={provider} initialUser={user ?? null}>
+    <ProviderLayoutClient provider={provider} initialUser={user ?? null} unreadMessages={unreadMessages}>
       {children}
     </ProviderLayoutClient>
   );
