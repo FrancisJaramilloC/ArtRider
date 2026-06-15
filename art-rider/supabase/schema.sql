@@ -1,87 +1,40 @@
 -- =========================================================
--- ArtRider - Production Schema (Refactored Architecture)
+-- ArtRider - Initial Prototype Database Schema (Supabase)
 -- =========================================================
 
 -- =========================================================
--- 1. EXTENSIONS
+-- 1. EXTENSIONS & CUSTOM TYPES (ENUMS)
 -- =========================================================
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "btree_gist";
+-- NOTE: Requires DB configuration to enable btree_gist extension.
+CREATE EXTENSION IF NOT EXISTS "btree_gist"; 
 
--- =========================================================
--- 2. ENUMS
--- =========================================================
-
+CREATE TYPE kyc_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
+CREATE TYPE calendar_status AS ENUM ('BOOKED', 'BLOCKED', 'MAINTENANCE');
 CREATE TYPE booking_status AS ENUM ('AWAITING_SIGNATURES', 'PAID', 'ACTIVE', 'COMPLETED', 'DISPUTE', 'CANCELLED');
 CREATE TYPE payment_status AS ENUM ('AUTHORIZED', 'CAPTURED', 'REFUNDED');
 CREATE TYPE contract_status AS ENUM ('PENDING', 'PARTIALLY_SIGNED', 'EXECUTED');
-CREATE TYPE calendar_status AS ENUM ('BOOKED', 'BLOCKED', 'MAINTENANCE');
-CREATE TYPE verification_status AS ENUM ('pending', 'verified', 'rejected');
-CREATE TYPE provider_status AS ENUM ('pending', 'active', 'suspended');
-CREATE TYPE equipment_status AS ENUM ('AVAILABLE', 'MAINTENANCE', 'RETIRED', 'LOST');
 
 -- =========================================================
--- 3. CORE USER MODEL (PROFILES)
+-- 2. TABLES
 -- =========================================================
 
-CREATE TABLE profiles (
+CREATE TABLE users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT UNIQUE,
-  full_name TEXT,
-  birth_date DATE,
-  phone TEXT UNIQUE,
-  avatar_url TEXT,
-  avatar_updated_at TIMESTAMPTZ,
-  stripe_customer_id TEXT UNIQUE,
+  email TEXT UNIQUE NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  kyc_status kyc_status DEFAULT 'PENDING',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
 );
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-
--- =========================================================
--- 4. KYC (GLOBAL)
--- =========================================================
-
-CREATE TABLE identity_verifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
-  provider_ref TEXT,
-  status verification_status DEFAULT 'pending',
-  verified_at TIMESTAMPTZ
-);
-ALTER TABLE identity_verifications ENABLE ROW LEVEL SECURITY;
-
--- =========================================================
--- 5. PROVIDERS (EXTENSION)
--- =========================================================
-
-CREATE TABLE providers (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID UNIQUE REFERENCES profiles(id) ON DELETE CASCADE,
-  brand_name TEXT,
-  bio TEXT,
-  status provider_status DEFAULT 'pending',
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-ALTER TABLE providers ENABLE ROW LEVEL SECURITY;
-
--- RLS: provider can only read/write their own record
-CREATE POLICY "providers_user_read" ON providers
-  FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "providers_user_insert" ON providers
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "providers_user_update" ON providers
-  FOR UPDATE USING (auth.uid() = user_id);
-
--- =========================================================
--- 6. ADDRESSES
--- =========================================================
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE addresses (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   line1 TEXT NOT NULL,
   line2 TEXT,
   city TEXT NOT NULL,
@@ -96,10 +49,6 @@ CREATE TABLE addresses (
 );
 ALTER TABLE addresses ENABLE ROW LEVEL SECURITY;
 
--- =========================================================
--- 7. PRODUCT CATALOG
--- =========================================================
-
 CREATE TABLE product_catalog (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -108,25 +57,17 @@ CREATE TABLE product_catalog (
   model TEXT,
   category TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 ALTER TABLE product_catalog ENABLE ROW LEVEL SECURITY;
 
--- =========================================================
--- 8. LISTINGS
--- =========================================================
-
 CREATE TABLE listings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  provider_id UUID REFERENCES providers(id) ON DELETE CASCADE,
-  catalog_item_id UUID REFERENCES product_catalog(id),
-  address_id UUID REFERENCES addresses(id),
-  title TEXT,
-  brand TEXT,
-  model TEXT,
-  category TEXT CHECK (category IN ('audio', 'lighting', 'video', 'effects', 'other')),
-  cover_image_url TEXT,
-  daily_price INTEGER NOT NULL,
+  owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  catalog_item_id UUID REFERENCES product_catalog(id) ON DELETE RESTRICT,
+  address_id UUID REFERENCES addresses(id) ON DELETE RESTRICT,
+  daily_price INTEGER NOT NULL CHECK (daily_price >= 0),
   description TEXT,
   is_published BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -135,136 +76,176 @@ CREATE TABLE listings (
 );
 ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
 
--- RLS: public reads published; owner reads/writes all their own
-CREATE POLICY "listings_public_read" ON listings
-  FOR SELECT USING (is_published = true OR is_my_provider(provider_id));
-CREATE POLICY "listings_owner_insert" ON listings
-  FOR INSERT WITH CHECK (is_my_provider(provider_id));
-CREATE POLICY "listings_owner_update" ON listings
-  FOR UPDATE USING (is_my_provider(provider_id));
-
--- =========================================================
--- 9. EQUIPMENT UNITS (CRITICAL MODEL)
--- =========================================================
-
-CREATE TABLE equipment_units (
+CREATE TABLE physical_units (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   listing_id UUID REFERENCES listings(id) ON DELETE CASCADE,
   serial_number TEXT NOT NULL,
   condition TEXT,
-  internal_status equipment_status DEFAULT 'AVAILABLE',
+  is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
   UNIQUE(listing_id, serial_number)
 );
-ALTER TABLE equipment_units ENABLE ROW LEVEL SECURITY;
-
--- =========================================================
--- 10. BOOKINGS
--- =========================================================
+ALTER TABLE physical_units ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE bookings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  client_id UUID REFERENCES profiles(id),
-  provider_id UUID REFERENCES providers(id),
+  renter_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
   status booking_status DEFAULT 'AWAITING_SIGNATURES',
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
-  total_price INTEGER NOT NULL,
-  snapshot_listing JSONB,   -- Frozen listing data at booking time
-  snapshot_address JSONB,   -- Frozen address data at booking time
-  snapshot_provider JSONB,  -- Frozen provider data at booking time
+  total_price INTEGER NOT NULL CHECK (total_price >= 0),
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
   CHECK (start_date <= end_date)
 );
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
--- =========================================================
--- 11. BOOKING ITEMS
--- =========================================================
-
 CREATE TABLE booking_units (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE,
-  equipment_unit_id UUID REFERENCES equipment_units(id),
-  locked_daily_price INTEGER NOT NULL
+  physical_unit_id UUID REFERENCES physical_units(id) ON DELETE RESTRICT,
+  locked_daily_price INTEGER NOT NULL CHECK (locked_daily_price >= 0),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 ALTER TABLE booking_units ENABLE ROW LEVEL SECURITY;
 
--- =========================================================
--- 12. AVAILABILITY CALENDAR
--- =========================================================
-
 CREATE TABLE availability_calendar (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  equipment_unit_id UUID REFERENCES equipment_units(id) ON DELETE CASCADE,
+  physical_unit_id UUID NOT NULL REFERENCES physical_units(id) ON DELETE CASCADE,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   status calendar_status NOT NULL,
-  booking_id UUID REFERENCES bookings(id),
+  booking_id UUID REFERENCES bookings(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
   CHECK (start_date <= end_date),
+  -- Requires btree_gist extension
   EXCLUDE USING gist (
-    equipment_unit_id WITH =,
+    physical_unit_id WITH =, 
     daterange(start_date, end_date, '[]') WITH &&
   )
 );
 ALTER TABLE availability_calendar ENABLE ROW LEVEL SECURITY;
 
--- =========================================================
--- 13. PAYMENTS
--- =========================================================
-
 CREATE TABLE payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  booking_id UUID REFERENCES bookings(id),
-  stripe_payment_intent_id TEXT UNIQUE,
-  amount INTEGER NOT NULL,
-  status payment_status DEFAULT 'AUTHORIZED'
+  booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE,
+  stripe_payment_intent_id TEXT UNIQUE NOT NULL,
+  amount INTEGER NOT NULL CHECK (amount >= 0),
+  deposit_amount INTEGER NOT NULL CHECK (deposit_amount >= 0),
+  status payment_status DEFAULT 'AUTHORIZED',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 
--- =========================================================
--- 14. CONTRACTS
--- =========================================================
-
 CREATE TABLE digital_contracts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  booking_id UUID UNIQUE REFERENCES bookings(id),
+  booking_id UUID UNIQUE REFERENCES bookings(id) ON DELETE CASCADE,
   status contract_status DEFAULT 'PENDING',
   contract_hash TEXT,
-  snapshot_booking JSONB  -- Full booking context frozen at signing time
+  pdf_url TEXT,
+  owner_signature_hash TEXT,
+  renter_signature_hash TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 ALTER TABLE digital_contracts ENABLE ROW LEVEL SECURITY;
 
--- =========================================================
--- 15. MESSAGING
--- =========================================================
-
 CREATE TABLE conversations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  booking_id UUID REFERENCES bookings(id), -- Optional now
-  client_id UUID REFERENCES profiles(id),
-  provider_id UUID REFERENCES providers(id),
-  listing_id UUID REFERENCES listings(id), -- Optional context
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  booking_id UUID REFERENCES bookings(id) ON DELETE SET NULL,
+  renter_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  owner_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
+ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE messages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  conversation_id UUID REFERENCES conversations(id),
-  sender_id UUID REFERENCES profiles(id),
-  content TEXT
+  conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
+  sender_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
 -- =========================================================
--- 16. UNIFIED CATALOG VIEW (POLYMORPHIC SEARCH)
+-- 3. INDEXES
 -- =========================================================
 
-CREATE OR REPLACE VIEW catalog_items AS
-  SELECT id, 'listing'::TEXT AS item_type, provider_id, title, category,
-         cover_image_url, daily_price, description, is_published, created_at
-  FROM listings WHERE deleted_at IS NULL
-  UNION ALL
-  SELECT id, 'package'::TEXT AS item_type, provider_id, title,
-         NULL::TEXT AS category, NULL::TEXT AS cover_image_url,
-         daily_price, description, is_published, created_at
-  FROM packages WHERE deleted_at IS NULL;
+CREATE INDEX idx_addresses_user_id ON addresses(user_id);
+CREATE INDEX idx_listings_owner_id ON listings(owner_id);
+CREATE INDEX idx_listings_catalog_id ON listings(catalog_item_id);
+CREATE INDEX idx_listings_address_id ON listings(address_id);
+CREATE INDEX idx_physical_units_listing_id ON physical_units(listing_id);
+CREATE INDEX idx_bookings_renter_id ON bookings(renter_id);
+CREATE INDEX idx_bookings_owner_id ON bookings(owner_id);
+CREATE INDEX idx_bookings_status ON bookings(status);
+CREATE INDEX idx_booking_units_booking_id ON booking_units(booking_id);
+CREATE INDEX idx_booking_units_unit_id ON booking_units(physical_unit_id);
+CREATE INDEX idx_calendar_unit_id ON availability_calendar(physical_unit_id);
+CREATE INDEX idx_calendar_dates ON availability_calendar(start_date, end_date);
+CREATE INDEX idx_payments_booking_id ON payments(booking_id);
+CREATE INDEX idx_conversations_renter_id ON conversations(renter_id);
+CREATE INDEX idx_conversations_owner_id ON conversations(owner_id);
+CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
+CREATE INDEX idx_messages_created_at ON messages(created_at);
+
+-- =========================================================
+-- 4. TRIGGERS & FUNCTIONS
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tg_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_addresses_updated_at BEFORE UPDATE ON addresses FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_product_catalog_updated_at BEFORE UPDATE ON product_catalog FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_listings_updated_at BEFORE UPDATE ON listings FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_physical_units_updated_at BEFORE UPDATE ON physical_units FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_bookings_updated_at BEFORE UPDATE ON bookings FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_booking_units_updated_at BEFORE UPDATE ON booking_units FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_availability_calendar_updated_at BEFORE UPDATE ON availability_calendar FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_digital_contracts_updated_at BEFORE UPDATE ON digital_contracts FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_conversations_updated_at BEFORE UPDATE ON conversations FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE TRIGGER tg_messages_updated_at BEFORE UPDATE ON messages FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE OR REPLACE FUNCTION check_active_booking_contract()
+RETURNS TRIGGER AS $$
+DECLARE
+  contract_state contract_status;
+BEGIN
+  IF NEW.status = 'ACTIVE' AND (OLD.status IS DISTINCT FROM 'ACTIVE') THEN
+    SELECT status INTO contract_state FROM digital_contracts WHERE booking_id = NEW.id;
+    IF contract_state IS DISTINCT FROM 'EXECUTED' THEN
+      RAISE EXCEPTION 'A booking cannot become ACTIVE unless the associated digital contract is fully EXECUTED.';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_guard_booking_activation
+BEFORE UPDATE ON bookings
+FOR EACH ROW
+EXECUTE FUNCTION check_active_booking_contract();
