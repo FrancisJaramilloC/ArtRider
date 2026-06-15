@@ -10,6 +10,7 @@ import LandingCarousel from "@/components/features/home/LandingCarousel";
 import LandingHowItWorks from "@/components/features/home/LandingHowItWorks";
 import LandingFooter from "@/components/features/home/LandingFooter";
 import type { LandingCardItem } from "@/components/features/home/LandingCard";
+import type { CityInfo } from "@/lib/eventCategoryMap";
 
 export const metadata: Metadata = {
   title: "ArtRider — Alquila Equipos Creativos para tu Evento",
@@ -74,8 +75,26 @@ export default async function HomePage() {
     .filter(([, items]) => items.length >= 1)
     .sort(([, a], [, b]) => b.length - a.length);
 
-  // City names for the hero dropdown
-  const cityNames = cities.map(([city]) => city);
+  // ── CityInfo[] con coordenadas, conteo y recencia para el buscador ──
+  const sevenDaysAgo = Date.now() - 7 * 86_400_000;
+  const cityInfos: CityInfo[] = cities.map(([city, items]) => {
+    const withCoords = listings.filter(l => {
+      const a = Array.isArray(l.address) ? l.address[0] : l.address;
+      return a?.city?.trim() === city && a.latitude && a.longitude;
+    });
+    const avgLat = withCoords.length
+      ? withCoords.reduce((s, l) => s + (l.address?.latitude ?? 0), 0) / withCoords.length
+      : 0;
+    const avgLng = withCoords.length
+      ? withCoords.reduce((s, l) => s + (l.address?.longitude ?? 0), 0) / withCoords.length
+      : 0;
+    const state = withCoords[0]?.address?.state ?? city;
+    const hasRecent = listings.some(l => {
+      const a = Array.isArray(l.address) ? l.address[0] : l.address;
+      return a?.city?.trim() === city && new Date(l.created_at).getTime() > sevenDaysAgo;
+    });
+    return { city, state, lat: avgLat, lng: avgLng, count: items.length, hasRecent };
+  });
 
   // ── Packages as LandingCardItem ──
   const packageItems: LandingCardItem[] = packages.slice(0, 8).map(pkg => ({
@@ -97,29 +116,33 @@ export default async function HomePage() {
 
       <main>
         {/* Hero */}
-        <LandingHero cities={cityNames} />
+        <LandingHero cities={cityInfos} />
 
         {/* Category strip */}
         <LandingCategoryStrip />
 
         {/* One carousel per city — fully dynamic */}
-        {cities.map(([city, items]) => (
-          <LandingCarousel
-            key={city}
-            title={`Equipos populares en ${city}`}
-            viewAllHref={`/explore?city=${encodeURIComponent(city)}`}
-            items={items}
-          />
-        ))}
+        <section id="equipos" className="scroll-mt-16">
+          {cities.map(([city, items]) => (
+            <LandingCarousel
+              key={city}
+              title={`Equipos populares en ${city}`}
+              viewAllHref={`/explore?city=${encodeURIComponent(city)}`}
+              items={items}
+            />
+          ))}
+        </section>
 
         {/* Packages */}
         {packageItems.length > 0 && (
-          <LandingCarousel
-            title="Paquetes destacados"
-            subtitle="Combos listos para rentar que ahorran dinero y tiempo"
-            viewAllHref="/packages"
-            items={packageItems}
-          />
+          <section id="paquetes" className="scroll-mt-16">
+            <LandingCarousel
+              title="Paquetes destacados"
+              subtitle="Combos listos para rentar que ahorran dinero y tiempo"
+              viewAllHref="/packages"
+              items={packageItems}
+            />
+          </section>
         )}
 
         {/* How it works */}

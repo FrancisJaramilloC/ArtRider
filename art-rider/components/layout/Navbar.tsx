@@ -62,38 +62,43 @@ function MenuDivider() {
 
 export default function Navbar({
   initialUser = null,
+  initialIsProvider,
   hideNavLinks = false,
   logoSubtitle,
 }: {
   initialUser?: User | null;
+  initialIsProvider?: boolean;
   hideNavLinks?: boolean;
   logoSubtitle?: string;
 }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [user, setUser]                 = useState<User | null>(initialUser);
-  const [isProvider, setIsProvider]     = useState(false);
-  const [loadingProvider, setLoadingProvider] = useState(!!initialUser);
+  const [isProvider, setIsProvider]     = useState(initialIsProvider ?? false);
+  const [loadingProvider, setLoadingProvider] = useState(initialIsProvider === undefined && !!initialUser);
   const router   = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // ── Auth state ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        try { setIsProvider(!!(await getMyProviderProfile())); }
-        catch { setIsProvider(false); }
-      } else { setIsProvider(false); }
-      setLoadingProvider(false);
-    };
-    fetchUser();
+    // Only fetch if we didn't receive initialIsProvider from the server
+    if (initialIsProvider === undefined) {
+      const fetchUser = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        if (user) {
+          try { setIsProvider(!!(await getMyProviderProfile())); }
+          catch { setIsProvider(false); }
+        } else { setIsProvider(false); }
+        setLoadingProvider(false);
+      };
+      fetchUser();
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
       if (!session?.user) { setIsProvider(false); setLoadingProvider(false); }
-      else {
+      else if (initialIsProvider === undefined) {
         setLoadingProvider(true);
         getMyProviderProfile()
           .then(p => setIsProvider(!!p))

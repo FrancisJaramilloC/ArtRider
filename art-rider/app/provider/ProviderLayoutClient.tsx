@@ -55,6 +55,7 @@ export default function ProviderLayoutClient({
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f4f7]">
 
+      {/*  Barra de navegacion  */}
       <Navbar initialUser={initialUser} initialIsProvider={!!provider} hideNavLinks />
 
       <div className="flex-1 flex w-full">

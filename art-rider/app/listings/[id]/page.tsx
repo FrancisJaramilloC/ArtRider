@@ -1,12 +1,24 @@
-import { getListingById } from "@/services/listingsService";
+import { getListingByIdWithProvider } from "@/services/listingsService";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { getUnavailableDates } from "@/services/availabilityService";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import type { Metadata } from "next";
-import MapWrapper from "@/components/listing-map/MapWrapper";
+
+const MapWrapper = dynamic(() => import("@/components/listing-map/MapWrapper"), {
+  loading: () => (
+    <div className="w-full h-full bg-gray-50 rounded-[18px] animate-pulse flex items-center justify-center border border-gray-100">
+      <div className="flex gap-1.5">
+        <span className="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
+        <span className="w-2 h-2 rounded-full bg-gray-300 animate-pulse [animation-delay:150ms]" />
+        <span className="w-2 h-2 rounded-full bg-gray-300 animate-pulse [animation-delay:300ms]" />
+      </div>
+    </div>
+  )
+});
 import { BookingCard } from "@/components/features/bookings/BookingCard";
 import Navbar from "@/components/layout/Navbar";
 import ListingGallery from "./ListingGallery";
@@ -60,10 +72,81 @@ function avgRatingOf(reviews: Review[]) {
   return reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
 }
 
+// ── Helper: obtener reseñas filtradas por listing ──────────────────────────────
+async function getReviewsForListing(
+  listingId: string,
+  providerId: string,
+  providerUserId: string | null,
+): Promise<Review[]> {
+  if (!providerUserId) return [];
+  try {
+    const adminSupabase = createSupabaseAdminClient();
+
+    // Ejecutar en paralelo: contar listings del proveedor + obtener reseñas
+    const [listingCountRes, allReviewsRes] = await Promise.all([
+      adminSupabase
+        .from("listings")
+        .select("id", { count: "exact", head: true })
+        .eq("provider_id", providerId),
+      adminSupabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, author_id, booking_id, profiles!author_id(full_name)")
+        .eq("target_id", providerUserId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    const providerHasOneListing = (listingCountRes.count ?? 0) === 1;
+    const allReviews = allReviewsRes.data;
+    if (!allReviews?.length) return [];
+
+    const reviewBookingIds = allReviews.map((r: any) => r.booking_id).filter(Boolean);
+    if (!reviewBookingIds.length) return [];
+
+    // Obtener bookings relacionados
+    const { data: bookings } = await adminSupabase
+      .from("bookings")
+      .select("id, snapshot_listing, booking_units(equipment_unit_id, equipment_unit:equipment_units(listing_id))")
+      .in("id", reviewBookingIds);
+
+    const listingBookingIds = new Set<string>();
+    for (const b of bookings ?? []) {
+      const snapshotId = (b.snapshot_listing as any)?.id;
+      const units = (b as any).booking_units ?? [];
+      const hasSnapshotLink = !!snapshotId;
+      const hasUnitLink = units.some((bu: any) => bu.equipment_unit?.listing_id);
+
+      if (!hasSnapshotLink && !hasUnitLink) {
+        if (providerHasOneListing) listingBookingIds.add(b.id);
+        continue;
+      }
+      if (snapshotId === listingId) {
+        listingBookingIds.add(b.id);
+        continue;
+      }
+      if (units.some((bu: any) => bu.equipment_unit?.listing_id === listingId)) {
+        listingBookingIds.add(b.id);
+      }
+    }
+
+    return allReviews
+      .filter((r: any) => listingBookingIds.has(r.booking_id))
+      .map((r: any) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        created_at: r.created_at,
+        author_id: r.author_id,
+        profiles: Array.isArray(r.profiles) ? (r.profiles[0] ?? null) : r.profiles,
+      })) as Review[];
+  } catch {
+    return [];
+  }
+}
+
 // ── Metadata ───────────────────────────────────────────────────────────────────
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const listing = await getListingById(id);
+  const listing = await getListingByIdWithProvider(id);
   return {
     title: listing ? `${listing.title} | ArtRider` : "Equipo no encontrado | ArtRider",
     description: listing?.description ?? "Consulta los detalles de este equipo de alquiler.",
@@ -73,117 +156,24 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 // ── Page ───────────────────────────────────────────────────────────────────────
 export default async function ListingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const listing = await getListingById(id);
+
+  // ── QUERY 1: Listing + Provider (JOIN — una sola petición HTTP) ──────────
+  const listing = await getListingByIdWithProvider(id);
   if (!listing) notFound();
 
-  const [supabase, unavailableDates] = await Promise.all([
-    createSupabaseServerClient(),
-    getUnavailableDates(listing.id),
+  // Extraer datos del proveedor directamente del join (sin query adicional)
+  const providerName = listing.provider?.brand_name ?? null;
+  const providerSince = listing.provider?.created_at ? memberSince(listing.provider.created_at) : null;
+  const providerUserId = listing.provider?.user_id ?? null;
+
+  // ── QUERIES 2-4: Todo en paralelo ───────────────────────────────────────
+  const [supabase, unavailableDates, reviews] = await Promise.all([
+    createSupabaseServerClient(),                                                // Auth client
+    getUnavailableDates(listing.id),                                             // Fechas bloqueadas
+    getReviewsForListing(listing.id, listing.provider_id, providerUserId),       // Reseñas filtradas
   ]);
 
   const { data: { user } } = await supabase.auth.getUser();
-
-  // Provider
-  let providerName: string | null = null;
-  let providerSince: string | null = null;
-  try {
-    const { data } = await supabase
-      .from("providers")
-      .select("brand_name, created_at")
-      .eq("id", listing.provider_id)
-      .maybeSingle();
-    if (data) {
-      providerName = data.brand_name ?? null;
-      providerSince = data.created_at ? memberSince(data.created_at) : null;
-    }
-  } catch { /* silent */ }
-
-  // Reviews — solo de este listing, via booking_id linkado al listing
-  let reviews: Review[] = [];
-  try {
-    const adminSupabase = createSupabaseAdminClient();
-
-    // Obtener user_id del proveedor
-    const { data: providerRow } = await adminSupabase
-      .from("providers")
-      .select("user_id")
-      .eq("id", listing.provider_id)
-      .maybeSingle();
-
-    if (providerRow?.user_id) {
-      // Cuántos listings tiene el proveedor (para el fallback de bookings sin link)
-      const { data: providerListings } = await adminSupabase
-        .from("listings")
-        .select("id")
-        .eq("provider_id", listing.provider_id);
-      const providerHasOneListing = (providerListings ?? []).length === 1;
-
-      // Reseñas del proveedor (target_id = provider.user_id) con su booking_id
-      const { data: allReviews } = await adminSupabase
-        .from("reviews")
-        .select("id, rating, comment, created_at, author_id, booking_id, profiles!author_id(full_name)")
-        .eq("target_id", providerRow.user_id)
-        .order("created_at", { ascending: false });
-
-      if (allReviews?.length) {
-        const reviewBookingIds = allReviews.map((r: any) => r.booking_id).filter(Boolean);
-
-        if (reviewBookingIds.length) {
-          // Bookings con snapshot_listing + booking_units → equipment_unit alias igual que BOOKING_BASE_FIELDS
-          const { data: bookings } = await adminSupabase
-            .from("bookings")
-            .select("id, snapshot_listing, booking_units(equipment_unit_id, equipment_unit:equipment_units(listing_id))")
-            .in("id", reviewBookingIds);
-
-          const listingBookingIds = new Set<string>();
-          for (const b of bookings ?? []) {
-            const snapshotId = (b.snapshot_listing as any)?.id;
-            const units = (b as any).booking_units ?? [];
-            const hasSnapshotLink = !!snapshotId;
-            const hasUnitLink = units.some((bu: any) => bu.equipment_unit?.listing_id);
-
-            if (!hasSnapshotLink && !hasUnitLink) {
-              // Booking legacy sin ningún link — solo añadir si el proveedor
-              // tiene UN ÚNICO listing (podemos inferir que es este)
-              if (providerHasOneListing) listingBookingIds.add(b.id);
-              continue;
-            }
-            if (snapshotId === listing.id) {
-              listingBookingIds.add(b.id);
-              continue;
-            }
-            if (units.some((bu: any) => bu.equipment_unit?.listing_id === listing.id)) {
-              listingBookingIds.add(b.id);
-            }
-          }
-
-          reviews = allReviews
-            .filter((r: any) => listingBookingIds.has(r.booking_id))
-            .map((r: any) => ({
-              id: r.id,
-              rating: r.rating,
-              comment: r.comment,
-              created_at: r.created_at,
-              author_id: r.author_id,
-              profiles: Array.isArray(r.profiles) ? (r.profiles[0] ?? null) : r.profiles,
-            })) as Review[];
-        }
-      }
-    }
-  } catch { /* fail silently */ }
-
-  // Nearby listings for map
-  let nearbyListings: any[] = [];
-  try {
-    const admin = createSupabaseAdminClient();
-    const { data } = await admin
-      .from("listings")
-      .select("*, address:addresses(latitude, longitude, city, state)")
-      .eq("is_published", true)
-      .not("address_id", "is", null)
-      .limit(20);
-    nearbyListings = data ?? [];
-  } catch { /* silent */ }
 
   // Derived values
   const price = listing.daily_price / 100;
@@ -425,7 +415,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                 <div className="h-[420px] rounded-[18px] overflow-hidden border border-gray-100">
                   <MapWrapper
                     currentListing={listing as any}
-                    nearbyListings={nearbyListings as any}
+                    nearbyListings={[]}
                   />
                 </div>
               </section>
