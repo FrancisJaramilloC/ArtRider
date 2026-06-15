@@ -50,3 +50,6 @@ coverage
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.claude/
+CLAUDE.md

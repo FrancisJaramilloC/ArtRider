@@ -1,65 +1,155 @@
-import Image from "next/image";
+import Navbar from "@/components/layout/Navbar";
+import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
+import { getListings } from "@/services/listingsService";
+import { getAverageRatingForListings } from "@/services/reviewService";
+import type { Metadata } from "next";
+import LandingHero from "@/components/features/home/LandingHero";
+import LandingCategoryStrip from "@/components/features/home/LandingCategoryStrip";
+import LandingCarousel from "@/components/features/home/LandingCarousel";
+import LandingHowItWorks from "@/components/features/home/LandingHowItWorks";
+import LandingFooter from "@/components/features/home/LandingFooter";
+import type { LandingCardItem } from "@/components/features/home/LandingCard";
+import type { CityInfo } from "@/lib/eventCategoryMap";
 
-export default function Home() {
+export const metadata: Metadata = {
+  title: "ArtRider — Alquila Equipos Creativos para tu Evento",
+  description:
+    "Marketplace de alquiler de equipos de audio, iluminación y video. Conecta con propietarios verificados y reserva con confianza.",
+};
+
+export default async function HomePage() {
+  // Auth
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Listings
+  let listings: Awaited<ReturnType<typeof getListings>> = [];
+  try { listings = await getListings(); } catch {}
+
+  // Packages
+  let packages: { id: string; title: string; daily_price: number; cover_image_url: string | null }[] = [];
+  try {
+    const admin = createSupabaseAdminClient();
+    const { data } = await admin
+      .from("packages")
+      .select("id, title, daily_price, cover_image_url")
+      .eq("is_published", true)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false });
+    packages = (data ?? []) as typeof packages;
+  } catch {}
+
+  // Ratings reales por listing
+  let ratingsMap: Record<string, number> = {};
+  try {
+    const listingIds = listings.map((l) => l.id);
+    ratingsMap = await getAverageRatingForListings(listingIds);
+  } catch {
+    // falla silenciosa — cards muestran "Nuevo"
+  }
+
+  // ── Group listings by city (dynamic — new cities auto-appear) ──
+  const cityMap = new Map<string, LandingCardItem[]>();
+  for (const listing of listings) {
+    const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
+    const city = addr?.city?.trim();
+    if (!city) continue;
+    if (!cityMap.has(city)) cityMap.set(city, []);
+    cityMap.get(city)!.push({
+      id: listing.id,
+      title: listing.title ?? "Equipo sin título",
+      category: listing.category,
+      cover_image_url: listing.cover_image_url,
+      daily_price: listing.daily_price,
+      city,
+      rating: ratingsMap[listing.id] ?? 0,
+      isTop: false,
+      href: `/listings/${listing.id}`,
+      tipo: "equipo",
+    });
+  }
+
+  // Cities sorted by listing count desc, min 1 listing to show
+  const cities = Array.from(cityMap.entries())
+    .filter(([, items]) => items.length >= 1)
+    .sort(([, a], [, b]) => b.length - a.length);
+
+  // ── CityInfo[] con coordenadas, conteo y recencia para el buscador ──
+  const sevenDaysAgo = Date.now() - 7 * 86_400_000;
+  const cityInfos: CityInfo[] = cities.map(([city, items]) => {
+    const withCoords = listings.filter(l => {
+      const a = Array.isArray(l.address) ? l.address[0] : l.address;
+      return a?.city?.trim() === city && a.latitude && a.longitude;
+    });
+    const avgLat = withCoords.length
+      ? withCoords.reduce((s, l) => s + (l.address?.latitude ?? 0), 0) / withCoords.length
+      : 0;
+    const avgLng = withCoords.length
+      ? withCoords.reduce((s, l) => s + (l.address?.longitude ?? 0), 0) / withCoords.length
+      : 0;
+    const state = withCoords[0]?.address?.state ?? city;
+    const hasRecent = listings.some(l => {
+      const a = Array.isArray(l.address) ? l.address[0] : l.address;
+      return a?.city?.trim() === city && new Date(l.created_at).getTime() > sevenDaysAgo;
+    });
+    return { city, state, lat: avgLat, lng: avgLng, count: items.length, hasRecent };
+  });
+
+  // ── Packages as LandingCardItem ──
+  const packageItems: LandingCardItem[] = packages.slice(0, 8).map(pkg => ({
+    id: pkg.id,
+    title: pkg.title,
+    category: null,
+    cover_image_url: pkg.cover_image_url,
+    daily_price: pkg.daily_price,
+    city: "Ecuador",
+    rating: 0,
+    isTop: false,
+    href: `/packages/${pkg.id}`,
+    tipo: "paquete",
+  }));
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <>
+      <Navbar initialUser={user} />
+
+      <main>
+        {/* Hero */}
+        <LandingHero cities={cityInfos} />
+
+        {/* Category strip */}
+        <LandingCategoryStrip />
+
+        {/* One carousel per city — fully dynamic */}
+        <section id="equipos" className="scroll-mt-16">
+          {cities.map(([city, items]) => (
+            <LandingCarousel
+              key={city}
+              title={`Equipos populares en ${city}`}
+              viewAllHref={`/explore?city=${encodeURIComponent(city)}`}
+              items={items}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          ))}
+        </section>
+
+        {/* Packages */}
+        {packageItems.length > 0 && (
+          <section id="paquetes" className="scroll-mt-16">
+            <LandingCarousel
+              title="Paquetes destacados"
+              subtitle="Combos listos para rentar que ahorran dinero y tiempo"
+              viewAllHref="/packages"
+              items={packageItems}
+            />
+          </section>
+        )}
+
+        {/* How it works */}
+        <LandingHowItWorks />
       </main>
-    </div>
+
+      <LandingFooter />
+    </>
   );
 }

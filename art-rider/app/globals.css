@@ -1,22 +1,252 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/*  Variables de tema de ArtRider
+    Paleta basada en la identidad de ArtRider + tokens de mapcn para
+    compatibilidad con los componentes del mapa.
+*/
 
 :root {
+  /* ArtRider brand  */
+  --primary-400: #a97dc4;
+  --primary-500: #875b9a;
+  --primary-600: #6a437a;
+  --surface-1: #16141e;
+  --surface-2: #1e1b2a;
+  --surface-3: #26223a;
+  --border-subtle: rgba(135, 91, 154, 0.18);
+  --border-card: rgba(135, 91, 154, 0.30);
+  --text-primary: #f0eef5;
+  --text-secondary: #a89bb8;
+  --text-muted: #6b6080;
+
+  /* shadcn / mapcn design tokens (light) */
   --background: #ffffff;
-  --foreground: #000000;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #f9f9f9;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #111111;
+  --muted: #f5f5f5;
+  --muted-foreground: #6b7280;
+  --accent: #f5f5f5;
+  --accent-foreground: #111111;
+  --destructive: #ef4444;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #9ca3af;
+  --radius: 0.625rem;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  /* Chart colors (mapcn) */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+
+  /*  Barra lateral */
+  --sidebar: #f9f9f9;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #111111;
+  --sidebar-primary-foreground: #f9f9f9;
+  --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #e5e7eb;
+  --sidebar-ring: #9ca3af;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #000000;
-  }
+.dark {
+  --background: #0f0f0f;
+  --foreground: #f9f9f9;
+  --card: #1a1a1a;
+  --card-foreground: #f9f9f9;
+  --popover: #1a1a1a;
+  --popover-foreground: #f9f9f9;
+  --primary: #e5e5e5;
+  --primary-foreground: #1a1a1a;
+  --secondary: #2a2a2a;
+  --secondary-foreground: #f9f9f9;
+  --muted: #2a2a2a;
+  --muted-foreground: #9ca3af;
+  --accent: #2a2a2a;
+  --accent-foreground: #f9f9f9;
+  --destructive: #f87171;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #6b7280;
+
+  /* Chart colors dark (mapcn) */
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+
+  /*  Barra lateral */
+  --sidebar: #1a1a1a;
+  --sidebar-foreground: #f9f9f9;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #f9f9f9;
+  --sidebar-accent: #2a2a2a;
+  --sidebar-accent-foreground: #f9f9f9;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #6b7280;
+}
+
+/*  Reseteos base  */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
-  
-  background: var(--background);
+  font-family: var(--font-inter), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    overscroll-behavior-y: none;
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /*  MapLibre GL overrides de mapcn */
+  .maplibregl-popup-content {
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .maplibregl-popup-tip {
+    display: none !important;
+  }
+}
+
+@layer utilities {
+  .shadow-soft-premium {
+    box-shadow: 0px 12px 40px rgba(0, 0, 0, 0.03);
+  }
+}
+
+/*  Componentes de ArtRider */
+
+.listing-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease, border-color 220ms ease;
+  will-change: transform;
+}
+
+/* Animación de hover para las tarjetas de listados */
+.listing-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 20px 48px rgba(135, 91, 154, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: #a97dc4;
+}
+
+/* Animación shimmer */
+@keyframes shimmer {
+  0% { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+/* Skeleton */
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+/* Badge de categoría */
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.70rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: rgba(135, 91, 154, 0.18);
+  color: var(--primary-400);
+  border: 1px solid rgba(135, 91, 154, 0.30);
+}
+
+/* Animaciones de mapcn */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s ease-out both;
+}
+
+.animate-stagger {
+  --stagger: 0;
+  --delay: 100ms;
+  animation-delay: calc(var(--stagger) * var(--delay));
+}
+
+/* react-day-picker v9 overrides */
+.rdp-root {
+  --rdp-accent-color: #875B9A !important;
+  --rdp-accent-background-color: rgba(135, 91, 154, 0.1) !important;
+  
+  --rdp-range_start-color: white !important;
+  --rdp-range_start-background: #875B9A !important;
+  
+  --rdp-range_end-color: white !important;
+  --rdp-range_end-background: #875B9A !important;
+  
+  --rdp-range_middle-color: #875B9A !important;
+  --rdp-range_middle-background-color: rgba(135, 91, 154, 0.1) !important;
+  
+  --rdp-today-color: #875B9A !important;
+  --rdp-selected-color: #875B9A !important;
 }
