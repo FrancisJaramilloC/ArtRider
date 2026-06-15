@@ -113,6 +113,7 @@ COMMENT ON COLUMN listings.metadata_tecnica IS
 CREATE TABLE advisory_perfil_evento (
   id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id           UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  session_token     UUID NULL,          -- token anónimo generado en cookie; NULL una vez vinculado a user_id
   tipo_evento       TEXT NOT NULL,
   capacidad_min     INTEGER NOT NULL,
   capacidad_max     INTEGER NOT NULL,
@@ -126,8 +127,32 @@ CREATE TABLE advisory_perfil_evento (
 );
 ALTER TABLE advisory_perfil_evento ENABLE ROW LEVEL SECURITY;
 
+-- Usuarios autenticados: acceden a sus propias filas.
 CREATE POLICY "advisory_perfil_own" ON advisory_perfil_evento
   FOR ALL USING (auth.uid() = user_id);
+
+-- Sesiones anónimas: acceden vía session_token en header HTTP personalizado.
+-- PROBLEMA raíz: auth.uid() devuelve NULL para el rol anon, y en Postgres
+-- NULL = NULL evalúa a NULL (no a true), por lo que la policy anterior
+-- nunca concede acceso a filas donde user_id IS NULL.
+-- SOLUCIÓN: policy separada que lee el token del header "x-advisory-session"
+-- que el cliente envía en cada request Supabase mientras no hay sesión.
+CREATE POLICY "advisory_perfil_anon_session" ON advisory_perfil_evento
+  FOR ALL USING (
+    user_id IS NULL
+    AND session_token IS NOT NULL
+    AND session_token = (
+      nullif(current_setting('request.headers', true), '')::json->>'x-advisory-session'
+    )::UUID
+  );
+
+-- Vinculación retroactiva al hacer login:
+-- En auth.onAuthStateChange (o en el callback de login), ejecutar:
+--   UPDATE advisory_perfil_evento
+--   SET user_id = auth.uid()
+--   WHERE session_token = <token_de_cookie> AND user_id IS NULL;
+-- Tras el UPDATE la policy "advisory_perfil_own" cubre la fila; el
+-- session_token queda como referencia histórica (no se borra).
 
 -- ── Tabla de ticket de requisitos (output del motor de reglas) ─────────────
 CREATE TABLE advisory_ticket_requisitos (
@@ -148,7 +173,16 @@ CREATE POLICY "advisory_ticket_own" ON advisory_ticket_requisitos
     EXISTS (
       SELECT 1 FROM advisory_perfil_evento p
       WHERE p.id = advisory_ticket_requisitos.perfil_id
-        AND p.user_id = auth.uid()
+        AND (
+          p.user_id = auth.uid()
+          OR (
+            p.user_id IS NULL
+            AND p.session_token IS NOT NULL
+            AND p.session_token = (
+              nullif(current_setting('request.headers', true), '')::json->>'x-advisory-session'
+            )::UUID
+          )
+        )
     )
   );
 
@@ -183,7 +217,16 @@ CREATE POLICY "advisory_recomendacion_own" ON advisory_recomendacion
     EXISTS (
       SELECT 1 FROM advisory_perfil_evento p
       WHERE p.id = advisory_recomendacion.perfil_id
-        AND p.user_id = auth.uid()
+        AND (
+          p.user_id = auth.uid()
+          OR (
+            p.user_id IS NULL
+            AND p.session_token IS NOT NULL
+            AND p.session_token = (
+              nullif(current_setting('request.headers', true), '')::json->>'x-advisory-session'
+            )::UUID
+          )
+        )
     )
   );
 
@@ -233,12 +276,12 @@ INSERT INTO advisory_reglas_config (version, es_activa, config) VALUES (
     },
     "scoring": {
       "pesos": {
-        "ajuste_tecnico": 0.50,
-        "ajuste_presupuesto": 0.25,
-        "reputacion_proveedor": 0.15,
-        "tier_proveedor": 0.10
+        "ajuste_tecnico": 0.55,
+        "ajuste_presupuesto": 0.28,
+        "reputacion_proveedor": 0.17
       },
-      "umbral_minimo_score": 60
+      "umbral_minimo_score": 60,
+      "_nota": "tier_proveedor eliminado en v1 (providers.tier no existe en schema). Pesos redistribuidos proporcionalmente desde 0.50/0.25/0.15 → 0.55/0.28/0.17. Suma=1.00. Agregar tier_boost como 4to componente cuando providers.tier exista."
     }
   }'
 );
@@ -369,6 +412,10 @@ export async function runAdvisory(
 ): Promise<{ ticket: TicketRequisitos; recomendaciones: Recomendacion[] }>
 ```
 
+### 3.2.1 Nota sobre `catalog_items` y Advisory
+
+`getCandidatePackages()` consulta la tabla `packages` directamente — no a través de la vista `catalog_items`. La vista (`schema.sql` líneas 262–270) solo proyecta campos básicos (`id`, `item_type`, `provider_id`, `title`, `category`, `cover_image_url`, `daily_price`, `description`, `is_published`, `created_at`) y no incluye ninguno de los campos de metadata de Advisory añadidos en Migración A1. El filtro previo por ciudad, capacidad y tipo de espacio se hace con `WHERE` directo sobre `packages` usando los índices de A1. **No es necesario modificar `catalog_items` en v1;** la vista sigue funcionando igual para el catálogo público.
+
 ### 3.3 Algoritmo de scoring (detalle)
 
 ```typescript
@@ -384,20 +431,23 @@ function scorePackage(pkg, ticket, perfil, reglas): { score: number } {
   // price dentro del rango: 100; debajo: 90; encima hasta 20%: 50; encima +20%: 0
   const presupuesto = calcularAjustePresupuesto(pkg.daily_price, perfil.presupuesto_min, perfil.presupuesto_max);
 
-  // Componente 3: Reputación (peso 0.15)
+  // Componente 3: Reputación (peso 0.17 en v1)
   // avg_rating/5 * 100, ponderado por cantidad de reviews (mínimo fiable: 3)
   const reputacion = calcularReputacion(pkg.provider.avg_rating, pkg.provider.review_count);
 
-  // Componente 4: Tier proveedor (peso 0.10)
-  // Si existe campo tier en providers: usar boost definido en reglas_config
-  const tierBoost = calcularTierBoost(pkg.provider.tier, reglas.scoring);
+  // Componente 4: Tier proveedor — ELIMINADO en v1.
+  // La tabla providers (schema.sql líneas 60–68) no tiene campo tier;
+  // solo contiene: id, user_id, brand_name, bio, status, created_at.
+  // El peso 0.10 fue redistribuido proporcionalmente entre los 3 componentes
+  // restantes (ver Migración A4). Queda como mejora futura cuando se agregue
+  // providers.tier al esquema.
 
   const pesos = reglas.scoring.pesos;
   const score =
     tecnico * pesos.ajuste_tecnico +
     presupuesto * pesos.ajuste_presupuesto +
-    reputacion * pesos.reputacion_proveedor +
-    tierBoost * pesos.tier_proveedor;
+    reputacion * pesos.reputacion_proveedor;
+  // pesos v1: ajuste_tecnico=0.55 + ajuste_presupuesto=0.28 + reputacion_proveedor=0.17 = 1.00
 
   return { score: Math.round(score) };
 }
@@ -616,7 +666,16 @@ La spec menciona filtrar por disponibilidad de fecha. El sistema de `availabilit
 ### Autenticación en el wizard
 
 El wizard debe funcionar **sin login** (para reducir fricción) hasta el paso 5. Al hacer clic en "Ver recomendaciones":
-- Si hay sesión: se guarda `advisory_perfil_evento` con `user_id`.
-- Si no hay sesión: se guarda con `user_id = NULL` y se crea un UUID de sesión anónima en cookie. Si el usuario luego hace login, se puede vincular retroactivamente.
 
-Esta decisión afecta la RLS de `advisory_perfil_evento` (fase A3 puede necesitar ajuste para sesiones anónimas).
+- **Con sesión:** se guarda `advisory_perfil_evento` con `user_id = auth.uid()` y `session_token = NULL`. La policy `advisory_perfil_own` cubre el acceso.
+- **Sin sesión:** se genera un `session_token` UUID en el cliente (guardado en cookie `artrider-advisory-session`). Se inserta `advisory_perfil_evento` con `user_id = NULL` y `session_token = <uuid>`. El cliente incluye el header `x-advisory-session: <uuid>` en cada request Supabase. La policy `advisory_perfil_anon_session` (Migración A3) lee ese header vía `current_setting('request.headers')` para autorizar el acceso.
+
+**Vinculación retroactiva al hacer login:** en `auth.onAuthStateChange` (o en el server action del callback OAuth), ejecutar:
+```sql
+UPDATE advisory_perfil_evento
+SET user_id = <uid_del_nuevo_login>
+WHERE session_token = <token_de_cookie> AND user_id IS NULL;
+```
+Tras el `UPDATE`, la policy `advisory_perfil_own` cubre la fila; el `session_token` queda como referencia histórica.
+
+> Las RLS de `advisory_ticket_requisitos` y `advisory_recomendacion` también incluyen el mismo chequeo de `session_token` (vía JOIN a `advisory_perfil_evento`), por lo que el mecanismo anónimo funciona de extremo a extremo sin cambios adicionales en esas tablas.
