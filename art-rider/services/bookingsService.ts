@@ -25,6 +25,7 @@ export interface BookingUnit {
     price_per_day: number;
     image_urls?: string[] | null;
     location?: string | null;
+    category?: string | null;
   } | null;
 }
 
@@ -58,7 +59,7 @@ const BOOKING_BASE_FIELDS = `
   booking_units(
     id, locked_daily_price,
     equipment_unit:equipment_units(
-      id, listing:listings(id, title, cover_image_url, address:addresses(city))
+      id, listing:listings(id, title, cover_image_url, category, address:addresses(city))
     )
   )
 `.replace(/\s+/g, " ").trim();
@@ -92,6 +93,7 @@ function buildUnitsFromRaw(rawUnits: any[]): BookingUnit[] {
           price_per_day: u.locked_daily_price,
           image_urls: listing.cover_image_url ? [listing.cover_image_url] : null,
           location: listing.address?.city ?? null,
+          category: listing.category ?? null,
         },
       });
     }
@@ -113,6 +115,7 @@ function buildUnitsFromSnapshot(snap: any): BookingUnit[] {
       price_per_day: snap.daily_price,
       image_urls: snap.cover_image_url ? [snap.cover_image_url] : (snap.image_urls ?? null),
       location: snap.location ?? null,
+      category: snap.category ?? null,
     },
   }];
 }

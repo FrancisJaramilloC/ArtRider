@@ -166,7 +166,7 @@ export default function Navbar({
             ))}
             {user && (
               <Link
-                href="/bookings"
+                href="/reservas"
                 className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg px-2.5 py-1.5 transition-all"
               >
                 Reservas
