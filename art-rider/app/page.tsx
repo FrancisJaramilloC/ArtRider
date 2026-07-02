@@ -11,6 +11,8 @@ import LandingHowItWorks from "@/components/features/home/LandingHowItWorks";
 import LandingFooter from "@/components/features/home/LandingFooter";
 import type { LandingCardItem } from "@/components/features/home/LandingCard";
 import type { CityInfo } from "@/lib/eventCategoryMap";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "ArtRider — Alquila Equipos Creativos para tu Evento",
@@ -150,6 +152,16 @@ export default async function HomePage() {
       </main>
 
       <LandingFooter />
+
+      {/* Floating Wizard Button */}
+      <Link 
+        href="/cotizar"
+        className="fixed bottom-8 right-8 group z-50 flex items-center gap-3 px-7 py-4 rounded-full bg-black/90 backdrop-blur-md text-white font-medium shadow-2xl hover:shadow-[#875B9A]/30 hover:-translate-y-1 transition-all duration-300 border border-white/10 overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-[#875B9A]/0 via-[#875B9A]/20 to-purple-600/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+        <Sparkles className="w-5 h-5 text-purple-400 group-hover:animate-pulse relative z-10" />
+        <span className="relative z-10 tracking-wide text-[15px]">Cotiza tu evento gratis</span>
+      </Link>
     </>
   );
 }

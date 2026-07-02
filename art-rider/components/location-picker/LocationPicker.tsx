@@ -14,18 +14,21 @@ export type LocationData = {
   displayAddress: string;
 };
 
-//  Tipo de resultado de Nominatim
-type NominatimResult = {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-  address?: {
+//  Tipo de resultado de Photon
+type PhotonFeature = {
+  geometry: {
+    coordinates: [number, number]; // [lon, lat]
+  };
+  properties: {
+    osm_id: number;
+    name?: string;
+    street?: string;
     city?: string;
     town?: string;
     village?: string;
-    state?: string;
     county?: string;
+    state?: string;
+    country?: string;
   };
 };
 
@@ -46,13 +49,13 @@ type Props = {
 
 const DEFAULT_CENTER: [number, number] = [-79.20422, -3.99313]; // Loja
 const DARK_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json";
-const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
+const PHOTON_BASE = "https://photon.komoot.io";
 
 //  Componente principal
 export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTER, initialLocation }: Props) {
   //  Estado de búsqueda
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<NominatimResult[]>([]);
+  const [results, setResults] = useState<PhotonFeature[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
@@ -134,7 +137,7 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  //  Nominatim: Forward Geocoding (Search)
+  //  Photon: Forward Geocoding (Search)
 
   useEffect(() => {
     //  Omite la búsqueda cuando la consulta se estableció programáticamente (por ejemplo, inicialización desde el listado guardado)
@@ -154,20 +157,14 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
     debounceRef.current = setTimeout(async () => {
       setIsSearching(true);
       try {
-        //  Parametros de búsqueda
         const params = new URLSearchParams({
-          format: "json",
           q: query,
-          countrycodes: "ec",
           limit: "5",
-          addressdetails: "1",
         });
-        const res = await fetch(`${NOMINATIM_BASE}/search?${params}`, {
-          headers: { "Accept-Language": "es" },
-        });
-        const data: NominatimResult[] = await res.json();
-        setResults(data);
-        setShowResults(data.length > 0);
+        const res = await fetch(`${PHOTON_BASE}/api/?${params}`);
+        const data = await res.json();
+        setResults(data.features || []);
+        setShowResults((data.features || []).length > 0);
       } catch {
         setResults([]);
       } finally {
@@ -180,35 +177,33 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
     };
   }, [query]);
 
-  //  Nominatim: Reverse Geocoding (Map drag)
+  //  Photon: Reverse Geocoding (Map drag)
 
   const reverseGeocode = useCallback(
     async (lat: number, lng: number) => {
       try {
-        //  Parametros de búsqueda
         const params = new URLSearchParams({
-          format: "json",
           lat: String(lat),
           lon: String(lng),
-          addressdetails: "1",
         });
-        const res = await fetch(`${NOMINATIM_BASE}/reverse?${params}`, {
-          headers: { "Accept-Language": "es" },
-        });
+        const res = await fetch(`${PHOTON_BASE}/reverse?${params}`);
         const data = await res.json();
 
-        //  Extracción de datos
-        const city =
-          data.address?.city ||
-          data.address?.town ||
-          data.address?.village ||
-          "Sin ciudad";
-        const state = data.address?.state || "Sin estado";
-        const displayAddress = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        if (data.features && data.features.length > 0) {
+          const props = data.features[0].properties;
+          const city = props.city || props.town || props.village || props.county || "Sin ciudad";
+          const state = props.state || props.county || "Sin estado";
+          
+          const parts = [props.name, props.street, city, state, props.country].filter(Boolean);
+          // Eliminar duplicados consecutivos
+          const uniqueParts = parts.filter((val, i, arr) => i === 0 || val !== arr[i-1]);
+          const displayAddress = uniqueParts.join(", ");
 
-        //  Actualiza el estado
-        setCurrentAddress(displayAddress);
-        onChange({ lat, lng, city, state, displayAddress });
+          setCurrentAddress(displayAddress);
+          onChange({ lat, lng, city, state, displayAddress });
+        } else {
+          throw new Error("No features");
+        }
       } catch {
         //  Manejo de errores
         onChange({
@@ -226,25 +221,25 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
   //  Selección de sugerencia
 
   // Cuando el usuario selecciona una sugerencia de la lista
-  function handleSelect(result: NominatimResult) {
-    const lat = parseFloat(result.lat);
-    const lng = parseFloat(result.lon);
+  function handleSelect(result: PhotonFeature) {
+    const lng = result.geometry.coordinates[0];
+    const lat = result.geometry.coordinates[1];
+    
+    const props = result.properties;
+    const city = props.city || props.town || props.village || props.county || "Sin ciudad";
+    const state = props.state || props.county || "Sin estado";
+
+    const parts = [props.name, props.street, city, state, props.country].filter(Boolean);
+    const uniqueParts = parts.filter((val, i, arr) => i === 0 || val !== arr[i-1]);
+    const displayAddress = uniqueParts.join(", ");
 
     // Actualiza el estado
-    setQuery(result.display_name);
+    setQuery(displayAddress);
     setShowResults(false);
-    setCurrentAddress(result.display_name);
-
-    // Extracción de datos
-    const city =
-      result.address?.city ||
-      result.address?.town ||
-      result.address?.village ||
-      "Sin ciudad";
-    const state = result.address?.state || result.address?.county || "Sin estado";
+    setCurrentAddress(displayAddress);
     
     // Emite los datos de ubicación al componente padre
-    onChange({ lat, lng, city, state, displayAddress: result.display_name });
+    onChange({ lat, lng, city, state, displayAddress });
 
     // Mueve el mapa al punto seleccionado
     if (mapRef.current) {
@@ -304,24 +299,33 @@ export default function LocationPicker({ onChange, defaultCenter = DEFAULT_CENTE
         {/* Sugerencias de búsqueda */}
         {showResults && (
           <div className="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
-            {results.map((r) => (
-              <button
-                key={r.place_id}
-                type="button"
-                onClick={() => handleSelect(r)}
-                className="w-full text-left px-5 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 flex items-start gap-3"
-              >
-                {/* Icono de ubicación */}
-                <svg className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-                {/* Dirección de la ubicación */}
-                <span className="text-base text-gray-700 leading-snug line-clamp-2">
-                  {r.display_name}
-                </span>
-              </button>
-            ))}
+            {results.map((r) => {
+              const props = r.properties;
+              const city = props.city || props.town || props.village || props.county || "Sin ciudad";
+              const state = props.state || props.county || "Sin estado";
+              const parts = [props.name, props.street, city, state, props.country].filter(Boolean);
+              const uniqueParts = parts.filter((val, i, arr) => i === 0 || val !== arr[i-1]);
+              const displayAddress = uniqueParts.join(", ");
+              
+              return (
+                <button
+                  key={props.osm_id || Math.random()}
+                  type="button"
+                  onClick={() => handleSelect(r)}
+                  className="w-full text-left px-5 py-3.5 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0 flex items-start gap-3"
+                >
+                  {/* Icono de ubicación */}
+                  <svg className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" strokeLinecap="round" strokeLinejoin="round" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                  {/* Dirección de la ubicación */}
+                  <span className="text-base text-gray-700 leading-snug line-clamp-2">
+                    {displayAddress}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
