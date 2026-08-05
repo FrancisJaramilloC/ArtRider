@@ -444,7 +444,11 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
               <BookingCard
                 listingId={listing.id}
+                listingTitle={listing.title ?? "Equipo"}
                 dailyPrice={listing.daily_price}
+                providerId={listing.provider_id}
+                providerName={providerName ?? "Proveedor"}
+                coverImageUrl={listing.cover_image_url}
                 initialDisabledDates={unavailableDates}
               />
             </div>
