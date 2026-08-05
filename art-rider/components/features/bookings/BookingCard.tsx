@@ -2,20 +2,33 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, ChevronRight } from "lucide-react";
+import { Calendar, Check, ChevronRight, ShoppingCart } from "lucide-react";
 import { format, differenceInDays, eachDayOfInterval, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, type DateRange } from "react-day-picker";
 import "react-day-picker/dist/style.css";
+import { useCart } from "@/contexts/CartContext";
 
 interface BookingCardProps {
   listingId: string;
+  listingTitle: string;
   dailyPrice: number;
+  providerId: string;
+  providerName: string;
+  coverImageUrl?: string | null;
   initialDisabledDates: string[];
 }
 
-export function BookingCard({ listingId, dailyPrice, initialDisabledDates }: BookingCardProps) {
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+export function BookingCard({
+  listingId,
+  listingTitle,
+  dailyPrice,
+  providerId,
+  providerName,
+  coverImageUrl,
+  initialDisabledDates,
+}: BookingCardProps) {
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined,
   });
@@ -27,8 +40,9 @@ export function BookingCard({ listingId, dailyPrice, initialDisabledDates }: Boo
   });
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [added, setAdded] = useState(false);
   const router = useRouter();
+  const cart = useCart();
 
   const days = dateRange.from && dateRange.to
     ? Math.max(1, differenceInDays(dateRange.to, dateRange.from) + 1)
@@ -38,9 +52,31 @@ export function BookingCard({ listingId, dailyPrice, initialDisabledDates }: Boo
     if (!dateRange.from || !dateRange.to) return;
 
     // Redirect to checkout page with dates
-    const startStr = dateRange.from.toISOString();
-    const endStr = dateRange.to.toISOString();
+    const startStr = format(dateRange.from, "yyyy-MM-dd");
+    const endStr = format(dateRange.to, "yyyy-MM-dd");
     router.push(`/checkout/${listingId}?start=${startStr}&end=${endStr}`);
+  };
+
+  const handleAddToCart = () => {
+    if (!dateRange.from || !dateRange.to) return;
+    const result = cart.addItem({
+      listingId,
+      title: listingTitle,
+      dailyPrice,
+      quantity: 1,
+      providerId,
+      providerName,
+      coverImageUrl,
+    }, format(dateRange.from, "yyyy-MM-dd"), format(dateRange.to, "yyyy-MM-dd"));
+
+    if (!result.ok) {
+      alert(result.reason === "date_conflict"
+        ? "Todos los equipos del carrito deben usar las mismas fechas. Vacía el carrito o selecciona su rango actual."
+        : "El rider firmado está bloqueado. Finaliza o vacía esa orden antes de crear otro carrito.");
+      return;
+    }
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 1800);
   };
 
   return (
@@ -85,8 +121,8 @@ export function BookingCard({ listingId, dailyPrice, initialDisabledDates }: Boo
         >
           <DayPicker
             mode="range"
-            selected={dateRange as any}
-            onSelect={(range: any) => {
+            selected={dateRange}
+            onSelect={(range) => {
               if (range?.from && range?.to) {
                 const days = eachDayOfInterval({ start: range.from, end: range.to });
                 const hasDisabled = days.some(day => 
@@ -120,11 +156,21 @@ export function BookingCard({ listingId, dailyPrice, initialDisabledDates }: Boo
 
       <button
         onClick={handleReserve}
-        disabled={!dateRange.from || !dateRange.to || isProcessing}
+        disabled={!dateRange.from || !dateRange.to}
         className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#875B9A] to-[#6a437a] disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-bold py-[15px] px-4 rounded-[13px] transition-all shadow-[0_10px_24px_-8px_rgba(135,91,154,.55)] disabled:shadow-none hover:brightness-105 active:scale-[.98]"
       >
         Proceder al pago
         <ChevronRight size={17} strokeWidth={2.2} />
+      </button>
+
+      <button
+        type="button"
+        onClick={handleAddToCart}
+        disabled={!dateRange.from || !dateRange.to}
+        className="mt-3 w-full flex items-center justify-center gap-2 border border-gray-300 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-gray-900 font-bold py-[13px] px-4 rounded-[13px] hover:bg-gray-50 transition-colors"
+      >
+        {added ? <Check size={17} /> : <ShoppingCart size={17} />}
+        {added ? "Agregado al carrito" : "Agregar al carrito"}
       </button>
 
       {days > 0 && (

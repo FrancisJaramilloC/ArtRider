@@ -301,7 +301,22 @@ export async function signProposalRider(formData: FormData) {
   if (!proposalId || !pdfFile) return { success: false, error: "Faltan datos requeridos." };
 
   try {
+    const sessionClient = await createSupabaseServerClient();
+    const { data: { user } } = await sessionClient.auth.getUser();
+    if (!user) return { success: false, error: "Usuario no autenticado." };
+
     const supabase = getAdminClient();
+    const { data: ownedProposal } = await supabase
+      .from("advisory_proposals")
+      .select("id, advisory_requests(client_id)")
+      .eq("id", proposalId)
+      .single();
+    const advisoryRequest = Array.isArray(ownedProposal?.advisory_requests)
+      ? ownedProposal.advisory_requests[0]
+      : ownedProposal?.advisory_requests;
+    if (!ownedProposal || advisoryRequest?.client_id !== user.id) {
+      return { success: false, error: "No tienes acceso a esta propuesta." };
+    }
     
     // 1. Subir el PDF al Storage
     const fileName = `${proposalId}-${Date.now()}.pdf`;
@@ -356,7 +371,7 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
   // Buscar equipos en la ciudad solicitada
   const { data: listings, error } = await supabase
     .from("listings")
-    .select("id, title, category, daily_price, provider_id, specs, address:addresses!inner(city)")
+    .select("id, title, category, daily_price, provider_id, specs, address:addresses!inner(city), equipment_units(id, internal_status)")
     .eq("is_published", true)
     .ilike("addresses.city", `%${city}%`);
 
@@ -365,77 +380,110 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
     return;
   }
 
-  const items = [];
+  const items: Array<{
+    listing_id: string;
+    provider_id: string;
+    title: string;
+    quantity: number;
+    unit_price: number;
+    note: string;
+    metrics: string[];
+  }> = [];
   let subtotal = 0;
 
   // Lógica de Reglas Básica
   const audios = listings.filter(l => l.category === "sonido" || l.category === "audio");
   const lightings = listings.filter(l => l.category === "iluminacion" || l.category === "lighting");
 
-  // Asignar Audio según requerimiento
-  if (audios.length > 0) {
-    // Algoritmo: Ordenar por potencia desc, y buscar el primero que cubra la cantidad de personas
-    const sortedAudios = audios.sort((a, b) => {
-      const pA = (a.specs as any)?.potencia_watts_rms || 0;
-      const pB = (b.specs as any)?.potencia_watts_rms || 0;
-      return pB - pA;
-    });
-    
-    let selected = sortedAudios[0]; // fallback al de mayor potencia
-    for (const audio of sortedAudios) {
-      if ((audio.specs as any)?.cobertura_personas >= guestCount) {
-        selected = audio;
-        break; // Toma el que alcance, empezando desde los más potentes
-      }
-    }
+  const targetQuantity = (requirement: string) =>
+    requirement === "HIGH" ? 4 : requirement === "MEDIUM" ? 2 : 1;
+  type AdvisoryListingCandidate = {
+    id: string;
+    provider_id: string;
+    title: string;
+    daily_price: number;
+    specs: {
+      potencia_watts_rms?: number;
+      cobertura_personas?: number;
+      tipo_sistema?: string;
+      cantidad_luminarias?: number;
+      tipo_iluminacion?: string;
+      incluye_dmx?: boolean;
+    } | null;
+    equipment_units?: { internal_status: string }[];
+  };
+  const availableUnits = (listing: AdvisoryListingCandidate) =>
+    (listing.equipment_units ?? []).filter((unit) => unit.internal_status === "AVAILABLE").length;
 
-    const qty = context.audio_requirement === 'HIGH' ? 4 : (context.audio_requirement === 'MEDIUM' ? 2 : 1);
-    
-    const specs = (selected.specs as any) || {};
-    
-    items.push({
-      listing_id: selected.id,
-      provider_id: selected.provider_id,
-      title: selected.title,
-      quantity: qty,
-      unit_price: selected.daily_price,
-      note: `Sistema principal de audio calibrado para ${context.audio_requirement}.`,
-      metrics: [
-        specs.cobertura_personas ? `Cobertura óptima: ${specs.cobertura_personas} pax` : `Cobertura estimada: hasta ${guestCount + 20} pax`,
-        specs.potencia_watts_rms ? `Potencia RMS: ${specs.potencia_watts_rms}W` : `Nivel: ${context.audio_requirement}`,
-        specs.tipo_sistema ? `Tipo: ${specs.tipo_sistema}` : (venueSlug === 'abierto' || venueSlug === 'outdoor' ? 'Apto para Exteriores' : 'Optimizado para Interiores')
-      ]
+  const addRecommendations = (
+    candidates: AdvisoryListingCandidate[],
+    quantityNeeded: number,
+    describe: (listing: AdvisoryListingCandidate) => { note: string; metrics: string[] },
+  ) => {
+    let remaining = quantityNeeded;
+    for (const listing of candidates) {
+      if (remaining <= 0) break;
+      const stock = availableUnits(listing);
+      if (stock <= 0) continue;
+      const quantity = Math.min(stock, remaining);
+      const description = describe(listing);
+      items.push({
+        listing_id: listing.id,
+        provider_id: listing.provider_id,
+        title: listing.title,
+        quantity,
+        unit_price: listing.daily_price,
+        note: description.note,
+        metrics: description.metrics,
+      });
+      subtotal += listing.daily_price * quantity;
+      remaining -= quantity;
+    }
+  };
+
+  // Asignar Audio según requerimiento. Si un listing no tiene suficiente
+  // inventario, completa la necesidad con otros listings y proveedores.
+  if (audios.length > 0) {
+    const sortedAudios = (audios as AdvisoryListingCandidate[]).sort((a, b) => {
+      const specsA = a.specs || {};
+      const specsB = b.specs || {};
+      const coversA = (specsA.cobertura_personas ?? 0) >= guestCount ? 1 : 0;
+      const coversB = (specsB.cobertura_personas ?? 0) >= guestCount ? 1 : 0;
+      return coversB - coversA || (specsB.potencia_watts_rms || 0) - (specsA.potencia_watts_rms || 0);
     });
-    subtotal += (selected.daily_price * qty);
+    addRecommendations(sortedAudios, targetQuantity(context.audio_requirement), (selected) => {
+      const specs = selected.specs || {};
+      return {
+        note: `Sistema de audio calibrado para nivel ${context.audio_requirement}.`,
+        metrics: [
+          specs.cobertura_personas ? `Cobertura óptima: ${specs.cobertura_personas} pax` : `Cobertura estimada: hasta ${guestCount + 20} pax`,
+          specs.potencia_watts_rms ? `Potencia RMS: ${specs.potencia_watts_rms}W` : `Nivel: ${context.audio_requirement}`,
+          specs.tipo_sistema ? `Tipo: ${specs.tipo_sistema}` : (venueSlug === "abierto" || venueSlug === "outdoor" ? "Apto para exteriores" : "Optimizado para interiores"),
+        ],
+      };
+    });
   }
 
   // Asignar Iluminación
   if (lightings.length > 0) {
     // Algoritmo: Ordenar por cantidad de luminarias
-    const sortedLightings = lightings.sort((a, b) => {
-      const pA = (a.specs as any)?.cantidad_luminarias || 0;
-      const pB = (b.specs as any)?.cantidad_luminarias || 0;
+    const sortedLightings = (lightings as AdvisoryListingCandidate[]).sort((a, b) => {
+      const pA = a.specs?.cantidad_luminarias || 0;
+      const pB = b.specs?.cantidad_luminarias || 0;
       return pB - pA;
     });
 
-    let selected = sortedLightings[0];
-    const qty = context.lighting_requirement === 'HIGH' ? 4 : (context.lighting_requirement === 'MEDIUM' ? 2 : 1);
-    const specs = (selected.specs as any) || {};
-
-    items.push({
-      listing_id: selected.id,
-      provider_id: selected.provider_id,
-      title: selected.title,
-      quantity: qty,
-      unit_price: selected.daily_price,
-      note: `Set de iluminación ambiental profesional (${context.lighting_requirement}).`,
-      metrics: [
-        specs.cantidad_luminarias ? `Equipos: ${specs.cantidad_luminarias} luminarias` : `Ambiente: Nivel ${context.lighting_requirement}`,
-        specs.tipo_iluminacion ? `Tipo: ${specs.tipo_iluminacion}` : `Alcance: Espacio de hasta ${Math.max(50, guestCount)} pax`,
-        specs.incluye_dmx ? `Control Inteligente DMX` : `Control Automático/Rítmico`
-      ]
+    addRecommendations(sortedLightings, targetQuantity(context.lighting_requirement), (selected) => {
+      const specs = selected.specs || {};
+      return {
+        note: `Set de iluminación ambiental profesional (${context.lighting_requirement}).`,
+        metrics: [
+          specs.cantidad_luminarias ? `Equipos: ${specs.cantidad_luminarias} luminarias` : `Ambiente: nivel ${context.lighting_requirement}`,
+          specs.tipo_iluminacion ? `Tipo: ${specs.tipo_iluminacion}` : `Alcance: espacio de hasta ${Math.max(50, guestCount)} pax`,
+          specs.incluye_dmx ? "Control inteligente DMX" : "Control automático/rítmico",
+        ],
+      };
     });
-    subtotal += (selected.daily_price * qty);
   }
 
   if (items.length === 0) return; // No pudimos armar nada
@@ -487,7 +535,7 @@ export async function getAdvisoryRequest(requestId: string) {
   // Por ahora, traemos la primera propuesta que esté en estado 'sent' o 'accepted' o 'signed'
   
   const proposal = data.advisory_proposals?.find(
-    (p: any) => p.status === 'sent' || p.status === 'accepted' || p.status === 'signed'
+    (p: { status: string }) => p.status === 'sent' || p.status === 'accepted' || p.status === 'signed'
   );
 
   return { 

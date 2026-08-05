@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, CheckCircle2, ShieldCheck, AlertCircle, HelpCircle } from "lucide-react";
+import { Loader2, CheckCircle2, ShieldCheck, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { jsPDF } from "jspdf";
 import { useRouter } from "next/navigation";
 import SignatureModal from "./SignatureModal";
 import { signProposalRider } from "@/services/advisoryService";
+import { useCart } from "@/contexts/CartContext";
 type ProposalItem = {
   listing_id: string;
   title: string;
@@ -16,11 +17,31 @@ type ProposalItem = {
   metrics?: string[];
 };
 
-export default function ProposalView({ request, proposal }: { request: any; proposal: any }) {
+type AdvisoryRequestView = {
+  guest_count: number;
+  event_date: string | null;
+};
+
+type AdvisoryProposalView = {
+  id: string;
+  items: ProposalItem[];
+  subtotal: number;
+  commission_amount: number;
+  total: number;
+};
+
+export default function ProposalView({
+  request,
+  proposal,
+}: {
+  request: AdvisoryRequestView;
+  proposal: AdvisoryProposalView | null;
+}) {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
+  const cart = useCart();
 
   // GC-012: Si no hay propuesta o no está en estado de ser mostrada al cliente
   if (!proposal) {
@@ -95,8 +116,21 @@ export default function ProposalView({ request, proposal }: { request: any; prop
       const result = await signProposalRider(formData);
       
       if (result.success) {
-        // Redirigir a pasarela de pagos
-        router.push(`/checkout/proposal/${proposal.id}`);
+        if (!request.event_date) {
+          alert("La propuesta no tiene una fecha de evento válida.");
+          return;
+        }
+        cart.replaceWithAdvisory(
+          items.map((item: ProposalItem) => ({
+            listingId: item.listing_id,
+            title: item.title,
+            dailyPrice: item.unit_price,
+            quantity: item.quantity,
+          })),
+          request.event_date,
+          proposal.id,
+        );
+        router.push("/cart");
       } else {
         alert("Error al firmar: " + result.error);
       }
@@ -158,7 +192,7 @@ export default function ProposalView({ request, proposal }: { request: any; prop
           <div className="mt-8 p-4 bg-blue-50 rounded-2xl flex gap-3 text-blue-800 text-sm">
             <ShieldCheck className="w-5 h-5 flex-shrink-0" />
             <p>
-              Todos los equipos son provistos por un proveedor verificado de ArtRider. 
+              Todos los equipos son provistos por proveedores verificados de ArtRider.
               Garantizamos la disponibilidad y el funcionamiento.
             </p>
           </div>
@@ -206,7 +240,7 @@ export default function ProposalView({ request, proposal }: { request: any; prop
             disabled={!acceptedTerms || isProcessing}
             className="w-full bg-black text-white font-semibold py-4 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-4"
           >
-            {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : "Aceptar y firmar rider"}
+            {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : "Firmar y agregar al carrito"}
           </button>
 
           <button className="w-full bg-white border-2 border-gray-200 text-black font-semibold py-3 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">

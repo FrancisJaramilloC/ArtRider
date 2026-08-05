@@ -499,14 +499,18 @@ export async function updateBookingStatus(
     // Verificar propiedad
     const { data: booking, error: fetchError } = await supabase
       .from("bookings")
-      .select("id, client_id, provider_id, kushki_ticket, total_price")
+      .select("id, client_id, provider_id, kushki_ticket, total_price, checkout_order_id")
       .eq("id", bookingId)
       .single();
 
     if (fetchError || !booking || booking.provider_id !== providerId)
       return { error: "Booking not found or not owned" };
 
-    if (status === "CANCELLED" && booking.kushki_ticket) {
+    if (status === "CANCELLED" && booking.checkout_order_id) {
+      const { canCancelCheckoutBooking } = await import("./checkoutOrderService");
+      const cancellation = await canCancelCheckoutBooking(booking.checkout_order_id);
+      if (!cancellation.allowed) return { error: cancellation.error };
+    } else if (status === "CANCELLED" && booking.kushki_ticket) {
       // Reembolsar cobro en Kushki
       const privateKey = process.env.KUSHKI_PRIVATE_MERCHANT_ID;
       if (privateKey) {
@@ -545,6 +549,11 @@ export async function updateBookingStatus(
       .eq("provider_id", providerId);
 
     if (updateError) return { error: updateError.message };
+
+    if (booking.checkout_order_id) {
+      const { settleCheckoutOrderRefund } = await import("./checkoutOrderService");
+      await settleCheckoutOrderRefund(booking.checkout_order_id);
+    }
 
     // Obtener título del equipo para la notificación
     const { data: listingData } = await supabase
@@ -593,7 +602,7 @@ export async function cancelBooking(bookingId: string) {
 
     const { data: booking, error: fetchError } = await supabase
       .from("bookings")
-      .select("id, client_id, status, provider_id")
+      .select("id, client_id, status, provider_id, checkout_order_id")
       .eq("id", bookingId)
       .single();
 
@@ -602,6 +611,12 @@ export async function cancelBooking(bookingId: string) {
 
     if (booking.status !== "AWAITING_SIGNATURES")
       return { error: "Only pending bookings can be cancelled by client." };
+
+    if (booking.checkout_order_id) {
+      const { canCancelCheckoutBooking } = await import("./checkoutOrderService");
+      const cancellation = await canCancelCheckoutBooking(booking.checkout_order_id);
+      if (!cancellation.allowed) return { error: cancellation.error };
+    }
 
     // Obtener user_id del proveedor para notificación
     const { data: provider } = await supabase
@@ -617,6 +632,11 @@ export async function cancelBooking(bookingId: string) {
       .eq("client_id", user.id);
 
     if (updateError) return { error: updateError.message };
+
+    if (booking.checkout_order_id) {
+      const { settleCheckoutOrderRefund } = await import("./checkoutOrderService");
+      await settleCheckoutOrderRefund(booking.checkout_order_id);
+    }
 
     if (provider?.user_id) {
       const { createNotification } = await import("./notificationsService");

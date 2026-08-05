@@ -8,6 +8,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { getMyProviderProfile } from "@/services/providerService";
 import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { CartButton } from "@/components/cart/CartButton";
 
 // ─── Nav links (landing only) ─────────────────────────────────────────────────
 
@@ -206,6 +207,7 @@ export default function Navbar({
           )}
 
           {/* Notification bell */}
+          <CartButton />
           {user && <NotificationBell />}
 
           {/* ── Avatar + dropdown ───────────────────────────────────────────── */}
