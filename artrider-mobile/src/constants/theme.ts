@@ -1,6 +1,7 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Paleta de ArtRider — portada desde app/globals.css (art-rider web).
+ * Modo claro: tokens shadcn de la web (fondo blanco, texto oscuro).
+ * Modo oscuro: tokens de marca reales de ArtRider (surface-1/2/3 violeta oscuro).
  */
 
 import '@/global.css';
@@ -9,47 +10,44 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#000000',
+    text: '#111111',
+    textSecondary: '#6b7280',
     background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+    backgroundElement: '#f5f5f5',
+    backgroundSelected: '#e5e7eb',
+    primary: '#875b9a', // primary-500 de la web
+    primaryLight: '#a97dc4', // primary-400
+    primaryDark: '#6a437a', // primary-600
+    border: '#e5e7eb',
+    destructive: '#ef4444',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: '#f0eef5', // text-primary
+    textSecondary: '#a89bb8', // text-secondary
+    background: '#16141e', // surface-1
+    backgroundElement: '#1e1b2a', // surface-2
+    backgroundSelected: '#26223a', // surface-3
+    primary: '#a97dc4', // primary-400 (más claro, mejor contraste en fondo oscuro)
+    primaryLight: '#a97dc4',
+    primaryDark: '#6a437a',
+    border: 'rgba(135, 91, 154, 0.30)', // border-card
+    destructive: '#f87171',
   },
 } as const;
 
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
+export const Fonts = {
+  sans: 'Inter_400Regular',
+  sansMedium: 'Inter_500Medium',
+  sansSemiBold: 'Inter_600SemiBold',
+  sansBold: 'Inter_700Bold',
+  mono: Platform.select({
+    ios: 'ui-monospace',
+    android: 'monospace',
+    default: 'monospace',
+  }) as string,
+} as const;
 
 export const Spacing = {
   half: 2,
@@ -59,6 +57,15 @@ export const Spacing = {
   four: 24,
   five: 32,
   six: 64,
+} as const;
+
+/** Radio de borde base — portado de --radius: 0.625rem (~10px) de la web. */
+export const Radius = {
+  sm: 6,
+  md: 8,
+  lg: 10,
+  xl: 14,
+  full: 999,
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
