@@ -1,0 +1,261 @@
+import { useEffect, useState } from 'react';
+import { View, ScrollView, Pressable, useColorScheme, ActivityIndicator } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import MapView, { Marker } from 'react-native-maps';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { ThemedText } from '@/components/themed-text';
+import { ImageGallery } from '@/components/listing/ImageGallery';
+import { Colors, Spacing, Radius } from '@/constants/theme';
+import { CATEGORY_LABELS } from '@/constants/categories';
+import { getListingByIdWithProvider, getListingRatings, type ListingWithProvider } from '@/services/catalogService';
+import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
+import { useAuth } from '@/hooks/useAuth';
+
+export function ListingDetailScreen() {
+    const { id } = useLocalSearchParams<{ id: string }>();
+    const router = useRouter();
+    const scheme = useColorScheme();
+    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const { session } = useAuth();
+
+    const [listing, setListing] = useState<ListingWithProvider | null>(null);
+    const [rating, setRating] = useState<{ avg: number; count: number }>({ avg: 0, count: 0 });
+    const [esFavorito, setEsFavorito] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!id) return;
+
+        async function load() {
+            const data = await getListingByIdWithProvider(id);
+            setListing(data);
+
+            if (data) {
+                const ratingsMap = await getListingRatings([data.id]);
+                setRating({ avg: ratingsMap[data.id] ?? 0, count: 0 });
+            }
+
+            if (session?.user) {
+                const favIds = await getUserFavIds();
+                setEsFavorito(favIds.equipoIds.includes(id));
+            }
+
+            setLoading(false);
+        }
+
+        load();
+    }, [id, session]);
+
+    async function handleToggleFavorito() {
+        if (!listing) return;
+        setEsFavorito((prev) => !prev); // optimista
+        const result = await toggleFavorito(listing.id, 'equipo');
+        if (!result.error) setEsFavorito(result.esFavorito);
+    }
+
+    if (loading || !listing) {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator color={colors.primary} />
+            </SafeAreaView>
+        );
+    }
+
+    const price = listing.daily_price / 100;
+    const catLabel = CATEGORY_LABELS[listing.category ?? ''] ?? listing.category ?? 'Equipo';
+    const isOwnListing = session?.user?.id && listing.provider?.user_id === session.user.id;
+    const images = [listing.cover_image_url].filter((x): x is string => Boolean(x));
+
+    return (
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <ScrollView bounces={false}>
+                <ImageGallery images={images} />
+
+                {/* Favorito flotante sobre la galería */}
+                <Pressable
+                    onPress={handleToggleFavorito}
+                    style={{
+                        position: 'absolute',
+                        top: 16,
+                        right: Spacing.four,
+                        width: 38,
+                        height: 38,
+                        borderRadius: 19,
+                        backgroundColor: 'rgba(0,0,0,0.35)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <Ionicons name={esFavorito ? 'heart' : 'heart-outline'} size={20} color={esFavorito ? '#C026D3' : '#fff'} />
+                </Pressable>
+
+                <View style={{ padding: Spacing.four }}>
+                    {/* Categoría */}
+                    <View
+                        style={{
+                            alignSelf: 'flex-start',
+                            backgroundColor: `${colors.primary}15`,
+                            paddingHorizontal: Spacing.two,
+                            paddingVertical: 5,
+                            borderRadius: 999,
+                            marginBottom: Spacing.two,
+                        }}
+                    >
+                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 10.5, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.primary }}>
+                            {catLabel}
+                        </ThemedText>
+                    </View>
+
+                    {/* Título */}
+                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text, marginBottom: Spacing.one }}>
+                        {listing.title ?? 'Equipo sin título'}
+                    </ThemedText>
+
+                    {/* Rating + ciudad */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.three }}>
+                        {rating.avg > 0 && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                <Ionicons name="star" size={14} color={colors.text} />
+                                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text }}>
+                                    {rating.avg.toFixed(2)}
+                                </ThemedText>
+                            </View>
+                        )}
+                        {listing.address?.city && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+                                <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>{listing.address.city}</ThemedText>
+                            </View>
+                        )}
+                    </View>
+
+                    {/* Proveedor */}
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: Spacing.three,
+                            paddingVertical: Spacing.three,
+                            borderTopWidth: 1,
+                            borderColor: colors.border,
+                        }}
+                    >
+                        <View
+                            style={{
+                                width: 44,
+                                height: 44,
+                                borderRadius: 22,
+                                backgroundColor: colors.text,
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <ThemedText style={{ color: colors.background, fontFamily: 'Inter_700Bold', fontSize: 16 }}>
+                                {(listing.provider?.brand_name ?? 'P').charAt(0).toUpperCase()}
+                            </ThemedText>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text }}>
+                                Ofrecido por {listing.provider?.brand_name ?? 'Proveedor ArtRider'}
+                            </ThemedText>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                                <Ionicons name="shield-checkmark" size={13} color={colors.primary} />
+                                <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Proveedor verificado</ThemedText>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Marca / modelo */}
+                    {(listing.brand || listing.model) && (
+                        <View style={{ flexDirection: 'row', gap: Spacing.two, paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
+                            {listing.brand && (
+                                <View style={{ flex: 1, backgroundColor: colors.backgroundElement, borderRadius: Radius.md, padding: Spacing.two }}>
+                                    <ThemedText style={{ fontSize: 11, color: colors.textSecondary }}>Marca</ThemedText>
+                                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text }}>{listing.brand}</ThemedText>
+                                </View>
+                            )}
+                            {listing.model && (
+                                <View style={{ flex: 1, backgroundColor: colors.backgroundElement, borderRadius: Radius.md, padding: Spacing.two }}>
+                                    <ThemedText style={{ fontSize: 11, color: colors.textSecondary }}>Modelo</ThemedText>
+                                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text }}>{listing.model}</ThemedText>
+                                </View>
+                            )}
+                        </View>
+                    )}
+
+                    {/* Descripción */}
+                    {listing.description && (
+                        <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
+                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text, marginBottom: Spacing.two }}>
+                                Sobre este equipo
+                            </ThemedText>
+                            <ThemedText style={{ fontSize: 14, lineHeight: 21, color: colors.textSecondary }}>
+                                {listing.description}
+                            </ThemedText>
+                        </View>
+                    )}
+
+                    {/* Mapa */}
+                    {listing.address?.latitude && listing.address?.longitude && (
+                        <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
+                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text, marginBottom: Spacing.two }}>
+                                Ubicación
+                            </ThemedText>
+                            <View style={{ height: 180, borderRadius: Radius.lg, overflow: 'hidden' }}>
+                                <MapView
+                                    style={{ flex: 1 }}
+                                    initialRegion={{
+                                        latitude: listing.address.latitude,
+                                        longitude: listing.address.longitude,
+                                        latitudeDelta: 0.02,
+                                        longitudeDelta: 0.02,
+                                    }}
+                                    scrollEnabled={false}
+                                    zoomEnabled={false}
+                                >
+                                    <Marker coordinate={{ latitude: listing.address.latitude, longitude: listing.address.longitude }} />
+                                </MapView>
+                            </View>
+                        </View>
+                    )}
+
+                    <View style={{ height: 100 }} />
+                </View>
+            </ScrollView>
+
+            {/* Barra inferior fija: precio + Reservar */}
+            {!isOwnListing && (
+                <View
+                    style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: Spacing.four,
+                        backgroundColor: colors.background,
+                        borderTopWidth: 1,
+                        borderColor: colors.border,
+                    }}
+                >
+                    <View>
+                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text }}>
+                            ${price % 1 === 0 ? price.toFixed(0) : price.toFixed(2)}
+                            <ThemedText style={{ fontSize: 13, color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}> /día</ThemedText>
+                        </ThemedText>
+                    </View>
+                    <Pressable
+                        onPress={() => router.push(`/checkout/${listing.id}` as any)}
+                        style={{ backgroundColor: colors.primary, paddingHorizontal: Spacing.five, paddingVertical: Spacing.three, borderRadius: Radius.lg }}
+                    >
+                        <ThemedText style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 14 }}>Reservar</ThemedText>
+                    </Pressable>
+                </View>
+            )}
+        </View>
+    );
+}
