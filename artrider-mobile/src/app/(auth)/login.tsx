@@ -1,14 +1,5 @@
-import { View } from 'react-native';
-import { Link } from 'expo-router';
-import { ThemedText } from '@/components/themed-text';
+import { LoginScreen } from '@/screens/auth/LoginScreen';
 
-export default function LoginScreen() {
-    return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 }}>
-            <ThemedText type="title">Login</ThemedText>
-            <Link href="/register">
-                <ThemedText>¿No tienes cuenta? Regístrate</ThemedText>
-            </Link>
-        </View>
-    );
+export default function LoginRoute() {
+    return <LoginScreen />;
 }
