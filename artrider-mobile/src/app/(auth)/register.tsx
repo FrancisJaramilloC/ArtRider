@@ -1,10 +1,5 @@
-import { View } from 'react-native';
-import { ThemedText } from '@/components/themed-text';
+import { RegisterScreen } from '@/screens/auth/RegisterScreen';
 
-export default function RegisterScreen() {
-    return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ThemedText type="title">Registro</ThemedText>
-        </View>
-    );
+export default function RegisterRoute() {
+    return <RegisterScreen />;
 }
