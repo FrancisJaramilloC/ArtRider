@@ -1,13 +1,17 @@
-import { View } from 'react-native';
+import { View, useColorScheme } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ProtectedScreen } from '@/components/protected-screen';
+import { Colors } from '@/constants/theme';
 
 export default function ProfileScreen() {
-    return (
-        <ProtectedScreen>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ThemedText type="title">Perfil</ThemedText>
-            </View>
-        </ProtectedScreen>
-    );
+  const scheme = useColorScheme();
+  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+
+  return (
+    <ProtectedScreen>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ThemedText type="title">Perfil</ThemedText>
+      </View>
+    </ProtectedScreen>
+  );
 }

@@ -14,10 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { signIn } from '@/services/authService';
+import { useAuth } from '@/hooks/useAuth';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 
 export function LoginScreen() {
+    const { login } = useAuth();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
@@ -29,7 +30,7 @@ export function LoginScreen() {
     async function handleSubmit() {
         setError(null);
         setLoading(true);
-        const result = await signIn({ email, password });
+        const result = await login({ email, password });
         setLoading(false);
 
         if (result.error) {

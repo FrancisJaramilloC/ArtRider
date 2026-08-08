@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { ThemedText } from '@/components/themed-text';
-import { signUp } from '@/services/authService';
+import { useAuth } from '@/hooks/useAuth';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 
 function formatDateForInput(date: Date): string {
@@ -27,6 +27,7 @@ function formatDateForDisplay(date: Date): string {
 }
 
 export function RegisterScreen() {
+    const { register } = useAuth();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
@@ -56,7 +57,7 @@ export function RegisterScreen() {
         }
 
         setLoading(true);
-        const result = await signUp({
+        const result = await register({
             email,
             password,
             confirmPassword,
@@ -72,7 +73,7 @@ export function RegisterScreen() {
             return;
         }
 
-        // signUp() ya cerró la sesión automáticamente (decisión del item 004).
+        // register() ya cerró la sesión automáticamente (decisión del item 004).
         // Mostramos confirmación y mandamos a login manual, igual que la web.
         setSuccess(true);
         setTimeout(() => router.replace('/login'), 1500);

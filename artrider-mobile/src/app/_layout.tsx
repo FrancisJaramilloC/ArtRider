@@ -1,15 +1,15 @@
-import { Stack } from 'expo-router';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { useAuth } from '@/hooks/useAuth';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootNavigator() {
   const colorScheme = useColorScheme();
   const { session, loading: authLoading } = useAuth();
   const [fontsLoaded] = useFonts({
@@ -40,5 +40,13 @@ export default function RootLayout() {
         </Stack.Protected>
       </Stack>
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
   );
 }
