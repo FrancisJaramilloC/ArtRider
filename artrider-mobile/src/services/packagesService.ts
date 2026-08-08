@@ -77,3 +77,27 @@ export async function getPackageById(id: string): Promise<PackageWithItems | nul
 
     return normalizePackageData(data);
 }
+export type PackageSummary = {
+    id: string;
+    title: string;
+    daily_price: number;
+    cover_image_url: string | null;
+};
+
+/** Paquetes publicados, para la sección de destacados del Home. */
+export async function getPublishedPackages(): Promise<PackageSummary[]> {
+    const { data, error } = await supabase
+        .from('packages')
+        .select('id, title, daily_price, cover_image_url')
+        .eq('is_published', true)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(8);
+
+    if (error) {
+        console.error('[packagesService] getPublishedPackages:', error.message);
+        return [];
+    }
+
+    return (data ?? []) as PackageSummary[];
+}

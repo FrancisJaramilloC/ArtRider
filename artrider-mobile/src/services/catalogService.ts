@@ -141,3 +141,22 @@ export async function searchCatalog(filters: CatalogFilters = {}): Promise<Catal
     if (error) throw new Error(`[catalogService] searchCatalog: ${error.message}`);
     return (data ?? []) as CatalogItem[];
 }
+/** Promedio de rating por listing, vía RPC (evita exponer reviews individuales). */
+export async function getListingRatings(listingIds: string[]): Promise<Record<string, number>> {
+    if (listingIds.length === 0) return {};
+
+    const { data, error } = await supabase.rpc('get_listing_ratings', {
+        p_listing_ids: listingIds,
+    });
+
+    if (error) {
+        console.error('[catalogService] getListingRatings:', error.message);
+        return {};
+    }
+
+    const map: Record<string, number> = {};
+    for (const row of data ?? []) {
+        map[row.listing_id] = Number(row.avg_rating);
+    }
+    return map;
+}
