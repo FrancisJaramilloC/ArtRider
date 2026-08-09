@@ -142,3 +142,69 @@ export async function getAdvisoryRequestDetail(requestId: string) {
 
   return data;
 }
+
+// ============================================================================
+// Eliminación Administrativa
+// ============================================================================
+
+/** Soft-delete de un listing (equipo). Consistente con el patrón del proyecto. */
+export async function adminDeleteListing(listingId: string): Promise<{ success: boolean; error?: string }> {
+  const isAdmin = await isCurrentUserAdmin();
+  if (!isAdmin) return { success: false, error: "No autorizado" };
+
+  const admin = getAdminClient();
+  const { error } = await admin
+    .from("listings")
+    .update({ deleted_at: new Date().toISOString(), is_published: false })
+    .eq("id", listingId);
+
+  if (error) {
+    console.error("[adminService] Error deleting listing:", error.message);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+/** Hard-delete de una solicitud advisory y todos sus registros hijos. */
+export async function adminDeleteAdvisoryRequest(requestId: string): Promise<{ success: boolean; error?: string }> {
+  const isAdmin = await isCurrentUserAdmin();
+  if (!isAdmin) return { success: false, error: "No autorizado" };
+
+  const admin = getAdminClient();
+
+  // 1. Eliminar propuestas hijas
+  const { error: proposalsErr } = await admin
+    .from("advisory_proposals")
+    .delete()
+    .eq("request_id", requestId);
+
+  if (proposalsErr) {
+    console.error("[adminService] Error deleting proposals:", proposalsErr.message);
+    return { success: false, error: "Error eliminando propuestas: " + proposalsErr.message };
+  }
+
+  // 2. Eliminar datos de entrenamiento hijos
+  const { error: trainingErr } = await admin
+    .from("advisory_training_data")
+    .delete()
+    .eq("request_id", requestId);
+
+  if (trainingErr) {
+    console.error("[adminService] Error deleting training data:", trainingErr.message);
+    return { success: false, error: "Error eliminando datos de entrenamiento: " + trainingErr.message };
+  }
+
+  // 3. Eliminar la solicitud padre
+  const { error: requestErr } = await admin
+    .from("advisory_requests")
+    .delete()
+    .eq("id", requestId);
+
+  if (requestErr) {
+    console.error("[adminService] Error deleting request:", requestErr.message);
+    return { success: false, error: "Error eliminando solicitud: " + requestErr.message };
+  }
+
+  return { success: true };
+}

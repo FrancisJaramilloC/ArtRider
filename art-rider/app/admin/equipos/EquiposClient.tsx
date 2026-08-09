@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, Fragment } from "react";
-import { Package, X, Search, CheckCircle2, AlertTriangle, Save, Loader2, Image as ImageIcon, ChevronDown, ChevronUp } from "lucide-react";
-import { updateListingSpecs, type AdminListing } from "@/services/adminService";
+import { Package, X, Search, CheckCircle2, AlertTriangle, Save, Loader2, Image as ImageIcon, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { updateListingSpecs, adminDeleteListing, type AdminListing } from "@/services/adminService";
 
 export default function EquiposClient({ initialListings }: { initialListings: AdminListing[] }) {
   const [listings, setListings] = useState(initialListings);
@@ -11,7 +11,25 @@ export default function EquiposClient({ initialListings }: { initialListings: Ad
   const [editing, setEditing] = useState<AdminListing | null>(null);
   
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [specsForm, setSpecsForm] = useState<Record<string, any>>({});
+
+  const handleDeleteListing = async (listing: AdminListing) => {
+    if (!confirm(`¿Eliminar "${listing.title}"? Esta acción ocultará el equipo de toda la plataforma.`)) return;
+    setDeleting(listing.id);
+    try {
+      const res = await adminDeleteListing(listing.id);
+      if (res.success) {
+        setListings(prev => prev.filter(l => l.id !== listing.id));
+        if (editing?.id === listing.id) closeEditor();
+        if (expandedRow === listing.id) setExpandedRow(null);
+      } else {
+        alert("Error al eliminar: " + res.error);
+      }
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const filtered = listings.filter(l => 
     l.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -127,6 +145,14 @@ export default function EquiposClient({ initialListings }: { initialListings: Ad
                       </td>
                       <td className="px-5 py-3 text-right">
                         <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleDeleteListing(listing)}
+                            disabled={deleting === listing.id}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                            title="Eliminar equipo"
+                          >
+                            {deleting === listing.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          </button>
                           <button
                             onClick={() => setExpandedRow(isExpanded ? null : listing.id)}
                             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Users, MapPin, Music, DollarSign, Activity, Zap, Lightbulb, Volume2, ChevronDown, ChevronUp } from "lucide-react";
+import { CalendarDays, Users, MapPin, Music, DollarSign, Activity, Zap, Lightbulb, Volume2, ChevronDown, ChevronUp, Trash2, Loader2, Filter, X } from "lucide-react";
+import { adminDeleteAdvisoryRequest } from "@/services/adminService";
 
 type AdvisoryRequest = {
   id: string;
@@ -58,10 +59,111 @@ function EcsBar({ score, level }: { score: number; level: string }) {
   );
 }
 
-export default function SolicitudesClient({ requests }: { requests: AdvisoryRequest[] }) {
+export default function SolicitudesClient({ requests: initialRequests }: { requests: AdvisoryRequest[] }) {
+  const [requests, setRequests] = useState(initialRequests);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // Filtros de fecha
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  // Selección múltiple
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => setExpandedId(expandedId === id ? null : id);
+
+  // Filtrar por rango de fechas
+  const filtered = requests.filter((req) => {
+    const createdDate = req.created_at.split("T")[0];
+    if (dateFrom && createdDate < dateFrom) return false;
+    if (dateTo && createdDate > dateTo) return false;
+    return true;
+  });
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every(r => selected.has(r.id));
+
+  const toggleSelectAll = () => {
+    if (allFilteredSelected) {
+      setSelected(prev => {
+        const next = new Set(prev);
+        filtered.forEach(r => next.delete(r.id));
+        return next;
+      });
+    } else {
+      setSelected(prev => {
+        const next = new Set(prev);
+        filtered.forEach(r => next.add(r.id));
+        return next;
+      });
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const clearFilters = () => {
+    setDateFrom("");
+    setDateTo("");
+  };
+
+  const hasFilters = dateFrom !== "" || dateTo !== "";
+
+  // Eliminación individual
+  const handleDelete = async (req: AdvisoryRequest) => {
+    const eventLabel = req.event_type_slug?.replace(/_/g, " ");
+    if (!confirm(`¿Eliminar la solicitud de "${eventLabel}" (${req.guest_count} pax)? Esta acción es irreversible.`)) return;
+    setDeleting(req.id);
+    try {
+      const res = await adminDeleteAdvisoryRequest(req.id);
+      if (res.success) {
+        setRequests(prev => prev.filter(r => r.id !== req.id));
+        setSelected(prev => { const n = new Set(prev); n.delete(req.id); return n; });
+        if (expandedId === req.id) setExpandedId(null);
+      } else {
+        alert("Error al eliminar: " + res.error);
+      }
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  // Eliminación masiva
+  const handleBulkDelete = async () => {
+    const count = selected.size;
+    if (count === 0) return;
+    if (!confirm(`¿Eliminar ${count} solicitud${count > 1 ? "es" : ""} seleccionada${count > 1 ? "s" : ""}? Se borrarán con todas sus propuestas y datos de entrenamiento. Esta acción es IRREVERSIBLE.`)) return;
+
+    setBulkDeleting(true);
+    const ids = Array.from(selected);
+    let successCount = 0;
+    const failedIds: string[] = [];
+
+    for (const id of ids) {
+      const res = await adminDeleteAdvisoryRequest(id);
+      if (res.success) {
+        successCount++;
+      } else {
+        failedIds.push(id);
+      }
+    }
+
+    // Actualizar UI
+    setRequests(prev => prev.filter(r => !ids.includes(r.id) || failedIds.includes(r.id)));
+    setSelected(new Set(failedIds));
+    setExpandedId(null);
+    setBulkDeleting(false);
+
+    if (failedIds.length > 0) {
+      alert(`Se eliminaron ${successCount} de ${count}. Fallaron ${failedIds.length}.`);
+    }
+  };
 
   if (requests.length === 0) {
     return (
@@ -75,25 +177,113 @@ export default function SolicitudesClient({ requests }: { requests: AdvisoryRequ
 
   return (
     <div className="max-w-5xl mx-auto">
+      {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Solicitudes del Motor</h1>
         <p className="text-gray-500 mt-1">{requests.length} solicitudes totales. Haz clic para ver las métricas del algoritmo.</p>
       </div>
 
+      {/* Barra de filtros y acciones masivas */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          {/* Filtros de fecha */}
+          <div className="flex items-center gap-2 flex-1">
+            <Filter className="w-4 h-4 text-gray-400 shrink-0" />
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs text-gray-500 font-medium">Desde</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <label className="text-xs text-gray-500 font-medium">Hasta</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                />
+              </div>
+              {hasFilters && (
+                <button
+                  onClick={clearFilters}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Limpiar filtros"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Contador de filtrados + Acciones masivas */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400">
+              {filtered.length} de {requests.length} {hasFilters ? "filtradas" : ""}
+            </span>
+
+            {selected.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {bulkDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                Eliminar {selected.size} seleccionada{selected.size > 1 ? "s" : ""}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Select All */}
+      {filtered.length > 0 && (
+        <div className="flex items-center gap-3 mb-3 px-1">
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={allFilteredSelected}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
+            />
+            <span className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors select-none">
+              Seleccionar todas ({filtered.length})
+            </span>
+          </label>
+        </div>
+      )}
+
+      {/* Lista de solicitudes */}
       <div className="space-y-3">
-        {requests.map((req) => {
+        {filtered.map((req) => {
           const isExpanded = expandedId === req.id;
+          const isSelected = selected.has(req.id);
           const proposal = req.advisory_proposals?.[0];
           const city = req.event_notes?.match(/Ciudad: (.+)/)?.[1]?.trim() || "—";
 
           return (
-            <div key={req.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div
+              key={req.id}
+              className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-colors ${
+                isSelected ? "border-red-200 bg-red-50/30" : "border-gray-100"
+              }`}
+            >
               {/* Row Summary */}
-              <button
-                onClick={() => toggle(req.id)}
-                className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="w-full flex items-center p-5 text-left hover:bg-gray-50 transition-colors">
+                {/* Checkbox */}
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleSelect(req.id)}
+                  className="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer mr-4 shrink-0"
+                />
+
+                {/* Info clickeable para expandir */}
+                <div className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer" onClick={() => toggle(req.id)}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold text-sm capitalize">{req.event_type_slug?.replace(/_/g, " ")}</span>
@@ -117,8 +307,21 @@ export default function SolicitudesClient({ requests }: { requests: AdvisoryRequ
                   </div>
                 </div>
 
-                {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
-              </button>
+                {/* Acciones */}
+                <div className="flex items-center gap-1 ml-2">
+                  <button
+                    onClick={() => handleDelete(req)}
+                    disabled={deleting === req.id}
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                    title="Eliminar solicitud"
+                  >
+                    {deleting === req.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  </button>
+                  <button onClick={() => toggle(req.id)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg transition-colors">
+                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
 
               {/* Expanded Detail */}
               {isExpanded && (
@@ -220,6 +423,18 @@ export default function SolicitudesClient({ requests }: { requests: AdvisoryRequ
           );
         })}
       </div>
+
+      {/* Empty state para filtros sin resultados */}
+      {filtered.length === 0 && requests.length > 0 && (
+        <div className="text-center py-16">
+          <Filter className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-gray-400">Sin resultados para este rango</h3>
+          <p className="text-gray-400 text-sm mt-1">Ajusta las fechas o limpia los filtros.</p>
+          <button onClick={clearFilters} className="mt-3 text-sm text-black font-medium underline hover:no-underline">
+            Limpiar filtros
+          </button>
+        </div>
+      )}
     </div>
   );
 }
