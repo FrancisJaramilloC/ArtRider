@@ -98,3 +98,35 @@ export async function cancelBooking(bookingId: string): Promise<{ error?: string
   if (error) return { error: 'No se pudo cancelar la reserva' };
   return {};
 }
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+
+/**
+ * Llama a la Edge Function que cobra en Kushki (con la key privada, ahí
+ * seguro) y crea la reserva si el pago es aprobado.
+ */
+export async function chargeAndCreateBooking(
+  kushkiToken: string,
+  listingId: string,
+  startDate: string,
+  endDate: string
+): Promise<CreateBookingResult> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { error: 'No autenticado' };
+
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/kushki-charge`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ token: kushkiToken, listingId, startDate, endDate }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || data.error) {
+    return { error: data.error ?? 'No se pudo procesar el pago' };
+  }
+
+  return { bookingId: data.bookingId };
+}
