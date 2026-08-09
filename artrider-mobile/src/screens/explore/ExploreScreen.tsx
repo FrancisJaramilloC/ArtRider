@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { View, TextInput, ScrollView, Pressable, FlatList, useColorScheme, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ExploreCard } from '@/components/explore/ExploreCard';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, BottomTabInset } from '@/constants/theme';
 import { CATEGORIES } from '@/constants/categories';
 import { getExploreItems, type ExploreItem } from '@/services/exploreService';
 
@@ -15,6 +16,7 @@ const CARD_WIDTH = (SCREEN_WIDTH - Spacing.four * 2 - Spacing.three) / 2;
 export function ExploreScreen() {
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const router = useRouter();
 
     const [allItems, setAllItems] = useState<ExploreItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -229,6 +231,36 @@ export function ExploreScreen() {
                     renderItem={({ item }) => <ExploreCard item={item} width={CARD_WIDTH} />}
                 />
             )}
+
+            {/* Botón flotante "Mapa" — mismo patrón que usa Airbnb */}
+            <Pressable
+                onPress={() =>
+                    router.push({
+                        pathname: '/map',
+                        params: { category, city: city ?? '', query, maxPrice },
+                    } as any)
+                }
+                style={{
+                    position: 'absolute',
+                    bottom: BottomTabInset + Spacing.three,
+                    alignSelf: 'center',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    backgroundColor: '#111',
+                    paddingHorizontal: Spacing.four,
+                    paddingVertical: Spacing.three,
+                    borderRadius: 999,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 6,
+                }}
+            >
+                <Ionicons name="map" size={16} color="#fff" />
+                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: '#fff' }}>Mapa</ThemedText>
+            </Pressable>
         </SafeAreaView>
     );
 }
