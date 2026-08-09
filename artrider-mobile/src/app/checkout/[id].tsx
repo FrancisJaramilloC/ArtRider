@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { DateRangePicker, type DateRange } from '@/components/bookings/DateRangePicker';
+import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { getListingById, type Listing } from '@/services/catalogService';
 import { getUnavailableDates } from '@/services/availabilityService';
@@ -31,9 +32,12 @@ export default function CheckoutRoute() {
 
     if (loading || !listing) {
         return (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-                <ActivityIndicator color={colors.primary} />
-            </View>
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+                <BackButton style={{ position: 'absolute', top: Spacing.four, left: Spacing.four, zIndex: 1 }} />
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator color={colors.primary} />
+                </View>
+            </SafeAreaView>
         );
     }
 
@@ -42,6 +46,7 @@ export default function CheckoutRoute() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <ScrollView contentContainerStyle={{ padding: Spacing.four }}>
+                <BackButton style={{ marginBottom: Spacing.three }} />
                 <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text, marginBottom: Spacing.one }}>
                     {listing.title}
                 </ThemedText>

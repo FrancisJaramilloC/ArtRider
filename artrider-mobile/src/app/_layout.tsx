@@ -33,7 +33,6 @@ function RootNavigator() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="listing/[id]" options={{ headerShown: true }} />
-        <Stack.Screen name="checkout" options={{ headerShown: true }} />
 
         <Stack.Protected guard={!session}>
           <Stack.Screen name="(auth)" />

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/themed-text';
+import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { getListingById, type Listing } from '@/services/catalogService';
 import { chargeAndCreateBooking } from '@/services/bookingsService';
@@ -33,9 +34,12 @@ export default function CheckoutSummaryScreen() {
 
     if (loading || !listing) {
         return (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-                <ActivityIndicator color={colors.primary} />
-            </View>
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+                <BackButton style={{ position: 'absolute', top: Spacing.four, left: Spacing.four, zIndex: 1 }} />
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator color={colors.primary} />
+                </View>
+            </SafeAreaView>
         );
     }
 
@@ -49,6 +53,7 @@ export default function CheckoutSummaryScreen() {
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
                     <View style={{ padding: Spacing.four, flex: 1 }}>
+                        <BackButton style={{ marginBottom: Spacing.three }} />
                         <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text, marginBottom: Spacing.four }}>
                             Confirmar reserva
                         </ThemedText>
