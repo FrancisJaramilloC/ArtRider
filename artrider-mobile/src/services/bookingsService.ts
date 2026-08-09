@@ -50,3 +50,51 @@ export async function createBooking(
     days: row.days,
   };
 }
+export type BookingStatus =
+  | 'AWAITING_SIGNATURES'
+  | 'PAID'
+  | 'ACTIVE'
+  | 'COMPLETED'
+  | 'DISPUTE'
+  | 'CANCELLED'
+  | 'ARCHIVED';
+
+export type ClientBooking = {
+  booking_id: string;
+  status: BookingStatus;
+  start_date: string;
+  end_date: string;
+  total_price: number;
+  created_at: string;
+  listing_title: string | null;
+  listing_cover_image_url: string | null;
+  listing_city: string | null;
+};
+
+/** Reservas del cliente autenticado, con datos del equipo ya resueltos vía RPC. */
+export async function getClientBookings(): Promise<ClientBooking[]> {
+  const { data, error } = await supabase.rpc('get_client_bookings');
+
+  if (error) {
+    console.error('[bookingsService] getClientBookings:', error.message);
+    return [];
+  }
+
+  return (data ?? []) as ClientBooking[];
+}
+
+/** Cliente cancela su propia reserva — solo válida si está AWAITING_SIGNATURES. */
+export async function cancelBooking(bookingId: string): Promise<{ error?: string }> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'No autenticado' };
+
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status: 'CANCELLED' })
+    .eq('id', bookingId)
+    .eq('client_id', user.id)
+    .eq('status', 'AWAITING_SIGNATURES'); // doble candado: solo cancela si sigue pendiente
+
+  if (error) return { error: 'No se pudo cancelar la reserva' };
+  return {};
+}

@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { DateRangePicker, type DateRange } from '@/components/booking/DateRangePicker';
+import { DateRangePicker, type DateRange } from '@/components/bookings/DateRangePicker';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { getListingById, type Listing } from '@/services/catalogService';
 import { getUnavailableDates } from '@/services/availabilityService';
