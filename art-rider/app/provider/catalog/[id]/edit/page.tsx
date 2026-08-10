@@ -15,21 +15,28 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
   //  Crear cliente de Supabase en el servidor
   const supabase = await createSupabaseServerClient();
 
-  //  Obtener listado incluyendo no publicados — solo el propietario puede editar sus borradores.
-  //  Unir direcciones para pre-rellenar los campos de ubicación en el formulario.
-  const { data: listing, error } = await supabase
-    .from("listings")
-    .select("*, address:addresses(city, state, latitude, longitude)")
-    .eq("id", id)
-    .eq("provider_id", providerId)
-    .is("deleted_at", null)
-    .single();
+  //  Obtener listado y contar unidades en paralelo
+  const [listingResult, unitsResult] = await Promise.all([
+    supabase
+      .from("listings")
+      .select("*, address:addresses(city, state, latitude, longitude)")
+      .eq("id", id)
+      .eq("provider_id", providerId)
+      .is("deleted_at", null)
+      .single(),
+    supabase
+      .from("equipment_units")
+      .select("id", { count: "exact", head: true })
+      .eq("listing_id", id),
+  ]);
 
   //  Si no se encuentra el listado, redirigir a la página de error
-  if (error || !listing) notFound();
+  if (listingResult.error || !listingResult.data) notFound();
+  const listing = listingResult.data;
+  const unitCount = unitsResult.count ?? 1;
 
   //  Función para actualizar el listado
   const boundUpdate = updateListing.bind(null, id);
 
-  return <EditListingClient listing={listing} updateAction={boundUpdate} />;
+  return <EditListingClient listing={listing} updateAction={boundUpdate} unitCount={unitCount} />;
 }

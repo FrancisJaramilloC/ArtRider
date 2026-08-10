@@ -31,12 +31,16 @@ export default async function EditPackagePage({
     id: pkg.id,
     title: pkg.title,
     description: pkg.description ?? "",
+    capacityPeople: pkg.capacity_people ? String(pkg.capacity_people) : "",
     dailyPrice: (pkg.daily_price / 100).toFixed(2),
     publishNow: pkg.is_published,
     existingCoverUrl: pkg.cover_image_url ?? null,
     // Los items del paquete pre-seleccionados — incluir también los no publicados
     // que el proveedor ya tenía en el paquete (podrían haberse ocultado luego)
-    selectedListingIds: (pkg.items ?? []).map((it) => it.listing_id),
+    selectedItems: (pkg.items ?? []).map((it) => ({
+      listingId: it.listing_id,
+      quantity: it.quantity,
+    })),
   };
 
   return (

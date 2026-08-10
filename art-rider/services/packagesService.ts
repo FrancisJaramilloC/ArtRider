@@ -13,6 +13,7 @@ export type Package = {
   title: string;
   description: string | null;
   daily_price: number;
+  capacity_people: number | null;
   is_published: boolean;
   cover_image_url: string | null;
   gallery_images: string[] | null;
@@ -205,9 +206,11 @@ export async function createPackage(
 
     const title       = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
+    const capacityRaw = (formData.get("capacityPeople") as string)?.trim();
     const priceRaw    = formData.get("dailyPrice") as string;
     const publishNow  = formData.get("publishNow") === "true";
     const listingIds  = formData.getAll("listingIds") as string[];
+    const listingQties = formData.getAll("listingQuantities") as string[];
     const coverFile   = formData.get("coverImage") as File | null;
 
     // Validación de datos
@@ -252,6 +255,7 @@ export async function createPackage(
         title,
         description: description || null,
         daily_price: dailyPrice,
+        capacity_people: capacityRaw ? parseInt(capacityRaw) : null,
         is_published: publishNow,
         ...(coverImageUrl !== null ? { cover_image_url: coverImageUrl } : {}),
         // gallery_images pendiente hasta migración 002
@@ -270,10 +274,10 @@ export async function createPackage(
     // (que valida ownership via JOIN providers→packages) bloquee el INSERT.
     // La autorización ya fue verificada arriba (getMyProviderId + ownedListings check).
     const admin = createSupabaseAdminClient();
-    const items = listingIds.map((lid) => ({
+    const items = listingIds.map((lid, idx) => ({
       package_id: pkg.id,
       listing_id: lid,
-      quantity: 1,
+      quantity: parseInt(listingQties[idx]) || 1,
     }));
 
     const { error: itemsError } = await admin.from("package_items").insert(items);
@@ -321,9 +325,11 @@ export async function updatePackage(
 
     const title       = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
+    const capacityRaw = (formData.get("capacityPeople") as string)?.trim();
     const priceRaw    = formData.get("dailyPrice") as string;
     const publishNow  = formData.get("publishNow") === "true";
     const listingIds  = formData.getAll("listingIds") as string[];
+    const listingQties = formData.getAll("listingQuantities") as string[];
     const coverFile   = formData.get("coverImage") as File | null;
 
     if (!title || title.length < 3) return { error: "El titulo debe tener al menos 3 caracteres." };
@@ -370,6 +376,7 @@ export async function updatePackage(
         title,
         description: description || null,
         daily_price: dailyPrice,
+        capacity_people: capacityRaw ? parseInt(capacityRaw) : null,
         is_published: publishNow,
         cover_image_url: coverImageUrl,
         updated_at: new Date().toISOString(),
@@ -382,9 +389,12 @@ export async function updatePackage(
       return { error: `Error al actualizar el paquete: ${updateError.message}` };
     }
 
-    // Reemplazar items: borrar todos, reinsertar los nuevos
     await admin.from("package_items").delete().eq("package_id", id);
-    const items = listingIds.map((lid) => ({ package_id: id, listing_id: lid, quantity: 1 }));
+    const items = listingIds.map((lid, idx) => ({ 
+      package_id: id, 
+      listing_id: lid, 
+      quantity: parseInt(listingQties[idx]) || 1 
+    }));
     const { error: itemsError } = await admin.from("package_items").insert(items);
     if (itemsError) {
       console.error("[packagesService] updatePackage items:", itemsError.message);

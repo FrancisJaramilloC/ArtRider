@@ -27,6 +27,7 @@ type WizardData = {
   title: string;
   description: string;
   dailyPrice: string;
+  capacityPeople: string;
   publishNow: boolean;
 };
 
@@ -35,6 +36,7 @@ type StepErrors = Partial<{
   cover: string;
   equipos: string;
   dailyPrice: string;
+  capacityPeople: string;
 }>;
 
 /** Datos pre-rellenados para el modo edición */
@@ -43,9 +45,10 @@ export type PackageInitialData = {
   title: string;
   description: string;
   dailyPrice: string;
+  capacityPeople: string;
   publishNow: boolean;
   existingCoverUrl: string | null;
-  selectedListingIds: string[];
+  selectedItems: { listingId: string; quantity: number }[];
 };
 
 export type PackageFormWizardProps = {
@@ -132,10 +135,14 @@ export default function PackageFormWizard({ publishedListings, initialData }: Pa
   const [serverError, setServerError] = useState<string | null>(null);
   const [pending, startTransition]    = useTransition();
 
-  // Equipos seleccionados — pre-rellenados en modo edición
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(initialData?.selectedListingIds ?? [])
-  );
+  // Equipos seleccionados y sus cantidades — pre-rellenados en modo edición
+  const [selectedMap, setSelectedMap] = useState<Map<string, number>>(() => {
+    const map = new Map<string, number>();
+    initialData?.selectedItems?.forEach((item) => {
+      map.set(item.listingId, item.quantity);
+    });
+    return map;
+  });
   // Conflicto geográfico (distintas provincias)
   const [geoConflict, setGeoConflict] = useState<string | null>(null);
 
@@ -150,20 +157,21 @@ export default function PackageFormWizard({ publishedListings, initialData }: Pa
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
 
   // Datos del formulario — pre-rellenados en modo edición
-  const [data, setData] = useState<WizardData>({
-    title:       initialData?.title       ?? "",
+  const [data, setData] = useState<WizardData>(() => ({
+    title: initialData?.title ?? "",
     description: initialData?.description ?? "",
-    dailyPrice:  initialData?.dailyPrice  ?? "",
-    publishNow:  initialData?.publishNow  ?? true,
-  });
+    dailyPrice: initialData?.dailyPrice ?? "",
+    capacityPeople: initialData?.capacityPeople ?? "",
+    publishNow: initialData?.publishNow ?? true,
+  }));
 
   const update = (patch: Partial<WizardData>) =>
     setData((prev) => ({ ...prev, ...patch }));
 
-  const selectedListings = publishedListings.filter((l) => selectedIds.has(l.id));
+  const selectedListings = publishedListings.filter((l) => selectedMap.has(l.id));
 
   const toggleListing = (id: string) => {
-    const isAdding = !selectedIds.has(id);
+    const isAdding = !selectedMap.has(id);
 
     if (isAdding) {
       // ── Validación geográfica: no mezclar provincias distintas ──────────────
@@ -171,7 +179,7 @@ export default function PackageFormWizard({ publishedListings, initialData }: Pa
       const targetState = target?.address?.state;
 
       if (targetState) {
-        const existingStates = [...selectedIds]
+        const existingStates = [...selectedMap.keys()]
           .map((sid) => publishedListings.find((l) => l.id === sid)?.address?.state)
           .filter((s): s is string => !!s);
 
@@ -188,17 +196,30 @@ export default function PackageFormWizard({ publishedListings, initialData }: Pa
       setGeoConflict(null);
     }
 
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+    setSelectedMap((prev) => {
+      const next = new Map(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.set(id, 1); // Empezar con cantidad 1
+      }
       return next;
     });
     setErrors((e) => ({ ...e, equipos: undefined }));
   };
 
+  const updateListingQuantity = (id: string, qty: number, maxStock: number) => {
+    if (qty < 1 || qty > maxStock) return;
+    setSelectedMap((prev) => {
+      const next = new Map(prev);
+      if (next.has(id)) next.set(id, qty);
+      return next;
+    });
+  };
+
   const removeListing = (id: string) => {
     setGeoConflict(null);
-    setSelectedIds((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    setSelectedMap((prev) => { const n = new Map(prev); n.delete(id); return n; });
   };
 
   // ── Cover file handler ──────────────────────────────────────────────────────
@@ -219,11 +240,15 @@ export default function PackageFormWizard({ publishedListings, initialData }: Pa
       const t = data.title.trim();
       if (!t || t.length < 3) e.title = "El título debe tener al menos 3 caracteres.";
       else if (t.length > 100) e.title = "El título no puede superar 100 caracteres.";
+      
+      if (data.capacityPeople.trim() && (isNaN(Number(data.capacityPeople)) || Number(data.capacityPeople) < 1)) {
+        e.capacityPeople = "La cantidad de personas debe ser un número válido mayor a 0.";
+      }
     }
     if (s === 2 && !coverFile && !existingCoverUrl) {
       e.cover = "La foto de portada es obligatoria.";
     }
-    if (s === 3 && selectedIds.size < 2) {
+    if (s === 3 && selectedMap.size < 2) {
       e.equipos = "Selecciona mínimo 2 equipos para continuar.";
     }
     if (s === 4) {
@@ -258,10 +283,16 @@ export default function PackageFormWizard({ publishedListings, initialData }: Pa
     fd.append("title", data.title.trim());
     fd.append("description", data.description.trim());
     fd.append("dailyPrice", data.dailyPrice);
+    if (data.capacityPeople.trim()) {
+      fd.append("capacityPeople", data.capacityPeople.trim());
+    }
     fd.append("publishNow", String(data.publishNow));
     if (coverFile) fd.append("coverImage", coverFile);
     galleryFiles.forEach((f) => fd.append("galleryImages", f));
-    selectedIds.forEach((sid) => fd.append("listingIds", sid));
+    selectedMap.forEach((qty, id) => {
+      fd.append("listingIds", id);
+      fd.append("listingQuantities", String(qty));
+    });
 
     setServerError(null);
     startTransition(async () => {
@@ -322,15 +353,27 @@ export default function PackageFormWizard({ publishedListings, initialData }: Pa
           />
         )}
         {step === 3 && (
-          <StepEquipment
-            publishedListings={publishedListings}
-            selectedIds={selectedIds}
-            selectedListings={selectedListings}
-            onToggle={toggleListing}
-            onRemove={removeListing}
-            errors={errors}
-            geoConflict={geoConflict}
-          />
+          <>
+            <input type="hidden" name="publishNow"  value={String(data.publishNow)} />
+
+            {Array.from(selectedMap.entries()).map(([id, qty]) => (
+              <React.Fragment key={id}>
+                <input type="hidden" name="listingIds" value={id} />
+                <input type="hidden" name="listingQuantities" value={qty} />
+              </React.Fragment>
+            ))}
+
+            <StepEquipment
+              publishedListings={publishedListings}
+              selectedMap={selectedMap}
+              selectedListings={selectedListings}
+              onToggle={toggleListing}
+              onUpdateQuantity={updateListingQuantity}
+              onRemove={removeListing}
+              errors={errors}
+              geoConflict={geoConflict}
+            />
+          </>
         )}
         {step === 4 && (
           <StepPrecio
@@ -454,6 +497,27 @@ function StepInfo({
           className={`${inputCx(false)} resize-none`}
         />
         <p className="text-xs text-gray-400 text-right">{data.description.length}/1000</p>
+      </Field>
+
+      <Field 
+        label="Capacidad (Personas)" 
+        hint="Opcional. Cantidad máxima de personas que cubre este paquete."
+        error={errors.capacityPeople}
+      >
+        <input
+          type="number"
+          min="1"
+          value={data.capacityPeople}
+          onChange={(e) => update({ capacityPeople: e.target.value })}
+          onWheel={(e) => e.currentTarget.blur()}
+          placeholder="Ej: 50"
+          className={inputCx(!!errors.capacityPeople)}
+        />
+        {errors.capacityPeople && (
+          <div className="mt-1">
+            <ErrorMsg>{errors.capacityPeople}</ErrorMsg>
+          </div>
+        )}
       </Field>
     </div>
   );
@@ -666,17 +730,19 @@ function StepPortada({
 
 function StepEquipment({
   publishedListings,
-  selectedIds,
+  selectedMap,
   selectedListings,
   onToggle,
+  onUpdateQuantity,
   onRemove,
   errors,
   geoConflict,
 }: {
   publishedListings: Listing[];
-  selectedIds: Set<string>;
+  selectedMap: Map<string, number>;
   selectedListings: Listing[];
   onToggle: (id: string) => void;
+  onUpdateQuantity: (id: string, qty: number, maxStock: number) => void;
   onRemove: (id: string) => void;
   errors: StepErrors;
   geoConflict?: string | null;
@@ -691,8 +757,11 @@ function StepEquipment({
       )
   );
 
-  const totalCents = selectedListings.reduce((sum, l) => sum + l.daily_price, 0);
-  const hasEnough = selectedIds.size >= 2;
+  const totalCents = selectedListings.reduce((sum, l) => {
+    const qty = selectedMap.get(l.id) || 1;
+    return sum + (l.daily_price * qty);
+  }, 0);
+  const hasEnough = selectedMap.size >= 2;
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -738,7 +807,7 @@ function StepEquipment({
             </span>
             {!hasEnough && (
               <span className="text-xs text-amber-600 font-medium">
-                · falta {2 - selectedIds.size} más
+                · falta {2 - selectedMap.size} más
               </span>
             )}
           </div>
@@ -793,58 +862,104 @@ function StepEquipment({
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filtered.map((listing) => {
-            const isSelected = selectedIds.has(listing.id);
+            const isSelected = selectedMap.has(listing.id);
+            const qty = selectedMap.get(listing.id) || 1;
+            const maxStock = listing.available_stock ?? 1;
+            
             return (
-              <button
+              <div
                 key={listing.id}
-                type="button"
-                onClick={() => onToggle(listing.id)}
-                className={`relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
+                className={`relative flex flex-col p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
                   isSelected
                     ? "border-[#875B9A] bg-[#875B9A]/4 shadow-sm"
-                    : "border-gray-200 bg-white hover:border-[#875B9A]/30 hover:bg-gray-50"
+                    : "border-gray-200 bg-white hover:border-[#875B9A]/30 hover:bg-gray-50 cursor-pointer"
                 }`}
+                onClick={(e) => {
+                  // Prevenir toggle si se clickea dentro del control de cantidad
+                  if (!isSelected) onToggle(listing.id);
+                }}
               >
-                {/* Check badge */}
-                {isSelected && (
-                  <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-[#875B9A] flex items-center justify-center">
-                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                  </span>
-                )}
-
-                {/* Thumbnail */}
-                <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                  {listing.cover_image_url ? (
-                    <Image
-                      src={listing.cover_image_url}
-                      alt={listing.title ?? "Equipo"}
-                      fill
-                      sizes="56px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-5 h-5 text-gray-300" strokeWidth={1.5} />
-                    </div>
+                <div className="flex items-center gap-4">
+                  {/* Check badge */}
+                  {isSelected && (
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggle(listing.id);
+                      }}
+                      className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#875B9A] hover:bg-red-500 transition-colors flex items-center justify-center z-10"
+                      title="Quitar equipo"
+                    >
+                      <X className="w-3 h-3 text-white" strokeWidth={3} />
+                    </button>
                   )}
-                </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0 pr-6">
-                  <p className={`text-sm font-semibold truncate ${isSelected ? "text-[#875B9A]" : "text-gray-900"}`}>
-                    {listing.title ?? "Sin título"}
-                  </p>
-                  {listing.brand && (
-                    <p className="text-xs text-gray-400 truncate">
-                      {listing.brand}{listing.model ? ` · ${listing.model}` : ""}
+                  {/* Thumbnail */}
+                  <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                    {listing.cover_image_url ? (
+                      <Image
+                        src={listing.cover_image_url}
+                        alt={listing.title ?? "Equipo"}
+                        fill
+                        sizes="56px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-5 h-5 text-gray-300" strokeWidth={1.5} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0 pr-6">
+                    <p className={`text-sm font-semibold truncate ${isSelected ? "text-[#875B9A]" : "text-gray-900"}`}>
+                      {listing.title ?? "Sin título"}
                     </p>
-                  )}
-                  <p className="text-sm font-black text-gray-900 mt-1">
-                    {fmtPrice(listing.daily_price)}
-                    <span className="text-xs font-normal text-gray-400 ml-1">/ día</span>
-                  </p>
+                    {listing.brand && (
+                      <p className="text-xs text-gray-400 truncate">
+                        {listing.brand}{listing.model ? ` · ${listing.model}` : ""}
+                      </p>
+                    )}
+                    <p className="text-sm font-black text-gray-900 mt-1">
+                      {fmtPrice(listing.daily_price)}
+                      <span className="text-xs font-normal text-gray-400 ml-1">/ día</span>
+                    </p>
+                  </div>
                 </div>
-              </button>
+
+                {/* Control de cantidad - Solo visible si está seleccionado */}
+                {isSelected && (
+                  <div className="mt-3 pt-3 border-t border-[#875B9A]/10 flex items-center justify-between" onClick={e => e.stopPropagation()}>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-medium text-gray-600">Cantidad:</span>
+                      <span className="text-[10px] font-semibold text-[#875B9A] uppercase tracking-wider">
+                        {maxStock} DISPONIBLE{maxStock !== 1 ? 'S' : ''}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 overflow-hidden">
+                      <button 
+                        type="button" 
+                        className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+                        disabled={qty <= 1}
+                        onClick={() => onUpdateQuantity(listing.id, qty - 1, maxStock)}
+                      >
+                        -
+                      </button>
+                      <span className="text-sm font-semibold w-6 text-center">{qty}</span>
+                      <button 
+                        type="button" 
+                        className="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-100 disabled:opacity-50"
+                        disabled={qty >= maxStock}
+                        onClick={() => onUpdateQuantity(listing.id, qty + 1, maxStock)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
@@ -960,6 +1075,7 @@ function StepPrecio({
             type="number"
             value={data.dailyPrice}
             onChange={(e) => update({ dailyPrice: e.target.value })}
+            onWheel={(e) => e.currentTarget.blur()}
             min="1"
             step="0.01"
             placeholder="0.00"

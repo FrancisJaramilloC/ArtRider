@@ -27,6 +27,7 @@ export type Listing = {
     state: string;
   } | null;
   rating?: number;
+  available_stock?: number;
 };
 
 // Tipo extendido con datos del proveedor (join)
@@ -39,11 +40,11 @@ export type ListingWithProvider = Listing & {
 };
 
 const LISTING_SELECT =
-  "id, provider_id, title, brand, model, category, cover_image_url, gallery_images, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state)";
+  "id, provider_id, title, brand, model, category, cover_image_url, gallery_images, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state), equipment_units(internal_status)";
 
 // Select extendido con join al proveedor — usado en la página de detalle
 const LISTING_DETAIL_SELECT =
-  "id, provider_id, title, brand, model, category, cover_image_url, gallery_images, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state), provider:providers(brand_name, created_at, user_id)";
+  "id, provider_id, title, brand, model, category, cover_image_url, gallery_images, daily_price, description, is_published, created_at, address_id, address:addresses(latitude, longitude, city, state), provider:providers(brand_name, created_at, user_id), equipment_units(internal_status)";
 
 //  Lee los listings publicados y no eliminados
 //  El cliente admin se usa aquí para que el join con addresses no esté bloqueado por RLS.
@@ -54,7 +55,12 @@ function normalizeListingAddress(raw: any): Listing {
   const address = Array.isArray(raw.address)
     ? raw.address[0] ?? null
     : raw.address ?? null;
-  return { ...raw, address };
+  
+  const available_stock = raw.equipment_units 
+    ? raw.equipment_units.filter((u: any) => u.internal_status === "AVAILABLE").length
+    : 0;
+
+  return { ...raw, address, available_stock };
 }
 
 //  Selecciona todos los listings publicados y no eliminados
@@ -185,6 +191,8 @@ export async function createListing(prevState: any, formData: FormData) {
     const dailyPriceRaw = formData.get("dailyPrice") as string;
     const description = (formData.get("description") as string)?.trim();
     const publishNow = formData.get("publishNow") === "true";
+    const unitCountRaw = formData.get("unitCount") as string;
+    const unitCount = Math.max(1, Math.min(20, Math.trunc(Number(unitCountRaw) || 1)));
 
     // Datos de la dirección
     const city = (formData.get("city") as string)?.trim() || null;
@@ -273,16 +281,17 @@ export async function createListing(prevState: any, formData: FormData) {
       return { error: "Error al guardar el equipo. Intenta de nuevo." };
     }
 
-    // Crear una unidad por defecto para el listing
+    // Crear unidades de equipo según la cantidad indicada por el proveedor
     const shortId = newListing.id.split("-")[0].toUpperCase();
+    const unitRows = Array.from({ length: unitCount }, (_, i) => ({
+      listing_id: newListing.id,
+      serial_number: unitCount === 1 ? `SN-${shortId}` : `SN-${shortId}-${i + 1}`,
+      condition: "GOOD",
+      internal_status: "AVAILABLE" as const,
+    }));
     const { error: unitError } = await supabase
       .from("equipment_units")
-      .insert({
-        listing_id: newListing.id,
-        serial_number: `SN-${shortId}`,
-        condition: "GOOD",
-        internal_status: "AVAILABLE",
-      });
+      .insert(unitRows);
 
     if (unitError) {
       console.error("[listingsService] default equipment unit insert error:", unitError);
@@ -407,6 +416,40 @@ export async function updateListing(
     const { error } = await supabase
       .from("listings").update(payload).eq("id", id).eq("provider_id", providerId);
     if (error) return { error: "Error al actualizar el equipo." };
+
+    // ── Ajustar unidades de equipo si cambió la cantidad ──────────────
+    const unitCountRaw = formData.get("unitCount") as string;
+    const desiredCount = Math.max(1, Math.min(20, Math.trunc(Number(unitCountRaw) || 1)));
+
+    const admin = createSupabaseAdminClient();
+    const { data: existingUnits } = await admin
+      .from("equipment_units")
+      .select("id, internal_status")
+      .eq("listing_id", id)
+      .order("created_at", { ascending: true });
+
+    const currentCount = existingUnits?.length ?? 0;
+
+    if (desiredCount > currentCount) {
+      // Agregar unidades faltantes
+      const shortId = id.split("-")[0].toUpperCase();
+      const newUnits = Array.from({ length: desiredCount - currentCount }, (_, i) => ({
+        listing_id: id,
+        serial_number: `SN-${shortId}-${currentCount + i + 1}`,
+        condition: "GOOD",
+        internal_status: "AVAILABLE" as const,
+      }));
+      await admin.from("equipment_units").insert(newUnits);
+    } else if (desiredCount < currentCount && existingUnits) {
+      // Eliminar solo unidades AVAILABLE (nunca las que están en uso)
+      const removable = existingUnits
+        .filter((u) => u.internal_status === "AVAILABLE")
+        .slice(0, currentCount - desiredCount)
+        .map((u) => u.id);
+      if (removable.length > 0) {
+        await admin.from("equipment_units").delete().in("id", removable);
+      }
+    }
 
     revalidatePath("/provider/catalog");
     revalidatePath(`/listings/${id}`);

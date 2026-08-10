@@ -32,6 +32,8 @@ type Props = {
     state?: string;
     latitude?: number | null;
     longitude?: number | null;
+    /** Cantidad actual de equipment_units del listing */
+    unitCount?: number;
   };
   submitLabel?: string;
 };
@@ -175,6 +177,25 @@ export default function ListingForm({
             className="block w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all"
           />
         </div>
+      </div>
+
+      {/* Unidades disponibles */}
+      <div className="space-y-1.5">
+        <label htmlFor="unitCount" className="block text-sm font-medium text-gray-700">
+          Unidades disponibles <span className="text-red-500">*</span>
+        </label>
+        <div className="flex items-center gap-3">
+          <input
+            id="unitCount" name="unitCount" type="number"
+            defaultValue={defaultValues.unitCount ?? 1}
+            min={1} max={20}
+            className="block w-32 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#875B9A] focus:border-transparent transition-all"
+          />
+          <span className="text-sm text-gray-400">unidad(es) de este equipo</span>
+        </div>
+        <p className="text-xs text-gray-400">
+          Indica cuántas unidades físicas tienes disponibles para alquiler (1-20).
+        </p>
       </div>
 
       {/* Categoria */}

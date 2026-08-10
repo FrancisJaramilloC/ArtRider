@@ -9,10 +9,11 @@ import Link from "next/link";
 type Props = {
   listing: any;
   updateAction: (prevState: any, formData: FormData) => Promise<any>;
+  unitCount: number;
 };
 
 //  Componente del formulario de edición de listado
-export default function EditListingClient({ listing, updateAction }: Props) {
+export default function EditListingClient({ listing, updateAction, unitCount }: Props) {
   const [state, formAction, isPending] = useActionState(updateAction, null);
   const router = useRouter();
 
@@ -66,6 +67,7 @@ export default function EditListingClient({ listing, updateAction }: Props) {
               state: listing.address?.state ?? undefined,
               latitude: listing.address?.latitude ?? null,
               longitude: listing.address?.longitude ?? null,
+              unitCount,
             }}
             submitLabel="Guardar cambios"
           />

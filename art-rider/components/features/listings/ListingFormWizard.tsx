@@ -31,6 +31,8 @@ type WizardData = {
   brand: string;
   model: string;
   description: string;
+  /** Cantidad de unidades físicas disponibles de este equipo (1-20) */
+  unitCount: string;
   // URL del objeto para la vista previa de la UI: el archivo real vive en la entrada DOM dentro del formulario oculto
   previewUrl: string | null;
   // URLs de vista previa de hasta 5 fotos adicionales de galería
@@ -43,7 +45,7 @@ type WizardData = {
   publishNow: boolean;
 };
 //StepErrors - Objeto que almacena los errores de cada paso
-type StepErrors = Partial<Record<keyof WizardData | "imageFile", string>>;
+type StepErrors = Partial<Record<keyof WizardData | "imageFile" | "unitCount", string>>;
 
 // Props - Props del componente
 export type Props = {
@@ -90,6 +92,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
     brand: "",
     model: "",
     description: "",
+    unitCount: "1",
     previewUrl: null,
     galleryPreviews: [],
     dailyPrice: "",
@@ -119,6 +122,11 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         e.title = "El título no puede superar 100 caracteres.";
       if (!data.brand.trim())
         e.brand = "La marca es obligatoria.";
+      const uc = parseInt(data.unitCount, 10);
+      if (isNaN(uc) || uc < 1)
+        e.unitCount = "Debes tener al menos 1 unidad.";
+      else if (uc > 20)
+        e.unitCount = "El máximo es 20 unidades por equipo.";
     }
 
     // Validar contra previewUrl: una URL no nula significa que el input de tipo file tiene un archivo
@@ -263,6 +271,7 @@ export default function ListingFormWizard({ formAction, isPending, serverError }
         <input type="hidden" name="dailyPrice"  value={data.dailyPrice}         onChange={() => {}} />
         <input type="hidden" name="description" value={data.description}        onChange={() => {}} />
         <input type="hidden" name="publishNow"  value={String(data.publishNow)} onChange={() => {}} />
+        <input type="hidden" name="unitCount"    value={data.unitCount}           onChange={() => {}} />
         <input type="hidden" name="city"        value={data.city}               onChange={() => {}} />
         <input type="hidden" name="state"       value={data.state}              onChange={() => {}} />
         <input type="hidden" name="latitude"    value={data.latitude  ?? ""}    onChange={() => {}} />
@@ -520,6 +529,26 @@ function StepDetails({
         </Field>
       </div>
 
+      {/* Cantidad de unidades */}
+      <Field label="Unidades disponibles" required error={errors.unitCount}>
+        <div className="flex items-center gap-4">
+          <input
+            type="number"
+            value={data.unitCount}
+            onChange={(e) => update({ unitCount: e.target.value })}
+            onWheel={(e) => e.currentTarget.blur()}
+            min={1}
+            max={20}
+            className={`${inputCx(!!errors.unitCount)} max-w-[140px]`}
+          />
+          <span className="text-sm text-gray-400">unidad(es) de este equipo</span>
+        </div>
+        {errors.unitCount && <ErrorMsg>{errors.unitCount}</ErrorMsg>}
+        <p className="text-xs text-gray-400 mt-1">
+          Indica cuántas unidades físicas tienes disponibles para alquiler (1-20).
+        </p>
+      </Field>
+
       {/* Descripción */}
       <Field label="Descripción">
         <textarea
@@ -768,6 +797,7 @@ function StepPrice({
             type="number"
             value={data.dailyPrice}
             onChange={(e) => update({ dailyPrice: e.target.value })}
+            onWheel={(e) => e.currentTarget.blur()}
             min="1"
             step="0.01"
             placeholder="0.00"
