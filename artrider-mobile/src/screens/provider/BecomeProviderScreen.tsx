@@ -4,8 +4,6 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { supabase } from '@/services/supabase';
-
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, Spacing, Radius } from '@/constants/theme';
@@ -32,18 +30,12 @@ export function BecomeProviderScreen() {
   const [justSubmitted, setJustSubmitted] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      console.log('👤 Usuario actual:', data.user?.email, data.user?.id);
-    });
-
     getMyProviderProfile()
       .then((p) => {
-        console.log('🟢 getMyProviderProfile resultado:', JSON.stringify(p));
         setProfile(p);
         setLoading(false);
       })
-      .catch((err) => {
-        console.log('🔴 getMyProviderProfile error:', err.message);
+      .catch(() => {
         setLoading(false);
       });
   }, []);

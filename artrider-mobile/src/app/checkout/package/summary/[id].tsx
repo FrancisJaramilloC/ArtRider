@@ -7,33 +7,32 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, Spacing, Radius } from '@/constants/theme';
-import { getListingById, type Listing } from '@/services/catalogService';
-import { chargeAndCreateBooking } from '@/services/bookingsService';
+import { getPackageById, type PackageWithItems } from '@/services/packagesService';
+import { chargeAndCreatePackageBooking } from '@/services/bookingsService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
 
 const SERVICE_FEE_RATE = 0.05;
 
-export default function CheckoutSummaryScreen() {
-    const { id, from, to, quantity: quantityParam } = useLocalSearchParams<{ id: string; from: string; to: string; quantity?: string }>();
+export default function PackageCheckoutSummaryScreen() {
+    const { id, from, to } = useLocalSearchParams<{ id: string; from: string; to: string }>();
     const router = useRouter();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-    const quantity = Number(quantityParam ?? '1') || 1;
 
-    const [listing, setListing] = useState<Listing | null>(null);
+    const [pkg, setPkg] = useState<PackageWithItems | null>(null);
     const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!id) return;
-        getListingById(id).then((l) => {
-            setListing(l);
+        getPackageById(id).then((p) => {
+            setPkg(p);
             setLoading(false);
         });
     }, [id]);
 
-    if (loading || !listing) {
+    if (loading || !pkg) {
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
                 <BackButton style={{ position: 'absolute', top: Spacing.four, left: Spacing.four, zIndex: 1 }} />
@@ -45,7 +44,7 @@ export default function CheckoutSummaryScreen() {
     }
 
     const days = Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86400000) + 1;
-    const subtotal = listing.daily_price * days * quantity;
+    const subtotal = pkg.daily_price * days;
     const serviceFee = Math.ceil(subtotal * SERVICE_FEE_RATE);
     const total = subtotal + serviceFee;
 
@@ -61,24 +60,19 @@ export default function CheckoutSummaryScreen() {
 
                         <View style={{ flexDirection: 'row', gap: Spacing.three, marginBottom: Spacing.four }}>
                             <View style={{ width: 72, height: 72, borderRadius: Radius.md, overflow: 'hidden' }}>
-                                {listing.cover_image_url ? (
-                                    <Image source={{ uri: listing.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                                {pkg.cover_image_url ? (
+                                    <Image source={{ uri: pkg.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                                 ) : (
                                     <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
                                 )}
                             </View>
                             <View style={{ flex: 1, justifyContent: 'center' }}>
                                 <ThemedText numberOfLines={2} style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text }}>
-                                    {listing.title}
+                                    {pkg.title}
                                 </ThemedText>
                                 <ThemedText style={{ fontSize: 12.5, color: colors.textSecondary, marginTop: 4 }}>
                                     {from} → {to}
                                 </ThemedText>
-                                {quantity > 1 && (
-                                    <ThemedText style={{ fontSize: 12.5, color: colors.textSecondary, marginTop: 2 }}>
-                                        {quantity} unidades
-                                    </ThemedText>
-                                )}
                             </View>
                         </View>
 
@@ -92,8 +86,7 @@ export default function CheckoutSummaryScreen() {
                         >
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                                 <ThemedText style={{ fontSize: 13.5, color: colors.textSecondary }}>
-                                    ${(listing.daily_price / 100).toFixed(2)} x {days} {days === 1 ? 'día' : 'días'}
-                                    {quantity > 1 ? ` x ${quantity}` : ''}
+                                    ${(pkg.daily_price / 100).toFixed(2)} x {days} {days === 1 ? 'día' : 'días'}
                                 </ThemedText>
                                 <ThemedText style={{ fontSize: 13.5, color: colors.text }}>${(subtotal / 100).toFixed(2)}</ThemedText>
                             </View>
@@ -138,7 +131,7 @@ export default function CheckoutSummaryScreen() {
                                 onSuccess={async (kushkiToken) => {
                                     setError(null);
                                     setConfirming(true);
-                                    const result = await chargeAndCreateBooking(kushkiToken, id, from, to, quantity);
+                                    const result = await chargeAndCreatePackageBooking(kushkiToken, id, from, to);
                                     setConfirming(false);
 
                                     if (result.error) {
@@ -148,7 +141,7 @@ export default function CheckoutSummaryScreen() {
 
                                     router.replace({
                                         pathname: '/checkout/success/[id]',
-                                        params: { id: result.bookingId!, listingTitle: listing.title ?? 'Equipo', from, to, total: String(total) },
+                                        params: { id: result.bookingId!, listingTitle: pkg.title, from, to, total: String(total) },
                                     } as any);
                                 }}
                             />

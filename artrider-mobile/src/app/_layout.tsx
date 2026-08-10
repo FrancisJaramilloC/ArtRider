@@ -32,7 +32,8 @@ function RootNavigator() {
       <AnimatedSplashOverlay />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="listing/[id]" options={{ headerShown: true }} />
+        <Stack.Screen name="(provider)" />
+        <Stack.Screen name="chat/[id]" />
 
         <Stack.Protected guard={!session}>
           <Stack.Screen name="(auth)" />

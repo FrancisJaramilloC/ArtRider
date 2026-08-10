@@ -9,6 +9,7 @@ export type Package = {
     is_published: boolean;
     cover_image_url: string | null;
     created_at: string;
+    capacity_people: number | null;
 };
 
 export type PackageItem = {

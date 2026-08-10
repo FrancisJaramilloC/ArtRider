@@ -1,7 +1,8 @@
 // Supabase Edge Function: kushki-charge
 // Cobra una tarjeta ya tokenizada vía Kushki (key privada, solo puede
 // vivir aquí, nunca en el bundle de mobile) y, si el pago es aprobado,
-// crea la reserva llamando a la función create_booking() de Postgres.
+// crea la reserva llamando a create_booking() o create_package_booking()
+// según venga listingId o packageId en el body.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -16,17 +17,19 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { token, listingId, startDate, endDate } = await req.json();
+    const { token, listingId, packageId, startDate, endDate, quantity } = await req.json();
 
-    if (!token || !listingId || !startDate || !endDate) {
+    if (!token || (!listingId && !packageId) || !startDate || !endDate) {
       return new Response(JSON.stringify({ error: 'Faltan datos de la reserva' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Cliente autenticado como el usuario que llama (respeta RLS/auth.uid()
-    // dentro de create_booking, igual que si llamara directo desde mobile)
+    // La cantidad solo aplica a equipo individual — un paquete siempre
+    // reserva las cantidades que define cada package_item, no un múltiplo.
+    const qty = listingId ? (Number(quantity) || 1) : 1;
+
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'No autenticado' }), {
@@ -42,22 +45,42 @@ Deno.serve(async (req: Request) => {
     );
 
     // Precio calculado server-side, nunca confiando en un monto que
-    // mandara el cliente — misma fórmula que create_booking() usa después.
-    const { data: listing, error: listingError } = await supabase
-      .from('listings')
-      .select('daily_price')
-      .eq('id', listingId)
-      .single();
+    // mandara el cliente — misma fórmula que create_booking()/
+    // create_package_booking() usan después.
+    let dailyPrice: number;
 
-    if (listingError || !listing) {
-      return new Response(JSON.stringify({ error: 'Equipo no encontrado' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (packageId) {
+      const { data: pkg, error: pkgError } = await supabase
+        .from('packages')
+        .select('daily_price')
+        .eq('id', packageId)
+        .single();
+
+      if (pkgError || !pkg) {
+        return new Response(JSON.stringify({ error: 'Paquete no encontrado' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      dailyPrice = pkg.daily_price;
+    } else {
+      const { data: listing, error: listingError } = await supabase
+        .from('listings')
+        .select('daily_price')
+        .eq('id', listingId)
+        .single();
+
+      if (listingError || !listing) {
+        return new Response(JSON.stringify({ error: 'Equipo no encontrado' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      dailyPrice = listing.daily_price;
     }
 
     const days = Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1;
-    const subtotal = listing.daily_price * days;
+    const subtotal = dailyPrice * days * qty;
     const serviceFee = Math.ceil(subtotal * 0.05);
     const total = subtotal + serviceFee;
 
@@ -98,12 +121,20 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Paso 2: crear la reserva con el ticket de Kushki ─────────────
-    const { data: bookingRows, error: bookingError } = await supabase.rpc('create_booking', {
-      p_listing_id: listingId,
-      p_start_date: startDate,
-      p_end_date: endDate,
-      p_kushki_ticket: kushkiData.ticketNumber,
-    });
+    const { data: bookingRows, error: bookingError } = packageId
+      ? await supabase.rpc('create_package_booking', {
+          p_package_id: packageId,
+          p_start_date: startDate,
+          p_end_date: endDate,
+          p_kushki_ticket: kushkiData.ticketNumber,
+        })
+      : await supabase.rpc('create_booking', {
+          p_listing_id: listingId,
+          p_start_date: startDate,
+          p_end_date: endDate,
+          p_kushki_ticket: kushkiData.ticketNumber,
+          p_quantity: qty,
+        });
 
     if (bookingError) {
       // El pago ya se cobró pero la reserva falló (ej. alguien más tomó

@@ -11,7 +11,10 @@ import { Colors, Spacing, Radius } from '@/constants/theme';
 import { CATEGORY_LABELS } from '@/constants/categories';
 import { getListingByIdWithProvider, getListingRatings, type ListingWithProvider } from '@/services/catalogService';
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
+import { getOrCreateConversation } from '@/services/messagesService';
+import { getListingTotalUnits } from '@/services/availabilityService';
 import { useAuth } from '@/hooks/useAuth';
+import { findExistingConversation } from '@/services/messagesService';
 
 export function ListingDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,6 +27,8 @@ export function ListingDetailScreen() {
     const [rating, setRating] = useState<{ avg: number; count: number }>({ avg: 0, count: 0 });
     const [esFavorito, setEsFavorito] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [contacting, setContacting] = useState(false);
+    const [totalUnits, setTotalUnits] = useState<number | null>(null);
 
     useEffect(() => {
         if (!id) return;
@@ -35,6 +40,7 @@ export function ListingDetailScreen() {
             if (data) {
                 const ratingsMap = await getListingRatings([data.id]);
                 setRating({ avg: ratingsMap[data.id] ?? 0, count: 0 });
+                getListingTotalUnits(data.id).then(setTotalUnits);
             }
 
             if (session?.user) {
@@ -55,6 +61,38 @@ export function ListingDetailScreen() {
         if (!result.error) setEsFavorito(result.esFavorito);
     }
 
+    async function handleContactarProveedor() {
+        if (!listing) return;
+        if (!session?.user) {
+            router.push('/login');
+            return;
+        }
+        setContacting(true);
+        try {
+            const existingId = await findExistingConversation(listing.provider_id, listing.id, null);
+            if (existingId) {
+                router.push({
+                    pathname: '/chat/[id]',
+                    params: { id: existingId, otherName: listing.provider?.brand_name ?? 'Proveedor' },
+                });
+            } else {
+                router.push({
+                    pathname: '/chat/[id]',
+                    params: {
+                        id: 'new',
+                        otherName: listing.provider?.brand_name ?? 'Proveedor',
+                        providerId: listing.provider_id,
+                        listingId: listing.id,
+                    },
+                });
+            }
+        } catch (e) {
+            console.error('[ListingDetailScreen] handleContactarProveedor:', e);
+        } finally {
+            setContacting(false);
+        }
+    }
+
     if (loading || !listing) {
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
@@ -73,7 +111,6 @@ export function ListingDetailScreen() {
             <ScrollView bounces={false}>
                 <ImageGallery images={images} />
 
-                {/* Favorito flotante sobre la galería */}
                 <Pressable
                     onPress={handleToggleFavorito}
                     style={{
@@ -92,7 +129,6 @@ export function ListingDetailScreen() {
                 </Pressable>
 
                 <View style={{ padding: Spacing.four }}>
-                    {/* Categoría */}
                     <View
                         style={{
                             alignSelf: 'flex-start',
@@ -108,13 +144,11 @@ export function ListingDetailScreen() {
                         </ThemedText>
                     </View>
 
-                    {/* Título */}
                     <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text, marginBottom: Spacing.one }}>
                         {listing.title ?? 'Equipo sin título'}
                     </ThemedText>
 
-                    {/* Rating + ciudad */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.three }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.one }}>
                         {rating.avg > 0 && (
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                                 <Ionicons name="star" size={14} color={colors.text} />
@@ -131,8 +165,19 @@ export function ListingDetailScreen() {
                         )}
                     </View>
 
-                    {/* Proveedor */}
-                    <View
+                    {totalUnits !== null && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: Spacing.three }}>
+                            <Ionicons name="cube-outline" size={13} color={colors.textSecondary} />
+                            <ThemedText style={{ fontSize: 12.5, color: colors.textSecondary }}>
+                                {totalUnits === 0
+                                    ? 'Sin unidades registradas'
+                                    : `${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'} en stock`}
+                            </ThemedText>
+                        </View>
+                    )}
+
+                    <Pressable
+                        onPress={handleContactarProveedor}
                         style={{
                             flexDirection: 'row',
                             alignItems: 'center',
@@ -165,9 +210,9 @@ export function ListingDetailScreen() {
                                 <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Proveedor verificado</ThemedText>
                             </View>
                         </View>
-                    </View>
+                        <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.primary} />
+                    </Pressable>
 
-                    {/* Marca / modelo */}
                     {(listing.brand || listing.model) && (
                         <View style={{ flexDirection: 'row', gap: Spacing.two, paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
                             {listing.brand && (
@@ -185,7 +230,6 @@ export function ListingDetailScreen() {
                         </View>
                     )}
 
-                    {/* Descripción */}
                     {listing.description && (
                         <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
                             <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text, marginBottom: Spacing.two }}>
@@ -197,7 +241,6 @@ export function ListingDetailScreen() {
                         </View>
                     )}
 
-                    {/* Mapa */}
                     {listing.address?.latitude && listing.address?.longitude && (
                         <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
                             <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text, marginBottom: Spacing.two }}>
@@ -225,7 +268,6 @@ export function ListingDetailScreen() {
                 </View>
             </ScrollView>
 
-            {/* Barra inferior fija: precio + Reservar */}
             {!isOwnListing && (
                 <View
                     style={{
@@ -235,19 +277,40 @@ export function ListingDetailScreen() {
                         right: 0,
                         flexDirection: 'row',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
+                        gap: Spacing.two,
                         padding: Spacing.four,
                         backgroundColor: colors.background,
                         borderTopWidth: 1,
                         borderColor: colors.border,
                     }}
                 >
-                    <View>
+                    <Pressable
+                        onPress={handleContactarProveedor}
+                        disabled={contacting}
+                        style={{
+                            width: 48,
+                            height: 48,
+                            borderRadius: Radius.lg,
+                            borderWidth: 1,
+                            borderColor: colors.border,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        {contacting ? (
+                            <ActivityIndicator size="small" color={colors.primary} />
+                        ) : (
+                            <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.text} />
+                        )}
+                    </Pressable>
+
+                    <View style={{ flex: 1 }}>
                         <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text }}>
                             ${price % 1 === 0 ? price.toFixed(0) : price.toFixed(2)}
                             <ThemedText style={{ fontSize: 13, color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}> /día</ThemedText>
                         </ThemedText>
                     </View>
+
                     <Pressable
                         onPress={() => router.push(`/checkout/${listing.id}` as any)}
                         style={{ backgroundColor: colors.primary, paddingHorizontal: Spacing.five, paddingVertical: Spacing.three, borderRadius: Radius.lg }}

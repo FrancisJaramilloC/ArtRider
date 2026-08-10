@@ -37,3 +37,49 @@ export async function checkAvailability(
 
     return true;
 }
+/** Total de unidades que el proveedor tiene registradas para este equipo. */
+export async function getListingTotalUnits(listingId: string): Promise<number> {
+    const { data, error } = await supabase.rpc('get_listing_total_units', {
+        p_listing_id: listingId,
+    });
+
+    if (error) {
+        console.error('[availabilityService] getListingTotalUnits:', error.message);
+        return 0;
+    }
+
+    return (data as number) ?? 0;
+}
+
+/** Unidades libres para un rango de fechas específico (no solo si hay o no). */
+export async function getAvailableUnitsCount(
+    listingId: string,
+    startDate: string,
+    endDate: string
+): Promise<number> {
+    const { data, error } = await supabase.rpc('get_available_units_count', {
+        p_listing_id: listingId,
+        p_start_date: startDate,
+        p_end_date: endDate,
+    });
+
+    if (error) {
+        console.error('[availabilityService] getAvailableUnitsCount:', error.message);
+        return 0;
+    }
+
+    return (data as number) ?? 0;
+}
+/** Fechas donde al menos un equipo del paquete se queda sin stock suficiente. */
+export async function getPackageUnavailableDates(packageId: string): Promise<string[]> {
+    const { data, error } = await supabase.rpc('get_package_unavailable_dates', {
+        p_package_id: packageId,
+    });
+
+    if (error) {
+        console.error('[availabilityService] getPackageUnavailableDates:', error.message);
+        return [];
+    }
+
+    return (data ?? []) as string[];
+}
