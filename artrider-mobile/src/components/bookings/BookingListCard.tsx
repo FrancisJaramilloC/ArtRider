@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Image, Pressable, Modal, useColorScheme } from 'react-native';
+import { View, Image, Pressable, Modal, Linking, useColorScheme } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
@@ -78,6 +79,19 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
                 <ThemedText style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
                     {fmtDate(booking.start_date)} - {fmtDate(booking.end_date)}
                 </ThemedText>
+
+                {booking.provider_phone && (
+                    <Pressable
+                        onPress={() => Linking.openURL(`tel:${booking.provider_phone}`)}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}
+                    >
+                        <Ionicons name="call-outline" size={13} color={colors.primary} />
+                        <ThemedText style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: colors.primary }}>
+                            {booking.provider_name ?? 'Proveedor'}: {booking.provider_phone}
+                        </ThemedText>
+                    </Pressable>
+                )}
+
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
                     <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text }}>
                         ${(booking.total_price / 100).toFixed(2)}

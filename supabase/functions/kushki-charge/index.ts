@@ -1,8 +1,8 @@
 // Supabase Edge Function: kushki-charge
 // Cobra una tarjeta ya tokenizada vía Kushki (key privada, solo puede
 // vivir aquí, nunca en el bundle de mobile) y, si el pago es aprobado,
-// crea la reserva llamando a create_booking() o create_package_booking()
-// según venga listingId o packageId en el body.
+// crea la reserva llamando a create_booking(), create_package_booking(),
+// o create_cart_order() según venga listingId, packageId, o cart:true.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -17,17 +17,21 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { token, listingId, packageId, startDate, endDate, quantity } = await req.json();
+    const { token, listingId, packageId, cart, startDate, endDate, quantity } = await req.json();
 
-    if (!token || (!listingId && !packageId) || !startDate || !endDate) {
+    if (!token || (!listingId && !packageId && !cart)) {
       return new Response(JSON.stringify({ error: 'Faltan datos de la reserva' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    if (!cart && (!startDate || !endDate)) {
+      return new Response(JSON.stringify({ error: 'Faltan fechas de la reserva' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // La cantidad solo aplica a equipo individual — un paquete siempre
-    // reserva las cantidades que define cada package_item, no un múltiplo.
     const qty = listingId ? (Number(quantity) || 1) : 1;
 
     const authHeader = req.headers.get('Authorization');
@@ -45,42 +49,49 @@ Deno.serve(async (req: Request) => {
     );
 
     // Precio calculado server-side, nunca confiando en un monto que
-    // mandara el cliente — misma fórmula que create_booking()/
-    // create_package_booking() usan después.
-    let dailyPrice: number;
+    // mandara el cliente.
+    let subtotal: number;
 
-    if (packageId) {
-      const { data: pkg, error: pkgError } = await supabase
-        .from('packages')
-        .select('daily_price')
-        .eq('id', packageId)
-        .single();
-
-      if (pkgError || !pkg) {
-        return new Response(JSON.stringify({ error: 'Paquete no encontrado' }), {
-          status: 404,
+    if (cart) {
+      const { data: cartTotal, error: cartError } = await supabase.rpc('get_cart_total');
+      if (cartError || cartTotal === null) {
+        return new Response(JSON.stringify({ error: 'No se pudo calcular el total del carrito' }), {
+          status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      dailyPrice = pkg.daily_price;
+      if (cartTotal === 0) {
+        return new Response(JSON.stringify({ error: 'El carrito está vacío' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      subtotal = cartTotal;
     } else {
-      const { data: listing, error: listingError } = await supabase
-        .from('listings')
-        .select('daily_price')
-        .eq('id', listingId)
-        .single();
-
-      if (listingError || !listing) {
-        return new Response(JSON.stringify({ error: 'Equipo no encontrado' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      let dailyPrice: number;
+      if (packageId) {
+        const { data: pkg, error: pkgError } = await supabase.from('packages').select('daily_price').eq('id', packageId).single();
+        if (pkgError || !pkg) {
+          return new Response(JSON.stringify({ error: 'Paquete no encontrado' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        dailyPrice = pkg.daily_price;
+      } else {
+        const { data: listing, error: listingError } = await supabase.from('listings').select('daily_price').eq('id', listingId).single();
+        if (listingError || !listing) {
+          return new Response(JSON.stringify({ error: 'Equipo no encontrado' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        dailyPrice = listing.daily_price;
       }
-      dailyPrice = listing.daily_price;
+      const days = Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1;
+      subtotal = dailyPrice * days * qty;
     }
 
-    const days = Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86400000) + 1;
-    const subtotal = dailyPrice * days * qty;
     const serviceFee = Math.ceil(subtotal * 0.05);
     const total = subtotal + serviceFee;
 
@@ -120,26 +131,31 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // ── Paso 2: crear la reserva con el ticket de Kushki ─────────────
-    const { data: bookingRows, error: bookingError } = packageId
-      ? await supabase.rpc('create_package_booking', {
-          p_package_id: packageId,
-          p_start_date: startDate,
-          p_end_date: endDate,
-          p_kushki_ticket: kushkiData.ticketNumber,
-        })
-      : await supabase.rpc('create_booking', {
-          p_listing_id: listingId,
-          p_start_date: startDate,
-          p_end_date: endDate,
-          p_kushki_ticket: kushkiData.ticketNumber,
-          p_quantity: qty,
-        });
+    // ── Paso 2: crear la(s) reserva(s) con el ticket de Kushki ───────
+    let bookingId: string | undefined;
+    let orderId: string | undefined;
+    let rpcError: any;
 
-    if (bookingError) {
-      // El pago ya se cobró pero la reserva falló (ej. alguien más tomó
-      // la última unidad justo antes) — anulamos el cobro para no dejar
-      // al cliente pagando por algo que no consiguió.
+    if (cart) {
+      const { data: rows, error } = await supabase.rpc('create_cart_order', { p_kushki_ticket: kushkiData.ticketNumber });
+      rpcError = error;
+      orderId = rows?.[0]?.order_id;
+    } else if (packageId) {
+      const { data: rows, error } = await supabase.rpc('create_package_booking', {
+        p_package_id: packageId, p_start_date: startDate, p_end_date: endDate, p_kushki_ticket: kushkiData.ticketNumber,
+      });
+      rpcError = error;
+      bookingId = rows?.[0]?.booking_id;
+    } else {
+      const { data: rows, error } = await supabase.rpc('create_booking', {
+        p_listing_id: listingId, p_start_date: startDate, p_end_date: endDate, p_kushki_ticket: kushkiData.ticketNumber, p_quantity: qty,
+      });
+      rpcError = error;
+      bookingId = rows?.[0]?.booking_id;
+    }
+
+    if (rpcError) {
+      // El pago ya se cobró pero la reserva falló — anulamos el cobro.
       await fetch(`https://api-uat.kushkipagos.com/v1/charges/${kushkiData.ticketNumber}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Private-Merchant-Id': privateKey },
@@ -147,17 +163,15 @@ Deno.serve(async (req: Request) => {
           fullResponse: 'v2',
           amount: { subtotalIva: 0, subtotalIva0: total / 100, ice: 0, iva: 0, currency: 'USD' },
         }),
-      }).catch(() => {}); // best-effort, no bloquea la respuesta de error al usuario
+      }).catch(() => {});
 
-      return new Response(JSON.stringify({ error: bookingError.message || 'No se pudo crear la reserva' }), {
+      return new Response(JSON.stringify({ error: rpcError.message || 'No se pudo crear la reserva' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const booking = bookingRows?.[0];
-
-    return new Response(JSON.stringify({ success: true, bookingId: booking?.booking_id }), {
+    return new Response(JSON.stringify({ success: true, bookingId, orderId }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err: any) {

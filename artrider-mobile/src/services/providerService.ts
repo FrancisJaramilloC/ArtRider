@@ -125,3 +125,48 @@ export async function updateProviderBrandName(newBrandName: string): Promise<Upd
         return { success: false, error: 'Error inesperado.' };
     }
 }
+export type ProviderBooking = {
+    booking_id: string;
+    status: 'AWAITING_SIGNATURES' | 'PAID' | 'ACTIVE' | 'COMPLETED' | 'DISPUTE' | 'CANCELLED' | 'ARCHIVED';
+    start_date: string;
+    end_date: string;
+    total_price: number;
+    created_at: string;
+    listing_title: string | null;
+    listing_cover_image_url: string | null;
+    client_name: string | null;
+    client_phone: string | null;
+    order_id: string | null;
+};
+
+/** Reservas recibidas por el proveedor autenticado. */
+export async function getProviderBookings(): Promise<ProviderBooking[]> {
+    const { data, error } = await supabase.rpc('get_provider_bookings');
+    if (error) {
+        console.error('[providerService] getProviderBookings:', error.message);
+        return [];
+    }
+    return (data ?? []) as ProviderBooking[];
+}
+
+/** Acepta o rechaza una reserva pendiente — rechazar reembolsa automáticamente si hubo cobro. */
+export async function respondToBooking(
+    bookingId: string,
+    action: 'accept' | 'reject'
+): Promise<{ error?: string; refunded?: boolean }> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { error: 'No autenticado' };
+
+    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/provider-respond-booking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ bookingId, action }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) {
+        return { error: data.error ?? 'No se pudo procesar la solicitud' };
+    }
+    return { refunded: data.refunded };
+}

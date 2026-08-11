@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { View, Image, Pressable, Modal, useColorScheme } from 'react-native';
+import { View, Image, Pressable, Modal, Linking, useColorScheme } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
@@ -55,6 +56,17 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
                 <ThemedText style={{ fontSize: 11, color: colors.textSecondary }}>
                     {fmtDate(booking.start_date)} - {fmtDate(booking.end_date)}
                 </ThemedText>
+                {booking.provider_phone && (
+                    <Pressable
+                        onPress={() => Linking.openURL(`tel:${booking.provider_phone}`)}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}
+                    >
+                        <Ionicons name="call-outline" size={11} color={colors.primary} />
+                        <ThemedText style={{ fontSize: 10.5, fontFamily: 'Inter_600SemiBold', color: colors.primary }}>
+                            {booking.provider_phone}
+                        </ThemedText>
+                    </Pressable>
+                )}
             </View>
             <View
                 style={{
