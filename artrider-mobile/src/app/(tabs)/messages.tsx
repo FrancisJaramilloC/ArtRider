@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, FlatList, Pressable, Image, RefreshControl, useColorScheme, ActivityIndicator, TextInput } from 'react-native';
+import { View, FlatList, Pressable, Image, RefreshControl, useColorScheme, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,14 +9,16 @@ import { ThemedText } from '@/components/themed-text';
 import { ProtectedScreen } from '@/components/protected-screen';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
-import { getConversations, subscribeToConversationUpdates, type ConversationSummary } from '@/services/messagesService';
+import {
+  getConversations,
+  subscribeToConversationUpdates,
+  archiveConversation,
+  unarchiveConversation,
+  deleteConversationForMe,
+  type ConversationSummary,
+} from '@/services/messagesService';
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
-function formatDateShort(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
-}
 
 function formatDateRange(start: string | null, end: string | null): string | null {
   if (!start) return null;
@@ -47,6 +49,7 @@ function ConversationsContent() {
   const [showSearch, setShowSearch] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'archived'>('all');
 
   const load = useCallback(async () => {
     const all = await getConversations();
@@ -57,8 +60,6 @@ function ConversationsContent() {
     load().finally(() => setLoading(false));
   }, [load]);
 
-  // Realtime: cualquier mensaje nuevo/actualizado en cualquiera de mis
-  // conversaciones recarga la lista (último mensaje + contador de no leídos).
   useEffect(() => {
     const channel = subscribeToConversationUpdates(() => {
       load();
@@ -74,9 +75,39 @@ function ConversationsContent() {
     setRefreshing(false);
   }
 
+  function handleLongPress(item: ConversationSummary) {
+    Alert.alert(
+      item.other_name,
+      undefined,
+      [
+        {
+          text: item.is_archived ? 'Desarchivar' : 'Archivar',
+          onPress: async () => {
+            if (item.is_archived) {
+              await unarchiveConversation(item.id);
+            } else {
+              await archiveConversation(item.id);
+            }
+            load();
+          },
+        },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteConversationForMe(item.id);
+            load();
+          },
+        },
+        { text: 'Cancelar', style: 'cancel' },
+      ]
+    );
+  }
+
+  const byFilter = conversations.filter((c) => (filter === 'archived' ? c.is_archived : !c.is_archived));
   const filtered = query.trim()
-    ? conversations.filter((c) => c.other_name.toLowerCase().includes(query.trim().toLowerCase()))
-    : conversations;
+    ? byFilter.filter((c) => c.other_name.toLowerCase().includes(query.trim().toLowerCase()))
+    : byFilter;
 
   if (loading) {
     return (
@@ -88,7 +119,6 @@ function ConversationsContent() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {/* Header: título + búsqueda + ajustes */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.four, paddingTop: Spacing.two }}>
         <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 26, color: colors.text }}>Mensajes</ThemedText>
         <View style={{ flexDirection: 'row', gap: Spacing.two }}>
@@ -122,10 +152,34 @@ function ConversationsContent() {
         </View>
       )}
 
+      {/* Chips Todos / Archivados */}
+      <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingTop: Spacing.three }}>
+        {(['all', 'archived'] as const).map((f) => (
+          <Pressable
+            key={f}
+            onPress={() => setFilter(f)}
+            style={{
+              paddingHorizontal: Spacing.three,
+              paddingVertical: 7,
+              borderRadius: 999,
+              backgroundColor: filter === f ? colors.primary : colors.backgroundElement,
+            }}
+          >
+            <ThemedText style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: filter === f ? '#fff' : colors.text }}>
+              {f === 'all' ? 'Todos' : 'Archivados'}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </View>
+
       {filtered.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four }}>
           <ThemedText style={{ color: colors.textSecondary }}>
-            {conversations.length === 0 ? 'No tienes conversaciones todavía.' : 'Sin resultados.'}
+            {filter === 'archived'
+              ? 'No tienes conversaciones archivadas.'
+              : conversations.length === 0
+                ? 'No tienes conversaciones todavía.'
+                : 'Sin resultados.'}
           </ThemedText>
         </View>
       ) : (
@@ -143,6 +197,7 @@ function ConversationsContent() {
                 onPress={() =>
                   router.push({ pathname: '/chat/[id]', params: { id: item.id, otherName: item.other_name } })
                 }
+                onLongPress={() => handleLongPress(item)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.three, borderBottomWidth: 1, borderColor: colors.border }}
               >
                 <View style={{ width: 56, height: 56, borderRadius: Radius.md, overflow: 'hidden' }}>

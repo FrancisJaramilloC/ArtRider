@@ -4,6 +4,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 export type ConversationSummary = {
     id: string;
     listing_id: string | null;
+    package_id: string | null;
     booking_id: string | null;
     client_id: string | null;
     provider_id: string | null;
@@ -19,6 +20,7 @@ export type ConversationSummary = {
     booking_start_date: string | null;
     booking_end_date: string | null;
     booking_total: number | null;
+    is_archived: boolean;
 };
 
 export type Message = {
@@ -272,4 +274,41 @@ export async function findExistingConversation(
   const { data, error } = await query.maybeSingle();
   if (error || !data) return null;
   return data.id;
+}
+/** Archiva una conversación solo para el usuario actual (la otra parte no se entera). */
+export async function archiveConversation(conversationId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+        .from('conversation_archived')
+        .insert({ user_id: user.id, conversation_id: conversationId });
+
+    if (error) console.error('[messagesService] archiveConversation:', error.message);
+}
+
+/** Desarchiva — la vuelve a mostrar en "Todos". */
+export async function unarchiveConversation(conversationId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+        .from('conversation_archived')
+        .delete()
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id);
+
+    if (error) console.error('[messagesService] unarchiveConversation:', error.message);
+}
+
+/** Elimina una conversación solo para el usuario actual — la otra parte la sigue viendo normal. */
+export async function deleteConversationForMe(conversationId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+        .from('conversation_deleted')
+        .insert({ user_id: user.id, conversation_id: conversationId });
+
+    if (error) console.error('[messagesService] deleteConversationForMe:', error.message);
 }
