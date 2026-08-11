@@ -263,8 +263,8 @@ export function PackageDetailScreen() {
                     onPress={handleContactarProveedor}
                     disabled={contacting}
                     style={{
-                        width: 48,
-                        height: 48,
+                        width: 44,
+                        height: 44,
                         borderRadius: Radius.lg,
                         borderWidth: 1,
                         borderColor: colors.border,
@@ -275,8 +275,23 @@ export function PackageDetailScreen() {
                     {contacting ? (
                         <ActivityIndicator size="small" color={colors.primary} />
                     ) : (
-                        <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.text} />
+                        <Ionicons name="chatbubble-ellipses-outline" size={19} color={colors.text} />
                     )}
+                </Pressable>
+
+                <Pressable
+                    onPress={() => router.push(`/checkout/package/${pkg.id}?mode=cart` as any)}
+                    style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: Radius.lg,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <Ionicons name="cart-outline" size={19} color={colors.text} />
                 </Pressable>
 
                 <View style={{ flex: 1 }}>

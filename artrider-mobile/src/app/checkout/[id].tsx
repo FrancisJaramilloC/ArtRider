@@ -10,9 +10,11 @@ import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { getListingById, type Listing } from '@/services/catalogService';
 import { getUnavailableDates, getAvailableUnitsCount } from '@/services/availabilityService';
+import { addToCart } from '@/services/cartService';
 
 export default function CheckoutRoute() {
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const { id, mode } = useLocalSearchParams<{ id: string; mode?: string }>();
+    const isCartMode = mode === 'cart';
     const router = useRouter();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
@@ -24,6 +26,7 @@ export default function CheckoutRoute() {
     const [availableCount, setAvailableCount] = useState<number | null>(null);
     const [checkingAvailability, setCheckingAvailability] = useState(false);
     const [quantity, setQuantity] = useState(1);
+    const [addingToCart, setAddingToCart] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -43,11 +46,33 @@ export default function CheckoutRoute() {
         getAvailableUnitsCount(id, range.from, range.to)
             .then((count) => {
                 setAvailableCount(count);
-                // Si la cantidad elegida ya no cabe en lo disponible, la recorta.
                 setQuantity((q) => Math.min(q, Math.max(count, 1)));
             })
             .finally(() => setCheckingAvailability(false));
     }, [id, range.from, range.to]);
+
+    async function handleContinue() {
+        if (!listing || !range.from || !range.to) return;
+
+        if (isCartMode) {
+            setAddingToCart(true);
+            await addToCart({
+                itemType: 'listing',
+                listingId: listing.id,
+                startDate: range.from,
+                endDate: range.to,
+                quantity,
+            });
+            setAddingToCart(false);
+            router.push('/cart' as any);
+            return;
+        }
+
+        router.push({
+            pathname: '/checkout/summary/[id]',
+            params: { id: listing.id, from: range.from, to: range.to, quantity: String(quantity) },
+        } as any);
+    }
 
     if (loading || !listing) {
         return (
@@ -71,7 +96,7 @@ export default function CheckoutRoute() {
                     {listing.title}
                 </ThemedText>
                 <ThemedText style={{ fontSize: 13, color: colors.textSecondary, marginBottom: Spacing.four }}>
-                    Selecciona las fechas de tu reserva
+                    {isCartMode ? 'Selecciona las fechas para agregar al carrito' : 'Selecciona las fechas de tu reserva'}
                 </ThemedText>
 
                 <DateRangePicker blockedDates={blockedDates} onChange={setRange} />
@@ -121,15 +146,7 @@ export default function CheckoutRoute() {
                                     <Pressable
                                         onPress={() => setQuantity((q) => Math.max(1, q - 1))}
                                         disabled={quantity <= 1}
-                                        style={{
-                                            width: 32,
-                                            height: 32,
-                                            borderRadius: 16,
-                                            backgroundColor: colors.background,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            opacity: quantity <= 1 ? 0.4 : 1,
-                                        }}
+                                        style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', opacity: quantity <= 1 ? 0.4 : 1 }}
                                     >
                                         <Ionicons name="remove" size={16} color={colors.text} />
                                     </Pressable>
@@ -139,15 +156,7 @@ export default function CheckoutRoute() {
                                     <Pressable
                                         onPress={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
                                         disabled={quantity >= maxQuantity}
-                                        style={{
-                                            width: 32,
-                                            height: 32,
-                                            borderRadius: 16,
-                                            backgroundColor: colors.background,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            opacity: quantity >= maxQuantity ? 0.4 : 1,
-                                        }}
+                                        style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', opacity: quantity >= maxQuantity ? 0.4 : 1 }}
                                     >
                                         <Ionicons name="add" size={16} color={colors.text} />
                                     </Pressable>
@@ -162,13 +171,8 @@ export default function CheckoutRoute() {
 
             <View style={{ padding: Spacing.four, borderTopWidth: 1, borderColor: colors.border }}>
                 <Pressable
-                    disabled={!canContinue}
-                    onPress={() => {
-                        router.push({
-                            pathname: '/checkout/summary/[id]',
-                            params: { id: listing.id, from: range.from!, to: range.to!, quantity: String(quantity) },
-                        } as any);
-                    }}
+                    disabled={!canContinue || addingToCart}
+                    onPress={handleContinue}
                     style={{
                         backgroundColor: canContinue ? colors.primary : colors.backgroundSelected,
                         paddingVertical: Spacing.three,
@@ -176,9 +180,15 @@ export default function CheckoutRoute() {
                         alignItems: 'center',
                     }}
                 >
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: canContinue ? '#fff' : colors.textSecondary }}>
-                        {canContinue ? 'Continuar' : range.from && range.to ? 'Sin disponibilidad' : 'Selecciona tus fechas'}
-                    </ThemedText>
+                    {addingToCart ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: canContinue ? '#fff' : colors.textSecondary }}>
+                            {!canContinue
+                                ? (range.from && range.to ? 'Sin disponibilidad' : 'Selecciona tus fechas')
+                                : isCartMode ? 'Agregar al carrito' : 'Continuar'}
+                        </ThemedText>
+                    )}
                 </Pressable>
             </View>
         </SafeAreaView>

@@ -168,12 +168,20 @@ export function subscribeToPresence(
  * conversaciones del usuario (sin filtro de columna) — RLS ya limita qué
  * filas llegan. Úsalo en pantallas de LISTA (no en el chat individual) para
  * refrescar último mensaje / contador de no leídos en tiempo real.
+ *
+ * El nombre del canal incluye un sufijo aleatorio porque Supabase reutiliza
+ * canales con el mismo nombre — si dos pantallas (lista cliente y lista
+ * proveedor) llaman esto al mismo tiempo con un nombre fijo, la segunda
+ * rompe la primera con "cannot add postgres_changes callbacks after
+ * subscribe()". Con nombre único, cada pantalla tiene su propio canal
+ * independiente.
  */
 export function subscribeToConversationUpdates(
   onChange: () => void
 ): RealtimeChannel {
+  const channelName = `conversations-list-updates-${Math.random().toString(36).slice(2)}`;
   return supabase
-    .channel('conversations-list-updates')
+    .channel(channelName)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'messages' },

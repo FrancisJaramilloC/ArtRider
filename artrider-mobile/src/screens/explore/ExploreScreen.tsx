@@ -9,6 +9,7 @@ import { ExploreCard } from '@/components/explore/ExploreCard';
 import { Colors, Spacing, Radius, BottomTabInset } from '@/constants/theme';
 import { CATEGORIES } from '@/constants/categories';
 import { getExploreItems, type ExploreItem } from '@/services/exploreService';
+import { CartIconButton } from '@/components/cart/CartIconButton';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH - Spacing.four * 2 - Spacing.three) / 2;
@@ -86,9 +87,10 @@ export function ExploreScreen() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
             {/* Búsqueda */}
-            <View style={{ paddingHorizontal: Spacing.four, paddingTop: Spacing.two, paddingBottom: Spacing.two }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingTop: Spacing.two, paddingBottom: Spacing.two }}>
                 <View
                     style={{
+                        flex: 1,
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: Spacing.two,
@@ -111,6 +113,7 @@ export function ExploreScreen() {
                         </Pressable>
                     )}
                 </View>
+                <CartIconButton />
             </View>
 
             {/* Categorías */}

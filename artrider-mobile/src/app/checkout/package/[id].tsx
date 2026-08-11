@@ -9,9 +9,11 @@ import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { getPackageById, type PackageWithItems } from '@/services/packagesService';
 import { getPackageUnavailableDates } from '@/services/availabilityService';
+import { addToCart } from '@/services/cartService';
 
 export default function PackageCheckoutRoute() {
-    const { id } = useLocalSearchParams<{ id: string }>();
+    const { id, mode } = useLocalSearchParams<{ id: string; mode?: string }>();
+    const isCartMode = mode === 'cart';
     const router = useRouter();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
@@ -20,6 +22,7 @@ export default function PackageCheckoutRoute() {
     const [blockedDates, setBlockedDates] = useState<string[]>([]);
     const [range, setRange] = useState<DateRange>({ from: null, to: null });
     const [loading, setLoading] = useState(true);
+    const [addingToCart, setAddingToCart] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -29,6 +32,28 @@ export default function PackageCheckoutRoute() {
             setLoading(false);
         });
     }, [id]);
+
+    async function handleContinue() {
+        if (!pkg || !range.from || !range.to) return;
+
+        if (isCartMode) {
+            setAddingToCart(true);
+            await addToCart({
+                itemType: 'package',
+                packageId: pkg.id,
+                startDate: range.from,
+                endDate: range.to,
+            });
+            setAddingToCart(false);
+            router.push('/cart' as any);
+            return;
+        }
+
+        router.push({
+            pathname: '/checkout/package/summary/[id]',
+            params: { id: pkg.id, from: range.from, to: range.to },
+        } as any);
+    }
 
     if (loading || !pkg) {
         return (
@@ -51,14 +76,9 @@ export default function PackageCheckoutRoute() {
                     {pkg.title}
                 </ThemedText>
                 <ThemedText style={{ fontSize: 13, color: colors.textSecondary, marginBottom: Spacing.four }}>
-                    Selecciona las fechas de tu reserva
+                    {isCartMode ? 'Selecciona las fechas para agregar al carrito' : 'Selecciona las fechas de tu reserva'}
                 </ThemedText>
 
-                {/*
-                  Una fecha aparece bloqueada si CUALQUIER equipo del paquete
-                  se queda sin stock suficiente ese día — todo o nada, igual
-                  que create_package_booking() valida al confirmar.
-                */}
                 <DateRangePicker blockedDates={blockedDates} onChange={setRange} />
 
                 <View style={{ height: Spacing.six }} />
@@ -66,13 +86,8 @@ export default function PackageCheckoutRoute() {
 
             <View style={{ padding: Spacing.four, borderTopWidth: 1, borderColor: colors.border }}>
                 <Pressable
-                    disabled={!canContinue}
-                    onPress={() => {
-                        router.push({
-                            pathname: '/checkout/package/summary/[id]',
-                            params: { id: pkg.id, from: range.from!, to: range.to! },
-                        } as any);
-                    }}
+                    disabled={!canContinue || addingToCart}
+                    onPress={handleContinue}
                     style={{
                         backgroundColor: canContinue ? colors.primary : colors.backgroundSelected,
                         paddingVertical: Spacing.three,
@@ -80,9 +95,13 @@ export default function PackageCheckoutRoute() {
                         alignItems: 'center',
                     }}
                 >
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: canContinue ? '#fff' : colors.textSecondary }}>
-                        {canContinue ? 'Continuar' : 'Selecciona tus fechas'}
-                    </ThemedText>
+                    {addingToCart ? (
+                        <ActivityIndicator color="#fff" />
+                    ) : (
+                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: canContinue ? '#fff' : colors.textSecondary }}>
+                            {!canContinue ? 'Selecciona tus fechas' : isCartMode ? 'Agregar al carrito' : 'Continuar'}
+                        </ThemedText>
+                    )}
                 </Pressable>
             </View>
         </SafeAreaView>

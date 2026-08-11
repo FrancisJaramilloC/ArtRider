@@ -70,6 +70,7 @@ export type ClientBooking = {
   listing_title: string | null;
   listing_cover_image_url: string | null;
   listing_city: string | null;
+  order_id: string | null;
 };
 
 /** Reservas del cliente autenticado, con datos del equipo ya resueltos vía RPC. */

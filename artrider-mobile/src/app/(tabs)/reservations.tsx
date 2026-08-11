@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, FlatList, Pressable, ScrollView, RefreshControl, useColorScheme, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ProtectedScreen } from '@/components/protected-screen';
 import { BookingListCard } from '@/components/bookings/BookingListCard';
+import { OrderGroupCard } from '@/components/bookings/OrderGroupCard';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { getClientBookings, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
 
@@ -15,6 +16,42 @@ const FILTERS: { id: 'all' | BookingStatus[]; label: string }[] = [
   { id: ['COMPLETED'], label: 'Completadas' },
   { id: ['CANCELLED'], label: 'Canceladas' },
 ];
+
+type ListRow =
+  | { kind: 'single'; key: string; booking: ClientBooking }
+  | { kind: 'group'; key: string; bookings: ClientBooking[] };
+
+function groupBookings(bookings: ClientBooking[]): ListRow[] {
+  const groups = new Map<string, ClientBooking[]>();
+  const singles: ClientBooking[] = [];
+
+  for (const b of bookings) {
+    if (b.order_id) {
+      const arr = groups.get(b.order_id) ?? [];
+      arr.push(b);
+      groups.set(b.order_id, arr);
+    } else {
+      singles.push(b);
+    }
+  }
+
+  const rows: ListRow[] = [];
+  for (const b of singles) {
+    rows.push({ kind: 'single', key: b.booking_id, booking: b });
+  }
+  for (const [orderId, items] of groups) {
+    rows.push({ kind: 'group', key: orderId, bookings: items });
+  }
+
+  // Reordena todo por la fecha de creación más reciente del grupo/reserva.
+  rows.sort((a, b) => {
+    const dateA = a.kind === 'single' ? a.booking.created_at : a.bookings[0].created_at;
+    const dateB = b.kind === 'single' ? b.booking.created_at : b.bookings[0].created_at;
+    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  });
+
+  return rows;
+}
 
 function ReservationsContent() {
   const scheme = useColorScheme();
@@ -41,7 +78,8 @@ function ReservationsContent() {
   }
 
   const filter = FILTERS[activeFilter].id;
-  const filtered = filter === 'all' ? bookings : bookings.filter((b) => filter.includes(b.status));
+  const filteredBookings = filter === 'all' ? bookings : bookings.filter((b) => filter.includes(b.status));
+  const rows = useMemo(() => groupBookings(filteredBookings), [filteredBookings]);
 
   if (loading) {
     return (
@@ -87,7 +125,7 @@ function ReservationsContent() {
         })}
       </ScrollView>
 
-      {filtered.length === 0 ? (
+      {rows.length === 0 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.five }}>
           <ThemedText style={{ color: colors.textSecondary, textAlign: 'center' }}>
             No tienes reservas {activeFilter !== 0 ? 'en esta categoría' : 'todavía'}.
@@ -95,11 +133,17 @@ function ReservationsContent() {
         </View>
       ) : (
         <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.booking_id}
+          data={rows}
+          keyExtractor={(row) => row.key}
           contentContainerStyle={{ padding: Spacing.four, gap: Spacing.three }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-          renderItem={({ item }) => <BookingListCard booking={item} onCancelled={load} />}
+          renderItem={({ item }) =>
+            item.kind === 'single' ? (
+              <BookingListCard booking={item.booking} onCancelled={load} />
+            ) : (
+              <OrderGroupCard bookings={item.bookings} onCancelled={load} />
+            )
+          }
         />
       )}
     </SafeAreaView>
