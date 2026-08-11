@@ -34,7 +34,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(provider)" />
         <Stack.Screen name="chat/[id]" />
-
+        <Stack.Screen name="reset-password" />
         <Stack.Protected guard={!session}>
           <Stack.Screen name="(auth)" />
         </Stack.Protected>

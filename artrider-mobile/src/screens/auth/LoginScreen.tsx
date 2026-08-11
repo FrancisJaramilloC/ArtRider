@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import {
     View,
     TextInput,
@@ -9,7 +10,7 @@ import {
     Platform,
     ScrollView,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,6 +27,7 @@ export function LoginScreen() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     async function handleSubmit() {
         setError(null);
@@ -126,7 +128,7 @@ export function LoginScreen() {
                                 <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.text }}>
                                     Contraseña
                                 </ThemedText>
-                                <Pressable onPress={() => { }}>
+                                <Pressable onPress={() => router.push('/forgot-password')}>
                                     <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.primary }}>
                                         ¿La olvidaste?
                                     </ThemedText>
