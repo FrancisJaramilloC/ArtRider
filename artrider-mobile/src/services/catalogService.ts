@@ -160,3 +160,24 @@ export async function getListingRatings(listingIds: string[]): Promise<Record<st
     }
     return map;
 }
+export type ListingReview = {
+    id: string;
+    rating: number;
+    comment: string | null;
+    created_at: string;
+    author_name: string;
+};
+
+/** Reseñas reales (no solo promedio) de este listing específico, vía RPC — reviews es privado por defecto. */
+export async function getListingReviews(listingId: string): Promise<ListingReview[]> {
+    const { data, error } = await supabase.rpc('get_listing_reviews', {
+        p_listing_id: listingId,
+    });
+
+    if (error) {
+        console.error('[catalogService] getListingReviews:', error.message);
+        return [];
+    }
+
+    return (data ?? []) as ListingReview[];
+}

@@ -9,12 +9,23 @@ import { ThemedText } from '@/components/themed-text';
 import { ImageGallery } from '@/components/listing/ImageGallery';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { CATEGORY_LABELS } from '@/constants/categories';
-import { getListingByIdWithProvider, getListingRatings, type ListingWithProvider } from '@/services/catalogService';
+import { getListingByIdWithProvider, getListingRatings, getListingReviews, type ListingWithProvider, type ListingReview } from '@/services/catalogService';
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
-import { getOrCreateConversation } from '@/services/messagesService';
+import { findExistingConversation } from '@/services/messagesService';
 import { getListingTotalUnits } from '@/services/availabilityService';
 import { useAuth } from '@/hooks/useAuth';
-import { findExistingConversation } from '@/services/messagesService';
+
+function formatRelativeTime(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days < 1) return 'Hoy';
+    if (days === 1) return 'Hace 1 día';
+    if (days < 30) return `Hace ${days} días`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `Hace ${months} ${months === 1 ? 'mes' : 'meses'}`;
+    const years = Math.floor(months / 12);
+    return `Hace ${years} ${years === 1 ? 'año' : 'años'}`;
+}
 
 export function ListingDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,6 +40,7 @@ export function ListingDetailScreen() {
     const [loading, setLoading] = useState(true);
     const [contacting, setContacting] = useState(false);
     const [totalUnits, setTotalUnits] = useState<number | null>(null);
+    const [reviews, setReviews] = useState<ListingReview[]>([]);
 
     useEffect(() => {
         if (!id) return;
@@ -41,6 +53,7 @@ export function ListingDetailScreen() {
                 const ratingsMap = await getListingRatings([data.id]);
                 setRating({ avg: ratingsMap[data.id] ?? 0, count: 0 });
                 getListingTotalUnits(data.id).then(setTotalUnits);
+                getListingReviews(data.id).then(setReviews);
             }
 
             if (session?.user) {
@@ -155,6 +168,11 @@ export function ListingDetailScreen() {
                                 <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text }}>
                                     {rating.avg.toFixed(2)}
                                 </ThemedText>
+                                {reviews.length > 0 && (
+                                    <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>
+                                        ({reviews.length})
+                                    </ThemedText>
+                                )}
                             </View>
                         )}
                         {listing.address?.city && (
@@ -240,6 +258,66 @@ export function ListingDetailScreen() {
                             </ThemedText>
                         </View>
                     )}
+
+                    {/* Reseñas — item 025 */}
+                    <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.three }}>
+                            {rating.avg > 0 && <Ionicons name="star" size={16} color={colors.text} />}
+                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>
+                                {rating.avg > 0 ? `${rating.avg.toFixed(2)} · ${reviews.length} ${reviews.length === 1 ? 'reseña' : 'reseñas'}` : 'Reseñas'}
+                            </ThemedText>
+                        </View>
+
+                        {reviews.length === 0 ? (
+                            <ThemedText style={{ fontSize: 13.5, color: colors.textSecondary }}>
+                                Sé el primero en reseñar este equipo.
+                            </ThemedText>
+                        ) : (
+                            reviews.map((review) => (
+                                <View key={review.id} style={{ marginBottom: Spacing.four }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.two }}>
+                                        <View
+                                            style={{
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: 16,
+                                                backgroundColor: colors.backgroundElement,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text }}>
+                                                {review.author_name.charAt(0).toUpperCase()}
+                                            </ThemedText>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13.5, color: colors.text }}>
+                                                {review.author_name}
+                                            </ThemedText>
+                                            <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary }}>
+                                                {formatRelativeTime(review.created_at)}
+                                            </ThemedText>
+                                        </View>
+                                    </View>
+                                    <View style={{ flexDirection: 'row', gap: 2, marginBottom: 4 }}>
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                            <Ionicons
+                                                key={n}
+                                                name={n <= review.rating ? 'star' : 'star-outline'}
+                                                size={13}
+                                                color={n <= review.rating ? colors.primary : colors.textSecondary}
+                                            />
+                                        ))}
+                                    </View>
+                                    {review.comment && (
+                                        <ThemedText style={{ fontSize: 13.5, lineHeight: 20, color: colors.textSecondary }}>
+                                            {review.comment}
+                                        </ThemedText>
+                                    )}
+                                </View>
+                            ))
+                        )}
+                    </View>
 
                     {listing.address?.latitude && listing.address?.longitude && (
                         <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
