@@ -7,6 +7,7 @@ import { LayoutDashboard, Package, ClipboardList, ShieldCheck } from "lucide-rea
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Equipos & Metadata", href: "/admin/equipos", icon: Package },
+  { name: "Paquetes & Metadata", href: "/admin/paquetes", icon: Package },
   { name: "Solicitudes", href: "/admin/solicitudes", icon: ClipboardList },
 ];
 

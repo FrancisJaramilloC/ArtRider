@@ -81,6 +81,67 @@ export async function updateListingSpecs(listingId: string, specs: Record<string
 }
 
 // ============================================================================
+// Gestión de Paquetes + Specs
+// ============================================================================
+
+export type AdminPackage = {
+  id: string;
+  title: string | null;
+  description: string | null;
+  daily_price: number;
+  is_published: boolean;
+  specs: Record<string, unknown>;
+  cover_image_url: string | null;
+  provider_id: string | null;
+  address_id: string | null;
+  package_items: {
+    quantity: number;
+    listings: {
+      title: string;
+      category: string;
+      specs: Record<string, unknown>;
+    };
+  }[];
+};
+
+export async function getAdminPackages(): Promise<AdminPackage[]> {
+  const admin = getAdminClient();
+  const { data, error } = await admin
+    .from("packages")
+    .select("id, title, description, daily_price, is_published, specs, cover_image_url, provider_id, address_id, package_items(quantity, listings(title, category, specs))")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[adminService] Error fetching packages:", error);
+    return [];
+  }
+
+  return (data || []).map((p: any) => ({
+    ...p,
+    specs: p.specs || {},
+  }));
+}
+
+export async function updatePackageSpecs(packageId: string, specs: Record<string, unknown>) {
+  const isAdmin = await isCurrentUserAdmin();
+  if (!isAdmin) return { success: false, error: "No autorizado" };
+
+  const admin = getAdminClient();
+  const { error } = await admin
+    .from("packages")
+    .update({ specs, updated_at: new Date().toISOString() })
+    .eq("id", packageId);
+
+  if (error) {
+    console.error("[adminService] Error updating package specs:", error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
+
+// ============================================================================
 // Gestión de Solicitudes Advisory
 // ============================================================================
 
@@ -147,7 +208,27 @@ export async function getAdvisoryRequestDetail(requestId: string) {
 // Eliminación Administrativa
 // ============================================================================
 
-/** Soft-delete de un listing (equipo). Consistente con el patrón del proyecto. */
+/** Soft-delete de un package (paquete). */
+export async function adminDeletePackage(packageId: string) {
+  const isAdmin = await isCurrentUserAdmin();
+  if (!isAdmin) return { success: false, error: "No autorizado" };
+
+  const admin = getAdminClient();
+  const { error } = await admin
+    .from("packages")
+    .update({ 
+      deleted_at: new Date().toISOString(),
+      is_published: false
+    })
+    .eq("id", packageId);
+
+  if (error) {
+    console.error("[adminService] Error deleting package:", error);
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
 export async function adminDeleteListing(listingId: string): Promise<{ success: boolean; error?: string }> {
   const isAdmin = await isCurrentUserAdmin();
   if (!isAdmin) return { success: false, error: "No autorizado" };

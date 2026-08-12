@@ -218,79 +218,139 @@ export default function EquiposClient({ initialListings }: { initialListings: Ad
             </button>
           </div>
 
-          <div className="flex-1 overflow-auto p-5 space-y-5">
-            {/* Campos Dinámicos según categoría */}
+          <div className="flex-1 overflow-auto p-5 space-y-6">
+            
+            {/* --- SECCIÓN GENERAL --- */}
+            <div>
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Datos Generales</h4>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Uso Recomendado</label>
+                    <select value={specsForm.environment || ""} onChange={e => handleSpecChange("environment", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-black focus:border-black text-sm">
+                      <option value="">Seleccionar...</option>
+                      <option value="Interiores">Interiores</option>
+                      <option value="Exteriores">Exteriores</option>
+                      <option value="Ambos">Ambos</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1" title="Consumo Eléctrico Estimado">Consumo (Watts)</label>
+                    <input type="number" value={specsForm.consumo_watts || ""} onChange={e => handleSpecChange("consumo_watts", Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-black focus:border-black text-sm" placeholder="Ej: 1500" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* --- SECCIÓN AUDIO --- */}
             {(editing.category === "audio" || editing.category === "sonido") && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Potencia (Watts RMS)</label>
-                  <input type="number" value={specsForm.potencia_watts_rms || ""} onChange={e => handleSpecChange("potencia_watts_rms", Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-black focus:border-black sm:text-sm" placeholder="Ej: 2000" />
+              <div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Specs de Audio</h4>
+                <div className="space-y-3 bg-blue-50/50 border border-blue-100 p-3 rounded-xl">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Potencia (Watts RMS)</label>
+                      <input type="number" value={specsForm.potencia_watts_rms || ""} onChange={e => handleSpecChange("potencia_watts_rms", Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-black focus:border-black text-sm" placeholder="Ej: 2000" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Max SPL (dB)</label>
+                      <input type="number" value={specsForm.max_spl || ""} onChange={e => handleSpecChange("max_spl", Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-black focus:border-black text-sm" placeholder="Ej: 132" />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">Tipos de Sistema (Puedes seleccionar varios)</label>
+                    <div className="space-y-2">
+                      {[
+                        { id: "PA Basico", label: "PA Básico (Voces/Música ambiente)" },
+                        { id: "Refuerzo Sonoro", label: "Refuerzo Sonoro (Banda/DJ)" },
+                        { id: "Line Array", label: "Line Array (Conciertos)" },
+                        { id: "Monitoreo", label: "Monitoreo" }
+                      ].map(type => {
+                        const currentTypes = Array.isArray(specsForm.tipo_sistema) ? specsForm.tipo_sistema : (specsForm.tipo_sistema ? [specsForm.tipo_sistema] : []);
+                        const isChecked = currentTypes.includes(type.id);
+                        return (
+                          <label key={type.id} className="flex items-center gap-2 text-sm text-gray-700">
+                            <input 
+                              type="checkbox" 
+                              checked={isChecked} 
+                              onChange={(e) => {
+                                let newTypes = [...currentTypes];
+                                if (e.target.checked) newTypes.push(type.id);
+                                else newTypes = newTypes.filter(t => t !== type.id);
+                                handleSpecChange("tipo_sistema", newTypes);
+                              }}
+                              className="rounded border-gray-300 text-black focus:ring-black"
+                            />
+                            {type.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Cobertura Óptima (Personas)</label>
+                    <input type="number" value={specsForm.cobertura_personas || ""} onChange={e => handleSpecChange("cobertura_personas", Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-black focus:border-black text-sm" placeholder="Ej: 150" />
+                  </div>
+
+                  <label className="flex items-center gap-2 text-sm text-gray-700 mt-2">
+                    <input type="checkbox" checked={!!specsForm.incluye_subwoofer} onChange={e => handleSpecChange("incluye_subwoofer", e.target.checked)} className="rounded border-gray-300 text-black focus:ring-black" />
+                    Incluye Subwoofer
+                  </label>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Sistema</label>
-                  <select value={specsForm.tipo_sistema || ""} onChange={e => handleSpecChange("tipo_sistema", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-black focus:border-black sm:text-sm">
-                    <option value="">Seleccionar...</option>
-                    <option value="PA Basico">PA Básico (Voces/Música ambiente)</option>
-                    <option value="Refuerzo Sonoro">Refuerzo Sonoro (Banda/DJ)</option>
-                    <option value="Line Array">Line Array (Conciertos)</option>
-                    <option value="Monitoreo">Monitoreo</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cobertura Óptima (Personas)</label>
-                  <input type="number" value={specsForm.cobertura_personas || ""} onChange={e => handleSpecChange("cobertura_personas", Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-black focus:border-black sm:text-sm" placeholder="Ej: 150" />
-                </div>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input type="checkbox" checked={!!specsForm.incluye_subwoofer} onChange={e => handleSpecChange("incluye_subwoofer", e.target.checked)} className="rounded border-gray-300 text-black focus:ring-black" />
-                  Incluye Subwoofer
-                </label>
-              </>
+              </div>
             )}
 
+            {/* --- SECCIÓN ILUMINACIÓN --- */}
             {(editing.category === "lighting" || editing.category === "iluminacion") && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Iluminación</label>
-                  <select value={specsForm.tipo_iluminacion || ""} onChange={e => handleSpecChange("tipo_iluminacion", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-black focus:border-black sm:text-sm">
-                    <option value="">Seleccionar...</option>
-                    <option value="Ambiental">Ambiental / Perimetral</option>
-                    <option value="Escenografica">Escenográfica / Frontal</option>
-                    <option value="Efectos">Efectos / Fiesta</option>
-                  </select>
+              <div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Specs de Iluminación</h4>
+                <div className="space-y-3 bg-amber-50/50 border border-amber-100 p-3 rounded-xl">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Iluminación</label>
+                    <select value={specsForm.tipo_iluminacion || ""} onChange={e => handleSpecChange("tipo_iluminacion", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-black focus:border-black text-sm">
+                      <option value="">Seleccionar...</option>
+                      <option value="Ambiental">Ambiental / Perimetral</option>
+                      <option value="Escenografica">Escenográfica / Frontal</option>
+                      <option value="Efectos">Efectos / Fiesta</option>
+                    </select>
+                  </div>
+
+                  <label className="flex items-center gap-2 text-sm text-gray-700 mt-2">
+                    <input type="checkbox" checked={!!specsForm.incluye_dmx} onChange={e => handleSpecChange("incluye_dmx", e.target.checked)} className="rounded border-gray-300 text-black focus:ring-black" />
+                    Controlable vía DMX
+                  </label>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad de Luminarias</label>
-                  <input type="number" value={specsForm.cantidad_luminarias || ""} onChange={e => handleSpecChange("cantidad_luminarias", Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-black focus:border-black sm:text-sm" placeholder="Ej: 4" />
-                </div>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input type="checkbox" checked={!!specsForm.incluye_dmx} onChange={e => handleSpecChange("incluye_dmx", e.target.checked)} className="rounded border-gray-300 text-black focus:ring-black" />
-                  Controlable vía DMX
-                </label>
-              </>
+              </div>
             )}
 
-            {editing.category === "video" && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Video</label>
-                  <select value={specsForm.tipo_video || ""} onChange={e => handleSpecChange("tipo_video", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-black focus:border-black sm:text-sm">
-                    <option value="">Seleccionar...</option>
-                    <option value="Pantalla LED">Pantalla LED Modular</option>
-                    <option value="Proyector">Proyector + Telón</option>
-                    <option value="TV">Monitor / TV</option>
-                  </select>
+            {/* --- SECCIÓN VIDEO --- */}
+            {(editing.category === "video") && (
+              <div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Specs de Video</h4>
+                <div className="space-y-3 bg-purple-50/50 border border-purple-100 p-3 rounded-xl">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Tipo de Video</label>
+                    <select value={specsForm.tipo_video || ""} onChange={e => handleSpecChange("tipo_video", e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-black focus:border-black text-sm">
+                      <option value="">Seleccionar...</option>
+                      <option value="Pantalla LED">Pantalla LED Modular</option>
+                      <option value="Proyector">Proyector + Telón</option>
+                      <option value="TV">Monitor / TV</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Tamaño (Pulgadas o M2)</label>
+                    <input type="number" value={specsForm.tamano || ""} onChange={e => handleSpecChange("tamano", Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-black focus:border-black text-sm" placeholder="Ej: 120" />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tamaño (Pulgadas o Metros cuadrados)</label>
-                  <input type="number" value={specsForm.tamano || ""} onChange={e => handleSpecChange("tamano", Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-black focus:border-black sm:text-sm" placeholder="Ej: 120" />
-                </div>
-              </>
+              </div>
             )}
             
             {/* Campos Genéricos si no cae en las de arriba o si faltan specs (Fallback) */}
             {(!["audio", "sonido", "lighting", "iluminacion", "video"].includes(editing.category || "")) && (
-              <div className="bg-blue-50 text-blue-700 p-4 rounded-xl text-sm">
-                No hay campos estructurados específicos definidos para la categoría <strong>{editing.category}</strong>. Puedes agregar metadata JSON en bruto en futuras versiones.
+              <div className="bg-gray-50 text-gray-600 border border-gray-200 p-4 rounded-xl text-sm">
+                No hay campos estructurados específicos definidos para la categoría <strong>{editing.category}</strong>. Puedes agregar metadata JSON en bruto desde la base de datos o marcarlo como "Paquete" si incluye audio/luces.
               </div>
             )}
           </div>

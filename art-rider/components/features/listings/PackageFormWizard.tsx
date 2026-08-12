@@ -382,6 +382,7 @@ export default function PackageFormWizard({ publishedListings, initialData }: Pa
             errors={errors}
             serverError={serverError}
             selectedListings={selectedListings}
+            selectedMap={selectedMap}
           />
         )}
       </div>
@@ -990,8 +991,13 @@ function StepEquipment({
                     </div>
                   )}
                 </div>
-                <p className="text-sm text-gray-800 flex-1 min-w-0 truncate">{l.title ?? "Sin título"}</p>
-                <p className="text-sm font-semibold text-gray-900 shrink-0">{fmtPrice(l.daily_price)}</p>
+                <p className="text-sm text-gray-800 flex-1 min-w-0 truncate">
+                  {l.title ?? "Sin título"}
+                  {(selectedMap.get(l.id) ?? 1) > 1 && (
+                    <span className="text-xs text-gray-400 ml-1">×{selectedMap.get(l.id)}</span>
+                  )}
+                </p>
+                <p className="text-sm font-semibold text-gray-900 shrink-0">{fmtPrice(l.daily_price * (selectedMap.get(l.id) ?? 1))}</p>
                 <button
                   type="button"
                   onClick={() => onRemove(l.id)}
@@ -1025,14 +1031,19 @@ function StepPrecio({
   errors,
   serverError,
   selectedListings,
+  selectedMap,
 }: {
   data: WizardData;
   update: (p: Partial<WizardData>) => void;
   errors: StepErrors;
   serverError: string | null;
   selectedListings: Listing[];
+  selectedMap: Map<string, number>;
 }) {
-  const sumCents = selectedListings.reduce((s, l) => s + l.daily_price, 0);
+  const sumCents = selectedListings.reduce((s, l) => {
+    const qty = selectedMap.get(l.id) ?? 1;
+    return s + (l.daily_price * qty);
+  }, 0);
   const inputCents = parseFloat(data.dailyPrice) * 100;
   const hasDiscount = !isNaN(inputCents) && inputCents > 0 && inputCents < sumCents;
   const discountPct = hasDiscount ? Math.round((1 - inputCents / sumCents) * 100) : 0;
