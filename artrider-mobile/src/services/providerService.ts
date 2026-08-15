@@ -137,6 +137,8 @@ export type ProviderBooking = {
     client_name: string | null;
     client_phone: string | null;
     order_id: string | null;
+    already_reviewed: boolean;
+    listing_id: string | null;
 };
 
 /** Reservas recibidas por el proveedor autenticado. */
@@ -169,4 +171,51 @@ export async function respondToBooking(
         return { error: data.error ?? 'No se pudo procesar la solicitud' };
     }
     return { refunded: data.refunded };
+}
+/** Marca la reserva como terminada y opcionalmente califica al cliente en el mismo paso. */
+export async function finalizeBooking(
+    bookingId: string,
+    rating?: number,
+    comment?: string
+): Promise<{ error?: string }> {
+    const { error } = await supabase.rpc('provider_finalize_booking', {
+        p_booking_id: bookingId,
+        p_rating: rating ?? null,
+        p_comment: comment || null,
+    });
+
+    if (error) {
+        console.error('[providerService] finalizeBooking:', error.message);
+        return { error: 'No se pudo finalizar la reserva.' };
+    }
+    return {};
+}
+export type CalendarMark = { date: string; mark: 'booked' | 'blocked' };
+
+/** Marcas del calendario (reservado/bloqueado) para un equipo específico. */
+export async function getListingCalendar(listingId: string): Promise<CalendarMark[]> {
+    const { data, error } = await supabase.rpc('get_provider_listing_calendar', {
+        p_listing_id: listingId,
+    });
+    if (error) {
+        console.error('[providerService] getListingCalendar:', error.message);
+        return [];
+    }
+    return (data ?? []).map((row: any) => ({ date: row.cal_date, mark: row.mark }));
+}
+
+/** Bloquea/desbloquea un solo día para un equipo. Devuelve el nuevo estado. */
+export async function toggleBlockDate(listingId: string, date: string): Promise<{ mark?: 'available' | 'blocked'; error?: string }> {
+    const { data, error } = await supabase.rpc('provider_toggle_block_date', {
+        p_listing_id: listingId,
+        p_date: date,
+    });
+    if (error) {
+        console.error('[providerService] toggleBlockDate:', error.message);
+        if (error.message.includes('ya tiene una reserva')) {
+            return { error: 'No puedes bloquear una fecha que ya tiene una reserva.' };
+        }
+        return { error: 'No se pudo actualizar el calendario.' };
+    }
+    return { mark: data as 'available' | 'blocked' };
 }

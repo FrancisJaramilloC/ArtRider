@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
-import { cancelBooking, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
+import { cancelBooking, submitReview, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
+import { ReviewModal } from '@/components/reviews/ReviewModal';
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; bg: string; text: string }> = {
     AWAITING_SIGNATURES: { label: 'Pendiente', bg: '#fef3c7', text: '#92400e' },
@@ -28,6 +29,7 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
     const [showConfirm, setShowConfirm] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+    const [showReview, setShowReview] = useState(false);
 
     const statusInfo = STATUS_CONFIG[booking.status];
     const canCancel = booking.status === 'AWAITING_SIGNATURES';
@@ -37,6 +39,12 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
         const result = await cancelBooking(booking.booking_id);
         setCancelling(false);
         setShowConfirm(false);
+        if (!result.error) onCancelled();
+    }
+
+    async function handleSubmitReview(rating: number, comment: string) {
+        const result = await submitReview(booking.booking_id, rating, comment);
+        setShowReview(false);
         if (!result.error) onCancelled();
     }
 
@@ -87,6 +95,13 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
                     </ThemedText>
                 </Pressable>
             )}
+            {booking.status === 'COMPLETED' && !booking.already_reviewed && (
+                <Pressable onPress={() => setShowReview(true)} hitSlop={8}>
+                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 11, color: colors.primary }}>
+                        Calificar
+                    </ThemedText>
+                </Pressable>
+            )}
 
             <Modal visible={showConfirm} transparent animationType="fade" onRequestClose={() => setShowConfirm(false)}>
                 <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: Spacing.five }}>
@@ -117,6 +132,14 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
                     </View>
                 </View>
             </Modal>
+
+            <ReviewModal
+                visible={showReview}
+                title="Califica tu experiencia"
+                subtitle={`¿Cómo fue rentar "${booking.listing_title ?? 'este item'}"?`}
+                onCancel={() => setShowReview(false)}
+                onSubmit={handleSubmitReview}
+            />
         </View>
     );
 }

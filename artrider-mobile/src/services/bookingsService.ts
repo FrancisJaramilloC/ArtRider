@@ -73,6 +73,7 @@ export type ClientBooking = {
   order_id: string | null;
   provider_name: string | null;
   provider_phone: string | null;
+  already_reviewed: boolean;
 };
 
 /** Reservas del cliente autenticado, con datos del equipo ya resueltos vía RPC. */
@@ -207,4 +208,20 @@ export async function chargeAndCreatePackageBooking(
   }
 
   return { bookingId: data.bookingId };
+}
+export async function submitReview(bookingId: string, rating: number, comment: string): Promise<{ error?: string }> {
+  const { error } = await supabase.rpc('submit_review', {
+    p_booking_id: bookingId,
+    p_rating: rating,
+    p_comment: comment || null,
+  });
+
+  if (error) {
+    console.error('[bookingsService] submitReview:', error.message);
+    if (error.message.includes('duplicate key') || error.message.includes('reviews_one_per_booking_author')) {
+      return { error: 'Ya calificaste esta reserva.' };
+    }
+    return { error: 'No se pudo enviar tu calificación.' };
+  }
+  return {};
 }

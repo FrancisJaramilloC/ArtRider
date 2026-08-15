@@ -5,7 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
-import { cancelBooking, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
+import { cancelBooking, submitReview, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
+import { ReviewModal } from '@/components/reviews/ReviewModal';
 
 const STATUS_CONFIG: Record<BookingStatus, { label: string; bg: string; text: string }> = {
     AWAITING_SIGNATURES: { label: 'Pendiente', bg: '#fef3c7', text: '#92400e' },
@@ -28,6 +29,7 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
     const [showConfirm, setShowConfirm] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+    const [showReview, setShowReview] = useState(false);
 
     const statusInfo = STATUS_CONFIG[booking.status];
     const canCancel = booking.status === 'AWAITING_SIGNATURES';
@@ -37,6 +39,12 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
         const result = await cancelBooking(booking.booking_id);
         setCancelling(false);
         setShowConfirm(false);
+        if (!result.error) onCancelled();
+    }
+
+    async function handleSubmitReview(rating: number, comment: string) {
+        const result = await submitReview(booking.booking_id, rating, comment);
+        setShowReview(false);
         if (!result.error) onCancelled();
     }
 
@@ -103,6 +111,13 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
                             </ThemedText>
                         </Pressable>
                     )}
+                    {booking.status === 'COMPLETED' && !booking.already_reviewed && (
+                        <Pressable onPress={() => setShowReview(true)}>
+                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 12, color: colors.primary }}>
+                                Calificar
+                            </ThemedText>
+                        </Pressable>
+                    )}
                 </View>
             </View>
 
@@ -135,6 +150,14 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
                     </View>
                 </View>
             </Modal>
+
+            <ReviewModal
+                visible={showReview}
+                title="Califica tu experiencia"
+                subtitle={`¿Cómo fue rentar "${booking.listing_title ?? 'este item'}"?`}
+                onCancel={() => setShowReview(false)}
+                onSubmit={handleSubmitReview}
+            />
         </View>
     );
 }

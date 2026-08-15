@@ -11,19 +11,19 @@ export default function AppTabs() {
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="index">
         <Label>Home</Label>
-        <Icon src={require('@/assets/images/tabIcons/home.png')} />
+        <Icon sf="house.fill" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="reservations">
         <Label>Reservas</Label>
-        <Icon src={require('@/assets/images/tabIcons/explore.png')} />
+        <Icon sf="calendar" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="messages">
         <Label>Mensajes</Label>
-        <Icon src={require('@/assets/images/tabIcons/explore.png')} />
+        <Icon sf="message.fill" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Label>Perfil</Label>
-        <Icon src={require('@/assets/images/tabIcons/explore.png')} />
+        <Icon sf="person.fill" />
       </NativeTabs.Trigger>
     </NativeTabs>
   );
