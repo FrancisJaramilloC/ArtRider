@@ -7,10 +7,22 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
-import { getPackageById, type PackageWithItems } from '@/services/packagesService';
+import { getPackageById, getPackageReviews, type PackageWithItems, type PackageReview } from '@/services/packagesService';
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
 import { useAuth } from '@/hooks/useAuth';
+
+function formatRelativeTime(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days < 1) return 'Hoy';
+    if (days === 1) return 'Hace 1 día';
+    if (days < 30) return `Hace ${days} días`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `Hace ${months} ${months === 1 ? 'mes' : 'meses'}`;
+    const years = Math.floor(months / 12);
+    return `Hace ${years} ${years === 1 ? 'año' : 'años'}`;
+}
 
 export function PackageDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,6 +35,7 @@ export function PackageDetailScreen() {
     const [esFavorito, setEsFavorito] = useState(false);
     const [loading, setLoading] = useState(true);
     const [contacting, setContacting] = useState(false);
+    const [reviews, setReviews] = useState<PackageReview[]>([]);
 
     useEffect(() => {
         if (!id) return;
@@ -30,6 +43,10 @@ export function PackageDetailScreen() {
         async function load() {
             const data = await getPackageById(id);
             setPkg(data);
+
+            if (data) {
+                getPackageReviews(data.id).then(setReviews);
+            }
 
             if (session?.user) {
                 const favIds = await getUserFavIds();
@@ -90,6 +107,7 @@ export function PackageDetailScreen() {
     }
 
     const price = pkg.daily_price / 100;
+    const avgRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -139,14 +157,25 @@ export function PackageDetailScreen() {
                         {pkg.title}
                     </ThemedText>
 
-                    {pkg.capacity_people != null && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: Spacing.three }}>
-                            <Ionicons name="people-outline" size={14} color={colors.textSecondary} />
-                            <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>
-                                Ideal para hasta {pkg.capacity_people} {pkg.capacity_people === 1 ? 'persona' : 'personas'}
-                            </ThemedText>
-                        </View>
-                    )}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.three }}>
+                        {avgRating > 0 && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                <Ionicons name="star" size={14} color={colors.text} />
+                                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text }}>
+                                    {avgRating.toFixed(2)}
+                                </ThemedText>
+                                <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>({reviews.length})</ThemedText>
+                            </View>
+                        )}
+                        {pkg.capacity_people != null && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Ionicons name="people-outline" size={14} color={colors.textSecondary} />
+                                <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>
+                                    Hasta {pkg.capacity_people} {pkg.capacity_people === 1 ? 'persona' : 'personas'}
+                                </ThemedText>
+                            </View>
+                        )}
+                    </View>
 
                     <Pressable
                         onPress={handleContactarProveedor}
@@ -238,6 +267,66 @@ export function PackageDetailScreen() {
                                 </View>
                             </View>
                         ))}
+                    </View>
+
+                    {/* Reseñas — la pieza que faltaba */}
+                    <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.three }}>
+                            {avgRating > 0 && <Ionicons name="star" size={16} color={colors.text} />}
+                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>
+                                {avgRating > 0 ? `${avgRating.toFixed(2)} · ${reviews.length} ${reviews.length === 1 ? 'reseña' : 'reseñas'}` : 'Reseñas'}
+                            </ThemedText>
+                        </View>
+
+                        {reviews.length === 0 ? (
+                            <ThemedText style={{ fontSize: 13.5, color: colors.textSecondary }}>
+                                Sé el primero en reseñar este paquete.
+                            </ThemedText>
+                        ) : (
+                            reviews.map((review) => (
+                                <View key={review.id} style={{ marginBottom: Spacing.four }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.two }}>
+                                        <View
+                                            style={{
+                                                width: 32,
+                                                height: 32,
+                                                borderRadius: 16,
+                                                backgroundColor: colors.backgroundElement,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                            }}
+                                        >
+                                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text }}>
+                                                {review.author_name.charAt(0).toUpperCase()}
+                                            </ThemedText>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13.5, color: colors.text }}>
+                                                {review.author_name}
+                                            </ThemedText>
+                                            <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary }}>
+                                                {formatRelativeTime(review.created_at)}
+                                            </ThemedText>
+                                        </View>
+                                    </View>
+                                    <View style={{ flexDirection: 'row', gap: 2, marginBottom: 4 }}>
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                            <Ionicons
+                                                key={n}
+                                                name={n <= review.rating ? 'star' : 'star-outline'}
+                                                size={13}
+                                                color={n <= review.rating ? colors.primary : colors.textSecondary}
+                                            />
+                                        ))}
+                                    </View>
+                                    {review.comment && (
+                                        <ThemedText style={{ fontSize: 13.5, lineHeight: 20, color: colors.textSecondary }}>
+                                            {review.comment}
+                                        </ThemedText>
+                                    )}
+                                </View>
+                            ))
+                        )}
                     </View>
 
                     <View style={{ height: 100 }} />

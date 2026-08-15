@@ -102,3 +102,22 @@ export async function getPublishedPackages(): Promise<PackageSummary[]> {
 
     return (data ?? []) as PackageSummary[];
 }
+export type PackageReview = {
+    id: string;
+    rating: number;
+    comment: string | null;
+    created_at: string;
+    author_name: string;
+};
+
+export async function getPackageReviews(packageId: string): Promise<PackageReview[]> {
+    const { data, error } = await supabase.rpc('get_package_reviews', {
+        p_package_id: packageId,
+    });
+
+    if (error) {
+        console.error('[packagesService] getPackageReviews:', error.message);
+        return [];
+    }
+    return (data ?? []) as PackageReview[];
+}
