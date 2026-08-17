@@ -153,7 +153,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       endDate: normalizedDate,
       source: "advisory",
       proposalId,
-      locked: true,
+      locked: false,
     });
   }, []);
 

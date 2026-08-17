@@ -373,23 +373,13 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
     .from("listings")
     .select("id, title, category, daily_price, provider_id, specs, address:addresses!inner(city), equipment_units(id, internal_status)")
     .eq("is_published", true)
+    .is("deleted_at", null)
     .ilike("addresses.city", `%${city}%`);
 
   if (error || !listings || listings.length === 0) {
     console.log("[advisoryService] No listings found in city:", city);
     return;
   }
-
-  const items: Array<{
-    listing_id: string;
-    provider_id: string;
-    title: string;
-    quantity: number;
-    unit_price: number;
-    note: string;
-    metrics: string[];
-  }> = [];
-  let subtotal = 0;
 
   // Lógica de Reglas Básica
   const audios = listings.filter(l => l.category === "sonido" || l.category === "audio");
@@ -415,92 +405,135 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
   const availableUnits = (listing: AdvisoryListingCandidate) =>
     (listing.equipment_units ?? []).filter((unit) => unit.internal_status === "AVAILABLE").length;
 
-  const addRecommendations = (
-    candidates: AdvisoryListingCandidate[],
-    quantityNeeded: number,
-    describe: (listing: AdvisoryListingCandidate) => { note: string; metrics: string[] },
-  ) => {
-    let remaining = quantityNeeded;
-    for (const listing of candidates) {
-      if (remaining <= 0) break;
-      const stock = availableUnits(listing);
-      if (stock <= 0) continue;
-      const quantity = Math.min(stock, remaining);
-      const description = describe(listing);
-      items.push({
-        listing_id: listing.id,
-        provider_id: listing.provider_id,
-        title: listing.title,
-        quantity,
-        unit_price: listing.daily_price,
-        note: description.note,
-        metrics: description.metrics,
-      });
-      subtotal += listing.daily_price * quantity;
-      remaining -= quantity;
+  const tierConfigs = [
+    {
+      tier: 'economico',
+      audioSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => a.daily_price - b.daily_price,
+      lightingSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => a.daily_price - b.daily_price,
+      quantityScaling: (baseQuantity: number) => baseQuantity
+    },
+    {
+      tier: 'recomendado',
+      audioSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => {
+        const specsA = a.specs || {};
+        const specsB = b.specs || {};
+        const coversA = (specsA.cobertura_personas ?? 0) >= guestCount ? 1 : 0;
+        const coversB = (specsB.cobertura_personas ?? 0) >= guestCount ? 1 : 0;
+        return coversB - coversA || (specsB.potencia_watts_rms || 0) - (specsA.potencia_watts_rms || 0);
+      },
+      lightingSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => {
+        const pA = a.specs?.cantidad_luminarias || 0;
+        const pB = b.specs?.cantidad_luminarias || 0;
+        return pB - pA;
+      },
+      quantityScaling: (baseQuantity: number) => baseQuantity
+    },
+    {
+      tier: 'premium',
+      audioSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => b.daily_price - a.daily_price,
+      lightingSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => b.daily_price - a.daily_price,
+      quantityScaling: (baseQuantity: number) => Math.max(2, baseQuantity)
     }
-  };
+  ];
 
-  // Asignar Audio según requerimiento. Si un listing no tiene suficiente
-  // inventario, completa la necesidad con otros listings y proveedores.
-  if (audios.length > 0) {
-    const sortedAudios = (audios as AdvisoryListingCandidate[]).sort((a, b) => {
-      const specsA = a.specs || {};
-      const specsB = b.specs || {};
-      const coversA = (specsA.cobertura_personas ?? 0) >= guestCount ? 1 : 0;
-      const coversB = (specsB.cobertura_personas ?? 0) >= guestCount ? 1 : 0;
-      return coversB - coversA || (specsB.potencia_watts_rms || 0) - (specsA.potencia_watts_rms || 0);
-    });
-    addRecommendations(sortedAudios, targetQuantity(context.audio_requirement), (selected) => {
-      const specs = selected.specs || {};
-      return {
-        note: `Sistema de audio calibrado para nivel ${context.audio_requirement}.`,
-        metrics: [
-          specs.cobertura_personas ? `Cobertura óptima: ${specs.cobertura_personas} pax` : `Cobertura estimada: hasta ${guestCount + 20} pax`,
-          specs.potencia_watts_rms ? `Potencia RMS: ${specs.potencia_watts_rms}W` : `Nivel: ${context.audio_requirement}`,
-          specs.tipo_sistema ? `Tipo: ${specs.tipo_sistema}` : (venueSlug === "abierto" || venueSlug === "outdoor" ? "Apto para exteriores" : "Optimizado para interiores"),
-        ],
-      };
+  const generatedListingsSets = new Set<string>();
+
+  for (const config of tierConfigs) {
+    const items: Array<{
+      listing_id: string;
+      provider_id: string;
+      title: string;
+      quantity: number;
+      unit_price: number;
+      note: string;
+      metrics: string[];
+    }> = [];
+    let subtotal = 0;
+
+    const addRecommendations = (
+      candidates: AdvisoryListingCandidate[],
+      quantityNeeded: number,
+      describe: (listing: AdvisoryListingCandidate) => { note: string; metrics: string[] },
+    ) => {
+      let remaining = quantityNeeded;
+      for (const listing of candidates) {
+        if (remaining <= 0) break;
+        const stock = availableUnits(listing);
+        if (stock <= 0) continue;
+        const quantity = Math.min(stock, remaining);
+        const description = describe(listing);
+        items.push({
+          listing_id: listing.id,
+          provider_id: listing.provider_id,
+          title: listing.title,
+          quantity,
+          unit_price: listing.daily_price,
+          note: description.note,
+          metrics: description.metrics,
+        });
+        subtotal += listing.daily_price * quantity;
+        remaining -= quantity;
+      }
+    };
+
+    // Asignar Audio según requerimiento.
+    if (audios.length > 0) {
+      const sortedAudios = [...audios as AdvisoryListingCandidate[]].sort(config.audioSort);
+      const qty = config.quantityScaling(targetQuantity(context.audio_requirement));
+      addRecommendations(sortedAudios, qty, (selected) => {
+        const specs = selected.specs || {};
+        return {
+          note: `Sistema de audio calibrado para nivel ${context.audio_requirement}.`,
+          metrics: [
+            specs.cobertura_personas ? `Cobertura óptima: ${specs.cobertura_personas} pax` : `Cobertura estimada: hasta ${guestCount + 20} pax`,
+            specs.potencia_watts_rms ? `Potencia RMS: ${specs.potencia_watts_rms}W` : `Nivel: ${context.audio_requirement}`,
+            specs.tipo_sistema ? `Tipo: ${specs.tipo_sistema}` : (venueSlug === "abierto" || venueSlug === "outdoor" ? "Apto para exteriores" : "Optimizado para interiores"),
+          ],
+        };
+      });
+    }
+
+    // Asignar Iluminación
+    if (lightings.length > 0) {
+      const sortedLightings = [...lightings as AdvisoryListingCandidate[]].sort(config.lightingSort);
+      const qty = config.quantityScaling(targetQuantity(context.lighting_requirement));
+      addRecommendations(sortedLightings, qty, (selected) => {
+        const specs = selected.specs || {};
+        return {
+          note: `Set de iluminación ambiental profesional (${context.lighting_requirement}).`,
+          metrics: [
+            specs.cantidad_luminarias ? `Equipos: ${specs.cantidad_luminarias} luminarias` : `Ambiente: nivel ${context.lighting_requirement}`,
+            specs.tipo_iluminacion ? `Tipo: ${specs.tipo_iluminacion}` : `Alcance: espacio de hasta ${Math.max(50, guestCount)} pax`,
+            specs.incluye_dmx ? "Control inteligente DMX" : "Control automático/rítmico",
+          ],
+        };
+      });
+    }
+
+    if (items.length === 0) continue;
+
+    // Deduplication check
+    const listingIds = items.map(i => i.listing_id).sort().join(',');
+    if (generatedListingsSets.has(listingIds)) {
+      continue; // Evitar duplicar si la configuración genera el mismo set
+    }
+    generatedListingsSets.add(listingIds);
+
+    const commission = Math.round(subtotal * 0.10); // 10% ArtRider fee
+    const total = subtotal + commission;
+
+    await supabase.from("advisory_proposals").insert({
+      request_id: requestId,
+      provider_id: items[0].provider_id, // Tomamos el proveedor del primer ítem
+      created_by: clientId,
+      items: items,
+      subtotal: subtotal,
+      commission_amount: commission,
+      total: total,
+      status: 'sent', // Listo para que el cliente lo vea
+      tier: config.tier
     });
   }
-
-  // Asignar Iluminación
-  if (lightings.length > 0) {
-    // Algoritmo: Ordenar por cantidad de luminarias
-    const sortedLightings = (lightings as AdvisoryListingCandidate[]).sort((a, b) => {
-      const pA = a.specs?.cantidad_luminarias || 0;
-      const pB = b.specs?.cantidad_luminarias || 0;
-      return pB - pA;
-    });
-
-    addRecommendations(sortedLightings, targetQuantity(context.lighting_requirement), (selected) => {
-      const specs = selected.specs || {};
-      return {
-        note: `Set de iluminación ambiental profesional (${context.lighting_requirement}).`,
-        metrics: [
-          specs.cantidad_luminarias ? `Equipos: ${specs.cantidad_luminarias} luminarias` : `Ambiente: nivel ${context.lighting_requirement}`,
-          specs.tipo_iluminacion ? `Tipo: ${specs.tipo_iluminacion}` : `Alcance: espacio de hasta ${Math.max(50, guestCount)} pax`,
-          specs.incluye_dmx ? "Control inteligente DMX" : "Control automático/rítmico",
-        ],
-      };
-    });
-  }
-
-  if (items.length === 0) return; // No pudimos armar nada
-
-  const commission = Math.round(subtotal * 0.10); // 10% ArtRider fee
-  const total = subtotal + commission;
-
-  await supabase.from("advisory_proposals").insert({
-    request_id: requestId,
-    provider_id: items[0].provider_id, // Tomamos el proveedor del primer ítem para la fase 1
-    created_by: clientId,
-    items: items,
-    subtotal: subtotal,
-    commission_amount: commission,
-    total: total,
-    status: 'sent' // Listo para que el cliente lo vea
-  });
 }
 
 // ============================================================================
@@ -534,14 +567,60 @@ export async function getAdvisoryRequest(requestId: string) {
   // El provider de la propuesta se revelará solo si el estatus es paid, o en una vista diferente.
   // Por ahora, traemos la primera propuesta que esté en estado 'sent' o 'accepted' o 'signed'
   
-  const proposal = data.advisory_proposals?.find(
-    (p: { status: string }) => p.status === 'sent' || p.status === 'accepted' || p.status === 'signed'
+  const proposals = (data.advisory_proposals || []).filter(
+    (p: any) => ['sent', 'accepted', 'signed'].includes(p.status)
   );
+
+  const proposal = proposals.find((p: any) => p.tier === 'recomendado') || proposals[0] || null;
 
   return { 
     success: true, 
     request: data,
-    proposal: proposal || null
+    proposal,
+    proposals
   };
+}
+
+// ============================================================================
+// Aceptar Propuesta (Sprint 2 - Simplificado)
+// ============================================================================
+
+export async function acceptProposal(proposalId: string) {
+  try {
+    const sessionClient = await createSupabaseServerClient();
+    const { data: { user } } = await sessionClient.auth.getUser();
+    if (!user) return { success: false, error: "Usuario no autenticado." };
+
+    const supabase = getAdminClient();
+    const { data: ownedProposal } = await supabase
+      .from("advisory_proposals")
+      .select("id, advisory_requests(client_id)")
+      .eq("id", proposalId)
+      .single();
+
+    const advisoryRequest = Array.isArray(ownedProposal?.advisory_requests)
+      ? ownedProposal.advisory_requests[0]
+      : ownedProposal?.advisory_requests;
+
+    if (!ownedProposal || advisoryRequest?.client_id !== user.id) {
+      return { success: false, error: "No tienes acceso a esta propuesta." };
+    }
+
+    const { error: updateError } = await supabase
+      .from("advisory_proposals")
+      .update({ status: "accepted" })
+      .eq("id", proposalId);
+
+    if (updateError) {
+      console.error("[advisoryService] Update proposal status error:", updateError);
+      return { success: false, error: "Error al actualizar el estado de la propuesta." };
+    }
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("[advisoryService] acceptProposal error:", error);
+    return { success: false, error: "Error inesperado al aceptar la propuesta." };
+  }
 }
 

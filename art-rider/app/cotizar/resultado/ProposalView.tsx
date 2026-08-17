@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, CheckCircle2, ShieldCheck, HelpCircle } from "lucide-react";
+import { Loader2, CheckCircle2, ShieldCheck, HelpCircle, Star, Zap, Crown, Volume2, Lightbulb, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { jsPDF } from "jspdf";
 import { useRouter } from "next/navigation";
-import SignatureModal from "./SignatureModal";
-import { signProposalRider } from "@/services/advisoryService";
+import { acceptProposal } from "@/services/advisoryService";
 import { useCart } from "@/contexts/CartContext";
+
 type ProposalItem = {
   listing_id: string;
   title: string;
@@ -24,27 +23,69 @@ type AdvisoryRequestView = {
 
 type AdvisoryProposalView = {
   id: string;
+  tier: "economico" | "recomendado" | "premium";
   items: ProposalItem[];
   subtotal: number;
   commission_amount: number;
   total: number;
 };
 
+const TIER_CONFIG = {
+  economico: {
+    label: "Esencial",
+    subtitle: "Sonido decente, precio accesible",
+    icon: Zap,
+    color: "emerald",
+    bgCard: "bg-white",
+    borderCard: "border-gray-200",
+    accentBg: "bg-emerald-50",
+    accentText: "text-emerald-700",
+    accentBorder: "border-emerald-200",
+    buttonBg: "bg-emerald-600 hover:bg-emerald-700",
+    badge: null,
+  },
+  recomendado: {
+    label: "Recomendado",
+    subtitle: "Mejor balance calidad-precio",
+    icon: Star,
+    color: "blue",
+    bgCard: "bg-white",
+    borderCard: "border-blue-500",
+    accentBg: "bg-blue-50",
+    accentText: "text-blue-700",
+    accentBorder: "border-blue-200",
+    buttonBg: "bg-blue-600 hover:bg-blue-700",
+    badge: "Mejor valor",
+  },
+  premium: {
+    label: "Experiencia Total",
+    subtitle: "Sonido de concierto profesional",
+    icon: Crown,
+    color: "purple",
+    bgCard: "bg-white",
+    borderCard: "border-purple-200",
+    accentBg: "bg-purple-50",
+    accentText: "text-purple-700",
+    accentBorder: "border-purple-200",
+    buttonBg: "bg-purple-600 hover:bg-purple-700",
+    badge: "Premium",
+  },
+};
+
 export default function ProposalView({
   request,
-  proposal,
+  proposals,
 }: {
   request: AdvisoryRequestView;
-  proposal: AdvisoryProposalView | null;
+  proposals: AdvisoryProposalView[];
 }) {
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
   const cart = useCart();
 
-  // GC-012: Si no hay propuesta o no está en estado de ser mostrada al cliente
-  if (!proposal) {
+  // Si no hay propuestas, mostrar estado de espera
+  if (!proposals || proposals.length === 0) {
     return (
       <div className="bg-white p-12 rounded-3xl shadow-sm text-center flex flex-col items-center justify-center min-h-[400px]">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-6">
@@ -59,201 +100,205 @@ export default function ProposalView({
     );
   }
 
-  const handleAcceptAndPay = () => {
-    if (!acceptedTerms) return;
-    setIsModalOpen(true);
-  };
+  const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
-  const handleSignatureSave = async (base64Signature: string) => {
+  // Ordenar tiers: economico, recomendado, premium
+  const tierOrder = ["economico", "recomendado", "premium"];
+  const sortedProposals = [...proposals].sort(
+    (a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier)
+  );
+
+  const handleSelectPlan = async (proposal: AdvisoryProposalView) => {
+    if (!request.event_date) {
+      alert("La propuesta no tiene una fecha de evento válida.");
+      return;
+    }
+
+    setSelectedTier(proposal.id);
     setIsProcessing(true);
-    setIsModalOpen(false);
-    
+
     try {
-      // 1. Generate PDF
-      const doc = new jsPDF();
-      doc.setFontSize(22);
-      doc.text("RIDER TÉCNICO & CONTRATO", 20, 20);
-      
-      doc.setFontSize(12);
-      doc.text(`ID de Propuesta: ${proposal.id}`, 20, 30);
-      doc.text(`Fecha de Emisión: ${new Date().toLocaleDateString()}`, 20, 40);
-      
-      doc.setFontSize(14);
-      doc.text("Equipos Acordados:", 20, 60);
-      
-      let y = 70;
-      items.forEach((item: ProposalItem) => {
-        doc.setFontSize(12);
-        doc.text(`- ${item.quantity}x ${item.title} ($${(item.unit_price / 100).toFixed(2)} c/u)`, 20, y);
-        y += 10;
-        if (item.note) {
-          doc.setFontSize(10);
-          doc.text(`  Nota: ${item.note}`, 20, y);
-          y += 10;
-        }
-      });
-      
-      y += 10;
-      doc.setFontSize(14);
-      doc.text(`Total a Pagar: ${formatMoney(proposal.total)}`, 20, y);
-      
-      y += 20;
-      doc.setFontSize(12);
-      doc.text("El cliente acepta los terminos y condiciones, y confirma que los requerimientos", 20, y);
-      doc.text("tecnicos descritos satisfacen las necesidades de su evento.", 20, y + 10);
-      
-      y += 30;
-      doc.text("Firma del Cliente:", 20, y);
-      doc.addImage(base64Signature, "PNG", 20, y + 10, 80, 40);
-      
-      const pdfBlob = doc.output('blob');
-      
-      // 2. FormData para Server Action
-      const formData = new FormData();
-      formData.append("proposalId", proposal.id);
-      formData.append("pdfFile", pdfBlob, `rider-${proposal.id}.pdf`);
-      
-      const result = await signProposalRider(formData);
-      
-      if (result.success) {
-        if (!request.event_date) {
-          alert("La propuesta no tiene una fecha de evento válida.");
-          return;
-        }
-        cart.replaceWithAdvisory(
-          items.map((item: ProposalItem) => ({
-            listingId: item.listing_id,
-            title: item.title,
-            dailyPrice: item.unit_price,
-            quantity: item.quantity,
-          })),
-          request.event_date,
-          proposal.id,
-        );
-        router.push("/cart");
-      } else {
-        alert("Error al firmar: " + result.error);
+      // 1. Aceptar la propuesta en el servidor
+      const result = await acceptProposal(proposal.id);
+      if (!result.success) {
+        alert("Error: " + result.error);
+        return;
       }
+
+      // 2. Reemplazar el carrito con los items de la propuesta
+      cart.replaceWithAdvisory(
+        proposal.items.map((item) => ({
+          listingId: item.listing_id,
+          title: item.title,
+          dailyPrice: item.unit_price,
+          quantity: item.quantity,
+        })),
+        request.event_date,
+        proposal.id,
+      );
+
+      // 3. Ir al carrito
+      router.push("/cart");
     } catch (err) {
       console.error(err);
-      alert("Error inesperado al generar el contrato.");
+      alert("Error inesperado. Inténtalo de nuevo.");
     } finally {
       setIsProcessing(false);
+      setSelectedTier(null);
     }
   };
 
-  const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-
-  const items: ProposalItem[] = proposal.items || [];
+  // Contar equipos por categoría en los metrics
+  const countAudioItems = (items: ProposalItem[]) =>
+    items.filter(i => i.note?.toLowerCase().includes("audio")).reduce((sum, i) => sum + i.quantity, 0);
+  const countLightItems = (items: ProposalItem[]) =>
+    items.filter(i => i.note?.toLowerCase().includes("iluminación") || i.note?.toLowerCase().includes("luminaria")).reduce((sum, i) => sum + i.quantity, 0);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      {/* Columna Izquierda: Detalles de la Propuesta */}
-      <div className="lg:col-span-2 space-y-6">
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-2">
-            <CheckCircle2 className="w-6 h-6 text-green-500" />
-            <span className="text-sm font-bold tracking-wider text-green-500 uppercase">Propuesta Lista</span>
-          </div>
-          <h1 className="text-3xl font-bold mb-2">Tenemos la mejor opción para tu evento</h1>
-          <p className="text-gray-500 mb-8">
-            Basado en tu requerimiento técnico, hemos ensamblado el equipo ideal.
-          </p>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="text-center">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <CheckCircle2 className="w-5 h-5 text-green-500" />
+          <span className="text-sm font-bold tracking-wider text-green-600 uppercase">Propuestas Listas</span>
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2">Elige tu experiencia sonora</h1>
+        <p className="text-gray-500 text-lg">
+          {sortedProposals.length} {sortedProposals.length === 1 ? "opción pensada" : "opciones pensadas"} para tu evento de <strong>{request.guest_count} personas</strong>
+        </p>
+      </div>
 
-          <div className="space-y-4">
-            {items.map((item, idx) => (
-              <div key={idx} className="p-4 border rounded-2xl flex flex-col sm:flex-row justify-between gap-4">
-                <div>
-                  <h3 className="font-semibold text-lg">{item.title}</h3>
-                  {item.note && <p className="text-sm text-gray-500 mt-1">{item.note}</p>}
-                  
-                  {item.metrics && item.metrics.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {item.metrics.map((metric, i) => (
-                        <span key={i} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
-                          {metric}
-                        </span>
-                      ))}
+      {/* Tier Cards */}
+      <div className={`grid gap-6 ${
+        sortedProposals.length === 1 ? "grid-cols-1 max-w-md mx-auto" :
+        sortedProposals.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto" :
+        "grid-cols-1 md:grid-cols-3"
+      }`}>
+        {sortedProposals.map((proposal) => {
+          const config = TIER_CONFIG[proposal.tier] || TIER_CONFIG.recomendado;
+          const Icon = config.icon;
+          const isRecomendado = proposal.tier === "recomendado";
+          const isSelected = selectedTier === proposal.id;
+          const items = proposal.items || [];
+
+          return (
+            <div
+              key={proposal.id}
+              className={`relative rounded-3xl border-2 ${config.borderCard} ${config.bgCard} shadow-sm overflow-hidden flex flex-col transition-transform duration-300 ${
+                isRecomendado ? "md:scale-105 md:shadow-xl z-10 hover:scale-[1.07]" : "hover:shadow-lg hover:scale-105"
+              }`}
+            >
+              {/* Badge */}
+              {config.badge && (
+                <div className={`flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold tracking-wide ${
+                  isRecomendado ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                }`}>
+                  <Icon className="w-3.5 h-3.5" />
+                  {config.badge}
+                </div>
+              )}
+
+              <div className="p-6 flex flex-col flex-1">
+                {/* Tier Header */}
+                <div className="mb-5">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold mb-3 ${config.accentBg} ${config.accentText}`}>
+                    <Icon className="w-4 h-4" />
+                    {config.label}
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {config.subtitle}
+                  </p>
+                </div>
+
+                {/* Precio */}
+                <div className="mb-5">
+                  <span className="text-4xl font-bold text-gray-900">
+                    {formatMoney(proposal.total)}
+                  </span>
+                  <span className="text-sm ml-1 text-gray-500">
+                    /día
+                  </span>
+                </div>
+
+                {/* Items List */}
+                <div className="flex-1 space-y-2.5 mb-6">
+                  {items.map((item, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                      <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" />
+                      <span>
+                        <strong>{item.quantity}x</strong> {item.title}
+                      </span>
                     </div>
-                  )}
+                  ))}
+                </div>
 
-                  <div className="mt-3 text-sm bg-gray-100 px-3 py-1 rounded-md inline-block font-medium">
-                    Cantidad Asignada: {item.quantity}
+                {/* Metrics Pills */}
+                <div className="flex flex-wrap gap-1.5 mb-5">
+                  {items.flatMap(item => 
+                    (item.metrics || []).slice(0, 2).map((metric, i) => (
+                      <span
+                        key={`${item.listing_id}-${i}`}
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${config.accentBg} ${config.accentText} border ${config.accentBorder}`}
+                      >
+                        {metric}
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                {/* Desglose */}
+                <div className="text-xs space-y-1 mb-5 pt-4 border-t border-gray-100 text-gray-500">
+                  <div className="flex justify-between">
+                    <span>Subtotal equipos</span>
+                    <span>{formatMoney(proposal.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Servicio ArtRider</span>
+                    <span>{formatMoney(proposal.commission_amount)}</span>
                   </div>
                 </div>
-                <div className="text-right flex flex-col justify-center">
-                  <span className="font-bold text-lg">{formatMoney(item.unit_price * item.quantity)}</span>
-                  <span className="text-xs text-gray-400">{formatMoney(item.unit_price)} c/u</span>
-                </div>
-              </div>
-            ))}
-          </div>
 
-          <div className="mt-8 p-4 bg-blue-50 rounded-2xl flex gap-3 text-blue-800 text-sm">
-            <ShieldCheck className="w-5 h-5 flex-shrink-0" />
-            <p>
-              Todos los equipos son provistos por proveedores verificados de ArtRider.
-              Garantizamos la disponibilidad y el funcionamiento.
+                {/* CTA Button */}
+                <button
+                  onClick={() => handleSelectPlan(proposal)}
+                  disabled={isProcessing}
+                  className={`w-full font-semibold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${config.buttonBg} text-white`}
+                >
+                  {isProcessing && isSelected ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      Elegir plan
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Trust Badge */}
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex gap-3 items-start">
+          <ShieldCheck className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-gray-700 font-medium">Equipos verificados y garantizados</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Todos los equipos son provistos por proveedores verificados de ArtRider. 
+              Garantizamos disponibilidad, funcionamiento y soporte técnico.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Columna Derecha: Resumen de Pago */}
-      <div className="space-y-6">
-        <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 sticky top-24">
-          <h3 className="text-xl font-bold mb-6">Resumen de Inversión</h3>
-          
-          <div className="space-y-4 text-sm mb-6 border-b pb-6">
-            <div className="flex justify-between text-gray-600">
-              <span>Subtotal equipos</span>
-              <span>{formatMoney(proposal.subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-gray-600">
-              <span>Tarifa de servicio ArtRider</span>
-              <span>{formatMoney(proposal.commission_amount)}</span>
-            </div>
-          </div>
-
-          <div className="flex justify-between items-end mb-8">
-            <span className="font-semibold text-gray-600">Total a pagar</span>
-            <span className="text-3xl font-bold">{formatMoney(proposal.total)}</span>
-          </div>
-
-          <label className="flex items-start gap-3 mb-6 cursor-pointer group">
-            <div className="relative flex items-center justify-center mt-1">
-              <input 
-                type="checkbox" 
-                className="peer w-5 h-5 appearance-none border-2 border-gray-300 rounded-md checked:bg-black checked:border-black transition-colors cursor-pointer"
-                checked={acceptedTerms}
-                onChange={(e) => setAcceptedTerms(e.target.checked)}
-              />
-              <CheckCircle2 className="w-3.5 h-3.5 text-white absolute pointer-events-none opacity-0 peer-checked:opacity-100" />
-            </div>
-            <span className="text-sm text-gray-600 group-hover:text-black transition-colors">
-              He leído y acepto los <Link href="/terminos" className="underline">términos y condiciones</Link> y el rider técnico propuesto.
-            </span>
-          </label>
-
-          <button
-            onClick={handleAcceptAndPay}
-            disabled={!acceptedTerms || isProcessing}
-            className="w-full bg-black text-white font-semibold py-4 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mb-4"
-          >
-            {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : "Firmar y agregar al carrito"}
-          </button>
-
-          <button className="w-full bg-white border-2 border-gray-200 text-black font-semibold py-3 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
-            <HelpCircle className="w-4 h-4" /> Necesito ayuda
-          </button>
-        </div>
+      {/* Help */}
+      <div className="text-center">
+        <button className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-black transition-colors font-medium">
+          <HelpCircle className="w-4 h-4" /> ¿Necesitas ayuda para elegir?
+        </button>
       </div>
-
-      <SignatureModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSignatureSave}
-      />
     </div>
   );
 }

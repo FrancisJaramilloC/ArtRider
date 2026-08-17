@@ -70,6 +70,7 @@ export default function PaquetesClient({ initialPackages }: { initialPackages: A
     
     let totalPotencia = 0;
     let totalCobertura = 0;
+    let totalConsumo = 0;
     let maxSpl = 0;
     let totalLuces = 0;
     let tieneSubwoofer = false;
@@ -81,6 +82,9 @@ export default function PaquetesClient({ initialPackages }: { initialPackages: A
       const q = item.quantity || 1;
       const s = item.listings?.specs || {};
       
+      // General
+      if (s.consumo_watts) totalConsumo += Number(s.consumo_watts) * q;
+
       // Audio
       if (s.potencia_watts_rms) totalPotencia += Number(s.potencia_watts_rms) * q;
       if (s.cobertura_personas) totalCobertura += Number(s.cobertura_personas) * q;
@@ -104,6 +108,7 @@ export default function PaquetesClient({ initialPackages }: { initialPackages: A
     setSpecsForm(prev => ({
       ...prev,
       environment: prev.environment || environment,
+      consumo_watts: totalConsumo || prev.consumo_watts,
       potencia_watts_rms: totalPotencia || prev.potencia_watts_rms,
       cobertura_personas: totalCobertura || prev.cobertura_personas,
       max_spl: maxSpl || prev.max_spl,
