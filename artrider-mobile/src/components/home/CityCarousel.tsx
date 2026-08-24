@@ -1,7 +1,8 @@
-import { View, ScrollView, Pressable, useColorScheme } from 'react-native';
+import { View, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { HomeCard } from './HomeCard';
 import type { HomeCardItem } from '@/services/homeService';
 export function CityCarousel({

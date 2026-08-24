@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { ScrollView, RefreshControl, View, TextInput, Pressable, FlatList, Dimensions, useColorScheme, ActivityIndicator } from 'react-native';
+import { ScrollView, RefreshControl, View, TextInput, Pressable, FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { CityCarousel } from '@/components/home/CityCarousel';
 import { ExploreCard } from '@/components/explore/ExploreCard';
 import { CartIconButton } from '@/components/cart/CartIconButton';
 import { Colors, Spacing, Radius, BottomTabInset } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getHomeData, type HomeData } from '@/services/homeService';
 import { getExploreItems, type ExploreItem } from '@/services/exploreService';
 import { getUserFavIds } from '@/services/favoritosService';

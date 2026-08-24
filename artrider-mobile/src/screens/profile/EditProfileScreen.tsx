@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, TextInput, Pressable, Image, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, useColorScheme } from 'react-native';
+import { View, TextInput, Pressable, Image, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/useAuth';
 import { updateProfile } from '@/services/profileService';
 

@@ -1,10 +1,11 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ColorSchemeProvider } from '@/contexts/ColorSchemeContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 SplashScreen.preventAutoHideAsync();
 function RootNavigator() {
   const colorScheme = useColorScheme();
@@ -37,8 +38,10 @@ function RootNavigator() {
 }
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <ColorSchemeProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </ColorSchemeProvider>
   );
 }

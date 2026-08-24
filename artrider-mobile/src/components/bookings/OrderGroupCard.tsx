@@ -1,22 +1,13 @@
 import { useState } from 'react';
-import { View, Image, Pressable, Modal, Linking, useColorScheme } from 'react-native';
+import { View, Image, Pressable, Modal, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
-import { cancelBooking, submitReview, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
+import { Colors, Spacing, Radius, StatusColors, BOOKING_STATUS_LABELS, toStatusKey } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { cancelBooking, submitReview, type ClientBooking } from '@/services/bookingsService';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
-
-const STATUS_CONFIG: Record<BookingStatus, { label: string; bg: string; text: string }> = {
-    AWAITING_SIGNATURES: { label: 'Pendiente', bg: '#fef3c7', text: '#92400e' },
-    PAID: { label: 'Activa', bg: '#dcfce7', text: '#166534' },
-    ACTIVE: { label: 'Activa', bg: '#dcfce7', text: '#166534' },
-    COMPLETED: { label: 'Completada', bg: '#f3f4f6', text: '#4b5563' },
-    DISPUTE: { label: 'En disputa', bg: '#fee2e2', text: '#991b1b' },
-    CANCELLED: { label: 'Cancelada', bg: '#fee2e2', text: '#991b1b' },
-    ARCHIVED: { label: 'Archivada', bg: '#f3f4f6', text: '#4b5563' },
-};
 
 function fmtDate(dateStr: string): string {
     const d = new Date(dateStr);
@@ -31,7 +22,8 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
     const [cancelling, setCancelling] = useState(false);
     const [showReview, setShowReview] = useState(false);
 
-    const statusInfo = STATUS_CONFIG[booking.status];
+    const statusColors = StatusColors[scheme === 'dark' ? 'dark' : 'light'][toStatusKey(booking.status)];
+    const statusLabel = BOOKING_STATUS_LABELS[booking.status] ?? booking.status;
     const canCancel = booking.status === 'AWAITING_SIGNATURES';
 
     async function handleConfirmCancel() {
@@ -78,14 +70,14 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
             </View>
             <View
                 style={{
-                    backgroundColor: statusInfo.bg,
+                    backgroundColor: statusColors.bg,
                     paddingHorizontal: 7,
                     paddingVertical: 3,
                     borderRadius: 999,
                 }}
             >
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 9.5, color: statusInfo.text }}>
-                    {statusInfo.label}
+                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 9.5, color: statusColors.fg }}>
+                    {statusLabel}
                 </ThemedText>
             </View>
             {canCancel && (

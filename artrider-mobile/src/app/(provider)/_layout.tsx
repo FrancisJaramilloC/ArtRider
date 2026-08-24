@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
 import { Redirect } from 'expo-router';
 import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getMyProviderProfile, type ProviderProfile } from '@/services/providerService';
 export default function ProviderTabs() {
   const scheme = useColorScheme();

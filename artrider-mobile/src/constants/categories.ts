@@ -25,4 +25,5 @@ export const CATEGORY_GRADIENTS: Record<string, [string, string]> = {
     effects: ['#db2777', '#831843'],
     advertising: ['#4f46e5', '#312e81'],
     other: ['#6b7280', '#1f2937'],
+    package: ['#7C3AED', '#D61F9E'],
 };

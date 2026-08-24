@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, FlatList, Pressable, Image, RefreshControl, useColorScheme, ActivityIndicator, TextInput, Alert } from 'react-native';
+import { View, FlatList, Pressable, Image, RefreshControl, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { ProtectedScreen } from '@/components/protected-screen';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { FilterChip } from '@/components/ui/FilterChip';
 import { supabase } from '@/services/supabase';
 import {
   getConversations,
@@ -155,20 +157,13 @@ function ConversationsContent() {
       {/* Chips Todos / Archivados */}
       <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingTop: Spacing.three }}>
         {(['all', 'archived'] as const).map((f) => (
-          <Pressable
+          <FilterChip
             key={f}
+            label={f === 'all' ? 'Todos' : 'Archivados'}
+            active={filter === f}
             onPress={() => setFilter(f)}
-            style={{
-              paddingHorizontal: Spacing.three,
-              paddingVertical: 7,
-              borderRadius: 999,
-              backgroundColor: filter === f ? colors.primary : colors.backgroundElement,
-            }}
-          >
-            <ThemedText style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: filter === f ? '#fff' : colors.text }}>
-              {f === 'all' ? 'Todos' : 'Archivados'}
-            </ThemedText>
-          </Pressable>
+            colors={colors}
+          />
         ))}
       </View>
 

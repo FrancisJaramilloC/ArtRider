@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl, useColorScheme } from 'react-native';
+import { View, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors, BOOKING_STATUS_LABELS, toStatusKey } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getMyProviderProfile, getProviderBookings, type ProviderProfile, type ProviderBooking } from '@/services/providerService';
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
 
@@ -15,16 +16,6 @@ const STATUS_MESSAGE: Record<ProviderProfile['status'], string> = {
   pending: 'Tu solicitud está siendo revisada. Te notificaremos cuando tu cuenta esté activa (1-3 días hábiles).',
   active: 'Tu cuenta de proveedor está activa. Ya puedes gestionar tu catálogo.',
   suspended: 'Tu cuenta de proveedor ha sido suspendida. Contacta a soporte para más información.',
-};
-
-const STATUS_CONFIG: Record<ProviderBooking['status'], { label: string; bg: string; text: string }> = {
-  AWAITING_SIGNATURES: { label: 'Pendiente', bg: '#fef3c7', text: '#92400e' },
-  PAID: { label: 'Activa', bg: '#dcfce7', text: '#166534' },
-  ACTIVE: { label: 'Activa', bg: '#dcfce7', text: '#166534' },
-  COMPLETED: { label: 'Completada', bg: '#f3f4f6', text: '#4b5563' },
-  DISPUTE: { label: 'En disputa', bg: '#fee2e2', text: '#991b1b' },
-  CANCELLED: { label: 'Cancelada', bg: '#fee2e2', text: '#991b1b' },
-  ARCHIVED: { label: 'Archivada', bg: '#f3f4f6', text: '#4b5563' },
 };
 
 function fmtDate(dateStr: string): string {
@@ -179,7 +170,8 @@ export function ProviderTodayScreen() {
         ) : (
           <View style={{ gap: Spacing.two }}>
             {recentBookings.map((booking) => {
-              const statusInfo = STATUS_CONFIG[booking.status];
+              const statusColors = StatusColors[scheme === 'dark' ? 'dark' : 'light'][toStatusKey(booking.status)];
+              const statusLabel = BOOKING_STATUS_LABELS[booking.status] ?? booking.status;
               return (
                 <View
                   key={booking.booking_id}
@@ -200,9 +192,9 @@ export function ProviderTodayScreen() {
                       {booking.client_name ?? 'Cliente'} · {fmtDate(booking.start_date)}
                     </ThemedText>
                   </View>
-                  <View style={{ backgroundColor: statusInfo.bg, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999 }}>
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 9.5, color: statusInfo.text }}>
-                      {statusInfo.label}
+                  <View style={{ backgroundColor: statusColors.bg, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999 }}>
+                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 9.5, color: statusColors.fg }}>
+                      {statusLabel}
                     </ThemedText>
                   </View>
                 </View>

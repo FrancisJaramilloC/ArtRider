@@ -1,14 +1,43 @@
 import { useEffect, useState } from 'react';
-import { View, ScrollView, Pressable, Image, Linking, useColorScheme } from 'react-native';
+import { View, ScrollView, Pressable, Image, Linking } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ProtectedScreen } from '@/components/protected-screen';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, Gradients } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useColorSchemeContext } from '@/contexts/ColorSchemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { getMyProviderProfile } from '@/services/providerService';
+
+function AppearanceToggle({ colors }: { colors: any }) {
+  const { colorScheme, setOverride } = useColorSchemeContext();
+
+  return (
+    <View style={{ flexDirection: 'row', gap: Spacing.two, borderRadius: Radius.lg, padding: 6, backgroundColor: colors.backgroundElement }}>
+      {(['light', 'dark'] as const).map((mode) => {
+        const isActive = colorScheme === mode;
+        const label = mode === 'light' ? 'Claro' : 'Oscuro';
+        return (
+          <Pressable key={mode} onPress={() => setOverride(mode)} style={{ flex: 1, borderRadius: Radius.md, overflow: 'hidden' }}>
+            {isActive ? (
+              <LinearGradient colors={Gradients.chipActive} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ paddingVertical: 10, alignItems: 'center' }}>
+                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#fff' }}>{label}</ThemedText>
+              </LinearGradient>
+            ) : (
+              <View style={{ paddingVertical: 10, alignItems: 'center' }}>
+                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.textSecondary }}>{label}</ThemedText>
+              </View>
+            )}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 function MenuItem({ icon, label, onPress, colors, destructive }: {
   icon: keyof typeof Ionicons.glyphMap;
@@ -91,6 +120,9 @@ export default function ProfileScreen() {
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </Pressable>
+
+          <SectionLabel colors={colors}>Apariencia</SectionLabel>
+          <AppearanceToggle colors={colors} />
 
           <SectionLabel colors={colors}>Negocio</SectionLabel>
           <MenuItem

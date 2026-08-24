@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { View, FlatList, Image, Pressable, Switch, ActivityIndicator, Alert, useColorScheme } from 'react-native';
+import { View, FlatList, Image, Pressable, Switch, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,7 +8,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CATEGORY_LABELS } from '@/constants/categories';
+import { FilterChip } from '@/components/ui/FilterChip';
 import {
     getMyListings, toggleListingPublished, deleteListing, type MyListing,
     getMyPackages, togglePackagePublished, deletePackage, type MyPackage,
@@ -158,20 +160,13 @@ export function MyListingsScreen() {
 
             <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.three }}>
                 {(['equipos', 'paquetes'] as const).map((t) => (
-                    <Pressable
+                    <FilterChip
                         key={t}
+                        label={t === 'equipos' ? `Equipos (${listings.length})` : `Paquetes (${packages.length})`}
+                        active={tab === t}
                         onPress={() => setTab(t)}
-                        style={{
-                            paddingHorizontal: Spacing.three,
-                            paddingVertical: 7,
-                            borderRadius: 999,
-                            backgroundColor: tab === t ? colors.primary : colors.backgroundElement,
-                        }}
-                    >
-                        <ThemedText style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: tab === t ? '#fff' : colors.text }}>
-                            {t === 'equipos' ? `Equipos (${listings.length})` : `Paquetes (${packages.length})`}
-                        </ThemedText>
-                    </Pressable>
+                        colors={colors}
+                    />
                 ))}
             </View>
 

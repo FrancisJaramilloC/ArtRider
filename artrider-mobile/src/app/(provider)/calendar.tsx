@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, FlatList, Image, Pressable, TextInput, Modal, ActivityIndicator, useColorScheme, Linking, Alert } from 'react-native';
+import { View, FlatList, Image, Pressable, TextInput, Modal, ActivityIndicator, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,8 @@ import { Calendar } from 'react-native-calendars';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors, BOOKING_STATUS_LABELS, toStatusKey } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   getProviderBookings,
   respondToBooking,
@@ -20,16 +21,6 @@ import {
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
 
-const STATUS_CONFIG: Record<ProviderBooking['status'], { label: string; bg: string; text: string }> = {
-  AWAITING_SIGNATURES: { label: 'Pendiente', bg: '#fef3c7', text: '#92400e' },
-  PAID: { label: 'Activa', bg: '#dcfce7', text: '#166534' },
-  ACTIVE: { label: 'Activa', bg: '#dcfce7', text: '#166534' },
-  COMPLETED: { label: 'Completada', bg: '#f3f4f6', text: '#4b5563' },
-  DISPUTE: { label: 'En disputa', bg: '#fee2e2', text: '#991b1b' },
-  CANCELLED: { label: 'Cancelada', bg: '#fee2e2', text: '#991b1b' },
-  ARCHIVED: { label: 'Archivada', bg: '#f3f4f6', text: '#4b5563' },
-};
-
 function fmtDate(dateStr: string): string {
   const d = new Date(dateStr);
   const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -40,7 +31,8 @@ function BookingRow({ booking, onChanged }: { booking: ProviderBooking; onChange
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const [busy, setBusy] = useState(false);
-  const statusInfo = STATUS_CONFIG[booking.status];
+  const statusColors = StatusColors[scheme === 'dark' ? 'dark' : 'light'][toStatusKey(booking.status)];
+  const statusLabel = BOOKING_STATUS_LABELS[booking.status] ?? booking.status;
   const [showFinalize, setShowFinalize] = useState(false);
 
   async function handleRespond(action: 'accept' | 'reject') {
@@ -91,8 +83,8 @@ function BookingRow({ booking, onChanged }: { booking: ProviderBooking; onChange
           )}
         </View>
         <View style={{ flex: 1 }}>
-          <View style={{ alignSelf: 'flex-start', backgroundColor: statusInfo.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, marginBottom: 4 }}>
-            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 10, color: statusInfo.text }}>{statusInfo.label}</ThemedText>
+          <View style={{ alignSelf: 'flex-start', backgroundColor: statusColors.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, marginBottom: 4 }}>
+            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 10, color: statusColors.fg }}>{statusLabel}</ThemedText>
           </View>
           <ThemedText numberOfLines={1} style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text }}>
             {booking.listing_title ?? 'Item reservado'}
@@ -237,7 +229,7 @@ export default function ProviderCalendarScreen() {
   marks.forEach((m) => {
     markedDates[m.date] = {
       selected: true,
-      selectedColor: m.mark === 'booked' ? '#ef4444' : '#9ca3af',
+      selectedColor: m.mark === 'booked' ? '#ef4444' : colors.textMuted,
     };
   });
 
@@ -329,7 +321,7 @@ export default function ProviderCalendarScreen() {
                   <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Reservado</ThemedText>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#9ca3af' }} />
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.textMuted }} />
                   <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Bloqueado por ti</ThemedText>
                 </View>
               </View>

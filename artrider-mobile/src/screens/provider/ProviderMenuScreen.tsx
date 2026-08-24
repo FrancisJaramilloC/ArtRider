@@ -1,10 +1,11 @@
-import { View, ScrollView, Pressable, Image, Linking, useColorScheme } from 'react-native';
+import { View, ScrollView, Pressable, Image, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/useAuth';
 
 function MenuItem({ icon, label, onPress, colors, destructive }: {

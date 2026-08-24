@@ -1,10 +1,11 @@
-import { View, Pressable, Image, useColorScheme } from 'react-native';
+import { View, Pressable, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CATEGORY_LABELS, CATEGORY_GRADIENTS } from '@/constants/categories';
 import { useFavorito } from '@/hooks/useFavorito';
 import type { HomeCardItem } from '@/services/homeService';
@@ -17,8 +18,8 @@ export function HomeCard({ item, isFavorito }: { item: HomeCardItem; isFavorito:
     const router = useRouter();
     const { esFavorito, toggleFavorito } = useFavorito(item.id, item.tipo, isFavorito);
 
-    const catLabel = CATEGORY_LABELS[item.category ?? ''] ?? item.category ?? 'Equipo';
-    const gradient = CATEGORY_GRADIENTS[item.category ?? ''] ?? CATEGORY_GRADIENTS.other;
+    const catLabel = item.tipo === 'paquete' ? 'Paquete' : (CATEGORY_LABELS[item.category ?? ''] ?? item.category ?? 'Equipo');
+    const gradient = item.tipo === 'paquete' ? CATEGORY_GRADIENTS.package : (CATEGORY_GRADIENTS[item.category ?? ''] ?? CATEGORY_GRADIENTS.other);
     const price = `$${(item.daily_price / 100).toFixed(0)}`;
 
     return (

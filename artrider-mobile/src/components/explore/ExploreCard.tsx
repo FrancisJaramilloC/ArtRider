@@ -1,9 +1,10 @@
-import { View, Pressable, Image, useColorScheme } from 'react-native';
+import { View, Pressable, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CATEGORY_LABELS, CATEGORY_GRADIENTS } from '@/constants/categories';
 import type { ExploreItem } from '@/services/exploreService';
 
@@ -13,7 +14,7 @@ export function ExploreCard({ item, width }: { item: ExploreItem; width: number 
     const router = useRouter();
 
     const catLabel = item.tipo === 'paquete' ? 'Paquete' : (CATEGORY_LABELS[item.category ?? ''] ?? item.category ?? 'Equipo');
-    const gradient = CATEGORY_GRADIENTS[item.category ?? ''] ?? CATEGORY_GRADIENTS.other;
+    const gradient = item.tipo === 'paquete' ? CATEGORY_GRADIENTS.package : (CATEGORY_GRADIENTS[item.category ?? ''] ?? CATEGORY_GRADIENTS.other);
     const price = `$${(item.daily_price / 100).toFixed(0)}`;
 
     return (

@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, FlatList, Pressable, ScrollView, RefreshControl, useColorScheme, ActivityIndicator } from 'react-native';
+import { View, FlatList, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ProtectedScreen } from '@/components/protected-screen';
 import { BookingListCard } from '@/components/bookings/BookingListCard';
 import { OrderGroupCard } from '@/components/bookings/OrderGroupCard';
+import { FilterChip } from '@/components/ui/FilterChip';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getClientBookings, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
 
 const FILTERS: { id: 'all' | BookingStatus[]; label: string }[] = [
@@ -102,27 +104,15 @@ function ReservationsContent() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.three }}
       >
-        {FILTERS.map((f, i) => {
-          const isActive = activeFilter === i;
-          return (
-            <Pressable
-              key={f.label}
-              onPress={() => setActiveFilter(i)}
-              style={{
-                paddingHorizontal: Spacing.three,
-                paddingVertical: Spacing.two,
-                borderRadius: 999,
-                backgroundColor: isActive ? colors.primary : 'transparent',
-                borderWidth: isActive ? 0 : 1,
-                borderColor: colors.border,
-              }}
-            >
-              <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12.5, color: isActive ? '#fff' : colors.textSecondary }}>
-                {f.label}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
+        {FILTERS.map((f, i) => (
+          <FilterChip
+            key={f.label}
+            label={f.label}
+            active={activeFilter === i}
+            onPress={() => setActiveFilter(i)}
+            colors={colors}
+          />
+        ))}
       </ScrollView>
 
       {rows.length === 0 ? (
