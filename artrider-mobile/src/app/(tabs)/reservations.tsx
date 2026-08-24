@@ -1,0 +1,149 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, FlatList, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { ThemedText } from '@/components/themed-text';
+import { ProtectedScreen } from '@/components/protected-screen';
+import { BookingListCard } from '@/components/bookings/BookingListCard';
+import { OrderGroupCard } from '@/components/bookings/OrderGroupCard';
+import { FilterChip } from '@/components/ui/FilterChip';
+import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getClientBookings, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
+
+const FILTERS: { id: 'all' | BookingStatus[]; label: string }[] = [
+  { id: 'all', label: 'Todas' },
+  { id: ['AWAITING_SIGNATURES'], label: 'Pendientes' },
+  { id: ['PAID', 'ACTIVE'], label: 'Activas' },
+  { id: ['COMPLETED'], label: 'Completadas' },
+  { id: ['CANCELLED'], label: 'Canceladas' },
+];
+
+type ListRow =
+  | { kind: 'single'; key: string; booking: ClientBooking }
+  | { kind: 'group'; key: string; bookings: ClientBooking[] };
+
+function groupBookings(bookings: ClientBooking[]): ListRow[] {
+  const groups = new Map<string, ClientBooking[]>();
+  const singles: ClientBooking[] = [];
+
+  for (const b of bookings) {
+    if (b.order_id) {
+      const arr = groups.get(b.order_id) ?? [];
+      arr.push(b);
+      groups.set(b.order_id, arr);
+    } else {
+      singles.push(b);
+    }
+  }
+
+  const rows: ListRow[] = [];
+  for (const b of singles) {
+    rows.push({ kind: 'single', key: b.booking_id, booking: b });
+  }
+  for (const [orderId, items] of groups) {
+    rows.push({ kind: 'group', key: orderId, bookings: items });
+  }
+
+  // Reordena todo por la fecha de creación más reciente del grupo/reserva.
+  rows.sort((a, b) => {
+    const dateA = a.kind === 'single' ? a.booking.created_at : a.bookings[0].created_at;
+    const dateB = b.kind === 'single' ? b.booking.created_at : b.bookings[0].created_at;
+    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  });
+
+  return rows;
+}
+
+function ReservationsContent() {
+  const scheme = useColorScheme();
+  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+
+  const [bookings, setBookings] = useState<ClientBooking[]>([]);
+  const [activeFilter, setActiveFilter] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    const data = await getClientBookings();
+    setBookings(data);
+  }, []);
+
+  useEffect(() => {
+    load().finally(() => setLoading(false));
+  }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  const filter = FILTERS[activeFilter].id;
+  const filteredBookings = filter === 'all' ? bookings : bookings.filter((b) => filter.includes(b.status));
+  const rows = useMemo(() => groupBookings(filteredBookings), [filteredBookings]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <View style={{ paddingHorizontal: Spacing.four, paddingVertical: Spacing.three }}>
+        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 22, color: colors.text }}>
+          Mis Reservas
+        </ThemedText>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.three }}
+      >
+        {FILTERS.map((f, i) => (
+          <FilterChip
+            key={f.label}
+            label={f.label}
+            active={activeFilter === i}
+            onPress={() => setActiveFilter(i)}
+            colors={colors}
+          />
+        ))}
+      </ScrollView>
+
+      {rows.length === 0 ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.five }}>
+          <ThemedText style={{ color: colors.textSecondary, textAlign: 'center' }}>
+            No tienes reservas {activeFilter !== 0 ? 'en esta categoría' : 'todavía'}.
+          </ThemedText>
+        </View>
+      ) : (
+        <FlatList
+          data={rows}
+          keyExtractor={(row) => row.key}
+          contentContainerStyle={{ padding: Spacing.four, gap: Spacing.three }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          renderItem={({ item }) =>
+            item.kind === 'single' ? (
+              <BookingListCard booking={item.booking} onCancelled={load} />
+            ) : (
+              <OrderGroupCard bookings={item.bookings} onCancelled={load} />
+            )
+          }
+        />
+      )}
+    </SafeAreaView>
+  );
+}
+
+export default function ReservationsScreen() {
+  return (
+    <ProtectedScreen>
+      <ReservationsContent />
+    </ProtectedScreen>
+  );
+}

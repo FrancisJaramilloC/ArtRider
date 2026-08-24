@@ -1,0 +1,47 @@
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ColorSchemeProvider } from '@/contexts/ColorSchemeContext';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+SplashScreen.preventAutoHideAsync();
+function RootNavigator() {
+  const colorScheme = useColorScheme();
+  const { session, loading: authLoading } = useAuth();
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+  const loading = authLoading || !fontsLoaded;
+  if (loading) {
+    return null;
+  }
+  SplashScreen.hideAsync();
+  return (
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <AnimatedSplashOverlay />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(provider)" />
+        <Stack.Screen name="chat/[id]" />
+        <Stack.Screen name="reset-password" />
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
+      </Stack>
+    </ThemeProvider>
+  );
+}
+export default function RootLayout() {
+  return (
+    <ColorSchemeProvider>
+      <AuthProvider>
+        <RootNavigator />
+      </AuthProvider>
+    </ColorSchemeProvider>
+  );
+}
