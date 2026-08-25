@@ -55,7 +55,8 @@ export default async function HomePage() {
   const cityMap = new Map<string, LandingCardItem[]>();
   for (const listing of listings) {
     const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
-    const city = addr?.city?.trim();
+    const rawCity = addr?.city?.trim();
+    const city = rawCity ? rawCity.split(",")[0].trim() : "";
     if (!city) continue;
     if (!cityMap.has(city)) cityMap.set(city, []);
     cityMap.get(city)!.push({
@@ -82,7 +83,8 @@ export default async function HomePage() {
   const cityInfos: CityInfo[] = cities.map(([city, items]) => {
     const withCoords = listings.filter(l => {
       const a = Array.isArray(l.address) ? l.address[0] : l.address;
-      return a?.city?.trim() === city && a.latitude && a.longitude;
+      const c = a?.city ? a.city.split(",")[0].trim() : "";
+      return c === city && a.latitude && a.longitude;
     });
     const avgLat = withCoords.length
       ? withCoords.reduce((s, l) => s + (l.address?.latitude ?? 0), 0) / withCoords.length
@@ -93,7 +95,8 @@ export default async function HomePage() {
     const state = withCoords[0]?.address?.state ?? city;
     const hasRecent = listings.some(l => {
       const a = Array.isArray(l.address) ? l.address[0] : l.address;
-      return a?.city?.trim() === city && new Date(l.created_at).getTime() > sevenDaysAgo;
+      const c = a?.city ? a.city.split(",")[0].trim() : "";
+      return c === city && new Date(l.created_at).getTime() > sevenDaysAgo;
     });
     return { city, state, lat: avgLat, lng: avgLng, count: items.length, hasRecent };
   });

@@ -368,7 +368,7 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
   // Usar Admin Client para saltarse restricciones RLS al leer addresses e insertar proposals
   const supabase = getAdminClient();
   
-  // Buscar equipos en la ciudad solicitada
+  // ── 1. Buscar equipos individuales en la ciudad solicitada ──
   const { data: listings, error } = await supabase
     .from("listings")
     .select("id, title, category, daily_price, provider_id, specs, address:addresses!inner(city), equipment_units(id, internal_status)")
@@ -376,17 +376,48 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
     .is("deleted_at", null)
     .ilike("addresses.city", `%${city}%`);
 
-  if (error || !listings || listings.length === 0) {
-    console.log("[advisoryService] No listings found in city:", city);
+  // ── 2. Buscar paquetes publicados cuyos listings estén en la ciudad ──
+  const { data: packages } = await supabase
+    .from("packages")
+    .select(`
+      id, title, daily_price, provider_id, capacity_people, is_published,
+      items:package_items(
+        quantity,
+        listing:listings(id, title, category, specs, daily_price, provider_id,
+          address:addresses!inner(city),
+          equipment_units(id, internal_status))
+      ),
+      provider:providers(brand_name)
+    `)
+    .eq("is_published", true)
+    .is("deleted_at", null);
+
+  const hasListings = listings && listings.length > 0;
+  const hasPackages = packages && packages.length > 0;
+
+  if (!hasListings && !hasPackages) {
+    console.log("[advisoryService] No listings or packages found in city:", city);
     return;
   }
 
-  // Lógica de Reglas Básica
-  const audios = listings.filter(l => l.category === "sonido" || l.category === "audio");
-  const lightings = listings.filter(l => l.category === "iluminacion" || l.category === "lighting");
+  // ── Filtrar paquetes cuyo primer listing esté en la ciudad ──
+  const cityPackages = (packages || []).filter((pkg: any) => {
+    const pkgItems = pkg.items || [];
+    return pkgItems.some((item: any) => {
+      const listing = Array.isArray(item.listing) ? item.listing[0] : item.listing;
+      if (!listing) return false;
+      const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
+      return addr?.city?.toLowerCase().includes(city.toLowerCase());
+    });
+  });
+
+  // ── Lógica de Reglas para equipos individuales ──
+  const audios = (listings || []).filter((l: any) => l.category === "sonido" || l.category === "audio");
+  const lightings = (listings || []).filter((l: any) => l.category === "iluminacion" || l.category === "lighting");
 
   const targetQuantity = (requirement: string) =>
     requirement === "HIGH" ? 4 : requirement === "MEDIUM" ? 2 : 1;
+
   type AdvisoryListingCandidate = {
     id: string;
     provider_id: string;
@@ -405,12 +436,14 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
   const availableUnits = (listing: AdvisoryListingCandidate) =>
     (listing.equipment_units ?? []).filter((unit) => unit.internal_status === "AVAILABLE").length;
 
+  // ── Configuración de tiers ──
   const tierConfigs = [
     {
       tier: 'economico',
       audioSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => a.daily_price - b.daily_price,
       lightingSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => a.daily_price - b.daily_price,
-      quantityScaling: (baseQuantity: number) => baseQuantity
+      quantityScaling: (baseQuantity: number) => baseQuantity,
+      packageSort: (a: any, b: any) => a.daily_price - b.daily_price, // Paquete más barato primero
     },
     {
       tier: 'recomendado',
@@ -426,20 +459,28 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
         const pB = b.specs?.cantidad_luminarias || 0;
         return pB - pA;
       },
-      quantityScaling: (baseQuantity: number) => baseQuantity
+      quantityScaling: (baseQuantity: number) => baseQuantity,
+      packageSort: (a: any, b: any) => {
+        // Priorizar paquetes que cubran la capacidad de personas
+        const coversA = (a.capacity_people ?? 0) >= guestCount ? 1 : 0;
+        const coversB = (b.capacity_people ?? 0) >= guestCount ? 1 : 0;
+        return coversB - coversA || b.daily_price - a.daily_price;
+      },
     },
     {
       tier: 'premium',
       audioSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => b.daily_price - a.daily_price,
       lightingSort: (a: AdvisoryListingCandidate, b: AdvisoryListingCandidate) => b.daily_price - a.daily_price,
-      quantityScaling: (baseQuantity: number) => Math.max(2, baseQuantity)
+      quantityScaling: (baseQuantity: number) => Math.max(2, baseQuantity),
+      packageSort: (a: any, b: any) => b.daily_price - a.daily_price, // Paquete más caro primero
     }
   ];
 
-  const generatedListingsSets = new Set<string>();
+  const generatedFingerprints = new Set<string>();
 
   for (const config of tierConfigs) {
-    const items: Array<{
+    // ── Opción A: Construir propuesta con equipos individuales ──
+    type ProposalItem = {
       listing_id: string;
       provider_id: string;
       title: string;
@@ -447,8 +488,9 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
       unit_price: number;
       note: string;
       metrics: string[];
-    }> = [];
-    let subtotal = 0;
+    };
+    const individualItems: ProposalItem[] = [];
+    let individualSubtotal = 0;
 
     const addRecommendations = (
       candidates: AdvisoryListingCandidate[],
@@ -462,7 +504,7 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
         if (stock <= 0) continue;
         const quantity = Math.min(stock, remaining);
         const description = describe(listing);
-        items.push({
+        individualItems.push({
           listing_id: listing.id,
           provider_id: listing.provider_id,
           title: listing.title,
@@ -471,12 +513,12 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
           note: description.note,
           metrics: description.metrics,
         });
-        subtotal += listing.daily_price * quantity;
+        individualSubtotal += listing.daily_price * quantity;
         remaining -= quantity;
       }
     };
 
-    // Asignar Audio según requerimiento.
+    // Asignar Audio según requerimiento
     if (audios.length > 0) {
       const sortedAudios = [...audios as AdvisoryListingCandidate[]].sort(config.audioSort);
       const qty = config.quantityScaling(targetQuantity(context.audio_requirement));
@@ -510,27 +552,133 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
       });
     }
 
-    if (items.length === 0) continue;
+    // ── Opción B: Evaluar paquetes como candidatos completos ──
+    let bestPackageItems: ProposalItem[] | null = null;
+    let bestPackageSubtotal = Infinity;
 
-    // Deduplication check
-    const listingIds = items.map(i => i.listing_id).sort().join(',');
-    if (generatedListingsSets.has(listingIds)) {
-      continue; // Evitar duplicar si la configuración genera el mismo set
+    if (cityPackages.length > 0) {
+      const sortedPackages = [...cityPackages].sort(config.packageSort);
+      
+      for (const pkg of sortedPackages) {
+        const pkgItems = (pkg as any).items || [];
+        // Verificar que todos los listings del paquete están publicados y con stock
+        let allAvailable = true;
+        const proposalItems: ProposalItem[] = [];
+        let pkgSubtotal = 0;
+
+        for (const pkgItem of pkgItems) {
+          const listing = Array.isArray(pkgItem.listing) ? pkgItem.listing[0] : pkgItem.listing;
+          if (!listing) { allAvailable = false; break; }
+          
+          const units = (listing.equipment_units || []).filter((u: any) => u.internal_status === "AVAILABLE");
+          if (units.length < pkgItem.quantity) { allAvailable = false; break; }
+
+          const specs = listing.specs || {};
+          proposalItems.push({
+            listing_id: listing.id,
+            provider_id: listing.provider_id || (pkg as any).provider_id,
+            title: listing.title,
+            quantity: pkgItem.quantity,
+            unit_price: listing.daily_price,
+            note: `Parte del paquete "${(pkg as any).title}".`,
+            metrics: [
+              specs.potencia_watts_rms ? `Potencia: ${specs.potencia_watts_rms}W` : "",
+              specs.cobertura_personas ? `Cobertura: ${specs.cobertura_personas} pax` : "",
+              (pkg as any).capacity_people ? `Paquete para ${(pkg as any).capacity_people} personas` : "",
+            ].filter(Boolean),
+          });
+          pkgSubtotal += listing.daily_price * pkgItem.quantity;
+        }
+
+        if (allAvailable && proposalItems.length > 0) {
+          // Usar el precio del paquete si es mejor que la suma de individuales
+          const packagePrice = (pkg as any).daily_price;
+          const effectiveSubtotal = packagePrice > 0 ? packagePrice : pkgSubtotal;
+          
+          if (effectiveSubtotal < bestPackageSubtotal) {
+            bestPackageSubtotal = effectiveSubtotal;
+            bestPackageItems = proposalItems.map(item => ({
+              ...item,
+              // Ajustar precios proporcionalmente si el paquete tiene precio especial
+              unit_price: packagePrice > 0
+                ? Math.round((item.unit_price * item.quantity / pkgSubtotal) * packagePrice / item.quantity)
+                : item.unit_price,
+            }));
+          }
+          break; // Tomar el mejor paquete según el sort del tier
+        }
+      }
     }
-    generatedListingsSets.add(listingIds);
 
-    const commission = Math.round(subtotal * 0.10); // 10% ArtRider fee
-    const total = subtotal + commission;
+    // ── Elegir la mejor opción: individuales vs paquete ──
+    let finalItems: ProposalItem[];
+    let finalSubtotal: number;
+
+    const usePackage = bestPackageItems && bestPackageItems.length > 0;
+    const useIndividual = individualItems.length > 0;
+
+    if (usePackage && useIndividual) {
+      // Comparar: elegir según el tier
+      if (config.tier === 'economico') {
+        // Tier económico: el más barato gana
+        if (bestPackageSubtotal <= individualSubtotal) {
+          finalItems = bestPackageItems!;
+          finalSubtotal = bestPackageSubtotal;
+        } else {
+          finalItems = individualItems;
+          finalSubtotal = individualSubtotal;
+        }
+      } else if (config.tier === 'premium') {
+        // Tier premium: el más caro gana (asumimos más valor)
+        if (bestPackageSubtotal >= individualSubtotal) {
+          finalItems = bestPackageItems!;
+          finalSubtotal = bestPackageSubtotal;
+        } else {
+          finalItems = individualItems;
+          finalSubtotal = individualSubtotal;
+        }
+      } else {
+        // Recomendado: preferir paquete si tiene más items (más completo)
+        if (bestPackageItems!.length >= individualItems.length) {
+          finalItems = bestPackageItems!;
+          finalSubtotal = bestPackageSubtotal;
+        } else {
+          finalItems = individualItems;
+          finalSubtotal = individualSubtotal;
+        }
+      }
+    } else if (usePackage) {
+      finalItems = bestPackageItems!;
+      finalSubtotal = bestPackageSubtotal;
+    } else if (useIndividual) {
+      finalItems = individualItems;
+      finalSubtotal = individualSubtotal;
+    } else {
+      continue; // Sin items, saltar este tier
+    }
+
+    // ── Deduplicación con fingerprint completo (IDs + cantidades + subtotal) ──
+    const fingerprint = finalItems
+      .map(i => `${i.listing_id}:${i.quantity}`)
+      .sort()
+      .join(',') + `|${finalSubtotal}`;
+    if (generatedFingerprints.has(fingerprint)) {
+      continue; // Evitar duplicar si la configuración genera el mismo resultado
+    }
+    generatedFingerprints.add(fingerprint);
+
+    const commission = Math.round(finalSubtotal * 0.10); // 10% ArtRider fee
+    const total = finalSubtotal + commission;
 
     await supabase.from("advisory_proposals").insert({
       request_id: requestId,
-      provider_id: items[0].provider_id, // Tomamos el proveedor del primer ítem
+      provider_id: finalItems[0].provider_id,
       created_by: clientId,
-      items: items,
-      subtotal: subtotal,
+      items: finalItems,
+      subtotal: finalSubtotal,
       commission_amount: commission,
       total: total,
-      status: 'sent', // Listo para que el cliente lo vea
+      status: 'sent',
       tier: config.tier
     });
   }

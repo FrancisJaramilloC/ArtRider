@@ -5,6 +5,7 @@ import Image from "next/image";
 import { CalendarDays, LockKeyhole, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useCartQuote } from "@/hooks/useCartQuote";
+import CartSuggestions from "./CartSuggestions";
 
 const money = (value: number) => `$${(value / 100).toFixed(2)}`;
 
@@ -120,6 +121,7 @@ export default function CartPageClient({ isAuthenticated }: { isAuthenticated: b
               </div>
             </section>
           ))}
+          <CartSuggestions cartListingIds={cart.items.map(i => i.listingId)} startDate={cart.startDate} endDate={cart.endDate} />
         </div>
 
         <aside className="bg-white border border-gray-200 rounded-2xl p-6 lg:sticky lg:top-24">

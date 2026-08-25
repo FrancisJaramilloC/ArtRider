@@ -338,16 +338,20 @@ export default function ExploreClient({
     
     // Filter by city if one was passed in the URL
     if (initialCity) {
-      const targetCity = initialCity.trim().toLowerCase();
-      list = list.filter(l => l.address?.city?.toLowerCase() === targetCity);
+      const targetCity = initialCity.split(',')[0].trim().toLowerCase();
+      list = list.filter(l => {
+        const itemCity = l.address?.city ? l.address.city.split(',')[0].trim().toLowerCase() : "";
+        return itemCity === targetCity;
+      });
     }
 
     const q = query.trim().toLowerCase();
-    if (q) list = list.filter(l =>
-      l.title?.toLowerCase().includes(q) ||
-      l.address?.city?.toLowerCase().includes(q) ||
-      (l.brand ?? "").toLowerCase().includes(q)
-    );
+    if (q) list = list.filter(l => {
+      const c = l.address?.city ? l.address.city.split(',')[0].trim().toLowerCase() : "";
+      return l.title?.toLowerCase().includes(q) ||
+        c.includes(q) ||
+        (l.brand ?? "").toLowerCase().includes(q);
+    });
     // maxPrice is in dollars; daily_price in cents
     if (filters.maxPrice !== null) list = list.filter(l => l.daily_price <= filters.maxPrice! * 100);
     
@@ -382,7 +386,8 @@ export default function ExploreClient({
   // Map center + display city — single source of truth
   const { mapCenter, displayCity } = useMemo(() => {
     const seed = filtered.find(l => l.address?.longitude != null && l.address?.latitude != null);
-    const city = initialCity?.trim() || seed?.address?.city?.trim() || "Ecuador";
+    const rawCity = initialCity?.trim() || seed?.address?.city?.trim() || "Ecuador";
+    const city = rawCity.split(',')[0].trim();
     const center = seed?.address
       ? [seed.address.longitude, seed.address.latitude] as [number, number]
       : undefined;
