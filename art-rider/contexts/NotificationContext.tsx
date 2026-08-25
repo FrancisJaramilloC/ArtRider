@@ -33,11 +33,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Memoize the supabase client instance
-  const supabase = createBrowserClient(
+  const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  ));
 
   const fetchInitialData = useCallback(async () => {
     setIsLoading(true);

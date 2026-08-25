@@ -365,6 +365,8 @@ export async function signProposalRider(formData: FormData) {
 async function autoGenerateProposal(requestId: string, context: AdvisoryContext, city: string, clientId: string, guestCount: number, venueSlug: string) {
   if (!city) return;
 
+  const normalizedCity = city.split(',')[0].trim();
+
   // Usar Admin Client para saltarse restricciones RLS al leer addresses e insertar proposals
   const supabase = getAdminClient();
   
@@ -374,7 +376,7 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
     .select("id, title, category, daily_price, provider_id, specs, address:addresses!inner(city), equipment_units(id, internal_status)")
     .eq("is_published", true)
     .is("deleted_at", null)
-    .ilike("addresses.city", `%${city}%`);
+    .ilike("addresses.city", `%${normalizedCity}%`);
 
   // ── 2. Buscar paquetes publicados cuyos listings estén en la ciudad ──
   const { data: packages } = await supabase
@@ -396,7 +398,7 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
   const hasPackages = packages && packages.length > 0;
 
   if (!hasListings && !hasPackages) {
-    console.log("[advisoryService] No listings or packages found in city:", city);
+    console.log("[advisoryService] No listings or packages found in city:", normalizedCity);
     return;
   }
 
@@ -407,7 +409,7 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
       const listing = Array.isArray(item.listing) ? item.listing[0] : item.listing;
       if (!listing) return false;
       const addr = Array.isArray(listing.address) ? listing.address[0] : listing.address;
-      return addr?.city?.toLowerCase().includes(city.toLowerCase());
+      return addr?.city?.toLowerCase().includes(normalizedCity.toLowerCase());
     });
   });
 
@@ -657,13 +659,14 @@ async function autoGenerateProposal(requestId: string, context: AdvisoryContext,
       continue; // Sin items, saltar este tier
     }
 
-    // ── Deduplicación con fingerprint completo (IDs + cantidades + subtotal) ──
+    // ── Deduplicación con fingerprint (IDs) para no mostrar las mismas cosas con distinta cantidad ──
     const fingerprint = finalItems
-      .map(i => `${i.listing_id}:${i.quantity}`)
+      .map(i => i.listing_id)
       .sort()
-      .join(',') + `|${finalSubtotal}`;
+      .join(',');
+      
     if (generatedFingerprints.has(fingerprint)) {
-      continue; // Evitar duplicar si la configuración genera el mismo resultado
+      continue; // Evitar duplicar si es la misma combinación de equipos
     }
     generatedFingerprints.add(fingerprint);
 
