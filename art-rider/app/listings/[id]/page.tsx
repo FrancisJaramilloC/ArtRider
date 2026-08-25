@@ -26,7 +26,7 @@ import ListingActions from "./ListingActions";
 import {
   Star, MapPin, ShieldCheck, ArrowLeft, ChevronRight,
   Share2, Truck, Headphones, Zap,
-  Volume2, Lightbulb, Video, Sparkles, Megaphone, Package,
+  Volume2, Lightbulb, Video, Sparkles, Megaphone, Package, MessageCircle,
 } from "lucide-react";
 
 export const revalidate = 0;
@@ -287,10 +287,19 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                   </p>
                 </div>
               </div>
-              <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#6a437a] bg-[#875B9A]/[.08] px-3.5 py-2 rounded-full flex-shrink-0">
-                <ShieldCheck size={15} className="text-[#875B9A]" />
-                Verificado
-              </span>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-[13px] font-bold text-gray-500 bg-gray-50 border border-gray-100 px-3.5 py-2 rounded-full">
+                  <ShieldCheck size={15} />
+                  Verificado
+                </span>
+                <Link
+                  href={`/mensajes/new?providerId=${listing.provider_id}&listingId=${listing.id}`}
+                  className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#6a437a] bg-[#875B9A]/[.08] hover:bg-[#875B9A]/[0.12] transition-colors px-3.5 py-2 rounded-full"
+                >
+                  <MessageCircle size={15} />
+                  Contactar
+                </Link>
+              </div>
             </section>
 
             {/* Highlights */}

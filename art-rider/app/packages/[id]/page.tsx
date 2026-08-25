@@ -267,12 +267,21 @@ export default async function PackageDetailPage({
                 <div className="w-12 h-12 rounded-full bg-gray-900 text-white flex items-center justify-center shrink-0 text-base font-bold select-none">
                   {(pkg.provider.brand_name ?? "P").charAt(0).toUpperCase()}
                 </div>
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="font-semibold text-gray-900">{pkg.provider.brand_name}</p>
                   <p className="text-sm text-gray-500">
                     Proveedor desde {memberSince(pkg.provider.created_at)}
                   </p>
                 </div>
+                <Link
+                  href={`/mensajes/new?providerId=${pkg.provider_id}&packageId=${pkg.id}`}
+                  className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#6a437a] bg-[#875B9A]/[.08] hover:bg-[#875B9A]/[0.12] transition-colors px-3.5 py-2 rounded-full shrink-0"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth={2}>
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+                  </svg>
+                  Contactar
+                </Link>
               </div>
             )}
 
