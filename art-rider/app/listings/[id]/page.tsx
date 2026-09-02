@@ -293,7 +293,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
                   Verificado
                 </span>
                 <Link
-                  href={`/mensajes/new?providerId=${listing.provider_id}&listingId=${listing.id}`}
+                  href={`/mensajes?providerId=${listing.provider_id}&listingId=${listing.id}`}
                   className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#6a437a] bg-[#875B9A]/[.08] hover:bg-[#875B9A]/[0.12] transition-colors px-3.5 py-2 rounded-full"
                 >
                   <MessageCircle size={15} />

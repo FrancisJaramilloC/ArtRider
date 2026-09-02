@@ -1,5 +1,5 @@
-import { ChatList } from "@/components/messages/ChatList";
-import { getConversations } from "@/services/messagesService";
+import { MessagesPanel } from "@/components/messages/MessagesPanel";
+import { getConversations, getMessages, getConversationAboutItem } from "@/services/messagesService";
 import { getMyProviderProfile } from "@/services/providerService";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
@@ -22,8 +22,6 @@ export default async function ProviderMensajesPage() {
   }
 
   const allConversations = await getConversations();
-  
-  // Filter only conversations where this user is the provider
   const providerConversations = allConversations.filter(c => c.provider_id === provider.id);
 
   async function fetchProviderConversations() {
@@ -33,20 +31,14 @@ export default async function ProviderMensajesPage() {
   }
 
   return (
-    <div className="max-w-4xl w-full mx-auto p-4 sm:p-8">
-      <div className="flex flex-col gap-2 mb-8">
-        <h1 className="text-3xl font-black tracking-tight text-gray-900">Mensajes</h1>
-        <p className="text-gray-500 font-medium">Gestiona las consultas de tus clientes.</p>
-      </div>
-
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden min-h-[60vh]">
-        <ChatList 
-          initialConversations={providerConversations} 
-          baseUrl="/provider/mensajes"
-          refetchConversations={fetchProviderConversations}
-          currentUserId={user.id}
-        />
-      </div>
+    <div className="h-[calc(100vh-64px)] w-full max-w-6xl mx-auto p-4 sm:p-6">
+      <MessagesPanel
+        initialConversations={providerConversations}
+        refetchConversations={fetchProviderConversations}
+        fetchMessages={getMessages}
+        fetchAboutItem={getConversationAboutItem}
+        currentUserId={user.id}
+      />
     </div>
   );
 }

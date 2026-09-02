@@ -1,41 +1,69 @@
 import Navbar from "@/components/layout/Navbar";
-import LandingFooter from "@/components/features/home/LandingFooter";
-import { ChatList } from "@/components/messages/ChatList";
-import { getConversations } from "@/services/messagesService";
+import { MessagesPanel } from "@/components/messages/MessagesPanel";
+import {
+  getConversations,
+  getMessages,
+  getConversationAboutItem,
+  getOrCreateConversation,
+} from "@/services/messagesService";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "Mensajes | ArtRider",
-};
-
-export default async function MensajesPage() {
+export default async function MensajesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    providerId?: string;
+    listingId?: string;
+    packageId?: string;
+    open?: string;
+  }>;
+}) {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/login");
   }
 
+  const { providerId, listingId, packageId, open } = await searchParams;
+
+  // If we have a providerId, create/find the conversation and pass its ID to auto-open
+  let autoOpenId: string | null = open || null;
+
+  if (providerId && !autoOpenId) {
+    try {
+      const conversationId = await getOrCreateConversation(
+        providerId,
+        listingId || null,
+        packageId || null
+      );
+      autoOpenId = conversationId;
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+    }
+  }
+
   const initialConversations = await getConversations();
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
       <Navbar initialUser={user} />
-      
-      <main className="flex-1 pt-24 pb-12 max-w-3xl mx-auto w-full px-4 sm:px-6">
-        <h1 className="text-2xl font-black tracking-tight text-gray-900 mb-6">Mis Mensajes</h1>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden min-h-[60vh]">
-          <ChatList 
-            initialConversations={initialConversations} 
-            baseUrl="/mensajes"
+
+      <main className="flex-1 pt-16 md:pt-20 pb-0 md:pb-4 md:px-6 lg:px-8 overflow-hidden">
+        <div className="h-full max-w-6xl mx-auto">
+          <MessagesPanel
+            initialConversations={initialConversations}
             refetchConversations={getConversations}
+            fetchMessages={getMessages}
+            fetchAboutItem={getConversationAboutItem}
             currentUserId={user.id}
+            autoOpenConversationId={autoOpenId}
           />
         </div>
       </main>
-
-      <LandingFooter />
     </div>
   );
 }

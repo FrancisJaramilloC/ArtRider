@@ -274,7 +274,7 @@ export default async function PackageDetailPage({
                   </p>
                 </div>
                 <Link
-                  href={`/mensajes/new?providerId=${pkg.provider_id}&packageId=${pkg.id}`}
+                  href={`/mensajes?providerId=${pkg.provider_id}&packageId=${pkg.id}`}
                   className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[#6a437a] bg-[#875B9A]/[.08] hover:bg-[#875B9A]/[0.12] transition-colors px-3.5 py-2 rounded-full shrink-0"
                 >
                   <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth={2}>
