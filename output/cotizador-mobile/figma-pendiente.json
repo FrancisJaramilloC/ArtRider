@@ -1,0 +1,386 @@
+{
+  "fileKey": "Eq8aBIJEL4ZkPn9ncZDumW",
+  "status": "Pantallas pendientes de importar por límite Starter de Figma MCP",
+  "components": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"createdNodeIds\":[\"15:714\",\"15:715\",\"15:716\",\"15:717\",\"15:718\",\"15:719\",\"15:720\",\"15:721\",\"15:722\",\"15:723\",\"15:724\",\"15:725\",\"15:726\",\"15:727\",\"15:728\",\"15:729\",\"15:730\",\"15:731\",\"15:732\",\"15:733\",\"15:734\",\"15:735\"],\"progressId\":\"15:726\",\"stepIds\":[\"15:714\",\"15:716\",\"15:718\",\"15:720\",\"15:722\",\"15:724\"],\"sliderId\":\"15:727\",\"components\":2}"
+      }
+    ],
+    "isError": false
+  },
+  "screens": [
+    {
+      "title": "10 / Cotiza tu evento gratis",
+      "subtitle": "Advisory móvil · Acceso y pasos 1–4",
+      "screens": [
+        {
+          "id": 46,
+          "name": "Acceso al cotizador",
+          "title": "ArtRider",
+          "nav": "client",
+          "blocks": [
+            [
+              "text",
+              "Encuentra equipos para tu evento",
+              "heading"
+            ],
+            [
+              "input",
+              "Buscar",
+              "Equipos o paquetes"
+            ],
+            [
+              "chips",
+              [
+                "Sonido",
+                "Iluminación",
+                "Video"
+              ]
+            ],
+            [
+              "card",
+              "Equipos populares en Loja",
+              "Audio, iluminación y video",
+              "Explorar catálogo"
+            ],
+            [
+              "text",
+              "¿No sabes qué equipos necesitas?",
+              "label"
+            ],
+            [
+              "text",
+              "Cuéntanos sobre tu evento y te ayudamos a elegir.",
+              "body"
+            ],
+            [
+              "button",
+              "Cotiza tu evento gratis"
+            ]
+          ]
+        },
+        {
+          "id": 47,
+          "name": "Tipo de evento",
+          "title": "¿Qué tipo de evento tienes en mente?",
+          "step": 1,
+          "description": "Elige la opción que mejor describa tu celebración.",
+          "choices": [
+            [
+              "Cumpleaños",
+              false
+            ],
+            [
+              "Boda",
+              true
+            ],
+            [
+              "Conferencia",
+              false
+            ],
+            [
+              "Festival",
+              false
+            ],
+            [
+              "Concierto",
+              false
+            ]
+          ],
+          "cta": "Siguiente"
+        },
+        {
+          "id": 48,
+          "name": "Número de asistentes",
+          "title": "¿Cuántas personas asistirán?",
+          "step": 2,
+          "description": "Un aproximado nos ayuda a calcular el tamaño del equipo de sonido.",
+          "blocks": [
+            [
+              "space",
+              48
+            ],
+            [
+              "range",
+              "50 personas",
+              "Íntimo (10)",
+              "Masivo (1000+)"
+            ],
+            [
+              "text",
+              "Selecciona una cantidad aproximada.",
+              "caption"
+            ]
+          ],
+          "cta": "Siguiente"
+        },
+        {
+          "id": 49,
+          "name": "Tipo de lugar",
+          "title": "¿Dónde será tu evento?",
+          "step": 3,
+          "description": "Esto influye en el equipo para exteriores y la acústica del lugar.",
+          "choices": [
+            [
+              "Sala pequeña · Hasta 50 m²",
+              false
+            ],
+            [
+              "Casa · Hasta 150 m²",
+              true
+            ],
+            [
+              "Salón de eventos · Hasta 300 m²",
+              false
+            ],
+            [
+              "Quinta · 500 m²+ (exterior)",
+              false
+            ],
+            [
+              "Parque · Espacio abierto",
+              false
+            ],
+            [
+              "Estadio · Masivo",
+              false
+            ],
+            [
+              "Personalizado · Define tú mismo",
+              false
+            ]
+          ],
+          "cta": "Siguiente"
+        },
+        {
+          "id": 50,
+          "name": "Actividades del evento",
+          "title": "¿Qué habrá en tu evento?",
+          "step": 4,
+          "description": "Selecciona todas las que apliquen.",
+          "multi": true,
+          "choices": [
+            [
+              "Discursos",
+              false
+            ],
+            [
+              "Pantalla LED",
+              true
+            ],
+            [
+              "DJ",
+              false
+            ],
+            [
+              "Show artístico",
+              false
+            ],
+            [
+              "Banda en vivo",
+              false
+            ]
+          ],
+          "cta": "Siguiente"
+        }
+      ]
+    },
+    {
+      "title": "11 / Cotización y recomendaciones",
+      "subtitle": "Advisory móvil · Pasos 5–6 y propuesta de equipos",
+      "screens": [
+        {
+          "id": 51,
+          "name": "Fecha y ciudad",
+          "title": "¿Cuándo y dónde será tu evento?",
+          "step": 5,
+          "description": "Buscaremos proveedores locales con disponibilidad para esta fecha.",
+          "blocks": [
+            [
+              "input",
+              "Fecha del evento",
+              "20/10/2026"
+            ],
+            [
+              "input",
+              "Ciudad (ej. Loja, Quito)",
+              "Loja"
+            ]
+          ],
+          "cta": "Siguiente"
+        },
+        {
+          "id": 52,
+          "name": "Presupuesto",
+          "title": "¿Cuál es tu presupuesto aproximado?",
+          "step": 6,
+          "description": "Buscaremos la mejor opción que se ajuste.",
+          "blocks": [
+            [
+              "space",
+              48
+            ],
+            [
+              "range",
+              "$500",
+              "$50",
+              "$5000+"
+            ],
+            [
+              "text",
+              "El presupuesto nos ayuda a seleccionar los equipos.",
+              "body"
+            ]
+          ],
+          "cta": "Buscar proveedores"
+        },
+        {
+          "id": 53,
+          "name": "Buscando opciones",
+          "title": "Buscando opciones",
+          "blocks": [
+            [
+              "space",
+              64
+            ],
+            [
+              "text",
+              "Tu evento está en marcha",
+              "heading"
+            ],
+            [
+              "text",
+              "Estamos armando el rider técnico para tu evento de 50 personas.",
+              "body"
+            ],
+            [
+              "summary",
+              [
+                [
+                  "Evento",
+                  "Boda"
+                ],
+                [
+                  "Lugar",
+                  "Casa"
+                ],
+                [
+                  "Actividad",
+                  "Pantalla LED"
+                ],
+                [
+                  "Fecha",
+                  "20 octubre"
+                ],
+                [
+                  "Ciudad",
+                  "Loja"
+                ],
+                [
+                  "Presupuesto",
+                  "$500"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "Te avisaremos cuando las propuestas estén listas.",
+              "body"
+            ]
+          ]
+        },
+        {
+          "id": 54,
+          "name": "Planes sugeridos",
+          "title": "Tu propuesta",
+          "blocks": [
+            [
+              "text",
+              "Boda · 50 personas · Loja",
+              "label"
+            ],
+            [
+              "text",
+              "Compara las opciones para tu evento.",
+              "body"
+            ],
+            [
+              "card",
+              "Económico",
+              "Solución esencial",
+              "$350"
+            ],
+            [
+              "card",
+              "Recomendado",
+              "Opción equilibrada para tu evento",
+              "$472.50"
+            ],
+            [
+              "card",
+              "Premium",
+              "Mayor capacidad y cobertura",
+              "$650"
+            ],
+            [
+              "button",
+              "Elegir recomendado"
+            ]
+          ]
+        },
+        {
+          "id": 55,
+          "name": "Equipos recomendados",
+          "title": "Tu equipo recomendado",
+          "blocks": [
+            [
+              "text",
+              "Plan recomendado · Boda · 50 personas",
+              "label"
+            ],
+            [
+              "card",
+              "Sistema de sonido ×2",
+              "Proveedor A · Loja",
+              "$150"
+            ],
+            [
+              "card",
+              "Pantalla LED ×1",
+              "Proveedor B · Loja",
+              "$300"
+            ],
+            [
+              "summary",
+              [
+                [
+                  "Subtotal",
+                  "$450"
+                ],
+                [
+                  "Servicio (5%)",
+                  "$22.50"
+                ],
+                [
+                  "Total",
+                  "$472.50"
+                ]
+              ]
+            ],
+            [
+              "text",
+              "Los equipos se reunirán en una compra con varios proveedores.",
+              "caption"
+            ],
+            [
+              "button",
+              "Aceptar y llevar al carrito"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

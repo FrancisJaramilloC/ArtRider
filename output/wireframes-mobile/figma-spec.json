@@ -1,0 +1,1730 @@
+[
+  {
+    "title": "01 / Acceso y cuenta",
+    "subtitle": "Ingreso y recuperación de acceso",
+    "screens": [
+      {
+        "id": 1,
+        "name": "Iniciar sesión",
+        "title": "Bienvenido a ArtRider",
+        "blocks": [
+          [
+            "space",
+            28
+          ],
+          [
+            "text",
+            "Alquila equipos para tu próximo evento.",
+            "body"
+          ],
+          [
+            "input",
+            "Correo electrónico",
+            "tu@email.com"
+          ],
+          [
+            "input",
+            "Contraseña",
+            "••••••••"
+          ],
+          [
+            "row",
+            "¿Olvidaste tu contraseña?"
+          ],
+          [
+            "button",
+            "Iniciar sesión"
+          ],
+          [
+            "button",
+            "Crear cuenta",
+            "neutral"
+          ]
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Registro",
+        "title": "Crear cuenta",
+        "blocks": [
+          [
+            "input",
+            "Nombre",
+            "María"
+          ],
+          [
+            "input",
+            "Apellido",
+            "López"
+          ],
+          [
+            "input",
+            "Correo electrónico",
+            "tu@email.com"
+          ],
+          [
+            "input",
+            "Contraseña",
+            "••••••••"
+          ],
+          [
+            "input",
+            "Confirmar contraseña",
+            "••••••••"
+          ],
+          [
+            "text",
+            "□ Acepto los términos y condiciones",
+            "caption"
+          ],
+          [
+            "button",
+            "Registrarme"
+          ]
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Recuperar acceso",
+        "title": "Recuperar contraseña",
+        "blocks": [
+          [
+            "space",
+            24
+          ],
+          [
+            "text",
+            "Te enviaremos un enlace para recuperar el acceso a tu cuenta.",
+            "body"
+          ],
+          [
+            "input",
+            "Correo electrónico",
+            "tu@email.com"
+          ],
+          [
+            "button",
+            "Enviar enlace"
+          ]
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Nueva contraseña",
+        "title": "Nueva contraseña",
+        "blocks": [
+          [
+            "space",
+            24
+          ],
+          [
+            "text",
+            "Elige una contraseña para tu cuenta.",
+            "body"
+          ],
+          [
+            "input",
+            "Contraseña",
+            "••••••••"
+          ],
+          [
+            "input",
+            "Confirmar contraseña",
+            "••••••••"
+          ],
+          [
+            "button",
+            "Guardar contraseña"
+          ]
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Acceso requerido",
+        "title": "Tu cuenta en ArtRider",
+        "nav": "client",
+        "blocks": [
+          [
+            "space",
+            48
+          ],
+          [
+            "avatar",
+            "Tu perfil",
+            "Ingresa para continuar"
+          ],
+          [
+            "text",
+            "Inicia sesión para ver tus reservas y mensajes.",
+            "body"
+          ],
+          [
+            "button",
+            "Iniciar sesión"
+          ],
+          [
+            "button",
+            "Crear cuenta",
+            "neutral"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "title": "02 / Explorar y encontrar",
+    "subtitle": "Catálogo de equipos y paquetes",
+    "screens": [
+      {
+        "id": 6,
+        "name": "Inicio",
+        "title": "ArtRider",
+        "nav": "client",
+        "blocks": [
+          [
+            "input",
+            "Buscar",
+            "¿Qué equipo o paquete buscas?"
+          ],
+          [
+            "chips",
+            [
+              "Audio",
+              "Iluminación",
+              "Video"
+            ]
+          ],
+          [
+            "row",
+            "Ubicación: Loja"
+          ],
+          [
+            "text",
+            "Equipos populares",
+            "label"
+          ],
+          [
+            "grid",
+            [
+              "Bocina profesional",
+              "Luces LED"
+            ]
+          ],
+          [
+            "text",
+            "Paquetes destacados",
+            "label"
+          ],
+          [
+            "card",
+            "Audio para eventos",
+            "Loja · Proveedor verificado",
+            "$120 / día"
+          ],
+          [
+            "button",
+            "Ver mapa",
+            "neutral"
+          ]
+        ]
+      },
+      {
+        "id": 7,
+        "name": "Resultados",
+        "title": "Explorar equipos",
+        "nav": "client",
+        "blocks": [
+          [
+            "input",
+            "Buscar",
+            "Audio"
+          ],
+          [
+            "chips",
+            [
+              "Equipos",
+              "Paquetes",
+              "Favoritos"
+            ]
+          ],
+          [
+            "grid",
+            [
+              "Bocina profesional",
+              "Consola de audio"
+            ]
+          ],
+          [
+            "grid",
+            [
+              "Micrófono",
+              "Monitor de escenario"
+            ]
+          ],
+          [
+            "button",
+            "Filtros",
+            "neutral"
+          ]
+        ]
+      },
+      {
+        "id": 8,
+        "name": "Filtros",
+        "title": "Filtros",
+        "blocks": [
+          [
+            "text",
+            "Categoría",
+            "label"
+          ],
+          [
+            "chips",
+            [
+              "Audio",
+              "Iluminación",
+              "Video"
+            ]
+          ],
+          [
+            "input",
+            "Ciudad",
+            "Loja"
+          ],
+          [
+            "input",
+            "Precio mínimo por día",
+            "$0"
+          ],
+          [
+            "input",
+            "Precio máximo por día",
+            "$200"
+          ],
+          [
+            "row",
+            "Solo favoritos   ○"
+          ],
+          [
+            "button",
+            "Aplicar filtros"
+          ]
+        ]
+      },
+      {
+        "id": 9,
+        "name": "Mapa",
+        "title": "Explorar mapa",
+        "nav": "client",
+        "blocks": [
+          [
+            "input",
+            "Ubicación",
+            "Buscar en esta zona"
+          ],
+          [
+            "map"
+          ],
+          [
+            "card",
+            "Bocina profesional",
+            "Loja · Disponible",
+            "$40 / día"
+          ],
+          [
+            "button",
+            "Ver lista",
+            "neutral"
+          ]
+        ]
+      },
+      {
+        "id": 10,
+        "name": "Favoritos",
+        "title": "Favoritos",
+        "nav": "client",
+        "blocks": [
+          [
+            "chips",
+            [
+              "Equipos",
+              "Paquetes",
+              "Favoritos"
+            ]
+          ],
+          [
+            "card",
+            "Bocina profesional  ♡",
+            "Audio · Loja",
+            "$40 / día"
+          ],
+          [
+            "card",
+            "Consola de audio  ♡",
+            "Audio · Loja",
+            "$70 / día"
+          ],
+          [
+            "card",
+            "Luces LED  ♡",
+            "Iluminación · Loja",
+            "$60 / día"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "title": "03 / Equipos y paquetes",
+    "subtitle": "Detalle y selección del alquiler",
+    "screens": [
+      {
+        "id": 11,
+        "name": "Detalle de equipo",
+        "title": "Bocina profesional",
+        "blocks": [
+          [
+            "photo",
+            160
+          ],
+          [
+            "text",
+            "$40 / día",
+            "heading"
+          ],
+          [
+            "text",
+            "4.8 ★ · Loja · Audio",
+            "caption"
+          ],
+          [
+            "avatar",
+            "AudioPro",
+            "Proveedor verificado"
+          ],
+          [
+            "text",
+            "Descripción técnica",
+            "label"
+          ],
+          [
+            "text",
+            "Equipo de sonido con accesorios incluidos. Consulta la disponibilidad para tu evento.",
+            "body"
+          ],
+          [
+            "button",
+            "Agregar al carrito",
+            "neutral"
+          ],
+          [
+            "button",
+            "Reservar"
+          ]
+        ]
+      },
+      {
+        "id": 12,
+        "name": "Galería",
+        "title": "Galería · 1 de 4",
+        "blocks": [
+          [
+            "photo",
+            380
+          ],
+          [
+            "text",
+            "○  ●  ○  ○",
+            "label"
+          ],
+          [
+            "text",
+            "Fotografías del equipo",
+            "caption"
+          ]
+        ]
+      },
+      {
+        "id": 13,
+        "name": "Detalle de paquete",
+        "title": "Paquete de audio",
+        "blocks": [
+          [
+            "photo",
+            140
+          ],
+          [
+            "text",
+            "$120 / día · Loja",
+            "heading"
+          ],
+          [
+            "text",
+            "Equipos incluidos",
+            "label"
+          ],
+          [
+            "row",
+            "Bocinas profesionales ×2"
+          ],
+          [
+            "row",
+            "Consola de audio ×1"
+          ],
+          [
+            "avatar",
+            "AudioPro",
+            "Proveedor verificado"
+          ],
+          [
+            "button",
+            "Agregar al carrito",
+            "neutral"
+          ],
+          [
+            "button",
+            "Reservar"
+          ]
+        ]
+      },
+      {
+        "id": 14,
+        "name": "Fechas de alquiler",
+        "title": "Seleccionar fechas",
+        "blocks": [
+          [
+            "calendar"
+          ],
+          [
+            "input",
+            "Inicio",
+            "20 oct 2026"
+          ],
+          [
+            "input",
+            "Fin",
+            "22 oct 2026"
+          ],
+          [
+            "text",
+            "3 días de alquiler",
+            "label"
+          ],
+          [
+            "button",
+            "Continuar"
+          ]
+        ]
+      },
+      {
+        "id": 15,
+        "name": "Cantidad y resumen",
+        "title": "Reservar equipo",
+        "blocks": [
+          [
+            "card",
+            "Bocina profesional",
+            "20–22 octubre · 3 días",
+            "$40 / día"
+          ],
+          [
+            "text",
+            "Cantidad",
+            "label"
+          ],
+          [
+            "stepper",
+            2
+          ],
+          [
+            "summary",
+            [
+              [
+                "Precio por día",
+                "$40"
+              ],
+              [
+                "Días",
+                "3"
+              ],
+              [
+                "Unidades",
+                "2"
+              ],
+              [
+                "Subtotal",
+                "$240"
+              ]
+            ]
+          ],
+          [
+            "button",
+            "Agregar al carrito",
+            "neutral"
+          ],
+          [
+            "button",
+            "Continuar"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "title": "04 / Carrito y pago",
+    "subtitle": "Una compra con varios proveedores",
+    "screens": [
+      {
+        "id": 16,
+        "name": "Carrito",
+        "title": "Mi carrito",
+        "nav": "client",
+        "blocks": [
+          [
+            "card",
+            "Bocina profesional ×2",
+            "Proveedor A · 20–22 oct",
+            "$240"
+          ],
+          [
+            "card",
+            "Luces LED ×1",
+            "Proveedor B · 20–22 oct",
+            "$60"
+          ],
+          [
+            "summary",
+            [
+              [
+                "Subtotal",
+                "$300"
+              ],
+              [
+                "Servicio (5%)",
+                "$15"
+              ],
+              [
+                "Total",
+                "$315"
+              ]
+            ]
+          ],
+          [
+            "button",
+            "Continuar al pago"
+          ]
+        ]
+      },
+      {
+        "id": 17,
+        "name": "Carrito vacío",
+        "title": "Mi carrito",
+        "nav": "client",
+        "blocks": [
+          [
+            "space",
+            100
+          ],
+          [
+            "text",
+            "Tu carrito está vacío",
+            "heading"
+          ],
+          [
+            "text",
+            "Agrega equipos o paquetes para tu próximo evento.",
+            "body"
+          ],
+          [
+            "button",
+            "Explorar equipos"
+          ]
+        ]
+      },
+      {
+        "id": 18,
+        "name": "Confirmar compra",
+        "title": "Confirmar reservas",
+        "blocks": [
+          [
+            "card",
+            "Bocina profesional ×2",
+            "Proveedor A · 20–22 oct",
+            "$240"
+          ],
+          [
+            "card",
+            "Luces LED ×1",
+            "Proveedor B · 20–22 oct",
+            "$60"
+          ],
+          [
+            "summary",
+            [
+              [
+                "Subtotal",
+                "$300"
+              ],
+              [
+                "Servicio (5%)",
+                "$15"
+              ],
+              [
+                "Total",
+                "$315"
+              ]
+            ]
+          ],
+          [
+            "button",
+            "Continuar"
+          ]
+        ]
+      },
+      {
+        "id": 19,
+        "name": "Pago Kushki",
+        "title": "Pago seguro",
+        "blocks": [
+          [
+            "text",
+            "Kushki",
+            "heading"
+          ],
+          [
+            "text",
+            "Total a pagar: $315",
+            "label"
+          ],
+          [
+            "input",
+            "Número de tarjeta",
+            "0000 0000 0000 0000"
+          ],
+          [
+            "input",
+            "Titular",
+            "Nombre en la tarjeta"
+          ],
+          [
+            "input",
+            "Vencimiento",
+            "MM/AA"
+          ],
+          [
+            "input",
+            "Código de seguridad",
+            "CVV"
+          ],
+          [
+            "input",
+            "Correo electrónico",
+            "tu@email.com"
+          ],
+          [
+            "button",
+            "Pagar $315"
+          ]
+        ]
+      },
+      {
+        "id": 20,
+        "name": "Confirmación",
+        "title": "Compra confirmada",
+        "blocks": [
+          [
+            "space",
+            70
+          ],
+          [
+            "text",
+            "✓",
+            "heading"
+          ],
+          [
+            "text",
+            "¡Reservas confirmadas!",
+            "heading"
+          ],
+          [
+            "text",
+            "Tu compra incluye equipos de 2 proveedores.",
+            "body"
+          ],
+          [
+            "summary",
+            [
+              [
+                "Total pagado",
+                "$315"
+              ]
+            ]
+          ],
+          [
+            "button",
+            "Ver mis reservas"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "title": "05 / Mis reservas",
+    "subtitle": "Seguimiento, cancelación y reseñas",
+    "screens": [
+      {
+        "id": 21,
+        "name": "Mis reservas",
+        "title": "Mis Reservas",
+        "nav": "client",
+        "blocks": [
+          [
+            "chips",
+            [
+              "Todas",
+              "Pendientes",
+              "Activas"
+            ]
+          ],
+          [
+            "card",
+            "Luces LED",
+            "Pendiente · 20–22 octubre",
+            "$60"
+          ],
+          [
+            "card",
+            "Bocina profesional",
+            "Activa · 20–22 octubre",
+            "$240"
+          ],
+          [
+            "card",
+            "Paquete de audio",
+            "Completada · 10 octubre",
+            "$120"
+          ]
+        ]
+      },
+      {
+        "id": 22,
+        "name": "Compra agrupada",
+        "title": "Reserva multiproveedor",
+        "nav": "client",
+        "blocks": [
+          [
+            "text",
+            "Una compra · 2 proveedores",
+            "label"
+          ],
+          [
+            "card",
+            "Proveedor A · Bocina ×2",
+            "Activa · 20–22 octubre",
+            "$240"
+          ],
+          [
+            "card",
+            "Proveedor B · Luces ×1",
+            "Pendiente · 20–22 octubre",
+            "$60"
+          ],
+          [
+            "summary",
+            [
+              [
+                "Servicio",
+                "$15"
+              ],
+              [
+                "Total",
+                "$315"
+              ]
+            ]
+          ],
+          [
+            "button",
+            "Ver conversación",
+            "neutral"
+          ]
+        ]
+      },
+      {
+        "id": 23,
+        "name": "Detalle de reserva",
+        "title": "Detalle de reserva",
+        "nav": "client",
+        "blocks": [
+          [
+            "photo",
+            120
+          ],
+          [
+            "text",
+            "Bocina profesional",
+            "heading"
+          ],
+          [
+            "chips",
+            [
+              "Activa"
+            ]
+          ],
+          [
+            "avatar",
+            "AudioPro",
+            "Proveedor de tu reserva"
+          ],
+          [
+            "summary",
+            [
+              [
+                "Fechas",
+                "20–22 octubre"
+              ],
+              [
+                "Cantidad",
+                "2"
+              ],
+              [
+                "Total",
+                "$240"
+              ]
+            ]
+          ],
+          [
+            "button",
+            "Contactar proveedor"
+          ],
+          [
+            "button",
+            "Cancelar reserva",
+            "neutral"
+          ]
+        ]
+      },
+      {
+        "id": 24,
+        "name": "Cancelación",
+        "title": "Cancelar reserva",
+        "blocks": [
+          [
+            "card",
+            "Bocina profesional",
+            "20–22 octubre · AudioPro",
+            "$240"
+          ],
+          [
+            "space",
+            32
+          ],
+          [
+            "text",
+            "¿Cancelar esta reserva?",
+            "heading"
+          ],
+          [
+            "text",
+            "Revisa las condiciones de cancelación antes de confirmar.",
+            "body"
+          ],
+          [
+            "button",
+            "Volver",
+            "neutral"
+          ],
+          [
+            "button",
+            "Confirmar cancelación"
+          ]
+        ]
+      },
+      {
+        "id": 25,
+        "name": "Calificar",
+        "title": "Califica tu experiencia",
+        "blocks": [
+          [
+            "card",
+            "Paquete de audio",
+            "Reserva completada · AudioPro",
+            "10 octubre"
+          ],
+          [
+            "stars"
+          ],
+          [
+            "input",
+            "Comentario",
+            "Cuéntanos tu experiencia"
+          ],
+          [
+            "button",
+            "Enviar reseña"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "title": "06 / Mensajes y perfil",
+    "subtitle": "Comunicación y cuenta del cliente",
+    "screens": [
+      {
+        "id": 26,
+        "name": "Mensajes",
+        "title": "Mensajes",
+        "nav": "client",
+        "blocks": [
+          [
+            "input",
+            "Buscar",
+            "Buscar conversaciones"
+          ],
+          [
+            "chips",
+            [
+              "Todos",
+              "Archivados"
+            ]
+          ],
+          [
+            "avatar",
+            "AudioPro",
+            "Perfecto, nos vemos mañana. · 10:24"
+          ],
+          [
+            "avatar",
+            "Luces para Eventos",
+            "¿Para qué fecha lo necesitas? · Ayer"
+          ],
+          [
+            "avatar",
+            "Producciones Loja",
+            "Tu equipo está disponible. · Lun"
+          ]
+        ]
+      },
+      {
+        "id": 27,
+        "name": "Conversación",
+        "title": "AudioPro",
+        "blocks": [
+          [
+            "card",
+            "Bocina profesional",
+            "Consulta sobre el equipo",
+            "$40 / día"
+          ],
+          [
+            "chat",
+            "Hola, ¿está disponible para el 20 de octubre?",
+            "left"
+          ],
+          [
+            "chat",
+            "Sí, tenemos unidades disponibles.",
+            "right"
+          ],
+          [
+            "chat",
+            "Necesito dos bocinas durante tres días.",
+            "left"
+          ],
+          [
+            "chat",
+            "Puedes seleccionar las fechas y reservar.",
+            "right"
+          ],
+          [
+            "input",
+            "Mensaje",
+            "Escribe un mensaje..."
+          ],
+          [
+            "button",
+            "Enviar"
+          ]
+        ]
+      },
+      {
+        "id": 28,
+        "name": "Perfil",
+        "title": "Perfil",
+        "nav": "client",
+        "blocks": [
+          [
+            "avatar",
+            "María López",
+            "Ver perfil"
+          ],
+          [
+            "text",
+            "Apariencia",
+            "label"
+          ],
+          [
+            "chips",
+            [
+              "Claro",
+              "Oscuro"
+            ]
+          ],
+          [
+            "text",
+            "Negocio",
+            "label"
+          ],
+          [
+            "row",
+            "Cambiar a modo proveedor"
+          ],
+          [
+            "row",
+            "Ayuda y soporte"
+          ],
+          [
+            "row",
+            "Cerrar sesión"
+          ]
+        ]
+      },
+      {
+        "id": 29,
+        "name": "Editar perfil",
+        "title": "Editar perfil",
+        "blocks": [
+          [
+            "avatar",
+            "María López",
+            "Cambiar foto"
+          ],
+          [
+            "input",
+            "Nombre",
+            "María"
+          ],
+          [
+            "input",
+            "Apellido",
+            "López"
+          ],
+          [
+            "input",
+            "Teléfono",
+            "+593 99 123 4567"
+          ],
+          [
+            "input",
+            "Correo electrónico",
+            "maria@ejemplo.com"
+          ],
+          [
+            "button",
+            "Guardar cambios"
+          ]
+        ]
+      },
+      {
+        "id": 30,
+        "name": "Apariencia y soporte",
+        "title": "Preferencias de cuenta",
+        "nav": "client",
+        "blocks": [
+          [
+            "text",
+            "Apariencia",
+            "label"
+          ],
+          [
+            "chips",
+            [
+              "Claro",
+              "Oscuro"
+            ]
+          ],
+          [
+            "row",
+            "Conviértete en proveedor"
+          ],
+          [
+            "row",
+            "Ayuda y soporte"
+          ],
+          [
+            "text",
+            "soporte@artrider.com",
+            "body"
+          ],
+          [
+            "row",
+            "Cerrar sesión"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "title": "07 / Proveedor: operación",
+    "subtitle": "Solicitudes, calendario y disponibilidad",
+    "screens": [
+      {
+        "id": 31,
+        "name": "Alta de proveedor",
+        "title": "Conviértete en proveedor",
+        "blocks": [
+          [
+            "text",
+            "Comparte tu equipo y genera ingresos.",
+            "body"
+          ],
+          [
+            "input",
+            "Nombre del negocio",
+            "AudioPro Loja"
+          ],
+          [
+            "input",
+            "Descripción",
+            "Cuéntanos sobre tu negocio"
+          ],
+          [
+            "input",
+            "Teléfono",
+            "+593 99 123 4567"
+          ],
+          [
+            "button",
+            "Enviar solicitud"
+          ]
+        ]
+      },
+      {
+        "id": 32,
+        "name": "Panel Hoy",
+        "title": "Hoy",
+        "nav": "provider",
+        "blocks": [
+          [
+            "summary",
+            [
+              [
+                "Pendientes",
+                "3"
+              ],
+              [
+                "Activas",
+                "2"
+              ]
+            ]
+          ],
+          [
+            "chips",
+            [
+              "Pendientes",
+              "En curso"
+            ]
+          ],
+          [
+            "card",
+            "Carlos Méndez · Bocina ×2",
+            "20–22 octubre",
+            "$240"
+          ],
+          [
+            "button",
+            "Aceptar solicitud"
+          ],
+          [
+            "button",
+            "Rechazar",
+            "neutral"
+          ],
+          [
+            "card",
+            "Ana Ruiz · Luces LED",
+            "24 octubre",
+            "$60"
+          ]
+        ]
+      },
+      {
+        "id": 33,
+        "name": "Calendario",
+        "title": "Calendario",
+        "nav": "provider",
+        "blocks": [
+          [
+            "calendar"
+          ],
+          [
+            "text",
+            "Reservas del día",
+            "label"
+          ],
+          [
+            "card",
+            "Carlos Méndez",
+            "Bocina ×2 · Activa",
+            "20–22 octubre"
+          ],
+          [
+            "button",
+            "Bloquear fechas",
+            "neutral"
+          ]
+        ]
+      },
+      {
+        "id": 34,
+        "name": "Bloquear disponibilidad",
+        "title": "Bloquear fechas",
+        "blocks": [
+          [
+            "input",
+            "Buscar equipo",
+            "Bocina"
+          ],
+          [
+            "row",
+            "☑ Bocina profesional"
+          ],
+          [
+            "row",
+            "□ Consola de audio"
+          ],
+          [
+            "input",
+            "Inicio",
+            "20 oct 2026"
+          ],
+          [
+            "input",
+            "Fin",
+            "22 oct 2026"
+          ],
+          [
+            "button",
+            "Guardar bloqueo"
+          ]
+        ]
+      },
+      {
+        "id": 35,
+        "name": "Mensajes proveedor",
+        "title": "Mensajes",
+        "nav": "provider",
+        "blocks": [
+          [
+            "input",
+            "Buscar",
+            "Buscar conversaciones"
+          ],
+          [
+            "chips",
+            [
+              "Todos",
+              "Archivados"
+            ]
+          ],
+          [
+            "avatar",
+            "Carlos Méndez",
+            "Necesito dos bocinas. · 10:24"
+          ],
+          [
+            "avatar",
+            "Ana Ruiz",
+            "Gracias por confirmar. · Ayer"
+          ],
+          [
+            "avatar",
+            "Lucía Torres",
+            "¿Incluye accesorios? · Lun"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "title": "08 / Proveedor: catálogo",
+    "subtitle": "Publicación de equipos y paquetes",
+    "screens": [
+      {
+        "id": 36,
+        "name": "Mis anuncios",
+        "title": "Mis anuncios",
+        "nav": "provider",
+        "blocks": [
+          [
+            "button",
+            "+ Crear anuncio"
+          ],
+          [
+            "chips",
+            [
+              "Equipos",
+              "Paquetes"
+            ]
+          ],
+          [
+            "card",
+            "Bocina profesional",
+            "Publicado · 3 unidades",
+            "$40 / día"
+          ],
+          [
+            "card",
+            "Consola de audio",
+            "Publicado · 1 unidad",
+            "$70 / día"
+          ],
+          [
+            "card",
+            "Micrófono inalámbrico",
+            "Borrador · 2 unidades",
+            "$25 / día"
+          ]
+        ]
+      },
+      {
+        "id": 37,
+        "name": "Nuevo anuncio",
+        "title": "¿Qué deseas publicar?",
+        "blocks": [
+          [
+            "space",
+            40
+          ],
+          [
+            "card",
+            "Equipo individual",
+            "Un equipo con precio y disponibilidad.",
+            "Audio · Video · Iluminación"
+          ],
+          [
+            "card",
+            "Paquete de equipos",
+            "Agrupa varios equipos en una oferta.",
+            "Un solo precio"
+          ],
+          [
+            "button",
+            "Continuar"
+          ]
+        ]
+      },
+      {
+        "id": 38,
+        "name": "Crear equipo",
+        "title": "Crear equipo · 1/2",
+        "blocks": [
+          [
+            "chips",
+            [
+              "Audio",
+              "Iluminación",
+              "Video"
+            ]
+          ],
+          [
+            "input",
+            "Título del anuncio",
+            "Bocina profesional"
+          ],
+          [
+            "input",
+            "Marca",
+            "JBL"
+          ],
+          [
+            "input",
+            "Modelo",
+            "PRX815"
+          ],
+          [
+            "input",
+            "Descripción",
+            "Estado, accesorios y características"
+          ],
+          [
+            "photo",
+            90
+          ],
+          [
+            "button",
+            "Siguiente"
+          ]
+        ]
+      },
+      {
+        "id": 39,
+        "name": "Precio y unidades",
+        "title": "Crear equipo · 2/2",
+        "blocks": [
+          [
+            "input",
+            "Precio por día",
+            "$40"
+          ],
+          [
+            "input",
+            "Dirección",
+            "Calle principal 123"
+          ],
+          [
+            "input",
+            "Ciudad",
+            "Loja"
+          ],
+          [
+            "input",
+            "Provincia",
+            "Loja"
+          ],
+          [
+            "input",
+            "Código postal",
+            "110150"
+          ],
+          [
+            "stepper",
+            3
+          ],
+          [
+            "button",
+            "Publicar equipo"
+          ]
+        ]
+      },
+      {
+        "id": 40,
+        "name": "Crear paquete",
+        "title": "Crear paquete",
+        "blocks": [
+          [
+            "photo",
+            90
+          ],
+          [
+            "input",
+            "Título del paquete",
+            "Audio para eventos"
+          ],
+          [
+            "row",
+            "Bocina profesional ×2"
+          ],
+          [
+            "row",
+            "Consola de audio ×1"
+          ],
+          [
+            "input",
+            "Precio del paquete",
+            "$120 / día"
+          ],
+          [
+            "button",
+            "Publicar paquete"
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "title": "09 / Proveedor: gestión",
+    "subtitle": "Edición, negocio y reputación",
+    "screens": [
+      {
+        "id": 41,
+        "name": "Editar equipo",
+        "title": "Editar equipo",
+        "blocks": [
+          [
+            "photo",
+            90
+          ],
+          [
+            "input",
+            "Título",
+            "Bocina profesional"
+          ],
+          [
+            "input",
+            "Descripción",
+            "Equipo con accesorios"
+          ],
+          [
+            "input",
+            "Precio por día",
+            "$40"
+          ],
+          [
+            "stepper",
+            3
+          ],
+          [
+            "row",
+            "Publicado    ●"
+          ],
+          [
+            "button",
+            "Guardar cambios"
+          ]
+        ]
+      },
+      {
+        "id": 42,
+        "name": "Editar paquete",
+        "title": "Editar paquete",
+        "blocks": [
+          [
+            "photo",
+            90
+          ],
+          [
+            "input",
+            "Título del paquete",
+            "Audio para eventos"
+          ],
+          [
+            "row",
+            "Bocina profesional ×2"
+          ],
+          [
+            "row",
+            "Consola de audio ×1"
+          ],
+          [
+            "input",
+            "Precio del paquete",
+            "$120 / día"
+          ],
+          [
+            "button",
+            "Guardar cambios"
+          ]
+        ]
+      },
+      {
+        "id": 43,
+        "name": "Menú proveedor",
+        "title": "Menú",
+        "nav": "provider",
+        "blocks": [
+          [
+            "avatar",
+            "AudioPro",
+            "Ver perfil"
+          ],
+          [
+            "text",
+            "Mi negocio",
+            "label"
+          ],
+          [
+            "row",
+            "Reseñas"
+          ],
+          [
+            "row",
+            "Configuración del negocio"
+          ],
+          [
+            "text",
+            "Cuenta",
+            "label"
+          ],
+          [
+            "row",
+            "Cambiar a modo cliente"
+          ],
+          [
+            "row",
+            "Ayuda y soporte"
+          ],
+          [
+            "row",
+            "Cerrar sesión"
+          ]
+        ]
+      },
+      {
+        "id": 44,
+        "name": "Configuración del negocio",
+        "title": "Configuración",
+        "blocks": [
+          [
+            "avatar",
+            "AudioPro",
+            "Cambiar logo"
+          ],
+          [
+            "input",
+            "Nombre del negocio",
+            "AudioPro Loja"
+          ],
+          [
+            "input",
+            "Descripción",
+            "Equipos de sonido para eventos"
+          ],
+          [
+            "input",
+            "Teléfono de contacto",
+            "+593 99 123 4567"
+          ],
+          [
+            "input",
+            "Ciudad",
+            "Loja"
+          ],
+          [
+            "button",
+            "Guardar cambios"
+          ]
+        ]
+      },
+      {
+        "id": 45,
+        "name": "Reseñas",
+        "title": "Reseñas",
+        "nav": "provider",
+        "blocks": [
+          [
+            "text",
+            "4.8 / 5",
+            "heading"
+          ],
+          [
+            "stars"
+          ],
+          [
+            "text",
+            "32 reseñas de clientes",
+            "caption"
+          ],
+          [
+            "card",
+            "María López · ★★★★★",
+            "Excelente atención y equipos.",
+            "12 octubre"
+          ],
+          [
+            "card",
+            "Carlos Ruiz · ★★★★☆",
+            "Todo listo a tiempo.",
+            "10 octubre"
+          ],
+          [
+            "card",
+            "Ana Torres · ★★★★★",
+            "Muy buena experiencia.",
+            "8 octubre"
+          ]
+        ]
+      }
+    ]
+  }
+]

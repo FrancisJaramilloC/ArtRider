@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844"><title>Tipo de evento</title><rect id="s47-1" x="0" y="0" width="390" height="844" rx="24" fill="#fff" stroke="#aaa"/>
+<text id="s47-2" x="20" y="29" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#171717"><tspan x="20" dy="0">9:41</tspan></text>
+<text id="s47-3" x="326" y="29" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="500" fill="#171717"><tspan x="326" dy="0">● ▰</tspan></text>
+<text id="s47-4" x="20" y="66" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="500" fill="#171717"><tspan x="20" dy="0">‹ Atrás</tspan></text>
+<text id="s47-5" x="266" y="64" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="400" fill="#666"><tspan x="266" dy="0">Paso 1 de 6</tspan></text>
+<rect id="s47-6" x="20" y="85" width="350" height="4" rx="2" fill="#ddd" stroke="none"/>
+<rect id="s47-7" x="20" y="85" width="58.333333333333336" height="4" rx="2" fill="#222" stroke="none"/>
+<text id="s47-8" x="20" y="133" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700" fill="#171717"><tspan x="20" dy="0">¿Qué tipo de evento tienes</tspan><tspan x="20" dy="33.599999999999994">en mente?</tspan></text>
+<text id="s47-9" x="20" y="206.2" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#666"><tspan x="20" dy="0">Elige la opción que mejor describa tu</tspan><tspan x="20" dy="19.599999999999998">celebración.</tspan></text>
+<rect id="s47-10" x="20" y="251.39999999999998" width="350" height="48" rx="8" fill="#fff" stroke="#ccc"/>
+<text id="s47-11" x="32" y="278.4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#171717"><tspan x="32" dy="0">○ Cumpleaños</tspan></text>
+<rect id="s47-12" x="20" y="307.4" width="350" height="48" rx="8" fill="#f4f4f4" stroke="#222"/>
+<text id="s47-13" x="32" y="334.4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="600" fill="#171717"><tspan x="32" dy="0">◉ Boda</tspan></text>
+<rect id="s47-14" x="20" y="363.4" width="350" height="48" rx="8" fill="#fff" stroke="#ccc"/>
+<text id="s47-15" x="32" y="390.4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#171717"><tspan x="32" dy="0">○ Conferencia</tspan></text>
+<rect id="s47-16" x="20" y="419.4" width="350" height="48" rx="8" fill="#fff" stroke="#ccc"/>
+<text id="s47-17" x="32" y="446.4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#171717"><tspan x="32" dy="0">○ Festival</tspan></text>
+<rect id="s47-18" x="20" y="475.4" width="350" height="48" rx="8" fill="#fff" stroke="#ccc"/>
+<text id="s47-19" x="32" y="502.4" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="400" fill="#171717"><tspan x="32" dy="0">○ Concierto</tspan></text>
+<rect id="s47-20" x="20" y="744" width="350" height="48" rx="8" fill="#222" stroke="#222"/>
+<text id="s47-21" x="195" y="771" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="500" fill="#fff" text-anchor="middle"><tspan x="195" dy="0">Siguiente</tspan></text>
+<rect id="s47-22" x="145" y="824" width="100" height="4" rx="2" fill="#222" stroke="none"/></svg>

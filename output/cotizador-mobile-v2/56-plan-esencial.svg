@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844"><title>Plan Esencial</title><rect id="s56-1" x="0" y="0" width="390" height="844" rx="24" fill="#fff" stroke="#aaa"/>
+<text id="s56-2" x="20" y="29" font-family="Inter,Arial,sans-serif" font-size="12" font-weight="600" fill="#171717"><tspan x="20" dy="0">9:41</tspan></text>
+<text id="s56-3" x="326" y="29" font-family="Inter,Arial,sans-serif" font-size="12" font-weight="600" fill="#171717"><tspan x="326" dy="0">● ▰</tspan></text>
+<text id="s56-4" x="20" y="66" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="600" fill="#171717"><tspan x="20" dy="0">‹ Atrás</tspan></text>
+<text id="s56-5" x="20" y="116" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="600" fill="#171717"><tspan x="20" dy="0">Esencial</tspan></text>
+<text id="s56-6" x="20" y="149.6" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="400" fill="#666"><tspan x="20" dy="0">Sonido decente, precio accesible</tspan></text>
+<text id="s56-7" x="20" y="207.2" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="600" fill="#171717"><tspan x="20" dy="0">$27.50 / día</tspan></text>
+<text id="s56-8" x="20" y="252.79999999999998" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="600" fill="#171717"><tspan x="20" dy="0">Incluye</tspan></text>
+<text id="s56-9" x="20" y="282.79999999999995" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="400" fill="#171717"><tspan x="20" dy="0">✓ 1× SUBWOOFER</tspan></text>
+<text id="s56-10" x="20" y="314.4" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="400" fill="#171717"><tspan x="20" dy="0">✓ 1× Luces de Tacho LED</tspan></text>
+<path id="s56-11" d="M20 342H370" stroke="#ddd"/>
+<text id="s56-12" x="20" y="373" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="600" fill="#171717"><tspan x="20" dy="0">Datos de equipos y cobertura</tspan></text>
+<rect id="s56-13" x="20" y="390" width="350" height="28" rx="6" fill="#f3f3f3" stroke="none"/>
+<text id="s56-14" x="30" y="408" font-family="Inter,Arial,sans-serif" font-size="12" font-weight="400" fill="#444"><tspan x="30" dy="0">Cobertura estimada: hasta 70 pax</tspan></text>
+<rect id="s56-15" x="20" y="426" width="350" height="28" rx="6" fill="#f3f3f3" stroke="none"/>
+<text id="s56-16" x="30" y="444" font-family="Inter,Arial,sans-serif" font-size="12" font-weight="400" fill="#444"><tspan x="30" dy="0">Nivel: LOW · Ambiente: nivel LOW</tspan></text>
+<rect id="s56-17" x="20" y="462" width="350" height="28" rx="6" fill="#f3f3f3" stroke="none"/>
+<text id="s56-18" x="30" y="480" font-family="Inter,Arial,sans-serif" font-size="12" font-weight="400" fill="#444"><tspan x="30" dy="0">Tipo: Ambiental</tspan></text>
+<path id="s56-19" d="M20 514H370" stroke="#ddd"/>
+<text id="s56-20" x="20" y="545" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="400" fill="#666"><tspan x="20" dy="0">Subtotal equipos</tspan></text>
+<text id="s56-21" x="288" y="545" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="600" fill="#171717"><tspan x="288" dy="0">$25.00</tspan></text>
+<text id="s56-22" x="20" y="572" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="400" fill="#666"><tspan x="20" dy="0">Servicio ArtRider</tspan></text>
+<text id="s56-23" x="288" y="572" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="600" fill="#171717"><tspan x="288" dy="0">$2.50</tspan></text>
+<text id="s56-24" x="20" y="599" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="400" fill="#666"><tspan x="20" dy="0">Total por día</tspan></text>
+<text id="s56-25" x="288" y="599" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="600" fill="#171717"><tspan x="288" dy="0">$27.50</tspan></text>
+<rect id="s56-26" x="20" y="748" width="350" height="48" rx="8" fill="#222" stroke="#222"/>
+<text id="s56-27" x="195" y="778" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="500" fill="#fff">Elegir plan</text>
+<rect id="s56-28" x="145" y="824" width="100" height="4" rx="2" fill="#222" stroke="none"/></svg>
