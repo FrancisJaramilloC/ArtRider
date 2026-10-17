@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL } from './supabase';
 
 export type CreateBookingResult = {
   bookingId?: string;
@@ -103,7 +103,7 @@ export async function cancelBooking(bookingId: string): Promise<{ error?: string
   if (error) return { error: 'No se pudo cancelar la reserva' };
   return {};
 }
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+
 
 /**
  * Llama a la Edge Function que cobra en Kushki (con la key privada, ahí

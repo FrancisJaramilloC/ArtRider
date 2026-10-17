@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL } from './supabase';
 
 export type CartItem = {
     id: string;
@@ -126,8 +126,6 @@ export async function createCartOrder(kushkiTicket?: string): Promise<CreateCart
 export async function chargeAndCreateCartOrder(kushkiToken: string): Promise<{ orderId?: string; error?: string }> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { error: 'No autenticado' };
-
-    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
     const res = await fetch(`${SUPABASE_URL}/functions/v1/kushki-charge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },

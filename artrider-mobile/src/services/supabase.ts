@@ -3,8 +3,16 @@ import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 import { AppState, Platform } from 'react-native';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+const RAW_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const RAW_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+export const SUPABASE_URL = (RAW_URL && RAW_URL.startsWith('http'))
+    ? RAW_URL
+    : 'https://rgjsjesjvxcybprtmhrc.supabase.co';
+
+const SUPABASE_ANON_KEY = (RAW_KEY && !RAW_KEY.includes('GG0r'))
+    ? RAW_KEY
+    : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJnanNqZXNqdnhjeWJwcnRtaHJjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMDgxODAsImV4cCI6MjA5MDY4NDE4MH0.mEKPWb9bGG8r7DYnQONqEGKB-nl8MUY9Phkc1wCTaFo';
 
 // SecureStore limita cada valor a ~2048 bytes en Android. La sesión de
 // Supabase (JWT + refresh token) puede superarlo, así que la partimos

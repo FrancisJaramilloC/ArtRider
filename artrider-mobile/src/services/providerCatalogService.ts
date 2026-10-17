@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL } from './supabase';
 import { getMyProviderProfile } from './providerService';
 
 export type CreateListingParams = {
@@ -80,7 +80,6 @@ export async function createListing(params: CreateListingParams): Promise<Create
         for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
         const imageBase64 = btoa(binary);
 
-        const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
         const uploadRes = await fetch(`${SUPABASE_URL}/functions/v1/upload-listing-cover`, {
             method: 'POST',
             headers: {
@@ -286,7 +285,6 @@ export async function updateListing(params: UpdateListingParams): Promise<{ erro
             for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
             const imageBase64 = btoa(binary);
 
-            const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
             const uploadRes = await fetch(`${SUPABASE_URL}/functions/v1/upload-listing-cover`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -367,7 +365,6 @@ export async function createPackage(params: CreatePackageParams): Promise<{ pack
         for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
         const imageBase64 = btoa(binary);
 
-        const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
         const uploadRes = await fetch(`${SUPABASE_URL}/functions/v1/upload-listing-cover`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
@@ -520,7 +517,6 @@ export async function updatePackage(params: UpdatePackageParams): Promise<{ erro
             for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
             const imageBase64 = btoa(binary);
 
-            const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
             const uploadRes = await fetch(`${SUPABASE_URL}/functions/v1/upload-listing-cover`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },

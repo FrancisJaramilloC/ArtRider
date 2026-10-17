@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 
-const KUSHKI_MERCHANT_ID = process.env.EXPO_PUBLIC_KUSHKI_MERCHANT_ID!;
+const KUSHKI_MERCHANT_ID = process.env.EXPO_PUBLIC_KUSHKI_MERCHANT_ID || '7b1bae59194f4e74ae0aec0d506df181';
 
 // Página mínima que carga el SDK real de Kushki.js y escucha mensajes
 // de React Native para pedir el token — así usamos el mismo código que

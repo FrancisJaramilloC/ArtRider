@@ -1,6 +1,8 @@
-import { NativeTabs, Icon, Label } from 'expo-router/unstable-native-tabs';
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
+
+const { Label, Icon } = NativeTabs.Trigger;
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme ?? 'light'];

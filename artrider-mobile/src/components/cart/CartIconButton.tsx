@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Pressable, View, useColorScheme } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';

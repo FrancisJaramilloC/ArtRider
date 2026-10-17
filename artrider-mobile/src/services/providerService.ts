@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL } from './supabase';
 
 export type ProviderProfile = {
     id: string;
@@ -158,8 +158,6 @@ export async function respondToBooking(
 ): Promise<{ error?: string; refunded?: boolean }> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { error: 'No autenticado' };
-
-    const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
     const res = await fetch(`${SUPABASE_URL}/functions/v1/provider-respond-booking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
