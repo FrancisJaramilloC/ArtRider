@@ -10,7 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CATEGORY_LABELS } from '@/constants/categories';
-import { FilterChip } from '@/components/ui/FilterChip';
+import { Chip } from '@/components/ui/Chip';
 import {
     getMyListings, toggleListingPublished, deleteListing, type MyListing,
     getMyPackages, togglePackagePublished, deletePackage, type MyPackage,
@@ -160,12 +160,11 @@ export function MyListingsScreen() {
 
             <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.three }}>
                 {(['equipos', 'paquetes'] as const).map((t) => (
-                    <FilterChip
+                    <Chip
                         key={t}
                         label={t === 'equipos' ? `Equipos (${listings.length})` : `Paquetes (${packages.length})`}
                         active={tab === t}
                         onPress={() => setTab(t)}
-                        colors={colors}
                     />
                 ))}
             </View>

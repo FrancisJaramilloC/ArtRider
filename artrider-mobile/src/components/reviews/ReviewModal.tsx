@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { View, Modal, TextInput, Pressable, ActivityIndicator } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { View, TextInput, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { Sheet } from '@/components/ui/Sheet';
+import { Text } from '@/components/ui/Text';
+import { Fonts, MinTouch, Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export function ReviewModal({
     visible,
@@ -25,8 +27,7 @@ export function ReviewModal({
     allowSkip?: boolean;
     onSkip?: () => void;
 }) {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -41,80 +42,60 @@ export function ReviewModal({
     }
 
     return (
-        <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: Spacing.five }}>
-                <View style={{ backgroundColor: colors.background, borderRadius: Radius.lg, padding: Spacing.four, width: '100%' }}>
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 17, color: colors.text, marginBottom: 4 }}>
-                        {title}
-                    </ThemedText>
-                    {subtitle && (
-                        <ThemedText style={{ fontSize: 13, color: colors.textSecondary, marginBottom: Spacing.four }}>
-                            {subtitle}
-                        </ThemedText>
-                    )}
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: Spacing.two, marginBottom: Spacing.four }}>
-                        {[1, 2, 3, 4, 5].map((n) => (
-                            <Pressable key={n} onPress={() => setRating(n)} hitSlop={6}>
-                                <Ionicons
-                                    name={n <= rating ? 'star' : 'star-outline'}
-                                    size={32}
-                                    color={n <= rating ? colors.primary : colors.textSecondary}
-                                />
-                            </Pressable>
-                        ))}
-                    </View>
-
-                    <TextInput
-                        value={comment}
-                        onChangeText={setComment}
-                        placeholder="Comparte tu experiencia (opcional)"
-                        placeholderTextColor={colors.textSecondary}
-                        multiline
-                        numberOfLines={3}
-                        style={{
-                            backgroundColor: colors.backgroundElement,
-                            borderRadius: Radius.md,
-                            padding: Spacing.three,
-                            fontSize: 14,
-                            color: colors.text,
-                            minHeight: 70,
-                            textAlignVertical: 'top',
-                            marginBottom: Spacing.four,
-                        }}
-                    />
-
-                    <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-                        <Pressable
-                            onPress={onCancel}
-                            style={{ flex: 1, paddingVertical: Spacing.three, borderRadius: Radius.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}
-                        >
-                            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13.5, color: colors.text }}>Cancelar</ThemedText>
-                        </Pressable>
-                        {allowSkip && onSkip && (
-                            <Pressable
-                                onPress={onSkip}
-                                style={{ flex: 1, paddingVertical: Spacing.three, borderRadius: Radius.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}
-                            >
-                                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13.5, color: colors.text }}>Omitir</ThemedText>
-                            </Pressable>
-                        )}
-                        <Pressable
-                            onPress={handleSubmit}
-                            disabled={rating === 0 || submitting}
-                            style={{ flex: 1, paddingVertical: Spacing.three, borderRadius: Radius.md, backgroundColor: rating === 0 ? colors.backgroundSelected : colors.primary, alignItems: 'center' }}
-                        >
-                            {submitting ? (
-                                <ActivityIndicator size="small" color="#fff" />
-                            ) : (
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13.5, color: rating === 0 ? colors.textSecondary : '#fff' }}>
-                                    {submitLabel}
-                                </ThemedText>
-                            )}
-                        </Pressable>
-                    </View>
-                </View>
+        <Sheet visible={visible} onClose={onCancel}>
+            <View style={{ gap: Spacing.one, paddingBottom: Spacing.three }}>
+                <Text variant="headline" accessibilityRole="header">
+                    {title}
+                </Text>
+                {subtitle ? (
+                    <Text variant="body" color="textSecondary">
+                        {subtitle}
+                    </Text>
+                ) : null}
             </View>
-        </Modal>
+
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: Spacing.one, paddingBottom: Spacing.three }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                    <Pressable
+                        key={n}
+                        onPress={() => setRating(n)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${n} ${n === 1 ? 'estrella' : 'estrellas'}`}
+                        accessibilityState={{ selected: n <= rating }}
+                        style={{ width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        <Ionicons name={n <= rating ? 'star' : 'star-outline'} size={32} color={n <= rating ? colors.primary : colors.textMuted} />
+                    </Pressable>
+                ))}
+            </View>
+
+            <TextInput
+                value={comment}
+                onChangeText={setComment}
+                placeholder="Comparte tu experiencia (opcional)"
+                placeholderTextColor={colors.textMuted}
+                accessibilityLabel="Comentario de la reseña"
+                multiline
+                numberOfLines={3}
+                maxFontSizeMultiplier={1.3}
+                style={{
+                    backgroundColor: colors.backgroundElement,
+                    borderRadius: Radius.xl,
+                    padding: Spacing.three,
+                    fontSize: 15,
+                    fontFamily: Fonts.sans,
+                    color: colors.text,
+                    minHeight: 88,
+                    textAlignVertical: 'top',
+                    marginBottom: Spacing.three,
+                }}
+            />
+
+            <View style={{ gap: Spacing.two }}>
+                <Button label={submitLabel} onPress={handleSubmit} loading={submitting} disabled={rating === 0} />
+                {allowSkip && onSkip ? <Button label="Omitir" onPress={onSkip} variant="secondary" /> : null}
+                <Button label="Cancelar" onPress={onCancel} variant="ghost" />
+            </View>
+        </Sheet>
     );
 }

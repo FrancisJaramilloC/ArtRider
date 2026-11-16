@@ -1,30 +1,33 @@
 import { useState } from 'react';
-import { View, Image, Pressable, Modal, Linking } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Pressable, Linking } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius, StatusColors, BOOKING_STATUS_LABELS, toStatusKey } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Badge, type BadgeTone } from '@/components/ui/Badge';
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
+import { Text } from '@/components/ui/Text';
+import { BOOKING_STATUS_LABELS, MinTouch, Radius, Spacing, toStatusKey, type BookingStatusKey } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { cancelBooking, submitReview, type ClientBooking } from '@/services/bookingsService';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
+import { formatShortDate } from '@/utils/format';
 
-function fmtDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-    return `${d.getUTCDate()} ${months[d.getUTCMonth()]}`;
-}
+const STATUS_TONE: Record<BookingStatusKey, BadgeTone> = {
+    pending: 'warning',
+    confirmed: 'success',
+    cancelled: 'danger',
+    completed: 'neutral',
+};
 
 function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCancelled: () => void }) {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
     const [showConfirm, setShowConfirm] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [showReview, setShowReview] = useState(false);
 
-    const statusColors = StatusColors[scheme === 'dark' ? 'dark' : 'light'][toStatusKey(booking.status)];
     const statusLabel = BOOKING_STATUS_LABELS[booking.status] ?? booking.status;
     const canCancel = booking.status === 'AWAITING_SIGNATURES';
+    const canReview = booking.status === 'COMPLETED' && !booking.already_reviewed;
 
     async function handleConfirmCancel() {
         setCancelling(true);
@@ -41,89 +44,88 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
     }
 
     return (
-        <View style={{ flexDirection: 'row', gap: Spacing.two, alignItems: 'center' }}>
-            <View style={{ width: 40, height: 40, borderRadius: Radius.md, overflow: 'hidden' }}>
-                {booking.listing_cover_image_url ? (
-                    <Image source={{ uri: booking.listing_cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                ) : (
-                    <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
-                )}
+        <View style={{ gap: Spacing.two }}>
+            <View style={{ flexDirection: 'row', gap: Spacing.three, alignItems: 'center' }}>
+                <View style={{ width: 48, height: 48, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
+                    {booking.listing_cover_image_url ? (
+                        <Image
+                            source={{ uri: booking.listing_cover_image_url }}
+                            style={{ width: 48, height: 48 }}
+                            contentFit="cover"
+                            transition={150}
+                            cachePolicy="memory-disk"
+                        />
+                    ) : (
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                            <Ionicons name="image-outline" size={18} color={colors.textMuted} />
+                        </View>
+                    )}
+                </View>
+                <View style={{ flex: 1 }}>
+                    <Text variant="bodyStrong" numberOfLines={1}>
+                        {booking.listing_title ?? 'Item reservado'}
+                    </Text>
+                    <Text variant="caption" color="textSecondary">
+                        {formatShortDate(booking.start_date)} - {formatShortDate(booking.end_date)}
+                    </Text>
+                </View>
+                <Badge label={statusLabel} tone={STATUS_TONE[toStatusKey(booking.status)]} />
             </View>
-            <View style={{ flex: 1 }}>
-                <ThemedText numberOfLines={1} style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text }}>
-                    {booking.listing_title ?? 'Item reservado'}
-                </ThemedText>
-                <ThemedText style={{ fontSize: 11, color: colors.textSecondary }}>
-                    {fmtDate(booking.start_date)} - {fmtDate(booking.end_date)}
-                </ThemedText>
-                {booking.provider_phone && (
-                    <Pressable
-                        onPress={() => Linking.openURL(`tel:${booking.provider_phone}`)}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}
-                    >
-                        <Ionicons name="call-outline" size={11} color={colors.primary} />
-                        <ThemedText style={{ fontSize: 10.5, fontFamily: 'Inter_600SemiBold', color: colors.primary }}>
-                            {booking.provider_phone}
-                        </ThemedText>
-                    </Pressable>
-                )}
-            </View>
-            <View
-                style={{
-                    backgroundColor: statusColors.bg,
-                    paddingHorizontal: 7,
-                    paddingVertical: 3,
-                    borderRadius: 999,
-                }}
-            >
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 9.5, color: statusColors.fg }}>
-                    {statusLabel}
-                </ThemedText>
-            </View>
-            {canCancel && (
-                <Pressable onPress={() => setShowConfirm(true)} hitSlop={8}>
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 11, color: colors.destructive }}>
-                        Cancelar
-                    </ThemedText>
-                </Pressable>
-            )}
-            {booking.status === 'COMPLETED' && !booking.already_reviewed && (
-                <Pressable onPress={() => setShowReview(true)} hitSlop={8}>
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 11, color: colors.primary }}>
-                        Calificar
-                    </ThemedText>
-                </Pressable>
+
+            {(booking.provider_phone || canCancel || canReview) && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    {booking.provider_phone ? (
+                        <Pressable
+                            onPress={() => Linking.openURL(`tel:${booking.provider_phone}`)}
+                            accessibilityRole="link"
+                            accessibilityLabel={`Llamar al proveedor ${booking.provider_phone}`}
+                            style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}
+                        >
+                            <Ionicons name="call-outline" size={14} color={colors.primary} />
+                            <Text variant="captionStrong" color="primary" numberOfLines={1}>
+                                {booking.provider_phone}
+                            </Text>
+                        </Pressable>
+                    ) : (
+                        <View />
+                    )}
+                    {canCancel && (
+                        <Pressable
+                            onPress={() => setShowConfirm(true)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Cancelar ${booking.listing_title ?? 'este item'}`}
+                            style={{ minHeight: MinTouch, justifyContent: 'center', paddingLeft: Spacing.two }}
+                        >
+                            <Text variant="captionStrong" color="destructive">
+                                Cancelar
+                            </Text>
+                        </Pressable>
+                    )}
+                    {canReview && (
+                        <Pressable
+                            onPress={() => setShowReview(true)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Calificar ${booking.listing_title ?? 'este item'}`}
+                            style={{ minHeight: MinTouch, justifyContent: 'center', paddingLeft: Spacing.two }}
+                        >
+                            <Text variant="captionStrong" color="primary">
+                                Calificar
+                            </Text>
+                        </Pressable>
+                    )}
+                </View>
             )}
 
-            <Modal visible={showConfirm} transparent animationType="fade" onRequestClose={() => setShowConfirm(false)}>
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', padding: Spacing.five }}>
-                    <View style={{ backgroundColor: colors.background, borderRadius: Radius.lg, padding: Spacing.four, width: '100%' }}>
-                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text, marginBottom: Spacing.two }}>
-                            ¿Estás seguro?
-                        </ThemedText>
-                        <ThemedText style={{ fontSize: 13.5, color: colors.textSecondary, marginBottom: Spacing.four }}>
-                            Esto cancelará solo "{booking.listing_title ?? 'este item'}" dentro de tu compra — el resto de items no se ven afectados.
-                        </ThemedText>
-                        <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-                            <Pressable
-                                onPress={() => setShowConfirm(false)}
-                                style={{ flex: 1, paddingVertical: Spacing.three, borderRadius: Radius.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}
-                            >
-                                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13.5, color: colors.text }}>Volver</ThemedText>
-                            </Pressable>
-                            <Pressable
-                                onPress={handleConfirmCancel}
-                                disabled={cancelling}
-                                style={{ flex: 1, paddingVertical: Spacing.three, borderRadius: Radius.md, backgroundColor: colors.destructive, alignItems: 'center' }}
-                            >
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13.5, color: '#fff' }}>
-                                    {cancelling ? 'Cancelando...' : 'Sí, cancelar'}
-                                </ThemedText>
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <ConfirmSheet
+                visible={showConfirm}
+                title="¿Estás seguro?"
+                message={`Esto cancelará solo "${booking.listing_title ?? 'este item'}" dentro de tu compra — el resto de items no se ven afectados.`}
+                confirmLabel={cancelling ? 'Cancelando...' : 'Sí, cancelar'}
+                destructive
+                loading={cancelling}
+                onConfirm={handleConfirmCancel}
+                onCancel={() => setShowConfirm(false)}
+            />
 
             <ReviewModal
                 visible={showReview}
@@ -138,23 +140,19 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
 
 /** Tarjeta para un grupo de reservas que vinieron de una misma compra del carrito. */
 export function OrderGroupCard({ bookings, onCancelled }: { bookings: ClientBooking[]; onCancelled: () => void }) {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-
+    const colors = useTheme();
     const total = bookings.reduce((sum, b) => sum + b.total_price, 0);
 
     return (
-        <View style={{ backgroundColor: colors.backgroundElement, borderRadius: Radius.lg, padding: Spacing.three }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.three }}>
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.textSecondary }}>
+        <View style={{ backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Spacing.three, gap: Spacing.three }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two }}>
+                <Text variant="captionStrong" color="textSecondary" style={{ flexShrink: 1 }}>
                     Compra de {bookings.length} {bookings.length === 1 ? 'item' : 'items'}
-                </ThemedText>
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text }}>
-                    ${(total / 100).toFixed(2)}
-                </ThemedText>
+                </Text>
+                <Text variant="bodyStrong">${(total / 100).toFixed(2)}</Text>
             </View>
 
-            <View style={{ gap: Spacing.two }}>
+            <View style={{ gap: Spacing.three }}>
                 {bookings.map((booking) => (
                     <GroupItemRow key={booking.booking_id} booking={booking} onCancelled={onCancelled} />
                 ))}

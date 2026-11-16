@@ -1,37 +1,34 @@
 import { useState } from 'react';
-import { View, ScrollView, Image, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, ScrollView, useWindowDimensions, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors } from '@/constants/theme';
+import { Aspect, Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const GALLERY_HEIGHT = 280;
+/** Alto máximo en pantallas grandes para que la foto no domine el layout. */
+const MAX_GALLERY_HEIGHT = 440;
 
 export function ImageGallery({ images }: { images: string[] }) {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
+    const { width } = useWindowDimensions();
+    const height = Math.min(Math.round(width / Aspect.hero), MAX_GALLERY_HEIGHT);
     const [activeIndex, setActiveIndex] = useState(0);
 
     function handleScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
-        const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-        setActiveIndex(index);
+        setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / width));
     }
 
     if (images.length === 0) {
         return (
-            <LinearGradient
-                colors={['#efeaf9', '#e3dbf4']}
-                style={{ width: SCREEN_WIDTH, height: GALLERY_HEIGHT, alignItems: 'center', justifyContent: 'center' }}
-            >
-                <Ionicons name="grid-outline" size={40} color="#875B9A80" />
-            </LinearGradient>
+            <View style={{ width, height, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="image-outline" size={40} color={colors.primary} />
+            </View>
         );
     }
 
     return (
-        <View>
+        <View style={{ width, height, backgroundColor: colors.backgroundSelected }}>
             <ScrollView
                 horizontal
                 pagingEnabled
@@ -40,22 +37,31 @@ export function ImageGallery({ images }: { images: string[] }) {
                 scrollEventThrottle={16}
             >
                 {images.map((uri, i) => (
-                    <Image key={i} source={{ uri }} style={{ width: SCREEN_WIDTH, height: GALLERY_HEIGHT }} resizeMode="cover" />
+                    <Image
+                        key={uri + i}
+                        source={{ uri }}
+                        style={{ width, height }}
+                        contentFit="cover"
+                        transition={150}
+                        cachePolicy="memory-disk"
+                        accessibilityLabel={`Foto ${i + 1} de ${images.length}`}
+                    />
                 ))}
             </ScrollView>
 
             {images.length > 1 && (
                 <View
+                    accessibilityLabel={`Foto ${activeIndex + 1} de ${images.length}`}
                     style={{
                         position: 'absolute',
-                        bottom: 12,
+                        bottom: Spacing.four + Radius.sheet / 2,
                         alignSelf: 'center',
                         flexDirection: 'row',
                         gap: 6,
-                        backgroundColor: 'rgba(0,0,0,0.4)',
+                        backgroundColor: colors.onImageSurface,
                         paddingHorizontal: 10,
-                        paddingVertical: 5,
-                        borderRadius: 999,
+                        paddingVertical: 6,
+                        borderRadius: Radius.full,
                     }}
                 >
                     {images.map((_, i) => (
@@ -65,7 +71,8 @@ export function ImageGallery({ images }: { images: string[] }) {
                                 width: 6,
                                 height: 6,
                                 borderRadius: 3,
-                                backgroundColor: i === activeIndex ? '#fff' : 'rgba(255,255,255,0.5)',
+                                backgroundColor: colors.onImage,
+                                opacity: i === activeIndex ? 1 : 0.5,
                             }}
                         />
                     ))}

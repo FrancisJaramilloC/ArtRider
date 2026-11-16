@@ -1,39 +1,35 @@
 import { useEffect, useState } from 'react';
-import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { View, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { ImageGallery } from '@/components/listing/ImageGallery';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { DetailBottomBar, DetailSection, DetailSheet, MetaItem, MetaRow, ProviderRow, ReviewList } from '@/components/detail/DetailParts';
+import { DetailHero } from '@/components/detail/DetailHero';
+import { Badge } from '@/components/ui/Badge';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Text } from '@/components/ui/Text';
+import { Radius, Spacing } from '@/constants/theme';
 import { CATEGORY_LABELS } from '@/constants/categories';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
 import { getListingByIdWithProvider, getListingRatings, getListingReviews, type ListingWithProvider, type ListingReview } from '@/services/catalogService';
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
 import { getListingTotalUnits } from '@/services/availabilityService';
 import { useAuth } from '@/hooks/useAuth';
+import { formatPrice } from '@/utils/format';
 
-function formatRelativeTime(iso: string): string {
-    const diff = Date.now() - new Date(iso).getTime();
-    const days = Math.floor(diff / 86400000);
-    if (days < 1) return 'Hoy';
-    if (days === 1) return 'Hace 1 día';
-    if (days < 30) return `Hace ${days} días`;
-    const months = Math.floor(days / 30);
-    if (months < 12) return `Hace ${months} ${months === 1 ? 'mes' : 'meses'}`;
-    const years = Math.floor(months / 12);
-    return `Hace ${years} ${years === 1 ? 'año' : 'años'}`;
-}
+/** Espacio para que la barra inferior fija no tape el final del contenido. */
+const BOTTOM_BAR_CLEARANCE = 112;
 
 export function ListingDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
     const { session } = useAuth();
+    const { insets } = useLayout();
 
     const [listing, setListing] = useState<ListingWithProvider | null>(null);
     const [rating, setRating] = useState<{ avg: number; count: number }>({ avg: 0, count: 0 });
@@ -107,312 +103,128 @@ export function ListingDetailScreen() {
         }
     }
 
-    if (loading || !listing) {
+    if (loading) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={colors.primary} />
+            <View style={{ flex: 1, backgroundColor: colors.background }}>
+                <Skeleton height={260} radius={0} />
+                <View style={{ padding: Spacing.four, gap: Spacing.three }}>
+                    <Skeleton width={90} height={24} radius={Radius.full} />
+                    <Skeleton width="80%" height={28} />
+                    <Skeleton width="50%" height={16} />
+                    <Skeleton height={64} radius={Radius.card} />
+                    <Skeleton height={96} radius={Radius.card} />
+                </View>
+            </View>
+        );
+    }
+
+    if (!listing) {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+                <EmptyState
+                    icon="alert-circle-outline"
+                    tone="error"
+                    title="No encontramos este equipo"
+                    description="Puede que ya no esté publicado."
+                    actionLabel="Volver"
+                    onAction={() => router.back()}
+                />
             </SafeAreaView>
         );
     }
 
-    const price = listing.daily_price / 100;
     const catLabel = CATEGORY_LABELS[listing.category ?? ''] ?? listing.category ?? 'Equipo';
     const isOwnListing = session?.user?.id && listing.provider?.user_id === session.user.id;
     const images = [listing.cover_image_url].filter((x): x is string => Boolean(x));
+    const { latitude, longitude } = listing.address ?? {};
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <ScrollView bounces={false}>
-                <ImageGallery images={images} />
+            <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: BOTTOM_BAR_CLEARANCE + insets.bottom }}>
+                <DetailHero images={images} esFavorito={esFavorito} onToggleFavorito={handleToggleFavorito} />
 
-                <Pressable
-                    onPress={handleToggleFavorito}
-                    style={{
-                        position: 'absolute',
-                        top: 16,
-                        right: Spacing.four,
-                        width: 38,
-                        height: 38,
-                        borderRadius: 19,
-                        backgroundColor: 'rgba(0,0,0,0.35)',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <Ionicons name={esFavorito ? 'heart' : 'heart-outline'} size={20} color={esFavorito ? '#C026D3' : '#fff'} />
-                </Pressable>
+                <DetailSheet>
+                    <View style={{ gap: Spacing.two, paddingBottom: Spacing.four }}>
+                        <Badge label={catLabel} tone="accent" />
+                        <Text variant="title">{listing.title ?? 'Equipo sin título'}</Text>
 
-                <View style={{ padding: Spacing.four }}>
-                    <View
-                        style={{
-                            alignSelf: 'flex-start',
-                            backgroundColor: `${colors.primary}15`,
-                            paddingHorizontal: Spacing.two,
-                            paddingVertical: 5,
-                            borderRadius: 999,
-                            marginBottom: Spacing.two,
-                        }}
-                    >
-                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 10.5, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.primary }}>
-                            {catLabel}
-                        </ThemedText>
+                        <MetaRow>
+                            {rating.avg > 0 && (
+                                <MetaItem icon="star" strong label={`${rating.avg.toFixed(2)}${reviews.length > 0 ? ` (${reviews.length})` : ''}`} />
+                            )}
+                            {listing.address?.city ? <MetaItem icon="location-outline" label={listing.address.city} /> : null}
+                            {totalUnits !== null && (
+                                <MetaItem
+                                    icon="cube-outline"
+                                    label={totalUnits === 0 ? 'Sin unidades registradas' : `${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'} en stock`}
+                                />
+                            )}
+                        </MetaRow>
                     </View>
 
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text, marginBottom: Spacing.one }}>
-                        {listing.title ?? 'Equipo sin título'}
-                    </ThemedText>
-
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.one }}>
-                        {rating.avg > 0 && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                                <Ionicons name="star" size={14} color={colors.text} />
-                                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text }}>
-                                    {rating.avg.toFixed(2)}
-                                </ThemedText>
-                                {reviews.length > 0 && (
-                                    <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>
-                                        ({reviews.length})
-                                    </ThemedText>
-                                )}
-                            </View>
-                        )}
-                        {listing.address?.city && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                                <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
-                                <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>{listing.address.city}</ThemedText>
-                            </View>
-                        )}
-                    </View>
-
-                    {totalUnits !== null && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: Spacing.three }}>
-                            <Ionicons name="cube-outline" size={13} color={colors.textSecondary} />
-                            <ThemedText style={{ fontSize: 12.5, color: colors.textSecondary }}>
-                                {totalUnits === 0
-                                    ? 'Sin unidades registradas'
-                                    : `${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'} en stock`}
-                            </ThemedText>
-                        </View>
-                    )}
-
-                    <Pressable
-                        onPress={handleContactarProveedor}
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: Spacing.three,
-                            paddingVertical: Spacing.three,
-                            borderTopWidth: 1,
-                            borderColor: colors.border,
-                        }}
-                    >
-                        <View
-                            style={{
-                                width: 44,
-                                height: 44,
-                                borderRadius: 22,
-                                backgroundColor: colors.text,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
-                            <ThemedText style={{ color: colors.background, fontFamily: 'Inter_700Bold', fontSize: 16 }}>
-                                {(listing.provider?.brand_name ?? 'P').charAt(0).toUpperCase()}
-                            </ThemedText>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text }}>
-                                Ofrecido por {listing.provider?.brand_name ?? 'Proveedor ArtRider'}
-                            </ThemedText>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                                <Ionicons name="shield-checkmark" size={13} color={colors.primary} />
-                                <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Proveedor verificado</ThemedText>
-                            </View>
-                        </View>
-                        <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.primary} />
-                    </Pressable>
+                    <DetailSection>
+                        <ProviderRow brandName={listing.provider?.brand_name} onPress={handleContactarProveedor} />
+                    </DetailSection>
 
                     {(listing.brand || listing.model) && (
-                        <View style={{ flexDirection: 'row', gap: Spacing.two, paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
-                            {listing.brand && (
-                                <View style={{ flex: 1, backgroundColor: colors.backgroundElement, borderRadius: Radius.md, padding: Spacing.two }}>
-                                    <ThemedText style={{ fontSize: 11, color: colors.textSecondary }}>Marca</ThemedText>
-                                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text }}>{listing.brand}</ThemedText>
-                                </View>
-                            )}
-                            {listing.model && (
-                                <View style={{ flex: 1, backgroundColor: colors.backgroundElement, borderRadius: Radius.md, padding: Spacing.two }}>
-                                    <ThemedText style={{ fontSize: 11, color: colors.textSecondary }}>Modelo</ThemedText>
-                                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text }}>{listing.model}</ThemedText>
-                                </View>
-                            )}
-                        </View>
+                        <DetailSection>
+                            <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+                                {listing.brand ? <SpecTile label="Marca" value={listing.brand} /> : null}
+                                {listing.model ? <SpecTile label="Modelo" value={listing.model} /> : null}
+                            </View>
+                        </DetailSection>
                     )}
 
-                    {listing.description && (
-                        <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text, marginBottom: Spacing.two }}>
-                                Sobre este equipo
-                            </ThemedText>
-                            <ThemedText style={{ fontSize: 14, lineHeight: 21, color: colors.textSecondary }}>
+                    {listing.description ? (
+                        <DetailSection title="Sobre este equipo">
+                            <Text variant="body" color="textSecondary">
                                 {listing.description}
-                            </ThemedText>
-                        </View>
-                    )}
+                            </Text>
+                        </DetailSection>
+                    ) : null}
 
-                    {/* Reseñas — item 025 */}
-                    <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.three }}>
-                            {rating.avg > 0 && <Ionicons name="star" size={16} color={colors.text} />}
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>
-                                {rating.avg > 0 ? `${rating.avg.toFixed(2)} · ${reviews.length} ${reviews.length === 1 ? 'reseña' : 'reseñas'}` : 'Reseñas'}
-                            </ThemedText>
-                        </View>
+                    <ReviewList rating={rating.avg} reviews={reviews} emptyText="Sé el primero en reseñar este equipo." />
 
-                        {reviews.length === 0 ? (
-                            <ThemedText style={{ fontSize: 13.5, color: colors.textSecondary }}>
-                                Sé el primero en reseñar este equipo.
-                            </ThemedText>
-                        ) : (
-                            reviews.map((review) => (
-                                <View key={review.id} style={{ marginBottom: Spacing.four }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.two }}>
-                                        <View
-                                            style={{
-                                                width: 32,
-                                                height: 32,
-                                                borderRadius: 16,
-                                                backgroundColor: colors.backgroundElement,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                            }}
-                                        >
-                                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.text }}>
-                                                {review.author_name.charAt(0).toUpperCase()}
-                                            </ThemedText>
-                                        </View>
-                                        <View style={{ flex: 1 }}>
-                                            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13.5, color: colors.text }}>
-                                                {review.author_name}
-                                            </ThemedText>
-                                            <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary }}>
-                                                {formatRelativeTime(review.created_at)}
-                                            </ThemedText>
-                                        </View>
-                                    </View>
-                                    <View style={{ flexDirection: 'row', gap: 2, marginBottom: 4 }}>
-                                        {[1, 2, 3, 4, 5].map((n) => (
-                                            <Ionicons
-                                                key={n}
-                                                name={n <= review.rating ? 'star' : 'star-outline'}
-                                                size={13}
-                                                color={n <= review.rating ? colors.primary : colors.textSecondary}
-                                            />
-                                        ))}
-                                    </View>
-                                    {review.comment && (
-                                        <ThemedText style={{ fontSize: 13.5, lineHeight: 20, color: colors.textSecondary }}>
-                                            {review.comment}
-                                        </ThemedText>
-                                    )}
-                                </View>
-                            ))
-                        )}
-                    </View>
-
-                    {listing.address?.latitude && listing.address?.longitude && (
-                        <View style={{ paddingVertical: Spacing.three, borderTopWidth: 1, borderColor: colors.border }}>
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text, marginBottom: Spacing.two }}>
-                                Ubicación
-                            </ThemedText>
-                            <View style={{ height: 180, borderRadius: Radius.lg, overflow: 'hidden' }}>
+                    {latitude && longitude ? (
+                        <DetailSection title="Ubicación">
+                            <View style={{ aspectRatio: 16 / 9, borderRadius: Radius.card, overflow: 'hidden' }}>
                                 <MapView
                                     style={{ flex: 1 }}
-                                    initialRegion={{
-                                        latitude: listing.address.latitude,
-                                        longitude: listing.address.longitude,
-                                        latitudeDelta: 0.02,
-                                        longitudeDelta: 0.02,
-                                    }}
+                                    initialRegion={{ latitude, longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
                                     scrollEnabled={false}
                                     zoomEnabled={false}
                                 >
-                                    <Marker coordinate={{ latitude: listing.address.latitude, longitude: listing.address.longitude }} />
+                                    <Marker coordinate={{ latitude, longitude }} />
                                 </MapView>
                             </View>
-                        </View>
-                    )}
-
-                    <View style={{ height: 100 }} />
-                </View>
+                        </DetailSection>
+                    ) : null}
+                </DetailSheet>
             </ScrollView>
 
             {!isOwnListing && (
-                <View
-                    style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: Spacing.two,
-                        padding: Spacing.four,
-                        backgroundColor: colors.background,
-                        borderTopWidth: 1,
-                        borderColor: colors.border,
-                    }}
-                >
-                    <Pressable
-                        onPress={handleContactarProveedor}
-                        disabled={contacting}
-                        style={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: Radius.lg,
-                            borderWidth: 1,
-                            borderColor: colors.border,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        {contacting ? (
-                            <ActivityIndicator size="small" color={colors.primary} />
-                        ) : (
-                            <Ionicons name="chatbubble-ellipses-outline" size={19} color={colors.text} />
-                        )}
-                    </Pressable>
-
-                    <Pressable
-                        onPress={() => router.push(`/checkout/${listing.id}?mode=cart` as any)}
-                        style={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: Radius.lg,
-                            borderWidth: 1,
-                            borderColor: colors.border,
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <Ionicons name="cart-outline" size={19} color={colors.text} />
-                    </Pressable>
-
-                    <View style={{ flex: 1 }}>
-                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text }}>
-                            ${price % 1 === 0 ? price.toFixed(0) : price.toFixed(2)}
-                            <ThemedText style={{ fontSize: 13, color: colors.textSecondary, fontFamily: 'Inter_400Regular' }}> /día</ThemedText>
-                        </ThemedText>
-                    </View>
-
-                    <Pressable
-                        onPress={() => router.push(`/checkout/${listing.id}` as any)}
-                        style={{ backgroundColor: colors.primary, paddingHorizontal: Spacing.five, paddingVertical: Spacing.three, borderRadius: Radius.lg }}
-                    >
-                        <ThemedText style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 14 }}>Reservar</ThemedText>
-                    </Pressable>
-                </View>
+                <DetailBottomBar
+                    priceLabel={formatPrice(listing.daily_price)}
+                    onChat={handleContactarProveedor}
+                    chatLoading={contacting}
+                    onAddToCart={() => router.push(`/checkout/${listing.id}?mode=cart` as never)}
+                    onReserve={() => router.push(`/checkout/${listing.id}` as never)}
+                />
             )}
+        </View>
+    );
+}
+
+function SpecTile({ label, value }: { label: string; value: string }) {
+    const colors = useTheme();
+    return (
+        <View style={{ flex: 1, backgroundColor: colors.backgroundElement, borderRadius: Radius.xl, padding: Spacing.three, gap: 2 }}>
+            <Text variant="caption" color="textSecondary">
+                {label}
+            </Text>
+            <Text variant="bodyStrong" numberOfLines={2}>
+                {value}
+            </Text>
         </View>
     );
 }

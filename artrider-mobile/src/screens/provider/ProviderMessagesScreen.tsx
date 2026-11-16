@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FilterChip } from '@/components/ui/FilterChip';
+import { Chip } from '@/components/ui/Chip';
 import { supabase } from '@/services/supabase';
 import {
   getConversations,
@@ -154,12 +154,11 @@ export function ProviderMessagesScreen() {
 
       <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingTop: Spacing.three }}>
         {(['all', 'archived'] as const).map((f) => (
-          <FilterChip
+          <Chip
             key={f}
             label={f === 'all' ? 'Todos' : 'Archivados'}
             active={filter === f}
             onPress={() => setFilter(f)}
-            colors={colors}
           />
         ))}
       </View>

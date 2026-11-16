@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, FlatList, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, FlatList, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
 import { ProtectedScreen } from '@/components/protected-screen';
 import { BookingListCard } from '@/components/bookings/BookingListCard';
 import { OrderGroupCard } from '@/components/bookings/OrderGroupCard';
-import { FilterChip } from '@/components/ui/FilterChip';
-import { Colors, Spacing, Radius } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Chip } from '@/components/ui/Chip';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Text } from '@/components/ui/Text';
+import { Radius, Spacing } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
 import { getClientBookings, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
 
 const FILTERS: { id: 'all' | BookingStatus[]; label: string }[] = [
@@ -56,8 +59,8 @@ function groupBookings(bookings: ClientBooking[]): ListRow[] {
 }
 
 function ReservationsContent() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const colors = useTheme();
+  const { gutter, contentWidth } = useLayout();
 
   const [bookings, setBookings] = useState<ClientBooking[]>([]);
   const [activeFilter, setActiveFilter] = useState(0);
@@ -83,49 +86,64 @@ function ReservationsContent() {
   const filteredBookings = filter === 'all' ? bookings : bookings.filter((b) => filter.includes(b.status));
   const rows = useMemo(() => groupBookings(filteredBookings), [filteredBookings]);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
-
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: Spacing.four, paddingVertical: Spacing.three }}>
-        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 22, color: colors.text }}>
+  const header = (
+    <>
+      <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.three }}>
+        <Text variant="title" accessibilityRole="header">
           Mis Reservas
-        </ThemedText>
+        </Text>
       </View>
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.three }}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, paddingBottom: Spacing.three }}
       >
         {FILTERS.map((f, i) => (
-          <FilterChip
-            key={f.label}
-            label={f.label}
-            active={activeFilter === i}
-            onPress={() => setActiveFilter(i)}
-            colors={colors}
-          />
+          <Chip key={f.label} label={f.label} active={activeFilter === i} onPress={() => setActiveFilter(i)} />
         ))}
       </ScrollView>
+    </>
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+        {header}
+        <View style={{ padding: gutter, gap: Spacing.three }}>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} height={104} radius={Radius.card} />
+          ))}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      {header}
 
       {rows.length === 0 ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.five }}>
-          <ThemedText style={{ color: colors.textSecondary, textAlign: 'center' }}>
-            No tienes reservas {activeFilter !== 0 ? 'en esta categoría' : 'todavía'}.
-          </ThemedText>
-        </View>
+        <EmptyState
+          icon="calendar-outline"
+          title={activeFilter !== 0 ? 'Nada por aquí' : 'Aún no tienes reservas'}
+          description={`No tienes reservas ${activeFilter !== 0 ? 'en esta categoría' : 'todavía'}.`}
+          style={{ flex: 1 }}
+        />
       ) : (
         <FlatList
           data={rows}
           keyExtractor={(row) => row.key}
-          contentContainerStyle={{ padding: Spacing.four, gap: Spacing.three }}
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={{
+            padding: gutter,
+            paddingBottom: Spacing.six,
+            gap: Spacing.three,
+            width: '100%',
+            maxWidth: contentWidth,
+            alignSelf: 'center',
+          }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           renderItem={({ item }) =>
             item.kind === 'single' ? (
