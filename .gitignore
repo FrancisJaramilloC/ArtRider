@@ -1,0 +1,5 @@
+# Secrets / local environment (applies to every package in the monorepo)
+.env
+.env.*
+!.env.example
+!.env.template
