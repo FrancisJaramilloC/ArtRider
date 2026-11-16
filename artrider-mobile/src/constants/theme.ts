@@ -87,12 +87,6 @@ export const BOOKING_STATUS_LABELS: Record<string, string> = {
   ARCHIVED: 'Archivada',
 };
 
-/** Gradientes de marca reutilizables (avatares, chips activos, CTAs). */
-export const Gradients = {
-  brand: ['#A97DC4', '#6A437A'] as [string, string],
-  chipActive: ['#A97DC4', '#875B9A'] as [string, string],
-  package: ['#7C3AED', '#D61F9E'] as [string, string],
-};
 
 /** Colapsa los 7 estados de bookingsService a las 4 llaves visuales de StatusColors. */
 export function toStatusKey(status: string): BookingStatusKey {

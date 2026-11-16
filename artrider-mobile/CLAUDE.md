@@ -29,7 +29,8 @@ pnpm exec expo install <paquete>          # para librerías nativas (versión de
 ## Convenciones
 
 - Importes en centavos (`daily_price`, `total_price`); mostrar dividiendo entre 100.
-- Colores, radios, espaciado y tipografía salen de `constants/theme.ts` y del sistema de diseño; no hardcodear hex en pantallas.
+- Colores, radios, espaciado y tipografía salen de `constants/theme.ts`; UI con los componentes de `components/ui/` y layout con `useLayout()` (sin anchos fijos, margen lateral `gutter`, objetivos táctiles ≥ 44pt). No hardcodear hex en pantallas.
+- Usar `useTheme()`/`useColorScheme()` de `@/hooks/*`, nunca el de `react-native` (ignora el toggle de tema).
 - Llamadas a Supabase solo en `services/`. No cambiar lógica de negocio al rediseñar UI.
 - Sin `any` nuevos, sin `@ts-ignore`. Imports de pestañas: `expo-router/native-tabs`.
 - `react-native-webview` 14: tipar con `WebView<object>` (su tipado por defecto colapsa a `never`).

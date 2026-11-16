@@ -2,11 +2,10 @@ import { View, Pressable, Image } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius, Shadows } from '@/constants/theme';
-import { CATEGORY_LABELS, CATEGORY_GRADIENTS } from '@/constants/categories';
+import { CATEGORY_LABELS } from '@/constants/categories';
 import type { Listing } from '@/services/catalogService';
 
 export function MapPreviewCard({ listing, onClose }: { listing: Listing; onClose: () => void }) {
@@ -15,7 +14,6 @@ export function MapPreviewCard({ listing, onClose }: { listing: Listing; onClose
   const router = useRouter();
 
   const catLabel = CATEGORY_LABELS[listing.category ?? ''] ?? listing.category ?? 'Equipo';
-  const gradient = CATEGORY_GRADIENTS[listing.category ?? ''] ?? CATEGORY_GRADIENTS.other;
   const price = `$${(listing.daily_price / 100).toFixed(0)}`;
 
   return (
@@ -40,7 +38,7 @@ export function MapPreviewCard({ listing, onClose }: { listing: Listing; onClose
           {listing.cover_image_url ? (
             <Image source={{ uri: listing.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
           ) : (
-            <LinearGradient colors={gradient} style={{ width: '100%', height: '100%' }} />
+            <View style={{ width: '100%', height: '100%', backgroundColor: colors.backgroundSelected }} />
           )}
         </View>
         <View style={{ flex: 1, padding: Spacing.three, justifyContent: 'center' }}>

@@ -84,6 +84,16 @@ expo-router (rutas), react-native-reanimated + worklets (animaciones; `scheduleO
 7. **Perfil**: datos, avatar (Storage `avatars`), tema claro/oscuro, ser proveedor.
 8. **Modo proveedor**: «Hoy» (reservas pendientes: aceptar/rechazar con reembolso, finalizar), calendario por anuncio (bloquear fechas), anuncios y paquetes (crear/editar/publicar/borrar, portada vía edge `upload-listing-cover`), mensajes, reseñas, ajustes.
 
+## Sistema de diseño
+
+Un único módulo de tokens: `src/constants/theme.ts` (colores claro/oscuro, `Spacing` en cuadrícula de 8, `Radius`, escala `Type`, `Shadows`, `MinTouch` 44, `Gutter`, `Breakpoints`, `StatusColors`). Acento único: lila de marca `#875B9A` (`#A97DC4` en oscuro); neutros para el resto.
+
+- `hooks/use-layout.ts` (`useLayout`): breakpoints reactivos (compact < 360, regular, tablet > 600), `gutter`, columnas, `cardWidth()`, `bottomInset` (barra flotante iOS 26).
+- `components/ui/`: `Text`, `Button`, `IconButton`, `Chip`, `SearchBar`, `SectionHeader`, `Badge`, `Avatar`, `EmptyState`, `Skeleton`/`ScreenSkeleton`, `Screen`, `ScreenHeader`, `StickyFooter`, `Sheet`/`ConfirmSheet`, `ListRow`, `SegmentedControl`, `QuantityStepper`, `PriceSummary`, `ItemCard` (equipo/paquete, con corazón y proporción 4:3 únicos).
+- Compartidos por dominio: `components/detail/*` (detalle), `components/checkout/CheckoutParts.tsx`, `components/messages/ConversationsView.tsx`.
+- Siempre `useTheme()` / `useColorScheme()` de `@/hooks/*` (respetan el toggle de Perfil), nunca el `useColorScheme` de `react-native`.
+- `ThemedText` es el componente heredado; el código nuevo usa `ui/Text`.
+
 ## Convenciones
 
 - Idioma de la UI: español. No cambiar textos funcionales al reestilizar.
