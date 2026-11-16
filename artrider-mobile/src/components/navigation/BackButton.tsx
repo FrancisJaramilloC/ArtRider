@@ -1,4 +1,5 @@
-import { Pressable, useColorScheme, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, type StyleProp, type ViewStyle } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 

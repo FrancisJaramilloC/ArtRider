@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { View, TextInput, Pressable, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 

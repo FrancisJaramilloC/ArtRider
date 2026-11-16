@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { View, useColorScheme } from 'react-native';
+import { View } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Calendar, type DateData } from 'react-native-calendars';
 
 import { ThemedText } from '@/components/themed-text';

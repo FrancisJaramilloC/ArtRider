@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Modal, TextInput, Pressable, ActivityIndicator, useColorScheme } from 'react-native';
+import { View, Modal, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';

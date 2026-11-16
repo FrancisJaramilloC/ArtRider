@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { View, Image, useColorScheme, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { View, Image, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';

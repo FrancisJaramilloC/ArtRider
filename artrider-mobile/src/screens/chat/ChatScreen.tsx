@@ -1,15 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-    View,
-    FlatList,
-    TextInput,
-    Pressable,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    useColorScheme,
-    ActivityIndicator,
-} from 'react-native';
+import { View, FlatList, TextInput, Pressable, Image, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';

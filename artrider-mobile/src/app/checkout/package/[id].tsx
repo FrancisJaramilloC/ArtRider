@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, ScrollView, Pressable, useColorScheme, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

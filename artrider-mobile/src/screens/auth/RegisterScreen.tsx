@@ -1,14 +1,6 @@
 import { useState } from 'react';
-import {
-    View,
-    TextInput,
-    Pressable,
-    ActivityIndicator,
-    useColorScheme,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-} from 'react-native';
+import { View, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';

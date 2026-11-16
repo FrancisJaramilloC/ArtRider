@@ -1,4 +1,5 @@
-import { View, Pressable, Image, useColorScheme } from 'react-native';
+import { View, Pressable, Image } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';

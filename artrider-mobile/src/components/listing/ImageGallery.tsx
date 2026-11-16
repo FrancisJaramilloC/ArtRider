@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, ScrollView, Image, Dimensions, useColorScheme, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, ScrollView, Image, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 

@@ -1,4 +1,5 @@
-import { View, Pressable, useColorScheme } from 'react-native';
+import { View, Pressable } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';

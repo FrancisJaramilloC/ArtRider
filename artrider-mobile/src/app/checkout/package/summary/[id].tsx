@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Image, useColorScheme, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { View, Image, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';

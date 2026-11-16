@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, ActivityIndicator, Pressable, useColorScheme } from 'react-native';
+import { View, ActivityIndicator, Pressable } from 'react-native';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ClusteredMapView from 'react-native-map-clustering';
