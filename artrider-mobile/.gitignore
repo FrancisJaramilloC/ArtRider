@@ -45,3 +45,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Capturas y mediciones de la auditoría de UI (desarrollo)
+.ui-audit/

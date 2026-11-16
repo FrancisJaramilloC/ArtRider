@@ -12,6 +12,7 @@ const WEB_STUBS = {
   'react-native-maps': stub('react-native-maps.tsx'),
   'react-native-map-clustering': stub('react-native-map-clustering.tsx'),
   'react-native-webview': stub('react-native-webview.tsx'),
+  'expo-secure-store': stub('expo-secure-store.ts'),
 };
 
 const defaultResolveRequest = config.resolver.resolveRequest;
