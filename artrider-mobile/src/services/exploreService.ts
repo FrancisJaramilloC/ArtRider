@@ -1,5 +1,6 @@
 import { getListings } from './catalogService';
 import { getPublishedPackages } from './packagesService';
+import { cityLabel } from '@/utils/city';
 
 export type ExploreItem = {
     id: string;
@@ -25,7 +26,7 @@ export async function getExploreItems(): Promise<ExploreItem[]> {
         id: l.id,
         title: l.title ?? 'Equipo sin título',
         category: l.category,
-        city: l.address?.city?.trim() ?? null,
+        city: l.address?.city ? cityLabel(l.address.city) : null,
         daily_price: l.daily_price,
         cover_image_url: l.cover_image_url,
         tipo: 'equipo',

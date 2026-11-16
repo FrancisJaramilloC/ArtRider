@@ -1,33 +1,30 @@
 import { ScrollView } from 'react-native';
-import { Colors, Spacing } from '@/constants/theme';
+
 import { CATEGORIES } from '@/constants/categories';
-import { FilterChip } from '@/components/ui/FilterChip';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Spacing } from '@/constants/theme';
+import { Chip } from '@/components/ui/Chip';
+import type { Ionicons } from '@expo/vector-icons';
+
+type IconName = keyof typeof Ionicons.glyphMap;
 
 export function CategoryStrip({
     activeCategory,
     onSelect,
+    gutter,
 }: {
     activeCategory: string;
     onSelect: (id: string) => void;
+    /** Margen lateral de pantalla (el scroll lo respeta pero las chips pueden llegar al borde). */
+    gutter: number;
 }) {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
     return (
         <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.three }}
+            contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, paddingVertical: Spacing.two }}
         >
             {CATEGORIES.map(({ id, label, icon }) => (
-                <FilterChip
-                    key={id}
-                    label={label}
-                    icon={icon as any}
-                    active={activeCategory === id}
-                    onPress={() => onSelect(id)}
-                    colors={colors}
-                />
+                <Chip key={id} label={label} icon={icon as IconName} active={activeCategory === id} onPress={() => onSelect(id)} />
             ))}
         </ScrollView>
     );

@@ -1,5 +1,6 @@
 import { getListings, getListingRatings } from './catalogService';
 import { getPublishedPackages } from './packagesService';
+import { cityKey, cityLabel } from '@/utils/city';
 
 export type HomeCardItem = {
     id: string;
@@ -28,12 +29,16 @@ export async function getHomeData(): Promise<HomeData> {
     const ratings = await getListingRatings(listings.map((l) => l.id));
 
     // Agrupar por ciudad — igual que la web, dinámico según lo que exista
-    const cityMap = new Map<string, HomeCardItem[]>();
+    const cityMap = new Map<string, CityGroup>();
     for (const listing of listings) {
-        const city = listing.address?.city?.trim();
-        if (!city) continue;
-        if (!cityMap.has(city)) cityMap.set(city, []);
-        cityMap.get(city)!.push({
+        const rawCity = listing.address?.city?.trim();
+        if (!rawCity) continue;
+        // «Loja» y «Loja, Ecuador» son la misma ciudad: se agrupa por clave normalizada.
+        const city = cityLabel(rawCity);
+        const key = cityKey(rawCity);
+        const group = cityMap.get(key) ?? { city, items: [] };
+        cityMap.set(key, group);
+        group.items.push({
             id: listing.id,
             title: listing.title ?? 'Equipo sin título',
             category: listing.category,
@@ -47,10 +52,9 @@ export async function getHomeData(): Promise<HomeData> {
     }
 
     // Ordenado por cantidad de equipos, ciudades con al menos 1
-    const cityGroups: CityGroup[] = Array.from(cityMap.entries())
-        .filter(([, items]) => items.length >= 1)
-        .sort(([, a], [, b]) => b.length - a.length)
-        .map(([city, items]) => ({ city, items }));
+    const cityGroups: CityGroup[] = Array.from(cityMap.values())
+        .filter((group) => group.items.length >= 1)
+        .sort((a, b) => b.items.length - a.items.length);
 
     const rawPackages = await getPublishedPackages();
     const packages: HomeCardItem[] = rawPackages.map((pkg) => ({

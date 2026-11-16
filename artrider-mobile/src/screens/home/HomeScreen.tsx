@@ -1,28 +1,35 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { ScrollView, RefreshControl, View, TextInput, Pressable, FlatList, Dimensions, ActivityIndicator } from 'react-native';
+import { ScrollView, RefreshControl, View, TextInput, Pressable, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/themed-text';
+
 import { CategoryStrip } from '@/components/home/CategoryStrip';
 import { CityCarousel } from '@/components/home/CityCarousel';
-import { ExploreCard } from '@/components/explore/ExploreCard';
 import { CartIconButton } from '@/components/cart/CartIconButton';
-import { Colors, Spacing, Radius, BottomTabInset } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Chip } from '@/components/ui/Chip';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ItemCard } from '@/components/ui/ItemCard';
+import { SearchBar } from '@/components/ui/SearchBar';
+import { ItemCardSkeleton, Skeleton } from '@/components/ui/Skeleton';
+import { Text } from '@/components/ui/Text';
+import { Fonts, MinTouch, Radius, Shadows, Spacing } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
 import { getHomeData, type HomeData } from '@/services/homeService';
 import { getExploreItems, type ExploreItem } from '@/services/exploreService';
 import { getUserFavIds } from '@/services/favoritosService';
 import { useAuth } from '@/hooks/useAuth';
+import { cityKey } from '@/utils/city';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_WIDTH = (SCREEN_WIDTH - Spacing.four * 2 - Spacing.three) / 2;
+/** Cuántas tarjetas de esqueleto se muestran mientras carga (2 filas de la grilla). */
+const SKELETON_ROWS = 2;
 
 export function HomeScreen() {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
     const router = useRouter();
     const { isAuthenticated } = useAuth();
+    const { gutter, columns, cardWidth, bottomInset } = useLayout();
 
     const [data, setData] = useState<HomeData | null>(null);
     const [exploreItems, setExploreItems] = useState<ExploreItem[]>([]);
@@ -79,7 +86,7 @@ export function HomeScreen() {
     const filteredExploreItems = useMemo(() => {
         let list = exploreItems;
         if (activeCategory !== 'all') list = list.filter((item) => item.category === activeCategory);
-        if (city) list = list.filter((item) => item.city === city);
+        if (city) list = list.filter((item) => item.city !== null && cityKey(item.city) === cityKey(city));
         if (query.trim()) {
             const q = query.trim().toLowerCase();
             list = list.filter((item) => item.title.toLowerCase().includes(q) || (item.city ?? '').toLowerCase().includes(q));
@@ -98,6 +105,7 @@ export function HomeScreen() {
     }, [data, activeCategory]);
 
     const hasActiveFilters = city !== null || rawQuery.length > 0 || maxPrice.length > 0;
+    const showPackages = activeCategory === 'all' && !!data && data.packages.length > 0;
 
     function clearFilters() {
         setRawQuery('');
@@ -107,58 +115,50 @@ export function HomeScreen() {
         setSearchFocused(false);
     }
 
+    const header = (
+        <View style={{ paddingHorizontal: gutter, paddingTop: Spacing.three, gap: Spacing.three }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text variant="title" accessibilityRole="header">
+                    ArtRider
+                </Text>
+                {isAuthenticated && <CartIconButton />}
+            </View>
+
+            {/* Barra de búsqueda real — filtra en el mismo Home, nunca navega */}
+            <SearchBar
+                value={rawQuery}
+                onChangeText={setRawQuery}
+                onFocus={() => setSearchFocused(true)}
+                placeholder="¿Qué equipo o paquete buscas?"
+                onClear={clearFilters}
+                showClear={isSearching}
+            />
+        </View>
+    );
+
     if (loading) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={colors.primary} />
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+                {header}
+                <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: gutter, paddingVertical: Spacing.three }}>
+                    {[88, 104, 96, 80].map((w, i) => (
+                        <Skeleton key={i} width={w} height={40} radius={Radius.full} />
+                    ))}
+                </View>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three, paddingHorizontal: gutter, paddingTop: Spacing.two }}>
+                    {Array.from({ length: columns * SKELETON_ROWS }).map((_, i) => (
+                        <ItemCardSkeleton key={i} width={cardWidth()} />
+                    ))}
+                </View>
             </SafeAreaView>
         );
     }
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-            <View style={{ paddingHorizontal: Spacing.four, paddingTop: Spacing.three, paddingBottom: Spacing.two }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.three }}>
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text }}>
-                        ArtRider
-                    </ThemedText>
-                    {isAuthenticated && <CartIconButton />}
-                </View>
+            {header}
 
-                {/* Barra de búsqueda real — filtra en el mismo Home, nunca navega */}
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: Spacing.two,
-                        backgroundColor: colors.backgroundElement,
-                        borderRadius: 999,
-                        paddingHorizontal: Spacing.three,
-                    }}
-                >
-                    <Ionicons name="search" size={18} color={colors.textSecondary} />
-                    <TextInput
-                        value={rawQuery}
-                        onChangeText={setRawQuery}
-                        onFocus={() => setSearchFocused(true)}
-                        placeholder="¿Qué equipo o paquete buscas?"
-                        placeholderTextColor={colors.textSecondary}
-                        style={{ flex: 1, paddingVertical: 13, fontSize: 14, fontFamily: 'Inter_400Regular', color: colors.text }}
-                    />
-                    {isSearching && (
-                        <Pressable
-                            onPress={() => {
-                                clearFilters();
-                            }}
-                            hitSlop={8}
-                        >
-                            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
-                        </Pressable>
-                    )}
-                </View>
-            </View>
-
-            <CategoryStrip activeCategory={activeCategory} onSelect={setActiveCategory} />
+            <CategoryStrip activeCategory={activeCategory} onSelect={setActiveCategory} gutter={gutter} />
 
             {isSearching ? (
                 <>
@@ -166,75 +166,72 @@ export function HomeScreen() {
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.two, alignItems: 'center' }}
+                        style={{ flexGrow: 0 }}
+                        contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, paddingBottom: Spacing.two, alignItems: 'center' }}
                     >
-                        {cities.map((c) => {
-                            const isActive = city === c;
-                            return (
-                                <Pressable
-                                    key={c}
-                                    onPress={() => setCity(isActive ? null : c)}
-                                    style={{
-                                        paddingHorizontal: Spacing.three,
-                                        paddingVertical: 6,
-                                        borderRadius: 999,
-                                        backgroundColor: isActive ? colors.backgroundSelected : 'transparent',
-                                        borderWidth: 1,
-                                        borderColor: isActive ? colors.primary : colors.border,
-                                    }}
-                                >
-                                    <ThemedText style={{ fontSize: 12, fontFamily: 'Inter_500Medium', color: isActive ? colors.primary : colors.textSecondary }}>
-                                        {c}
-                                    </ThemedText>
-                                </Pressable>
-                            );
-                        })}
+                        {cities.map((c) => (
+                            <Chip key={c} label={c} active={city !== null && cityKey(city) === cityKey(c)} onPress={() => setCity(city !== null && cityKey(city) === cityKey(c) ? null : c)} />
+                        ))}
                         <View
                             style={{
+                                height: 40,
                                 flexDirection: 'row',
                                 alignItems: 'center',
-                                gap: 4,
+                                gap: Spacing.one,
                                 borderWidth: 1,
                                 borderColor: colors.border,
-                                borderRadius: 999,
+                                borderRadius: Radius.full,
                                 paddingHorizontal: Spacing.three,
-                                paddingVertical: 4,
                             }}
                         >
-                            <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Hasta $</ThemedText>
+                            <Text variant="captionStrong" color="textSecondary">
+                                Hasta $
+                            </Text>
                             <TextInput
                                 value={maxPrice}
                                 onChangeText={setMaxPrice}
                                 placeholder="400"
-                                placeholderTextColor={colors.textSecondary}
+                                placeholderTextColor={colors.textMuted}
                                 keyboardType="numeric"
-                                style={{ width: 40, fontSize: 12, color: colors.text, padding: 0 }}
+                                accessibilityLabel="Precio máximo por día"
+                                maxFontSizeMultiplier={1.2}
+                                style={{ minWidth: 44, fontSize: 13, fontFamily: Fonts.sansSemiBold, color: colors.text, padding: 0 }}
                             />
                         </View>
                         {hasActiveFilters && (
-                            <Pressable onPress={clearFilters}>
-                                <ThemedText style={{ fontSize: 12, fontFamily: 'Inter_700Bold', color: colors.destructive, textDecorationLine: 'underline' }}>
+                            <Pressable
+                                onPress={clearFilters}
+                                accessibilityRole="button"
+                                accessibilityLabel="Limpiar filtros"
+                                style={{ minHeight: MinTouch, justifyContent: 'center', paddingHorizontal: Spacing.two }}
+                            >
+                                <Text variant="captionStrong" color="destructive" style={{ textDecorationLine: 'underline' }}>
                                     Limpiar filtros
-                                </ThemedText>
+                                </Text>
                             </Pressable>
                         )}
                     </ScrollView>
 
                     {filteredExploreItems.length === 0 ? (
-                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.three, paddingHorizontal: Spacing.five }}>
-                            <ThemedText style={{ color: colors.textSecondary, textAlign: 'center' }}>
-                                No hay equipos ni paquetes con estos filtros.
-                            </ThemedText>
-                        </View>
+                        <EmptyState
+                            icon="search-outline"
+                            title="Sin resultados"
+                            description="No hay equipos ni paquetes con estos filtros."
+                            actionLabel={hasActiveFilters ? 'Limpiar filtros' : undefined}
+                            onAction={hasActiveFilters ? clearFilters : undefined}
+                            style={{ flex: 1 }}
+                        />
                     ) : (
                         <FlatList
+                            key={columns}
                             data={filteredExploreItems}
-                            keyExtractor={(item) => item.id}
-                            numColumns={2}
-                            columnWrapperStyle={{ gap: Spacing.three, paddingHorizontal: Spacing.four }}
-                            contentContainerStyle={{ gap: Spacing.four, paddingTop: Spacing.two, paddingBottom: Spacing.six }}
+                            keyExtractor={(item) => `${item.tipo}-${item.id}`}
+                            numColumns={columns}
+                            columnWrapperStyle={{ gap: Spacing.three, paddingHorizontal: gutter }}
+                            contentContainerStyle={{ gap: Spacing.four, paddingTop: Spacing.two, paddingBottom: bottomInset + MinTouch + Spacing.four }}
                             keyboardShouldPersistTaps="handled"
-                            renderItem={({ item }) => <ExploreCard item={item} width={CARD_WIDTH} />}
+                            contentInsetAdjustmentBehavior="automatic"
+                            renderItem={({ item }) => <ItemCard item={item} width={cardWidth()} isFavorito={favoriteIds.has(item.id)} />}
                         />
                     )}
 
@@ -243,38 +240,43 @@ export function HomeScreen() {
                             router.push({
                                 pathname: '/map',
                                 params: { category: activeCategory, city: city ?? '', query, maxPrice },
-                            } as any)
+                            } as never)
                         }
-                        style={{
-                            position: 'absolute',
-                            bottom: BottomTabInset + Spacing.three,
-                            alignSelf: 'center',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 6,
-                            backgroundColor: '#111',
-                            paddingHorizontal: Spacing.four,
-                            paddingVertical: Spacing.three,
-                            borderRadius: 999,
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.3,
-                            shadowRadius: 8,
-                            elevation: 6,
-                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Ver en el mapa"
+                        style={[
+                            {
+                                position: 'absolute',
+                                bottom: bottomInset,
+                                alignSelf: 'center',
+                                minHeight: MinTouch,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: Spacing.two,
+                                backgroundColor: colors.primary,
+                                paddingHorizontal: Spacing.four,
+                                borderRadius: Radius.full,
+                            },
+                            Shadows.floating,
+                        ]}
                     >
-                        <Ionicons name="map" size={16} color="#fff" />
-                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: '#fff' }}>Mapa</ThemedText>
+                        <Ionicons name="map" size={18} color={colors.onPrimary} />
+                        <Text variant="button" style={{ color: colors.onPrimary, fontSize: 14 }}>
+                            Mapa
+                        </Text>
                     </Pressable>
                 </>
             ) : (
                 <ScrollView
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
                     keyboardShouldPersistTaps="handled"
+                    contentInsetAdjustmentBehavior="automatic"
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: bottomInset + Spacing.four }}
                 >
                     {filteredCityGroups.map((group) => (
                         <CityCarousel
-                            key={group.city}
+                            key={cityKey(group.city)}
                             title={`Equipos populares en ${group.city}`}
                             items={group.items}
                             favoriteIds={favoriteIds}
@@ -285,7 +287,7 @@ export function HomeScreen() {
                         />
                     ))}
 
-                    {activeCategory === 'all' && data && data.packages.length > 0 && (
+                    {showPackages && data && (
                         <CityCarousel
                             title="Paquetes destacados"
                             subtitle="Combos listos para rentar que ahorran dinero y tiempo"
@@ -294,15 +296,14 @@ export function HomeScreen() {
                         />
                     )}
 
-                    {filteredCityGroups.length === 0 && (!(activeCategory === 'all' && data && data.packages.length > 0)) && (
-                        <View style={{ paddingHorizontal: Spacing.five, paddingTop: Spacing.six, alignItems: 'center' }}>
-                            <ThemedText style={{ color: colors.textSecondary, textAlign: 'center' }}>
-                                No hay equipos en esta categoría todavía.
-                            </ThemedText>
-                        </View>
+                    {filteredCityGroups.length === 0 && !showPackages && (
+                        <EmptyState
+                            icon="albums-outline"
+                            title="Aún no hay equipos aquí"
+                            description="No hay equipos en esta categoría todavía."
+                            style={{ paddingTop: Spacing.six }}
+                        />
                     )}
-
-                    <View style={{ height: Spacing.six }} />
                 </ScrollView>
             )}
         </SafeAreaView>

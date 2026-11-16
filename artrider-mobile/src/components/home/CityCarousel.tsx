@@ -1,10 +1,11 @@
-import { View, ScrollView, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { HomeCard } from './HomeCard';
+import { FlatList, View } from 'react-native';
+
+import { ItemCard } from '@/components/ui/ItemCard';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { Spacing } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import type { HomeCardItem } from '@/services/homeService';
+
 export function CityCarousel({
     title,
     subtitle,
@@ -18,34 +19,26 @@ export function CityCarousel({
     favoriteIds: Set<string>;
     onSeeMore?: () => void;
 }) {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const { gutter, carouselCardWidth } = useLayout();
     if (items.length === 0) return null;
 
-    const Header = (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: Spacing.four, marginBottom: Spacing.three }}>
-            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 19, color: colors.text }}>{title}</ThemedText>
-            <Ionicons name="chevron-forward" size={18} color={colors.text} />
-        </View>
-    );
-
     return (
-        <View style={{ paddingTop: Spacing.four }}>
-            {onSeeMore ? <Pressable onPress={onSeeMore}>{Header}</Pressable> : Header}
-            {subtitle && (
-                <ThemedText style={{ fontSize: 13, color: colors.textSecondary, paddingHorizontal: Spacing.four, marginTop: -8, marginBottom: Spacing.two }}>
-                    {subtitle}
-                </ThemedText>
-            )}
-            <ScrollView
+        <View style={{ paddingTop: Spacing.four, gap: Spacing.three }}>
+            <SectionHeader
+                title={title}
+                subtitle={subtitle}
+                actionLabel={onSeeMore ? 'Ver más' : undefined}
+                onActionPress={onSeeMore}
+                style={{ paddingHorizontal: gutter }}
+            />
+            <FlatList
                 horizontal
+                data={items}
+                keyExtractor={(item) => `${item.tipo}-${item.id}`}
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: Spacing.three, paddingHorizontal: Spacing.four }}
-            >
-                {items.map((item) => (
-                    <HomeCard key={item.id} item={item} isFavorito={favoriteIds.has(item.id)} />
-                ))}
-            </ScrollView>
+                contentContainerStyle={{ gap: Spacing.three, paddingHorizontal: gutter }}
+                renderItem={({ item }) => <ItemCard item={item} width={carouselCardWidth} isFavorito={favoriteIds.has(item.id)} />}
+            />
         </View>
     );
 }
