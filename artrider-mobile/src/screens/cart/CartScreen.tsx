@@ -1,23 +1,25 @@
 import { useCallback, useState } from 'react';
-import { View, FlatList, Pressable, Image, ActivityIndicator } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from 'expo-router';
+import { View, FlatList } from 'react-native';
+import { Image } from 'expo-image';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
-import { ThemedText } from '@/components/themed-text';
-import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { IconButton } from '@/components/ui/IconButton';
+import { PriceSummary } from '@/components/ui/PriceSummary';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Text } from '@/components/ui/Text';
+import { Radius, Spacing } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
 import { getCartItems, removeFromCart, type CartItem } from '@/services/cartService';
-
-const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+import { formatShortDate } from '@/utils/format';
 
 function formatDateRange(start: string, end: string): string {
-    const s = new Date(start);
-    const e = new Date(end);
-    return `${s.getUTCDate()} ${MONTHS[s.getUTCMonth()]} – ${e.getUTCDate()} ${MONTHS[e.getUTCMonth()]}`;
+    return `${formatShortDate(start)} – ${formatShortDate(end)}`;
 }
 
 function daysBetween(start: string, end: string): number {
@@ -25,9 +27,9 @@ function daysBetween(start: string, end: string): number {
 }
 
 export function CartScreen() {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
     const router = useRouter();
+    const { gutter, insets, contentWidth } = useLayout();
 
     const [items, setItems] = useState<CartItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -52,36 +54,31 @@ export function CartScreen() {
     const serviceFee = Math.ceil(subtotal * 0.05);
     const total = subtotal + serviceFee;
 
-    if (loading) {
-        return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={colors.primary} />
-            </SafeAreaView>
-        );
-    }
-
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two }}>
-                <BackButton />
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text }}>
-                    Carrito
-                </ThemedText>
-            </View>
+            <ScreenHeader title="Carrito" />
 
-            {items.length === 0 ? (
-                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four }}>
-                    <Ionicons name="cart-outline" size={40} color={colors.textSecondary} style={{ marginBottom: Spacing.three }} />
-                    <ThemedText style={{ color: colors.textSecondary, textAlign: 'center' }}>
-                        Tu carrito está vacío. Agrega equipos o paquetes desde su página de detalle.
-                    </ThemedText>
+            {loading ? (
+                <View style={{ padding: gutter, gap: Spacing.three }}>
+                    {[0, 1, 2].map((i) => (
+                        <Skeleton key={i} height={96} radius={Radius.card} />
+                    ))}
                 </View>
+            ) : items.length === 0 ? (
+                <EmptyState
+                    icon="cart-outline"
+                    title="Tu carrito está vacío"
+                    description="Tu carrito está vacío. Agrega equipos o paquetes desde su página de detalle."
+                    actionLabel="Explorar equipos"
+                    onAction={() => router.back()}
+                    style={{ flex: 1 }}
+                />
             ) : (
                 <>
                     <FlatList
                         data={items}
                         keyExtractor={(item) => item.id}
-                        contentContainerStyle={{ padding: Spacing.four, gap: Spacing.three }}
+                        contentContainerStyle={{ padding: gutter, gap: Spacing.three, width: '100%', maxWidth: contentWidth, alignSelf: 'center' }}
                         renderItem={({ item }) => {
                             const days = daysBetween(item.start_date, item.end_date);
                             const itemTotal = item.daily_price ? (item.daily_price * item.quantity * days) / 100 : 0;
@@ -89,58 +86,63 @@ export function CartScreen() {
                                 <View
                                     style={{
                                         flexDirection: 'row',
+                                        alignItems: 'center',
                                         gap: Spacing.three,
                                         backgroundColor: colors.backgroundElement,
-                                        borderRadius: Radius.lg,
+                                        borderRadius: Radius.card,
                                         padding: Spacing.three,
                                     }}
                                 >
-                                    <View style={{ width: 64, height: 64, borderRadius: Radius.md, overflow: 'hidden' }}>
+                                    <View style={{ width: 72, height: 72, borderRadius: Radius.xl, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
                                         {item.cover_image_url ? (
-                                            <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                                            <Image
+                                                source={{ uri: item.cover_image_url }}
+                                                style={{ width: 72, height: 72 }}
+                                                contentFit="cover"
+                                                transition={150}
+                                                cachePolicy="memory-disk"
+                                            />
                                         ) : (
-                                            <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
+                                            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                                                <Ionicons name="image-outline" size={24} color={colors.textMuted} />
+                                            </View>
                                         )}
                                     </View>
-                                    <View style={{ flex: 1 }}>
-                                        <ThemedText numberOfLines={1} style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text }}>
+                                    <View style={{ flex: 1, gap: 2 }}>
+                                        <Text variant="bodyStrong" numberOfLines={2}>
                                             {item.title ?? (item.item_type === 'package' ? 'Paquete' : 'Equipo')}
-                                        </ThemedText>
-                                        <ThemedText style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                                        </Text>
+                                        <Text variant="caption" color="textSecondary">
                                             {formatDateRange(item.start_date, item.end_date)}
                                             {item.quantity > 1 ? ` · x${item.quantity}` : ''}
-                                        </ThemedText>
-                                        <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginTop: 4 }}>
-                                            ${itemTotal.toFixed(2)}
-                                        </ThemedText>
+                                        </Text>
+                                        <Text variant="bodyStrong">${itemTotal.toFixed(2)}</Text>
                                     </View>
-                                    <Pressable onPress={() => handleRemove(item.id)} hitSlop={8} style={{ padding: 4 }}>
-                                        <Ionicons name="trash-outline" size={18} color={colors.textSecondary} />
-                                    </Pressable>
+                                    <IconButton icon="trash-outline" label="Quitar del carrito" onPress={() => handleRemove(item.id)} variant="surface" />
                                 </View>
                             );
                         }}
                     />
 
-                    <View style={{ padding: Spacing.four, borderTopWidth: 1, borderColor: colors.border }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.one }}>
-                            <ThemedText style={{ fontSize: 13.5, color: colors.textSecondary }}>Subtotal</ThemedText>
-                            <ThemedText style={{ fontSize: 13.5, color: colors.text }}>${(subtotal / 100).toFixed(2)}</ThemedText>
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.three }}>
-                            <ThemedText style={{ fontSize: 13.5, color: colors.textSecondary }}>Comisión de servicio (5%)</ThemedText>
-                            <ThemedText style={{ fontSize: 13.5, color: colors.text }}>${(serviceFee / 100).toFixed(2)}</ThemedText>
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.four }}>
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>Total</ThemedText>
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>${(total / 100).toFixed(2)}</ThemedText>
-                        </View>
-                        <Pressable
-                            onPress={() => router.push('/checkout/cart-summary' as any)}
-                            style={{ backgroundColor: colors.primary, paddingVertical: Spacing.three, borderRadius: Radius.lg, alignItems: 'center' }}
-                        >
-                            <ThemedText style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 15 }}>Proceder al pago</ThemedText>
-                        </Pressable>
+                    <View
+                        style={{
+                            paddingHorizontal: gutter,
+                            paddingTop: Spacing.three,
+                            paddingBottom: Math.max(insets.bottom, Spacing.three),
+                            gap: Spacing.three,
+                            borderTopWidth: 1,
+                            borderColor: colors.border,
+                            backgroundColor: colors.background,
+                        }}
+                    >
+                        <PriceSummary
+                            lines={[
+                                { label: 'Subtotal', value: `$${(subtotal / 100).toFixed(2)}` },
+                                { label: 'Comisión de servicio (5%)', value: `$${(serviceFee / 100).toFixed(2)}` },
+                            ]}
+                            total={`$${(total / 100).toFixed(2)}`}
+                        />
+                        <Button label="Proceder al pago" onPress={() => router.push('/checkout/cart-summary' as never)} />
                     </View>
                 </>
             )}

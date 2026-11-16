@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react';
-import { View, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, TextInput } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { Text } from '@/components/ui/Text';
+import { Colors, Fonts, MinTouch, Spacing, Radius } from '@/constants/theme';
 
 const KUSHKI_MERCHANT_ID = process.env.EXPO_PUBLIC_KUSHKI_MERCHANT_ID || '7b1bae59194f4e74ae0aec0d506df181';
 
@@ -111,10 +112,10 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
 
     const inputStyle = {
         flex: 1,
-        paddingVertical: 12,
+        minHeight: MinTouch,
         paddingHorizontal: Spacing.two,
-        fontSize: 14,
-        fontFamily: 'Inter_400Regular',
+        fontSize: 15,
+        fontFamily: Fonts.sans,
         color: colors.text,
     } as const;
 
@@ -122,8 +123,8 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
         flexDirection: 'row' as const,
         alignItems: 'center' as const,
         backgroundColor: colors.backgroundElement,
-        borderRadius: Radius.md,
-        paddingHorizontal: Spacing.three,
+        borderRadius: Radius.xl,
+        paddingHorizontal: Spacing.two,
     };
 
     return (
@@ -132,98 +133,97 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
                 backgroundColor: colors.background,
                 borderWidth: 1,
                 borderColor: colors.border,
-                borderRadius: Radius.lg,
+                borderRadius: Radius.card,
                 padding: Spacing.four,
+                gap: Spacing.three,
             }}
         >
             {/* WebView invisible: solo ejecuta el SDK real de Kushki, no se ve en pantalla */}
-            <View style={{ width: 0, height: 0, opacity: 0 }}>
-                <WebView<object>
-                    ref={webviewRef}
-                    source={{ html: KUSHKI_HTML }}
-                    onMessage={handleWebViewMessage}
-                    javaScriptEnabled
-                />
-            </View>
+                        <View style={{ width: 0, height: 0, opacity: 0 }}>
+                            <WebView<object>
+                                ref={webviewRef}
+                                source={{ html: KUSHKI_HTML }}
+                                onMessage={handleWebViewMessage}
+                                javaScriptEnabled
+                            />
+                        </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginBottom: Spacing.four }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
                 <Ionicons name="lock-closed" size={18} color={colors.textSecondary} />
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text }}>Pago seguro</ThemedText>
+                <Text variant="subtitle">Pago seguro</Text>
             </View>
 
-            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12.5, color: colors.text, marginBottom: 6 }}>
-                Nombre en la tarjeta
-            </ThemedText>
-            <View style={[fieldWrapperStyle, { marginBottom: Spacing.three }]}>
-                <TextInput value={name} onChangeText={setName} placeholder="Ej: Juan Pérez" placeholderTextColor={colors.textSecondary} style={inputStyle} />
+            <View style={{ gap: 6 }}>
+                <Text variant="captionStrong">Nombre en la tarjeta</Text>
+                <View style={fieldWrapperStyle}>
+                    <TextInput
+                        value={name}
+                        onChangeText={setName}
+                        placeholder="Ej: Juan Pérez"
+                        placeholderTextColor={colors.textMuted}
+                        accessibilityLabel="Nombre en la tarjeta"
+                        maxFontSizeMultiplier={1.3}
+                        style={inputStyle}
+                    />
+                </View>
             </View>
 
-            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12.5, color: colors.text, marginBottom: 6 }}>
-                Número de tarjeta
-            </ThemedText>
-            <View style={[fieldWrapperStyle, { marginBottom: Spacing.three }]}>
-                <TextInput
-                    value={cardNumber}
-                    onChangeText={handleCardNumberChange}
-                    placeholder="5451 9515 7492 5480"
-                    placeholderTextColor={colors.textSecondary}
-                    keyboardType="number-pad"
-                    style={inputStyle}
-                />
+            <View style={{ gap: 6 }}>
+                <Text variant="captionStrong">Número de tarjeta</Text>
+                <View style={fieldWrapperStyle}>
+                    <TextInput
+                        value={cardNumber}
+                        onChangeText={handleCardNumberChange}
+                        placeholder="5451 9515 7492 5480"
+                        placeholderTextColor={colors.textMuted}
+                        keyboardType="number-pad"
+                        accessibilityLabel="Número de tarjeta"
+                        maxFontSizeMultiplier={1.3}
+                        style={inputStyle}
+                    />
+                </View>
             </View>
 
-            <View style={{ flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.four }}>
-                <View style={{ flex: 1 }}>
-                    <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12.5, color: colors.text, marginBottom: 6 }}>
-                        Vencimiento
-                    </ThemedText>
+            <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+                <View style={{ flex: 1, gap: 6 }}>
+                    <Text variant="captionStrong">Vencimiento</Text>
                     <View style={fieldWrapperStyle}>
                         <TextInput
                             value={expiry}
                             onChangeText={handleExpiryChange}
                             placeholder="12/28"
-                            placeholderTextColor={colors.textSecondary}
+                            placeholderTextColor={colors.textMuted}
                             keyboardType="number-pad"
+                            accessibilityLabel="Vencimiento"
+                            maxFontSizeMultiplier={1.3}
                             style={inputStyle}
                         />
                     </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                    <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12.5, color: colors.text, marginBottom: 6 }}>
-                        CVV
-                    </ThemedText>
+                <View style={{ flex: 1, gap: 6 }}>
+                    <Text variant="captionStrong">CVV</Text>
                     <View style={fieldWrapperStyle}>
                         <TextInput
                             value={cvv}
                             onChangeText={(t) => setCvv(t.replace(/\D/g, '').substring(0, 4))}
                             placeholder="123"
-                            placeholderTextColor={colors.textSecondary}
+                            placeholderTextColor={colors.textMuted}
                             keyboardType="number-pad"
                             secureTextEntry
+                            accessibilityLabel="CVV"
+                            maxFontSizeMultiplier={1.3}
                             style={inputStyle}
                         />
                     </View>
                 </View>
             </View>
 
-            <Pressable
+            <Button
+                label={`Pagar $${(amount / 100).toFixed(2)}`}
                 onPress={handleSubmit}
                 disabled={!isValid || processing}
-                style={{
-                    backgroundColor: !isValid || processing ? colors.backgroundSelected : '#111',
-                    paddingVertical: Spacing.three,
-                    borderRadius: Radius.lg,
-                    alignItems: 'center',
-                }}
-            >
-                {processing ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: '#fff' }}>
-                        Pagar ${(amount / 100).toFixed(2)}
-                    </ThemedText>
-                )}
-            </Pressable>
+                loading={processing}
+            />
         </View>
     );
 }

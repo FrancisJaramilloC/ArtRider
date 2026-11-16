@@ -1,11 +1,16 @@
-import { View, Pressable } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { PriceSummary } from '@/components/ui/PriceSummary';
+import { StickyFooter } from '@/components/ui/StickyFooter';
+import { Text } from '@/components/ui/Text';
+import { Radius, StatusColors, Spacing } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function CheckoutSuccessScreen() {
     const { id, listingTitle, from, to, total } = useLocalSearchParams<{
@@ -16,61 +21,55 @@ export default function CheckoutSuccessScreen() {
         total: string;
     }>();
     const router = useRouter();
+    const colors = useTheme();
     const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const { gutter, contentWidth } = useLayout();
+    const success = StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed;
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.five }}>
-                <View
-                    style={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: 40,
-                        backgroundColor: '#dcfce7',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: Spacing.five,
-                    }}
-                >
-                    <Ionicons name="checkmark" size={40} color="#166534" />
+            <View
+                style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: gutter,
+                    gap: Spacing.three,
+                    width: '100%',
+                    maxWidth: contentWidth,
+                    alignSelf: 'center',
+                }}
+            >
+                <View style={{ width: 80, height: 80, borderRadius: Radius.full, backgroundColor: success.bg, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="checkmark" size={40} color={success.fg} />
                 </View>
 
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 22, color: colors.text, textAlign: 'center', marginBottom: Spacing.two }}>
+                <Text variant="title" style={{ textAlign: 'center' }} accessibilityRole="header">
                     ¡Solicitud enviada!
-                </ThemedText>
-                <ThemedText style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: Spacing.five }}>
+                </Text>
+                <Text variant="body" color="textSecondary" style={{ textAlign: 'center' }}>
                     El proveedor revisará tu solicitud y la confirmará pronto.
-                </ThemedText>
+                </Text>
 
-                <View
-                    style={{
-                        width: '100%',
-                        backgroundColor: colors.backgroundElement,
-                        borderRadius: Radius.lg,
-                        padding: Spacing.four,
-                        gap: Spacing.two,
-                    }}
-                >
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text }}>{listingTitle}</ThemedText>
-                    <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>{from} → {to}</ThemedText>
-                    <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Reserva #{id.slice(0, 8)}</ThemedText>
-                    <View style={{ borderTopWidth: 1, borderColor: colors.border, marginTop: Spacing.two, paddingTop: Spacing.two }}>
-                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>
-                            Total pagado: ${(Number(total) / 100).toFixed(2)}
-                        </ThemedText>
+                <View style={{ alignSelf: 'stretch', backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Spacing.four, gap: Spacing.two, marginTop: Spacing.two }}>
+                    <Text variant="subtitle" numberOfLines={2}>
+                        {listingTitle}
+                    </Text>
+                    <Text variant="caption" color="textSecondary">
+                        {from} → {to}
+                    </Text>
+                    <Text variant="caption" color="textMuted">
+                        Reserva #{id.slice(0, 8)}
+                    </Text>
+                    <View style={{ marginTop: Spacing.two }}>
+                        <PriceSummary lines={[]} totalLabel="Total pagado" total={`$${(Number(total) / 100).toFixed(2)}`} />
                     </View>
                 </View>
             </View>
 
-            <View style={{ padding: Spacing.four }}>
-                <Pressable
-                    onPress={() => router.replace('/(tabs)/reservations')}
-                    style={{ backgroundColor: colors.primary, paddingVertical: Spacing.three, borderRadius: Radius.lg, alignItems: 'center' }}
-                >
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: '#fff' }}>Ver mis reservas</ThemedText>
-                </Pressable>
-            </View>
+            <StickyFooter>
+                <Button label="Ver mis reservas" onPress={() => router.replace('/(tabs)/reservations')} />
+            </StickyFooter>
         </SafeAreaView>
     );
 }

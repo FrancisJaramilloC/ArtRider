@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { View, ScrollView, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
 import { DateRangePicker, type DateRange } from '@/components/bookings/DateRangePicker';
-import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { QuantityStepper } from '@/components/ui/QuantityStepper';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { StickyFooter } from '@/components/ui/StickyFooter';
+import { Text } from '@/components/ui/Text';
+import { Radius, Spacing } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
 import { getListingById, type Listing } from '@/services/catalogService';
 import { getUnavailableDates, getAvailableUnitsCount } from '@/services/availabilityService';
 import { addToCart } from '@/services/cartService';
@@ -17,8 +21,8 @@ export default function CheckoutRoute() {
     const { id, mode } = useLocalSearchParams<{ id: string; mode?: string }>();
     const isCartMode = mode === 'cart';
     const router = useRouter();
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
+    const { gutter, contentWidth } = useLayout();
 
     const [listing, setListing] = useState<Listing | null>(null);
     const [blockedDates, setBlockedDates] = useState<string[]>([]);
@@ -65,22 +69,24 @@ export default function CheckoutRoute() {
                 quantity,
             });
             setAddingToCart(false);
-            router.push('/cart' as any);
+            router.push('/cart' as never);
             return;
         }
 
         router.push({
             pathname: '/checkout/summary/[id]',
             params: { id: listing.id, from: range.from, to: range.to, quantity: String(quantity) },
-        } as any);
+        } as never);
     }
 
     if (loading || !listing) {
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-                <BackButton style={{ position: 'absolute', top: Spacing.four, left: Spacing.four, zIndex: 1 }} />
-                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                    <ActivityIndicator color={colors.primary} />
+                <ScreenHeader title="" />
+                <View style={{ padding: gutter, gap: Spacing.three }}>
+                    <Skeleton width="70%" height={24} />
+                    <Skeleton width="50%" height={16} />
+                    <Skeleton height={320} radius={Radius.card} />
                 </View>
             </SafeAreaView>
         );
@@ -88,110 +94,71 @@ export default function CheckoutRoute() {
 
     const maxQuantity = availableCount ?? 99;
     const canContinue = range.from && range.to && (availableCount === null || availableCount > 0) && quantity >= 1;
+    const hasRange = !!(range.from && range.to);
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            <ScrollView contentContainerStyle={{ padding: Spacing.four }}>
-                <BackButton style={{ marginBottom: Spacing.three }} />
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text, marginBottom: Spacing.one }}>
-                    {listing.title}
-                </ThemedText>
-                <ThemedText style={{ fontSize: 13, color: colors.textSecondary, marginBottom: Spacing.four }}>
+            <ScreenHeader title={listing.title ?? 'Reservar'} />
+            <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ padding: gutter, paddingBottom: Spacing.five, gap: Spacing.three, width: '100%', maxWidth: contentWidth, alignSelf: 'center' }}
+            >
+                <Text variant="body" color="textSecondary">
                     {isCartMode ? 'Selecciona las fechas para agregar al carrito' : 'Selecciona las fechas de tu reserva'}
-                </ThemedText>
+                </Text>
 
                 <DateRangePicker blockedDates={blockedDates} onChange={setRange} />
 
-                {range.from && range.to && (
+                {hasRange && (
                     <>
                         <View
                             style={{
-                                marginTop: Spacing.three,
                                 flexDirection: 'row',
                                 alignItems: 'center',
-                                gap: 6,
+                                gap: Spacing.two,
                                 backgroundColor: colors.backgroundElement,
-                                borderRadius: Radius.md,
+                                borderRadius: Radius.xl,
                                 padding: Spacing.three,
+                                minHeight: 52,
                             }}
                         >
                             {checkingAvailability ? (
                                 <ActivityIndicator size="small" color={colors.primary} />
                             ) : availableCount !== null && availableCount === 0 ? (
-                                <ThemedText style={{ fontSize: 13, color: colors.destructive }}>
+                                <Text variant="body" color="destructive">
                                     No hay unidades disponibles para esas fechas
-                                </ThemedText>
+                                </Text>
                             ) : (
-                                <ThemedText style={{ fontSize: 13, color: colors.textSecondary }}>
+                                <Text variant="body" color="textSecondary">
                                     {availableCount} {availableCount === 1 ? 'unidad disponible' : 'unidades disponibles'} para esas fechas
-                                </ThemedText>
+                                </Text>
                             )}
                         </View>
 
                         {availableCount !== null && availableCount > 0 && (
-                            <View
-                                style={{
-                                    marginTop: Spacing.three,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    backgroundColor: colors.backgroundElement,
-                                    borderRadius: Radius.md,
-                                    padding: Spacing.three,
-                                }}
-                            >
-                                <ThemedText style={{ fontSize: 14, color: colors.text, fontFamily: 'Inter_600SemiBold' }}>
-                                    Cantidad a rentar
-                                </ThemedText>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three }}>
-                                    <Pressable
-                                        onPress={() => setQuantity((q) => Math.max(1, q - 1))}
-                                        disabled={quantity <= 1}
-                                        style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', opacity: quantity <= 1 ? 0.4 : 1 }}
-                                    >
-                                        <Ionicons name="remove" size={16} color={colors.text} />
-                                    </Pressable>
-                                    <ThemedText style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: colors.text, minWidth: 20, textAlign: 'center' }}>
-                                        {quantity}
-                                    </ThemedText>
-                                    <Pressable
-                                        onPress={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
-                                        disabled={quantity >= maxQuantity}
-                                        style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', opacity: quantity >= maxQuantity ? 0.4 : 1 }}
-                                    >
-                                        <Ionicons name="add" size={16} color={colors.text} />
-                                    </Pressable>
-                                </View>
-                            </View>
+                            <QuantityStepper label="Cantidad a rentar" value={quantity} max={maxQuantity} onChange={setQuantity} />
                         )}
                     </>
                 )}
-
-                <View style={{ height: Spacing.six }} />
             </ScrollView>
 
-            <View style={{ padding: Spacing.four, borderTopWidth: 1, borderColor: colors.border }}>
-                <Pressable
-                    disabled={!canContinue || addingToCart}
+            <StickyFooter>
+                <Button
+                    label={
+                        !canContinue
+                            ? hasRange
+                                ? 'Sin disponibilidad'
+                                : 'Selecciona tus fechas'
+                            : isCartMode
+                              ? 'Agregar al carrito'
+                              : 'Continuar'
+                    }
                     onPress={handleContinue}
-                    style={{
-                        backgroundColor: canContinue ? colors.primary : colors.backgroundSelected,
-                        paddingVertical: Spacing.three,
-                        borderRadius: Radius.lg,
-                        alignItems: 'center',
-                    }}
-                >
-                    {addingToCart ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: canContinue ? '#fff' : colors.textSecondary }}>
-                            {!canContinue
-                                ? (range.from && range.to ? 'Sin disponibilidad' : 'Selecciona tus fechas')
-                                : isCartMode ? 'Agregar al carrito' : 'Continuar'}
-                        </ThemedText>
-                    )}
-                </Pressable>
-            </View>
+                    disabled={!canContinue}
+                    loading={addingToCart}
+                />
+            </StickyFooter>
         </SafeAreaView>
     );
 }

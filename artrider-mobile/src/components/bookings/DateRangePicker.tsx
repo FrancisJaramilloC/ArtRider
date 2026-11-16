@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Calendar, type DateData } from 'react-native-calendars';
 
-import { ThemedText } from '@/components/themed-text';
+import { Text } from '@/components/ui/Text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 
 export type DateRange = { from: string | null; to: string | null }; // YYYY-MM-DD
@@ -97,16 +97,16 @@ export function DateRangePicker({
                 startingDay: true,
                 endingDay: range.from === range.to,
                 color: colors.primary,
-                textColor: '#fff',
+                textColor: colors.onPrimary,
             };
         }
         if (range.from && range.to && range.from !== range.to) {
             let cursor = addDaysStr(range.from, 1);
             while (cursor < range.to) {
-                marks[cursor] = { ...marks[cursor], color: `${colors.primary}30`, textColor: colors.text };
+                marks[cursor] = { ...marks[cursor], color: colors.primarySoft, textColor: colors.text };
                 cursor = addDaysStr(cursor, 1);
             }
-            marks[range.to] = { ...marks[range.to], endingDay: true, color: colors.primary, textColor: '#fff' };
+            marks[range.to] = { ...marks[range.to], endingDay: true, color: colors.primary, textColor: colors.onPrimary };
         }
 
         return marks;
@@ -125,13 +125,13 @@ export function DateRangePicker({
                     calendarBackground: colors.background,
                     dayTextColor: colors.text,
                     monthTextColor: colors.text,
-                    textDisabledColor: colors.backgroundSelected,
+                    textDisabledColor: colors.textMuted,
                     arrowColor: colors.primary,
                     todayTextColor: colors.primary,
                     textDayFontFamily: 'Inter_500Medium',
                     textMonthFontFamily: 'Inter_700Bold',
                 }}
-                style={{ borderRadius: Radius.lg, overflow: 'hidden' }}
+                style={{ borderRadius: Radius.card, overflow: 'hidden' }}
             />
 
             {days > 0 && (
@@ -140,15 +140,15 @@ export function DateRangePicker({
                         marginTop: Spacing.three,
                         padding: Spacing.three,
                         backgroundColor: colors.backgroundElement,
-                        borderRadius: Radius.lg,
+                        borderRadius: Radius.xl,
                     }}
                 >
-                    <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text }}>
+                    <Text variant="bodyStrong">
                         {range.from === range.to ? range.from : `${range.from} → ${range.to}`}
-                    </ThemedText>
-                    <ThemedText style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                    </Text>
+                    <Text variant="caption" color="textSecondary">
                         {days} {days === 1 ? 'día' : 'días'} seleccionados
-                    </ThemedText>
+                    </Text>
                 </View>
             )}
         </View>
