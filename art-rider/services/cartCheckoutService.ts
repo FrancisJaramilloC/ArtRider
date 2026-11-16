@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import type { CartItem, CartQuote, CartQuoteItem, CartSource } from "@/types/cart";

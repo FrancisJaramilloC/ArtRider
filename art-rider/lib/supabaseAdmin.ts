@@ -1,3 +1,4 @@
+import "server-only";
 //  Cliente genérico de Supabase para el navegador
 import { createClient } from '@supabase/supabase-js';
 

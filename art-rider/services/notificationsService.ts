@@ -1,7 +1,6 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
-import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { revalidatePath } from "next/cache";
 
 export type NotificationType =
@@ -107,34 +106,5 @@ export async function markAllAsRead() {
   if (error) return { error: "Failed to mark all as read" };
 
   revalidatePath("/notifications", "layout");
-  return { success: true };
-}
-
-//Funcion para crear notificaciones
-
-export async function createNotification(payload: {
-  userId: string;
-  type: NotificationType;
-  title: string;
-  body?: string;
-  href?: string;
-  metadata?: any;
-}) {
-  const admin = createSupabaseAdminClient();
-
-  const { error } = await admin.from("notifications").insert({
-    user_id: payload.userId,
-    type: payload.type,
-    title: payload.title,
-    body: payload.body || null,
-    href: payload.href || null,
-    metadata: payload.metadata || {},
-  });
-
-  if (error) {
-    console.error("[notificationsService] createNotification error:", error);
-    return { error: error.message };
-  }
-
   return { success: true };
 }

@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { refundKushkiCharge } from "@/lib/kushki";

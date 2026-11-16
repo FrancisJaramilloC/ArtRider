@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import { createSupabaseAdminClient } from "@/lib/supabaseAdmin";
 import { buildCartQuote, createMultiProviderOrder } from "@/services/cartCheckoutService";
 import { chargeKushkiToken, refundKushkiCharge } from "@/lib/kushki";
-import { createNotification } from "@/services/notificationsService";
+import { createNotification } from "@/services/notificationsServer";
 
 export async function POST(request: Request) {
   let chargedTicket: string | null = null;

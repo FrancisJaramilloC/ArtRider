@@ -435,7 +435,7 @@ export async function createBooking(
     const clientName = clientProfile?.full_name || "Un usuario";
 
     // Notificación in-app al proveedor
-    const { createNotification } = await import("./notificationsService");
+    const { createNotification } = await import("./notificationsServer");
     await createNotification({
       userId: provider.user_id,
       type: "booking_request",
@@ -564,7 +564,7 @@ export async function updateBookingStatus(
       .single();
 
     const title = (listingData?.listing as any)?.title || "un equipo";
-    const { createNotification } = await import("./notificationsService");
+    const { createNotification } = await import("./notificationsServer");
 
     // Notificar al cliente según el estado
     if (status === "PAID" || status === "ACTIVE") {
@@ -639,7 +639,7 @@ export async function cancelBooking(bookingId: string) {
     }
 
     if (provider?.user_id) {
-      const { createNotification } = await import("./notificationsService");
+      const { createNotification } = await import("./notificationsServer");
       await createNotification({
         userId: provider.user_id,
         type: "booking_cancelled",
