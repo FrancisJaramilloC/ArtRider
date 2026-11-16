@@ -21,7 +21,9 @@ export function CategoryStrip({
         <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, paddingVertical: Spacing.two }}
+            // flexGrow 0: el contenedor mide lo que miden las chips (sin recortes ni huecos).
+            style={{ flexGrow: 0 }}
+            contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, alignItems: 'center' }}
         >
             {CATEGORIES.map(({ id, label, icon }) => (
                 <Chip key={id} label={label} icon={icon as IconName} active={activeCategory === id} onPress={() => onSelect(id)} />

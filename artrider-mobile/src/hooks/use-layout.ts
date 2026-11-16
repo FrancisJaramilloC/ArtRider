@@ -1,7 +1,11 @@
 import { Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Breakpoints, Gutter, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Breakpoints, Gutter, Rhythm, Spacing } from '@/constants/theme';
+
+/** Ancho máximo del contenido en pantallas ≥ 600 (centrado): 720 en tablet vertical, 960 en horizontal. */
+const TABLET_CONTENT_MAX = 720;
+const TABLET_CONTENT_MAX_WIDE = 960;
 
 /** Alto aproximado de la barra de pestañas flotante de iOS 26 (Liquid Glass), sin safe area. */
 const FLOATING_TAB_BAR_HEIGHT = 72;
@@ -49,12 +53,15 @@ export function useLayout(): LayoutInfo {
 
   const breakpoint = getBreakpoint(width);
   const gutter = Gutter[breakpoint];
-  const contentWidth = Math.min(width, MaxContentWidth * (breakpoint === 'tablet' ? 1.5 : 1));
-  const columns = breakpoint === 'tablet' ? (width > 900 ? 4 : 3) : 2;
+  const contentWidth = breakpoint === 'tablet' ? Math.min(width, width >= 900 ? TABLET_CONTENT_MAX_WIDE : TABLET_CONTENT_MAX) : width;
+  const columns = breakpoint === 'tablet' ? (contentWidth >= 900 ? 4 : 3) : 2;
   const innerWidth = contentWidth - gutter * 2;
+  const gap = Rhythm.cardGap;
 
-  const cardWidth = (cols: number = columns, gap: number = Spacing.three) => Math.floor((innerWidth - gap * (cols - 1)) / cols);
-  const carouselCardWidth = breakpoint === 'tablet' ? 240 : Math.round(Math.min(220, Math.max(148, innerWidth * 0.46)));
+  const cardWidth = (cols: number = columns, cardGap: number = gap) => Math.floor((innerWidth - cardGap * (cols - 1)) / cols);
+  // Carrusel: n tarjetas completas + 15 % de la siguiente asomando (2 en teléfono, 3 en ≥ 600).
+  const fullCards = breakpoint === 'tablet' ? 3 : 2;
+  const carouselCardWidth = Math.floor((contentWidth - gutter - fullCards * gap) / (fullCards + 0.15));
 
   return {
     width,

@@ -13,7 +13,7 @@ import { ItemCard } from '@/components/ui/ItemCard';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { ItemCardSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
-import { Fonts, MinTouch, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Fonts, MinTouch, Radius, Rhythm, Shadows, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getHomeData, type HomeData } from '@/services/homeService';
@@ -29,7 +29,9 @@ export function HomeScreen() {
     const colors = useTheme();
     const router = useRouter();
     const { isAuthenticated } = useAuth();
-    const { gutter, columns, cardWidth, bottomInset } = useLayout();
+    const { gutter, columns, cardWidth, bottomInset, contentWidth } = useLayout();
+    // En ≥ 600 el contenido se centra con ancho máximo; en teléfono ocupa todo el ancho.
+    const frame = { flex: 1, width: '100%', maxWidth: contentWidth, alignSelf: 'center' } as const;
 
     const [data, setData] = useState<HomeData | null>(null);
     const [exploreItems, setExploreItems] = useState<ExploreItem[]>([]);
@@ -140,6 +142,7 @@ export function HomeScreen() {
     if (loading) {
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+            <View style={frame}>
                 {header}
                 <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: gutter, paddingVertical: Spacing.three }}>
                     {[88, 104, 96, 80].map((w, i) => (
@@ -151,15 +154,19 @@ export function HomeScreen() {
                         <ItemCardSkeleton key={i} width={cardWidth()} />
                     ))}
                 </View>
+            </View>
             </SafeAreaView>
         );
     }
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+            <View style={frame}>
             {header}
 
-            <CategoryStrip activeCategory={activeCategory} onSelect={setActiveCategory} gutter={gutter} />
+            <View style={{ paddingTop: Spacing.three }}>
+                <CategoryStrip activeCategory={activeCategory} onSelect={setActiveCategory} gutter={gutter} />
+            </View>
 
             {isSearching ? (
                 <>
@@ -228,8 +235,8 @@ export function HomeScreen() {
                             data={filteredExploreItems}
                             keyExtractor={(item) => `${item.tipo}-${item.id}`}
                             numColumns={columns}
-                            columnWrapperStyle={{ gap: Spacing.three, paddingHorizontal: gutter }}
-                            contentContainerStyle={{ gap: Spacing.four, paddingTop: Spacing.two, paddingBottom: bottomInset + MinTouch + Spacing.four }}
+                            columnWrapperStyle={{ gap: Rhythm.cardGap, paddingHorizontal: gutter }}
+                            contentContainerStyle={{ gap: Spacing.four, paddingTop: Spacing.three, paddingBottom: bottomInset + MinTouch + Spacing.four }}
                             keyboardShouldPersistTaps="handled"
                             contentInsetAdjustmentBehavior="automatic"
                             renderItem={({ item }) => <ItemCard item={item} width={cardWidth()} isFavorito={favoriteIds.has(item.id)} />}
@@ -273,7 +280,7 @@ export function HomeScreen() {
                     keyboardShouldPersistTaps="handled"
                     contentInsetAdjustmentBehavior="automatic"
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: bottomInset + Spacing.four }}
+                    contentContainerStyle={{ paddingTop: Rhythm.chipsToSection, gap: Rhythm.section, paddingBottom: bottomInset + Spacing.four }}
                 >
                     {filteredCityGroups.map((group) => (
                         <CityCarousel
@@ -307,6 +314,7 @@ export function HomeScreen() {
                     )}
                 </ScrollView>
             )}
+        </View>
         </SafeAreaView>
     );
 }

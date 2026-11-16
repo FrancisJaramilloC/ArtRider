@@ -62,11 +62,12 @@ export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 export type BookingStatusKey = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
 export const StatusColors: Record<'light' | 'dark', Record<BookingStatusKey, { bg: string; fg: string }>> = {
+  // Modo oscuro: fondos translúcidos con texto claro (antes pastillas pastel que brillaban).
   dark: {
-    pending: { bg: '#FEF3C7', fg: '#92400E' },
-    confirmed: { bg: '#DCFCE7', fg: '#166534' },
-    cancelled: { bg: '#FEE2E2', fg: '#991B1B' },
-    completed: { bg: '#F3F4F6', fg: '#4B5563' },
+    pending: { bg: 'rgba(251, 191, 36, 0.16)', fg: '#FCD34D' },
+    confirmed: { bg: 'rgba(74, 222, 128, 0.16)', fg: '#86EFAC' },
+    cancelled: { bg: 'rgba(248, 113, 113, 0.16)', fg: '#FCA5A5' },
+    completed: { bg: 'rgba(255, 255, 255, 0.10)', fg: '#C3B8D1' },
   },
   light: {
     pending: { bg: '#FDF2DF', fg: '#A06A0C' },
@@ -150,8 +151,28 @@ export const FavoriteAccent = '#a97dc4';
 /** Objetivo táctil mínimo (Apple HIG / Material): 44pt. */
 export const MinTouch = 44;
 
-/** Márgenes laterales de pantalla por breakpoint (iguales en todas las pantallas). */
-export const Gutter = { compact: 16, regular: 24, tablet: 32 } as const;
+/**
+ * Margen horizontal de pantalla: 16 en teléfono (< 600) y 24 en ≥ 600. El MISMO a izquierda y
+ * derecha en todas las pantallas (aplicado por Screen/useLayout, no por cada pantalla).
+ */
+export const Gutter = { compact: 16, regular: 16, tablet: 24 } as const;
+
+/** Ritmo vertical (cuadrícula 4/8) compartido por todas las pantallas. */
+export const Rhythm = {
+  /** Separación entre secciones. */
+  section: 32,
+  /** Título (o subtítulo) de sección → su contenido. */
+  titleToContent: 12,
+  /** Chips de filtro → primera sección. */
+  chipsToSection: 24,
+  /** Padding interno de tarjetas. */
+  cardPadding: 12,
+  /** Separación entre tarjetas (carruseles y grillas). */
+  cardGap: 12,
+} as const;
+
+/** Miniatura cuadrada común de las filas de lista (reservas, carrito, mensajes). */
+export const Thumb = { list: 64, compact: 48 } as const;
 
 /** Breakpoints de ancho: compact < 360 ≤ regular ≤ 600 < tablet. */
 export const Breakpoints = { compactMax: 360, tabletMin: 600 } as const;
@@ -173,14 +194,15 @@ export const Type: Record<
   TypeVariant,
   { fontFamily: string; fontSize: number; lineHeight: number; letterSpacing?: number; textTransform?: 'uppercase' }
 > = {
+  // lineHeight ≈ 1.2–1.35 × fontSize (antes hasta 1.47×).
   display: { fontFamily: Fonts.sansBold, fontSize: 32, lineHeight: 38, letterSpacing: -0.4 },
   title: { fontFamily: Fonts.sansBold, fontSize: 24, lineHeight: 30, letterSpacing: -0.3 },
-  headline: { fontFamily: Fonts.sansBold, fontSize: 20, lineHeight: 26, letterSpacing: -0.2 },
-  subtitle: { fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 24 },
-  body: { fontFamily: Fonts.sans, fontSize: 15, lineHeight: 22 },
-  bodyStrong: { fontFamily: Fonts.sansSemiBold, fontSize: 15, lineHeight: 22 },
-  caption: { fontFamily: Fonts.sans, fontSize: 13, lineHeight: 18 },
-  captionStrong: { fontFamily: Fonts.sansSemiBold, fontSize: 13, lineHeight: 18 },
+  headline: { fontFamily: Fonts.sansBold, fontSize: 20, lineHeight: 25, letterSpacing: -0.2 },
+  subtitle: { fontFamily: Fonts.sansSemiBold, fontSize: 17, lineHeight: 22 },
+  body: { fontFamily: Fonts.sans, fontSize: 15, lineHeight: 20 },
+  bodyStrong: { fontFamily: Fonts.sansSemiBold, fontSize: 15, lineHeight: 20 },
+  caption: { fontFamily: Fonts.sans, fontSize: 13, lineHeight: 17 },
+  captionStrong: { fontFamily: Fonts.sansSemiBold, fontSize: 13, lineHeight: 17 },
   overline: { fontFamily: Fonts.sansBold, fontSize: 11, lineHeight: 14, letterSpacing: 0.6, textTransform: 'uppercase' },
   button: { fontFamily: Fonts.sansSemiBold, fontSize: 16, lineHeight: 20 },
 };

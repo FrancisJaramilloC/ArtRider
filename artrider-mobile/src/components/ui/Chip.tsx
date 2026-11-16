@@ -5,7 +5,8 @@ import { MinTouch, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Text } from './Text';
 
-const CHIP_HEIGHT = 40;
+/** Alto = objetivo táctil mínimo: sin hitSlop ni recortes. */
+const CHIP_HEIGHT = MinTouch;
 
 export type ChipProps = {
   label: string;
@@ -19,15 +20,14 @@ export type ChipProps = {
 export function Chip({ label, active = false, onPress, icon, style }: ChipProps) {
   const colors = useTheme();
   const fg = active ? colors.onPrimary : colors.textSecondary;
-  const slop = (MinTouch - CHIP_HEIGHT) / 2;
 
   return (
     <Pressable
+      testID="chip"
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
-      hitSlop={{ top: slop, bottom: slop }}
       style={[
         {
           height: CHIP_HEIGHT,

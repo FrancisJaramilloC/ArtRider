@@ -9,6 +9,7 @@ export default function AppTabs() {
   return (
     <NativeTabs
       backgroundColor={colors.background}
+      tintColor={colors.primary}
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="index">

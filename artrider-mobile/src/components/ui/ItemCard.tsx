@@ -5,8 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { CATEGORY_LABELS } from '@/constants/categories';
-import { Aspect, FavoriteAccent, MinTouch, Radius, Shadows, Spacing } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Aspect, FavoriteAccent, MinTouch, Radius, Spacing, Type } from '@/constants/theme';
 import { useFavorito } from '@/hooks/useFavorito';
 import { useTheme } from '@/hooks/use-theme';
 import { Badge } from './Badge';
@@ -32,11 +31,23 @@ export type ItemCardProps = {
   isFavorito?: boolean;
   /** Muestra el corazón sobre la foto (por defecto true: igual en todas las tarjetas). */
   showFavorite?: boolean;
+  /**
+   * `contain` (por defecto) para fotos de producto con fondo blanco; `cover` solo para fotos de
+   * ambiente. Siempre sobre un fondo neutro con borde sutil.
+   */
+  imageFit?: 'contain' | 'cover';
 };
 
-function ItemCardBase({ item, width, isFavorito = false, showFavorite = true }: ItemCardProps) {
+/** Distancia del badge y del corazón a las esquinas de la foto. */
+const CORNER = Spacing.two;
+/** Círculo visible del corazón; el área táctil es MinTouch. */
+const HEART_VISIBLE = 32;
+const TITLE_LINES = 2;
+const META_HEIGHT = Type.caption.lineHeight;
+const RATING_SLOT = 44;
+
+function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, imageFit = 'contain' }: ItemCardProps) {
   const colors = useTheme();
-  const scheme = useColorScheme();
   const router = useRouter();
   const { esFavorito, toggleFavorito } = useFavorito(item.id, item.tipo, isFavorito);
 
@@ -45,104 +56,111 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true }: 
   const hasRating = (item.rating ?? 0) > 0;
   const isNew = item.tipo === 'equipo' && !hasRating;
   const imageHeight = Math.round(width / Aspect.card);
+  const heartInset = CORNER - (MinTouch - HEART_VISIBLE) / 2;
 
   return (
-    <Pressable
-      onPress={() => router.push(item.href as never)}
-      accessibilityRole="button"
-      accessibilityLabel={`${item.title}, ${catLabel}${item.city ? `, ${item.city}` : ''}, ${price} por día`}
-      style={{ width }}
-    >
-      <View
-        style={[
-          { width, height: imageHeight, borderRadius: Radius.card, overflow: 'hidden', backgroundColor: colors.backgroundSelected },
-          scheme === 'dark' ? { borderWidth: 1, borderColor: colors.border } : Shadows.card,
-        ]}
+    // El corazón es HERMANO del Pressable de navegación (no anidado) y va posicionado en absoluto.
+    <View testID="item-card" style={{ width }}>
+      <Pressable
+        onPress={() => router.push(item.href as never)}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.title}, ${catLabel}${item.city ? `, ${item.city}` : ''}, ${price} por día`}
+        style={{ flex: 1 }}
       >
-        {item.cover_image_url ? (
-          <Image
-            source={{ uri: item.cover_image_url }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="cover"
-            transition={150}
-            cachePolicy="memory-disk"
-            recyclingKey={item.id}
-            accessibilityIgnoresInvertColors
-          />
-        ) : (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="image-outline" size={32} color={colors.textMuted} />
+        <View
+          style={{
+            width,
+            height: imageHeight,
+            borderRadius: Radius.card,
+            overflow: 'hidden',
+            backgroundColor: colors.backgroundElement,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}
+        >
+          {item.cover_image_url ? (
+            <Image
+              source={{ uri: item.cover_image_url }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit={imageFit}
+              transition={150}
+              cachePolicy="memory-disk"
+              recyclingKey={item.id}
+              accessibilityIgnoresInvertColors
+            />
+          ) : (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="image-outline" size={32} color={colors.textMuted} />
+            </View>
+          )}
+        </View>
+
+        {/* Texto: bloque superior de alto reservado + precio anclado al fondo de la tarjeta. */}
+        <View style={{ flex: 1, minWidth: 0, justifyContent: 'space-between', paddingTop: Spacing.two, gap: Spacing.one }}>
+          <View style={{ gap: 2 }}>
+            <Text variant="overline" color="textMuted" numberOfLines={1}>
+              {catLabel}
+            </Text>
+            <Text variant="bodyStrong" numberOfLines={TITLE_LINES} style={{ minHeight: Type.bodyStrong.lineHeight * TITLE_LINES }}>
+              {item.title}
+            </Text>
+            <View style={{ height: META_HEIGHT, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+              <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                {item.city ? (
+                  <>
+                    <Ionicons name="location-outline" size={13} color={colors.textSecondary} />
+                    <Text variant="caption" color="textSecondary" numberOfLines={1} style={{ flexShrink: 1 }}>
+                      {item.city}
+                    </Text>
+                  </>
+                ) : null}
+              </View>
+              {/* Espacio reservado: el rating siempre ocupa la misma posición, haya o no calificación. */}
+              <View style={{ width: RATING_SLOT, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
+                {hasRating ? (
+                  <>
+                    <Ionicons name="star" size={12} color={colors.text} />
+                    <Text variant="captionStrong">{(item.rating ?? 0).toFixed(1)}</Text>
+                  </>
+                ) : null}
+              </View>
+            </View>
           </View>
-        )}
+          <Text testID="item-price" variant="caption" color="textSecondary">
+            <Text variant="bodyStrong">{price}</Text> por día
+          </Text>
+        </View>
+      </Pressable>
 
-        {item.tipo === 'paquete' ? (
-          <Badge label="Paquete" tone="neutral" style={{ position: 'absolute', left: Spacing.two, top: Spacing.two }} />
-        ) : isNew ? (
-          <Badge label="Nuevo" tone="accent" style={{ position: 'absolute', left: Spacing.two, top: Spacing.two }} />
-        ) : null}
+      {item.tipo === 'paquete' ? (
+        <Badge label="Paquete" tone="neutral" style={{ position: 'absolute', left: CORNER, top: CORNER }} />
+      ) : isNew ? (
+        <Badge label="Nuevo" tone="accent" style={{ position: 'absolute', left: CORNER, top: CORNER }} />
+      ) : null}
 
-        {showFavorite ? (
-          <Pressable
-            onPress={toggleFavorito}
-            accessibilityRole="button"
-            accessibilityLabel={esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'}
-            accessibilityState={{ selected: esFavorito }}
+      {showFavorite ? (
+        <Pressable
+          onPress={toggleFavorito}
+          accessibilityRole="button"
+          accessibilityLabel={esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'}
+          accessibilityState={{ selected: esFavorito }}
+          style={{ position: 'absolute', right: heartInset, top: heartInset, width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <View
             style={{
-              position: 'absolute',
-              right: 0,
-              top: 0,
-              width: MinTouch,
-              height: MinTouch,
+              width: HEART_VISIBLE,
+              height: HEART_VISIBLE,
+              borderRadius: Radius.full,
+              backgroundColor: colors.onImageSurface,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: Radius.full,
-                backgroundColor: colors.onImageSurface,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name={esFavorito ? 'heart' : 'heart-outline'} size={18} color={esFavorito ? FavoriteAccent : colors.onImage} />
-            </View>
-          </Pressable>
-        ) : null}
-      </View>
-
-      <View style={{ paddingTop: Spacing.two, gap: 2 }}>
-        <Text variant="overline" color="textMuted" numberOfLines={1}>
-          {catLabel}
-        </Text>
-        <Text variant="bodyStrong" numberOfLines={2}>
-          {item.title}
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-          {item.city ? (
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-              <Ionicons name="location-outline" size={13} color={colors.textSecondary} />
-              <Text variant="caption" color="textSecondary" numberOfLines={1} style={{ flexShrink: 1 }}>
-                {item.city}
-              </Text>
-            </View>
-          ) : (
-            <View style={{ flex: 1 }} />
-          )}
-          {hasRating ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-              <Ionicons name="star" size={12} color={colors.text} />
-              <Text variant="captionStrong">{(item.rating ?? 0).toFixed(1)}</Text>
-            </View>
-          ) : null}
-        </View>
-        <Text variant="caption" color="textSecondary" style={{ marginTop: 2 }}>
-          <Text variant="bodyStrong">{price}</Text> por día
-        </Text>
-      </View>
-    </Pressable>
+            <Ionicons name={esFavorito ? 'heart' : 'heart-outline'} size={18} color={esFavorito ? FavoriteAccent : colors.onImage} />
+          </View>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 

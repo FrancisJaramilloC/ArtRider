@@ -17,9 +17,9 @@ export type SectionHeaderProps = {
 export function SectionHeader({ title, subtitle, actionLabel, onActionPress, style }: SectionHeaderProps) {
   const colors = useTheme();
   return (
-    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }, style]}>
+    <View testID="section-header" style={[{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }, style]}>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text variant="headline" numberOfLines={2} accessibilityRole="header">
+        <Text testID="section-title" variant="headline" numberOfLines={2} accessibilityRole="header">
           {title}
         </Text>
         {subtitle ? (
@@ -30,6 +30,7 @@ export function SectionHeader({ title, subtitle, actionLabel, onActionPress, sty
       </View>
       {actionLabel && onActionPress ? (
         <Pressable
+          testID="section-action"
           onPress={onActionPress}
           accessibilityRole="button"
           accessibilityLabel={actionLabel}
