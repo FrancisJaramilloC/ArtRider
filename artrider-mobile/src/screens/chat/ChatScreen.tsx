@@ -4,12 +4,11 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, MinTouch, Radius, Spacing, StatusColors } from '@/constants/theme';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 import {
@@ -204,7 +203,7 @@ export function ChatScreen() {
                     </ThemedText>
                     {!isDraft && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: otherOnline ? '#22c55e' : colors.textSecondary }} />
+                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: otherOnline ? StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.fg : colors.textMuted }} />
                             <ThemedText style={{ fontSize: 11, color: colors.textSecondary }}>
                                 {otherTyping ? 'escribiendo...' : otherOnline ? 'en línea' : 'desconectado'}
                             </ThemedText>
@@ -236,7 +235,7 @@ export function ChatScreen() {
                         {aboutItem.cover_image_url ? (
                             <Image source={{ uri: aboutItem.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                         ) : (
-                            <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
+                            <View style={{ width: '100%', height: '100%', backgroundColor: colors.backgroundSelected }} />
                         )}
                     </View>
                     <ThemedText numberOfLines={1} style={{ flex: 1, fontSize: 12.5, color: colors.textSecondary }}>
@@ -271,14 +270,14 @@ export function ChatScreen() {
                                         style={{
                                             maxWidth: '78%',
                                             backgroundColor: isMine ? colors.primary : colors.backgroundElement,
-                                            borderRadius: Radius.lg,
-                                            borderBottomRightRadius: isMine ? 4 : Radius.lg,
-                                            borderBottomLeftRadius: isMine ? Radius.lg : 4,
+                                            borderRadius: Radius.card,
+                                            borderBottomRightRadius: isMine ? 4 : Radius.card,
+                                            borderBottomLeftRadius: isMine ? Radius.card : 4,
                                             paddingHorizontal: Spacing.three,
                                             paddingVertical: Spacing.two,
                                         }}
                                     >
-                                        <ThemedText style={{ fontSize: 14, color: isMine ? '#fff' : colors.text }}>{item.content}</ThemedText>
+                                        <ThemedText style={{ fontSize: 14, color: isMine ? colors.onPrimary : colors.text }}>{item.content}</ThemedText>
                                     </View>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
                                         <ThemedText style={{ fontSize: 10, color: colors.textSecondary }}>{formatTime(item.sent_at)}</ThemedText>
@@ -303,7 +302,7 @@ export function ChatScreen() {
                             value={text}
                             onChangeText={handleTextChange}
                             placeholder="Escribe un mensaje..."
-                            placeholderTextColor={colors.textSecondary}
+                            placeholderTextColor={colors.textMuted}
                             multiline
                             style={{ paddingVertical: 10, fontSize: 14, color: colors.text, fontFamily: 'Inter_400Regular', maxHeight: 100 }}
                         />
@@ -312,9 +311,9 @@ export function ChatScreen() {
                         onPress={handleSend}
                         disabled={!text.trim() || sending}
                         style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 20,
+                            width: MinTouch,
+                            height: MinTouch,
+                            borderRadius: MinTouch / 2,
                             backgroundColor: !text.trim() || sending ? colors.backgroundSelected : colors.primary,
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -323,7 +322,7 @@ export function ChatScreen() {
                         {sending ? (
                             <ActivityIndicator size="small" color={colors.textSecondary} />
                         ) : (
-                            <Ionicons name="send" size={17} color={!text.trim() ? colors.textSecondary : '#fff'} />
+                            <Ionicons name="send" size={17} color={!text.trim() ? colors.textMuted : colors.onPrimary} />
                         )}
                     </Pressable>
                 </View>
