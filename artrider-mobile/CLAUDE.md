@@ -19,6 +19,12 @@ pnpm exec expo export --platform ios      # y android; borrar dist/ después
 pnpm exec expo install <paquete>          # para librerías nativas (versión del SDK)
 ```
 
+## Vista web (solo para revisar diseño)
+
+- Abrir con `pnpm exec expo start --web --port 8082`. La web NO es un destino de producción (`app.json` → `web.output: "single"`).
+- `metro.config.js` sustituye SOLO en web `react-native-maps`, `react-native-map-clustering` y `react-native-webview` por stubs de `src/dev/web-stubs/` (placeholder con borde discontinuo); iOS y Android no cambian.
+- El pago (WebView de Kushki) y los mapas no funcionan en web; no usar esta vista para probar flujos.
+
 ## Estructura (`src/`)
 
 - `app/` rutas expo-router (finas, montan una pantalla): `(auth)`, `(tabs)`, `(provider)`, `listing/`, `package/`, `checkout/`, `chat/`, `provider/`…
