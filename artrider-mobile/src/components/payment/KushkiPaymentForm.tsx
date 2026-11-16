@@ -139,14 +139,14 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
             }}
         >
             {/* WebView invisible: solo ejecuta el SDK real de Kushki, no se ve en pantalla */}
-                        <View style={{ width: 0, height: 0, opacity: 0 }}>
-                            <WebView<object>
-                                ref={webviewRef}
-                                source={{ html: KUSHKI_HTML }}
-                                onMessage={handleWebViewMessage}
-                                javaScriptEnabled
-                            />
-                        </View>
+            <View style={{ width: 0, height: 0, opacity: 0 }}>
+                <WebView<object>
+                    ref={webviewRef}
+                    source={{ html: KUSHKI_HTML }}
+                    onMessage={handleWebViewMessage}
+                    javaScriptEnabled
+                />
+            </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
                 <Ionicons name="lock-closed" size={18} color={colors.textSecondary} />

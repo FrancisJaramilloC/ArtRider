@@ -215,6 +215,8 @@ export function ChatScreen() {
             {/* Chip minimalista del listing o paquete sobre el que se está hablando */}
             {aboutItem && (
                 <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`Ver ${aboutItem.kind === 'package' ? 'el paquete' : 'el equipo'} ${aboutItem.title ?? ''}`}
                     onPress={() =>
                         router.push(
                             (aboutItem.kind === 'listing' ? `/listing/${aboutItem.id}` : `/package/${aboutItem.id}`) as any
@@ -310,6 +312,8 @@ export function ChatScreen() {
                     <Pressable
                         onPress={handleSend}
                         disabled={!text.trim() || sending}
+                        accessibilityRole="button"
+                        accessibilityLabel="Enviar mensaje"
                         style={{
                             width: MinTouch,
                             height: MinTouch,

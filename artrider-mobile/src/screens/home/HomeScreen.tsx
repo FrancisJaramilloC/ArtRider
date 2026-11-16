@@ -78,9 +78,10 @@ export function HomeScreen() {
     const isSearching = searchFocused || query.trim().length > 0 || city !== null || maxPrice.length > 0;
 
     const cities = useMemo(() => {
-        const set = new Set<string>();
-        exploreItems.forEach((item) => item.city && set.add(item.city));
-        return Array.from(set).sort();
+        // Una sola chip por ciudad aunque difiera en mayúsculas o acentos.
+        const byKey = new Map<string, string>();
+        exploreItems.forEach((item) => item.city && !byKey.has(cityKey(item.city)) && byKey.set(cityKey(item.city), item.city));
+        return Array.from(byKey.values()).sort();
     }, [exploreItems]);
 
     const filteredExploreItems = useMemo(() => {

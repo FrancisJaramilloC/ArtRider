@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { cityKey } from '@/utils/city';
 import { View, ActivityIndicator, Pressable } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -40,7 +41,8 @@ export function MapScreen() {
       list = list.filter((l) => l.category === params.category);
     }
     if (params.city) {
-      list = list.filter((l) => l.address?.city === params.city);
+      const wanted = cityKey(params.city);
+      list = list.filter((l) => !!l.address?.city && cityKey(l.address.city) === wanted);
     }
     if (params.query) {
       const q = params.query.toLowerCase();

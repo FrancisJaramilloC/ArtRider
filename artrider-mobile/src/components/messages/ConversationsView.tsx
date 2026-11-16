@@ -148,7 +148,7 @@ export function ConversationsView({ conversations, loading, refreshing, onRefres
         <EmptyState
           icon="chatbubbles-outline"
           title={filter === 'archived' ? 'Sin archivados' : conversations.length === 0 ? 'Aún no hay mensajes' : 'Sin resultados'}
-          description={filter === 'archived' ? 'No tienes conversaciones archivadas.' : conversations.length === 0 ? emptyText : 'Sin resultados.'}
+          description={filter === 'archived' ? 'No tienes conversaciones archivadas.' : conversations.length === 0 ? emptyText : 'Prueba con otra búsqueda.'}
           style={{ flex: 1 }}
         />
       ) : (

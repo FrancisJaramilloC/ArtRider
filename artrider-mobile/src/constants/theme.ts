@@ -12,7 +12,7 @@ export const Colors = {
   light: {
     text: '#111111',
     textSecondary: '#4b5563', // 7.5:1 sobre blanco
-    textMuted: '#6b7280', // 4.8:1 (AA) — antes #9ca3af (2.5:1)
+    textMuted: '#5b6472', // ≥ 5:1 sobre blanco y ≥ 4.5:1 sobre superficies tenues — antes #9ca3af (2.5:1)
     background: '#ffffff',
     backgroundElement: '#f5f5f5',
     backgroundSelected: '#e5e7eb',
@@ -22,7 +22,7 @@ export const Colors = {
     onPrimary: '#ffffff', // 5.4:1 sobre primary
     primarySoft: '#f1eaf5', // fondo tenue del acento (chips/íconos)
     border: '#e5e7eb',
-    destructive: '#dc2626', // 4.8:1 como texto sobre blanco
+    destructive: '#c81e1e', // ≥ 5.5:1 sobre blanco y sobre destructiveSoft
     destructiveSoft: '#fef2f2', // fondo de avisos de error
     scrim: 'rgba(17, 17, 17, 0.5)',
     onImage: '#ffffff', // texto/íconos sobre fotos
