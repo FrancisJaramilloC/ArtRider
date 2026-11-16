@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
-import { View, ScrollView, Pressable, Image, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, ScrollView, Pressable, Image, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
+import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius, StatusColors, BOOKING_STATUS_LABELS, toStatusKey } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -67,9 +67,7 @@ export function ProviderTodayScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
+      <ScreenSkeleton />
     );
   }
 
@@ -181,7 +179,7 @@ export function ProviderTodayScreen() {
                     {booking.listing_cover_image_url ? (
                       <Image source={{ uri: booking.listing_cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     ) : (
-                      <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
+                      <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
                     )}
                   </View>
                   <View style={{ flex: 1 }}>

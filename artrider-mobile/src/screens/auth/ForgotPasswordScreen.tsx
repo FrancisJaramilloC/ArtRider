@@ -85,7 +85,7 @@ export function ForgotPasswordScreen() {
                                 {error && (
                                     <View
                                         style={{
-                                            backgroundColor: scheme === 'dark' ? 'rgba(248,113,113,0.15)' : '#fef2f2',
+                                            backgroundColor: colors.destructiveSoft,
                                             borderRadius: Radius.lg,
                                             padding: Spacing.three,
                                             marginBottom: Spacing.four,
@@ -137,8 +137,8 @@ export function ForgotPasswordScreen() {
                                         opacity: pressed ? 0.9 : 1,
                                     })}
                                 >
-                                    {loading ? <ActivityIndicator color="#fff" /> : (
-                                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: '#fff' }}>
+                                    {loading ? <ActivityIndicator color={colors.onPrimary} /> : (
+                                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.onPrimary }}>
                                             Enviar enlace
                                         </ThemedText>
                                     )}

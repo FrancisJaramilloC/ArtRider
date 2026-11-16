@@ -5,11 +5,9 @@ import { useWindowDimensions } from 'react-native';
 
 import { ImageGallery } from '@/components/listing/ImageGallery';
 import { IconButton } from '@/components/ui/IconButton';
-import { Aspect, Spacing } from '@/constants/theme';
+import { Aspect, FavoriteAccent, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
-
-const HEART_ACCENT = '#a97dc4'; // primary-400: legible sobre el círculo translúcido
 
 export type DetailHeroProps = {
   /** Fotos del equipo (galería) o la portada del paquete. */
@@ -42,7 +40,7 @@ export function DetailHero({ images, esFavorito, onToggleFavorito }: DetailHeroP
         icon={esFavorito ? 'heart' : 'heart-outline'}
         label={esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'}
         variant="overlay"
-        color={esFavorito ? HEART_ACCENT : colors.onImage}
+        color={esFavorito ? FavoriteAccent : colors.onImage}
         onPress={onToggleFavorito}
         style={{ position: 'absolute', top, right: gutter - 2 }}
       />

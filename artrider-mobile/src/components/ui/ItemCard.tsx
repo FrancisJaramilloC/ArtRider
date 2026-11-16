@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { CATEGORY_LABELS } from '@/constants/categories';
-import { Aspect, MinTouch, Radius, Shadows, Spacing } from '@/constants/theme';
+import { Aspect, FavoriteAccent, MinTouch, Radius, Shadows, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useFavorito } from '@/hooks/useFavorito';
 import { useTheme } from '@/hooks/use-theme';
@@ -33,8 +33,6 @@ export type ItemCardProps = {
   /** Muestra el corazón sobre la foto (por defecto true: igual en todas las tarjetas). */
   showFavorite?: boolean;
 };
-
-const HEART_ACCENT = '#a97dc4'; // primary-400: legible sobre el botón translúcido en ambos modos
 
 function ItemCardBase({ item, width, isFavorito = false, showFavorite = true }: ItemCardProps) {
   const colors = useTheme();
@@ -109,7 +107,7 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true }: 
                 justifyContent: 'center',
               }}
             >
-              <Ionicons name={esFavorito ? 'heart' : 'heart-outline'} size={18} color={esFavorito ? HEART_ACCENT : colors.onImage} />
+              <Ionicons name={esFavorito ? 'heart' : 'heart-outline'} size={18} color={esFavorito ? FavoriteAccent : colors.onImage} />
             </View>
           </Pressable>
         ) : null}

@@ -76,7 +76,7 @@ export function MapScreen() {
           setSelected(null);
         }}
         clusterColor={colors.primary}
-        clusterTextColor="#fff"
+        clusterTextColor={colors.onPrimary}
       >
         {withCoords.map((listing) => (
           <Marker
@@ -99,25 +99,25 @@ export function MapScreen() {
               flexDirection: 'row',
               alignItems: 'center',
               gap: 6,
-              backgroundColor: '#111',
+              backgroundColor: colors.primary,
               paddingHorizontal: Spacing.three,
               paddingVertical: Spacing.two,
               borderRadius: 999,
             }}
           >
-            <Ionicons name="list" size={16} color="#fff" />
-            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: '#fff' }}>Lista</ThemedText>
+            <Ionicons name="list" size={16} color={colors.onPrimary} />
+            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.onPrimary }}>Lista</ThemedText>
           </Pressable>
 
           <View
             style={{
-              backgroundColor: 'rgba(0,0,0,0.7)',
+              backgroundColor: colors.onImageSurface,
               paddingHorizontal: Spacing.three,
               paddingVertical: Spacing.two,
               borderRadius: 999,
             }}
           >
-            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: '#fff' }}>
+            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.onImage }}>
               {withCoords.length} {withCoords.length === 1 ? 'equipo' : 'equipos'}
             </ThemedText>
           </View>

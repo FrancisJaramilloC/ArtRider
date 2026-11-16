@@ -5,15 +5,16 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors, type BookingStatusKey } from '@/constants/theme';
 import { getMyProviderProfile, becomeProvider, type ProviderProfile } from '@/services/providerService';
 
-const STATUS_INFO: Record<ProviderProfile['status'], { label: string; bg: string; text: string; icon: string }> = {
-  pending: { label: 'Pendiente de aprobación', bg: '#fef3c7', text: '#92400e', icon: 'time-outline' },
-  active: { label: 'Activo', bg: '#dcfce7', text: '#166534', icon: 'checkmark-circle-outline' },
-  suspended: { label: 'Suspendido', bg: '#fee2e2', text: '#991b1b', icon: 'alert-circle-outline' },
+const STATUS_INFO: Record<ProviderProfile['status'], { label: string; tone: BookingStatusKey; icon: string }> = {
+  pending: { label: 'Pendiente de aprobación', tone: 'pending', icon: 'time-outline' },
+  active: { label: 'Activo', tone: 'confirmed', icon: 'checkmark-circle-outline' },
+  suspended: { label: 'Suspendido', tone: 'cancelled', icon: 'alert-circle-outline' },
 };
 
 export function BecomeProviderScreen() {
@@ -67,9 +68,7 @@ export function BecomeProviderScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <BackButton style={{ position: 'absolute', top: Spacing.four, left: Spacing.four, zIndex: 1 }} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
+        <ScreenSkeleton />
       </SafeAreaView>
     );
   }
@@ -77,7 +76,9 @@ export function BecomeProviderScreen() {
   // Ya es proveedor (o acaba de enviar la solicitud) — muestra su estado, no el formulario
   if (profile || justSubmitted) {
     const status = profile?.status ?? 'pending';
-    const info = STATUS_INFO[status];
+    const statusInfo = STATUS_INFO[status];
+    const toneColors = StatusColors[scheme === 'dark' ? 'dark' : 'light'][statusInfo.tone];
+    const info = { ...statusInfo, bg: toneColors.bg, text: toneColors.fg };
 
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -146,14 +147,14 @@ export function BecomeProviderScreen() {
               style={{
                 flexDirection: 'row',
                 gap: Spacing.two,
-                backgroundColor: scheme === 'dark' ? 'rgba(217,119,6,0.15)' : '#fef3c7',
+                backgroundColor: StatusColors[scheme === 'dark' ? 'dark' : 'light'].pending.bg,
                 borderRadius: Radius.lg,
                 padding: Spacing.three,
                 marginBottom: Spacing.four,
               }}
             >
-              <Ionicons name="information-circle" size={18} color="#d97706" />
-              <ThemedText style={{ fontSize: 12.5, color: scheme === 'dark' ? '#fbbf24' : '#92400e', flex: 1 }}>
+              <Ionicons name="information-circle" size={18} color={StatusColors[scheme === 'dark' ? 'dark' : 'light'].pending.fg} />
+              <ThemedText style={{ fontSize: 12.5, color: StatusColors[scheme === 'dark' ? 'dark' : 'light'].pending.fg, flex: 1 }}>
                 La aprobación puede tomar 1-3 días hábiles.
               </ThemedText>
             </View>
@@ -161,7 +162,7 @@ export function BecomeProviderScreen() {
             {error && (
               <View
                 style={{
-                  backgroundColor: scheme === 'dark' ? 'rgba(248,113,113,0.15)' : '#fef2f2',
+                  backgroundColor: colors.destructiveSoft,
                   borderRadius: Radius.lg,
                   padding: Spacing.three,
                   marginBottom: Spacing.three,
@@ -225,9 +226,9 @@ export function BecomeProviderScreen() {
               }}
             >
               {submitting ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.onPrimary} />
               ) : (
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: '#fff' }}>Enviar solicitud</ThemedText>
+                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.onPrimary }}>Enviar solicitud</ThemedText>
               )}
             </Pressable>
           </View>

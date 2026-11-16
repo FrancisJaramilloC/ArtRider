@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/useAuth';
 import { updateProfile } from '@/services/profileService';
@@ -103,7 +103,7 @@ export function EditProfileScreen() {
                                 borderColor: colors.background,
                             }}
                         >
-                            <Ionicons name="camera" size={14} color="#fff" />
+                            <Ionicons name="camera" size={14} color={colors.onPrimary} />
                         </View>
                     </Pressable>
 
@@ -149,13 +149,13 @@ export function EditProfileScreen() {
                     </View>
 
                     {error && (
-                        <View style={{ backgroundColor: scheme === 'dark' ? 'rgba(248,113,113,0.15)' : '#fef2f2', borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.three }}>
+                        <View style={{ backgroundColor: colors.destructiveSoft, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.three }}>
                             <ThemedText style={{ color: colors.destructive, fontSize: 13.5 }}>{error}</ThemedText>
                         </View>
                     )}
                     {success && (
-                        <View style={{ backgroundColor: scheme === 'dark' ? 'rgba(34,197,94,0.15)' : '#f0fdf4', borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.three }}>
-                            <ThemedText style={{ color: '#16a34a', fontSize: 13.5 }}>¡Perfil actualizado!</ThemedText>
+                        <View style={{ backgroundColor: StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.bg, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.three }}>
+                            <ThemedText style={{ color: StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.fg, fontSize: 13.5 }}>¡Perfil actualizado!</ThemedText>
                         </View>
                     )}
 
@@ -164,8 +164,8 @@ export function EditProfileScreen() {
                         disabled={saving}
                         style={{ backgroundColor: colors.primary, paddingVertical: Spacing.three, borderRadius: Radius.lg, alignItems: 'center' }}
                     >
-                        {saving ? <ActivityIndicator color="#fff" /> : (
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: '#fff' }}>Guardar cambios</ThemedText>
+                        {saving ? <ActivityIndicator color={colors.onPrimary} /> : (
+                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.onPrimary }}>Guardar cambios</ThemedText>
                         )}
                     </Pressable>
                 </ScrollView>

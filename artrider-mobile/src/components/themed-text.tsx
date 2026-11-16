@@ -13,6 +13,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 
   return (
     <Text
+      maxFontSizeMultiplier={rest.maxFontSizeMultiplier ?? 1.3}
       style={[
         { color: theme[themeColor ?? 'text'] },
         type === 'default' && styles.default,
@@ -21,7 +22,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'smallBold' && styles.smallBold,
         type === 'subtitle' && styles.subtitle,
         type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
+        type === 'linkPrimary' && [styles.linkPrimary, { color: theme.primary }],
         type === 'code' && styles.code,
         style,
       ]}
@@ -63,7 +64,6 @@ const styles = StyleSheet.create({
   linkPrimary: {
     lineHeight: 30,
     fontSize: 14,
-    color: '#3c87f7',
   },
   code: {
     fontFamily: Fonts.mono,

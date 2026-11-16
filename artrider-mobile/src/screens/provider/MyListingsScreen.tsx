@@ -4,8 +4,8 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
+import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -42,7 +42,7 @@ function ListingRow({ item, onChanged }: { item: MyListing; onChanged: () => voi
                 {item.cover_image_url ? (
                     <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 ) : (
-                    <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
+                    <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
                 )}
             </View>
             <View style={{ flex: 1 }}>
@@ -92,7 +92,7 @@ function PackageRow({ item, onChanged }: { item: MyPackage; onChanged: () => voi
                 {item.cover_image_url ? (
                     <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                 ) : (
-                    <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
+                    <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
                 )}
             </View>
             <View style={{ flex: 1 }}>
@@ -138,9 +138,7 @@ export function MyListingsScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={colors.primary} />
-            </SafeAreaView>
+            <ScreenSkeleton />
         );
     }
 
@@ -154,7 +152,7 @@ export function MyListingsScreen() {
                     onPress={() => router.push('/provider/new-listing' as any)}
                     style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}
                 >
-                    <Ionicons name="add" size={20} color="#fff" />
+                    <Ionicons name="add" size={20} color={colors.onPrimary} />
                 </Pressable>
             </View>
 
@@ -179,7 +177,7 @@ export function MyListingsScreen() {
                         onPress={() => router.push('/provider/new-listing' as any)}
                         style={{ backgroundColor: colors.primary, paddingHorizontal: Spacing.five, paddingVertical: Spacing.three, borderRadius: Radius.lg }}
                     >
-                        <ThemedText style={{ color: '#fff', fontFamily: 'Inter_700Bold', fontSize: 14 }}>
+                        <ThemedText style={{ color: colors.onPrimary, fontFamily: 'Inter_700Bold', fontSize: 14 }}>
                             {tab === 'equipos' ? 'Publicar mi primer equipo' : 'Crear mi primer paquete'}
                         </ThemedText>
                     </Pressable>

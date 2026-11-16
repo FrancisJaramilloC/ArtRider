@@ -1,81 +1,36 @@
 import { useEffect, useState } from 'react';
-import { View, ScrollView, Pressable, Image, Linking } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { View, Pressable, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
 import { ProtectedScreen } from '@/components/protected-screen';
-import { Colors, Spacing, Radius, Gradients } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Avatar } from '@/components/ui/Avatar';
+import { ListRow, ListSection } from '@/components/ui/ListRow';
+import { Screen } from '@/components/ui/Screen';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { Text } from '@/components/ui/Text';
+import { Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { useColorSchemeContext } from '@/contexts/ColorSchemeContext';
 import { useAuth } from '@/hooks/useAuth';
 import { getMyProviderProfile } from '@/services/providerService';
 
-function AppearanceToggle({ colors }: { colors: any }) {
+function AppearanceToggle() {
   const { colorScheme, setOverride } = useColorSchemeContext();
-
   return (
-    <View style={{ flexDirection: 'row', gap: Spacing.two, borderRadius: Radius.lg, padding: 6, backgroundColor: colors.backgroundElement }}>
-      {(['light', 'dark'] as const).map((mode) => {
-        const isActive = colorScheme === mode;
-        const label = mode === 'light' ? 'Claro' : 'Oscuro';
-        return (
-          <Pressable key={mode} onPress={() => setOverride(mode)} style={{ flex: 1, borderRadius: Radius.md, overflow: 'hidden' }}>
-            {isActive ? (
-              <LinearGradient colors={Gradients.chipActive} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ paddingVertical: 10, alignItems: 'center' }}>
-                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: '#fff' }}>{label}</ThemedText>
-              </LinearGradient>
-            ) : (
-              <View style={{ paddingVertical: 10, alignItems: 'center' }}>
-                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.textSecondary }}>{label}</ThemedText>
-              </View>
-            )}
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
-function MenuItem({ icon, label, onPress, colors, destructive }: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-  colors: any;
-  destructive?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.three,
-        paddingVertical: Spacing.three,
-      }}
-    >
-      <Ionicons name={icon} size={20} color={destructive ? colors.destructive : colors.text} />
-      <ThemedText style={{ flex: 1, fontFamily: 'Inter_500Medium', fontSize: 14.5, color: destructive ? colors.destructive : colors.text }}>
-        {label}
-      </ThemedText>
-      {!destructive && <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />}
-    </Pressable>
-  );
-}
-
-function SectionLabel({ children, colors }: { children: string; colors: any }) {
-  return (
-    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 12, letterSpacing: 0.3, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: Spacing.one, marginTop: Spacing.five }}>
-      {children}
-    </ThemedText>
+    <SegmentedControl
+      options={[
+        { value: 'light', label: 'Claro' },
+        { value: 'dark', label: 'Oscuro' },
+      ]}
+      value={colorScheme}
+      onChange={setOverride}
+    />
   );
 }
 
 export default function ProfileScreen() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const colors = useTheme();
   const router = useRouter();
   const { profile, logout } = useAuth();
   const [isProvider, setIsProvider] = useState(false);
@@ -86,73 +41,56 @@ export default function ProfileScreen() {
 
   return (
     <ProtectedScreen>
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ padding: Spacing.four, paddingBottom: Spacing.six }}>
-          <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 26, color: colors.text, marginBottom: Spacing.five }}>
-            Perfil
-          </ThemedText>
+      <Screen scroll tabBar>
+        <Text variant="title" accessibilityRole="header" style={{ paddingTop: Spacing.three, paddingBottom: Spacing.four }}>
+          Perfil
+        </Text>
 
-          <Pressable
-            onPress={() => router.push('/profile/edit' as any)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: Spacing.three,
-              backgroundColor: colors.backgroundElement,
-              borderRadius: Radius.lg,
-              padding: Spacing.four,
-            }}
-          >
-            <View style={{ width: 56, height: 56, borderRadius: 28, overflow: 'hidden', backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-              {profile?.avatar_url ? (
-                <Image source={{ uri: profile.avatar_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-              ) : (
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 22, color: colors.textSecondary }}>
-                  {(profile?.full_name ?? '?').charAt(0).toUpperCase()}
-                </ThemedText>
-              )}
-            </View>
-            <View style={{ flex: 1 }}>
-              <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>
-                {profile?.full_name ?? 'Tu perfil'}
-              </ThemedText>
-              <ThemedText style={{ fontSize: 12.5, color: colors.primary, marginTop: 2 }}>Ver perfil</ThemedText>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </Pressable>
+        <Pressable
+          onPress={() => router.push('/profile/edit' as never)}
+          accessibilityRole="button"
+          accessibilityLabel={`${profile?.full_name ?? 'Tu perfil'}. Ver perfil`}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: Spacing.three,
+            backgroundColor: colors.backgroundElement,
+            borderRadius: Radius.card,
+            padding: Spacing.four,
+          }}
+        >
+          <Avatar uri={profile?.avatar_url} name={profile?.full_name} size={56} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text variant="subtitle" numberOfLines={1}>
+              {profile?.full_name ?? 'Tu perfil'}
+            </Text>
+            <Text variant="caption" color="primary">
+              Ver perfil
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        </Pressable>
 
-          <SectionLabel colors={colors}>Apariencia</SectionLabel>
-          <AppearanceToggle colors={colors} />
+        <ListSection title="Apariencia">
+          <AppearanceToggle />
+        </ListSection>
 
-          <SectionLabel colors={colors}>Negocio</SectionLabel>
-          <MenuItem
+        <ListSection title="Negocio">
+          <ListRow
             icon="storefront-outline"
             label={isProvider ? 'Cambiar a modo proveedor' : 'Conviértete en proveedor'}
             onPress={() => (isProvider ? router.replace('/(provider)/today') : router.push('/become-provider'))}
-            colors={colors}
           />
+        </ListSection>
 
-          <SectionLabel colors={colors}>Soporte</SectionLabel>
-          <MenuItem
-            icon="help-circle-outline"
-            label="Ayuda y soporte"
-            onPress={() => Linking.openURL('mailto:soporte@artrider.com')}
-            colors={colors}
-          />
+        <ListSection title="Soporte">
+          <ListRow icon="help-circle-outline" label="Ayuda y soporte" onPress={() => Linking.openURL('mailto:soporte@artrider.com')} />
+        </ListSection>
 
-          <View style={{ height: Spacing.five, borderBottomWidth: 1, borderColor: colors.border, marginTop: Spacing.four }} />
-
-          <View style={{ marginTop: Spacing.two }}>
-            <MenuItem
-              icon="log-out-outline"
-              label="Cerrar sesión"
-              onPress={() => logout()}
-              colors={colors}
-              destructive
-            />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+        <View style={{ borderTopWidth: 1, borderColor: colors.border, marginTop: Spacing.four, paddingTop: Spacing.two }}>
+          <ListRow icon="log-out-outline" label="Cerrar sesión" onPress={() => logout()} destructive />
+        </View>
+      </Screen>
     </ProtectedScreen>
   );
 }

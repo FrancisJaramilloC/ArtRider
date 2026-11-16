@@ -60,9 +60,9 @@ export function LoginScreen() {
                         {error && (
                             <View
                                 style={{
-                                    backgroundColor: scheme === 'dark' ? 'rgba(248,113,113,0.15)' : '#fef2f2',
+                                    backgroundColor: colors.destructiveSoft,
                                     borderWidth: 1,
-                                    borderColor: scheme === 'dark' ? 'rgba(248,113,113,0.3)' : '#fee2e2',
+                                    borderColor: colors.destructive,
                                     borderRadius: Radius.lg,
                                     padding: Spacing.three,
                                     marginBottom: Spacing.four,
@@ -172,9 +172,9 @@ export function LoginScreen() {
                             })}
                         >
                             {loading ? (
-                                <ActivityIndicator color="#fff" />
+                                <ActivityIndicator color={colors.onPrimary} />
                             ) : (
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: '#fff' }}>
+                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.onPrimary }}>
                                     Iniciar sesión
                                 </ThemedText>
                             )}

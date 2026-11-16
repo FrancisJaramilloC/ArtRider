@@ -7,8 +7,8 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 
+import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
 import { CATEGORIES } from '@/constants/categories';
@@ -266,7 +266,7 @@ export function CreateListingScreen() {
                     {form.coverUri ? (
                         <Image source={{ uri: form.coverUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     ) : (
-                        <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
+                        <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
                     )}
                 </View>
                 <View style={{ padding: Spacing.four }}>
@@ -296,9 +296,7 @@ export function CreateListingScreen() {
 
     if (loadingExisting) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color={colors.primary} />
-            </SafeAreaView>
+            <ScreenSkeleton />
         );
     }
 
@@ -412,7 +410,7 @@ export function CreateListingScreen() {
                                     placeholderTextColor={colors.textSecondary}
                                     multiline
                                     numberOfLines={4}
-                                    style={[inputStyle(colors), { height: 100, textAlignVertical: 'top', paddingTop: 12 }]}
+                                    style={[inputStyle(colors), { minHeight: 100, textAlignVertical: 'top', paddingTop: 12 }]}
                                 />
                             </FormField>
                         </View>
@@ -613,7 +611,7 @@ export function CreateListingScreen() {
                             </ThemedText>
                             {renderPreviewCard()}
                             {error && (
-                                <View style={{ marginTop: Spacing.four, backgroundColor: scheme === 'dark' ? 'rgba(248,113,113,0.15)' : '#fef2f2', borderRadius: Radius.lg, padding: Spacing.three }}>
+                                <View style={{ marginTop: Spacing.four, backgroundColor: colors.destructiveSoft, borderRadius: Radius.lg, padding: Spacing.three }}>
                                     <ThemedText style={{ color: colors.destructive, fontSize: 13.5 }}>{error}</ThemedText>
                                 </View>
                             )}
@@ -633,9 +631,9 @@ export function CreateListingScreen() {
                         }}
                     >
                         {publishing ? (
-                            <ActivityIndicator color="#fff" />
+                            <ActivityIndicator color={colors.onPrimary} />
                         ) : (
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: canContinue ? '#fff' : colors.textSecondary }}>
+                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: canContinue ? colors.onPrimary : colors.textSecondary }}>
                                 {step === steps.length - 1 ? (isEdit ? 'Guardar cambios' : 'Publicar anuncio') : 'Continuar'}
                             </ThemedText>
                         )}

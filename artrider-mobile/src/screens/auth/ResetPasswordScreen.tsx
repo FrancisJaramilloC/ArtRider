@@ -113,7 +113,7 @@ export function ResetPasswordScreen() {
                         </View>
 
                         {error && (
-                            <View style={{ backgroundColor: scheme === 'dark' ? 'rgba(248,113,113,0.15)' : '#fef2f2', borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.four }}>
+                            <View style={{ backgroundColor: colors.destructiveSoft, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.four }}>
                                 <ThemedText style={{ color: colors.destructive, fontFamily: 'Inter_500Medium', fontSize: 14 }}>{error}</ThemedText>
                             </View>
                         )}
@@ -168,8 +168,8 @@ export function ResetPasswordScreen() {
                                 opacity: pressed ? 0.9 : 1,
                             })}
                         >
-                            {loading ? <ActivityIndicator color="#fff" /> : (
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: '#fff' }}>
+                            {loading ? <ActivityIndicator color={colors.onPrimary} /> : (
+                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.onPrimary }}>
                                     Actualizar contraseña
                                 </ThemedText>
                             )}

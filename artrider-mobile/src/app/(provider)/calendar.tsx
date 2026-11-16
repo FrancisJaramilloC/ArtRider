@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
-import { LinearGradient } from 'expo-linear-gradient';
 
+import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius, StatusColors, BOOKING_STATUS_LABELS, toStatusKey } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -79,7 +79,7 @@ function BookingRow({ booking, onChanged }: { booking: ProviderBooking; onChange
           {booking.listing_cover_image_url ? (
             <Image source={{ uri: booking.listing_cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
           ) : (
-            <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
+            <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
           )}
         </View>
         <View style={{ flex: 1 }}>
@@ -126,8 +126,8 @@ function BookingRow({ booking, onChanged }: { booking: ProviderBooking; onChange
             disabled={busy}
             style={{ flex: 1, paddingVertical: Spacing.two, borderRadius: Radius.md, backgroundColor: colors.primary, alignItems: 'center' }}
           >
-            {busy ? <ActivityIndicator size="small" color="#fff" /> : (
-              <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: '#fff' }}>Aceptar</ThemedText>
+            {busy ? <ActivityIndicator size="small" color={colors.onPrimary} /> : (
+              <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.onPrimary }}>Aceptar</ThemedText>
             )}
           </Pressable>
         </View>
@@ -219,9 +219,7 @@ export default function ProviderCalendarScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={colors.primary} />
-      </SafeAreaView>
+      <ScreenSkeleton />
     );
   }
 
@@ -229,7 +227,7 @@ export default function ProviderCalendarScreen() {
   marks.forEach((m) => {
     markedDates[m.date] = {
       selected: true,
-      selectedColor: m.mark === 'booked' ? '#ef4444' : colors.textMuted,
+      selectedColor: m.mark === 'booked' ? colors.destructive : colors.textMuted,
     };
   });
 
@@ -280,7 +278,7 @@ export default function ProviderCalendarScreen() {
                   {selectedListing?.cover_image_url ? (
                     <Image source={{ uri: selectedListing.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                   ) : (
-                    <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
+                    <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
                   )}
                 </View>
                 <View style={{ flex: 1 }}>
@@ -317,7 +315,7 @@ export default function ProviderCalendarScreen() {
 
               <View style={{ flexDirection: 'row', gap: Spacing.four, marginTop: Spacing.three, paddingHorizontal: Spacing.one }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444' }} />
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.destructive }} />
                   <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Reservado</ThemedText>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -412,7 +410,7 @@ export default function ProviderCalendarScreen() {
                     {item.cover_image_url ? (
                       <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                     ) : (
-                      <LinearGradient colors={['#875B9A', '#5c3569']} style={{ width: '100%', height: '100%' }} />
+                      <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
                     )}
                   </View>
                   <View style={{ flex: 1 }}>

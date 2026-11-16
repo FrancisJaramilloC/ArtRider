@@ -8,7 +8,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors } from '@/constants/theme';
 
 function formatDateForInput(date: Date): string {
     return date.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -117,13 +117,13 @@ export function RegisterScreen() {
                         {success && (
                             <View
                                 style={{
-                                    backgroundColor: scheme === 'dark' ? 'rgba(74,222,128,0.15)' : '#f0fdf4',
+                                    backgroundColor: StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.bg,
                                     borderRadius: Radius.lg,
                                     padding: Spacing.three,
                                     marginBottom: Spacing.three,
                                 }}
                             >
-                                <ThemedText style={{ color: '#4ade80', fontFamily: 'Inter_600SemiBold', fontSize: 14 }}>
+                                <ThemedText style={{ color: StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.fg, fontFamily: 'Inter_600SemiBold', fontSize: 14 }}>
                                     ¡Cuenta creada! Redirigiendo a inicio de sesión...
                                 </ThemedText>
                             </View>
@@ -133,7 +133,7 @@ export function RegisterScreen() {
                         {error && (
                             <View
                                 style={{
-                                    backgroundColor: scheme === 'dark' ? 'rgba(248,113,113,0.15)' : '#fef2f2',
+                                    backgroundColor: colors.destructiveSoft,
                                     borderRadius: Radius.lg,
                                     padding: Spacing.three,
                                     marginBottom: Spacing.three,
@@ -302,9 +302,9 @@ export function RegisterScreen() {
                             })}
                         >
                             {loading ? (
-                                <ActivityIndicator color="#fff" />
+                                <ActivityIndicator color={colors.onPrimary} />
                             ) : (
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: '#fff' }}>
+                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.onPrimary }}>
                                     Crear cuenta
                                 </ThemedText>
                             )}

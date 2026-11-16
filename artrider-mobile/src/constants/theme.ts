@@ -23,6 +23,7 @@ export const Colors = {
     primarySoft: '#f1eaf5', // fondo tenue del acento (chips/íconos)
     border: '#e5e7eb',
     destructive: '#dc2626', // 4.8:1 como texto sobre blanco
+    destructiveSoft: '#fef2f2', // fondo de avisos de error
     scrim: 'rgba(17, 17, 17, 0.5)',
     onImage: '#ffffff', // texto/íconos sobre fotos
     onImageSurface: 'rgba(17, 17, 17, 0.55)', // botón circular sobre foto
@@ -41,6 +42,7 @@ export const Colors = {
     primarySoft: 'rgba(169, 125, 196, 0.16)',
     border: 'rgba(135, 91, 154, 0.30)', // border-card
     destructive: '#f87171',
+    destructiveSoft: 'rgba(248, 113, 113, 0.15)',
     scrim: 'rgba(0, 0, 0, 0.6)',
     onImage: '#ffffff',
     onImageSurface: 'rgba(0, 0, 0, 0.55)',
@@ -147,6 +149,9 @@ export const MaxContentWidth = 800;
 // ─────────────────────────────────────────────────────────────────────────
 // Sistema de diseño (único módulo de tokens). Cuadrícula de 8: usar Spacing.
 // ─────────────────────────────────────────────────────────────────────────
+
+/** Acento del corazón de favoritos: primary-400, legible sobre el botón translúcido en ambos modos. */
+export const FavoriteAccent = '#a97dc4';
 
 /** Objetivo táctil mínimo (Apple HIG / Material): 44pt. */
 export const MinTouch = 44;

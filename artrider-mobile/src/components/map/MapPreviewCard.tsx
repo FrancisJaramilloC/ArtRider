@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, Shadows } from '@/constants/theme';
 import { CATEGORY_LABELS, CATEGORY_GRADIENTS } from '@/constants/categories';
 import type { Listing } from '@/services/catalogService';
 
@@ -29,11 +29,7 @@ export function MapPreviewCard({ listing, onClose }: { listing: Listing; onClose
         borderRadius: Radius.lg,
         overflow: 'hidden',
         flexDirection: 'row',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 8,
+        ...Shadows.floating,
       }}
     >
       <Pressable
