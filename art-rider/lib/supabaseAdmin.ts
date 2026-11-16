@@ -1,8 +1,8 @@
 import "server-only";
-//  Cliente genérico de Supabase para el navegador
+//  Cliente Supabase con Service Role Key (SOLO SERVIDOR; protegido con server-only)
 import { createClient } from '@supabase/supabase-js';
 
-// NOTA: Cliente genérico de Supabase solo para acciones de lectura pública.
+// NOTA: Cliente de Supabase solo para código de servidor que necesita saltarse RLS.
 // IMPORTANTE: Este cliente se conecta usando la Service Role Key.
 // Omite todas las políticas de seguridad a nivel de fila (RLS).
 // NUNCA expongas este cliente al navegador ni lo uses para operaciones estándar de usuarios.

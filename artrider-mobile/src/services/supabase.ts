@@ -7,7 +7,7 @@ import { AppState, Platform } from 'react-native';
 const RAW_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const RAW_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!RAW_URL || !RAW_URL.startsWith('http') || !RAW_KEY) {
+if (!RAW_URL || !/^https?:\/\/[^\s/]+/.test(RAW_URL) || !RAW_KEY) {
     throw new Error(
         'Falta configuración de Supabase: define EXPO_PUBLIC_SUPABASE_URL (https://...) y ' +
             'EXPO_PUBLIC_SUPABASE_ANON_KEY en el entorno (.env local o EAS secrets).',

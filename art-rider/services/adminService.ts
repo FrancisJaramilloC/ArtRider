@@ -42,6 +42,7 @@ export type AdminListing = {
 };
 
 export async function getAdminListings(): Promise<AdminListing[]> {
+  if (!(await isCurrentUserAdmin())) return [];
   const admin = getAdminClient();
   const { data, error } = await admin
     .from("listings")
@@ -105,6 +106,7 @@ export type AdminPackage = {
 };
 
 export async function getAdminPackages(): Promise<AdminPackage[]> {
+  if (!(await isCurrentUserAdmin())) return [];
   const admin = getAdminClient();
   const { data, error } = await admin
     .from("packages")
