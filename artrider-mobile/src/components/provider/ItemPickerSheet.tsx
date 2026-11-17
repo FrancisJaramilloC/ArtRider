@@ -330,12 +330,12 @@ export function ItemPickerSheet({ visible, title, onClose, items, loading = fals
 function SelectedCard({ title, quantity, onChange, onRemove }: { title: string; quantity: number; onChange: (q: number) => void; onRemove: () => void }) {
   const colors = useTheme();
   return (
-    <View style={{ width: 200, backgroundColor: colors.backgroundElement, borderRadius: Radius.card, paddingLeft: Spacing.three, paddingVertical: Spacing.one, gap: Spacing.half }}>
+    <View style={{ width: 200, backgroundColor: colors.backgroundElement, borderRadius: Radius.card, paddingLeft: Spacing.three, paddingBottom: Spacing.one }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Text variant="captionStrong" numberOfLines={1} style={{ flex: 1 }}>
           {title}
         </Text>
-        <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={`Quitar ${title}`} style={{ width: MinTouch, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+        <Pressable onPress={onRemove} accessibilityRole="button" accessibilityLabel={`Quitar ${title}`} style={{ width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="close" size={16} color={colors.textSecondary} />
         </Pressable>
       </View>
