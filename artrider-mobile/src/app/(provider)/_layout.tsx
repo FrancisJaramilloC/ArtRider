@@ -38,8 +38,8 @@ export default function ProviderTabs() {
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
       <NativeTabs.Trigger name="today">
-        <Label>Hoy</Label>
-        <Icon sf="sun.max.fill" />
+        <Label>Home</Label>
+        <Icon sf="house.fill" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="calendar">
         <Label>Calendario</Label>

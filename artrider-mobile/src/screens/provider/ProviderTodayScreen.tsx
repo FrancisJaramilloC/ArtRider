@@ -1,12 +1,13 @@
-import { useCallback, useState } from 'react';
-import { View, ScrollView, RefreshControl } from 'react-native';
+import { View, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { TabScreen } from '@/components/ui/TabScreen';
 import { Text } from '@/components/ui/Text';
@@ -16,6 +17,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { getMyProviderProfile, getProviderBookings, type ProviderProfile, type ProviderBooking } from '@/services/providerService';
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
 import { formatShortDate } from '@/utils/format';
+
+type HomeBundle = { profile: ProviderProfile | null; bookings: ProviderBooking[]; listings: MyListing[] };
 
 const STATUS_MESSAGE: Record<ProviderProfile['status'], string> = {
   pending: 'Tu solicitud está siendo revisada. Te notificaremos cuando tu cuenta esté activa (1-3 días hábiles).',
@@ -55,43 +58,39 @@ export function ProviderTodayScreen() {
   const colors = useTheme();
   const router = useRouter();
 
-  const [profile, setProfile] = useState<ProviderProfile | null>(null);
-  const [bookings, setBookings] = useState<ProviderBooking[]>([]);
-  const [listings, setListings] = useState<MyListing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { status, data: bundle, error, refreshError, refreshing, reload, refresh } = useAsyncData<HomeBundle>(
+    async () => {
+      const profile = await getMyProviderProfile();
+      if (profile?.status !== 'active') return { profile, bookings: [], listings: [] };
+      const [bookings, listings] = await Promise.all([getProviderBookings(), getMyListings()]);
+      return { profile, bookings, listings };
+    },
+    { reloadOnFocus: true },
+  );
+  const profile = bundle?.profile ?? null;
+  const bookings = bundle?.bookings ?? [];
+  const listings = bundle?.listings ?? [];
+  const onRefresh = refresh;
 
-  const load = useCallback(async () => {
-    const providerProfile = await getMyProviderProfile();
-    setProfile(providerProfile);
-
-    if (providerProfile?.status === 'active') {
-      const [b, l] = await Promise.all([getProviderBookings(), getMyListings()]);
-      setBookings(b);
-      setListings(l);
-    }
-    setLoading(false);
-  }, []);
-
-  useFocusEffect(useCallback(() => { load(); }, [load]));
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
+  if (status === 'loading') {
+    return (
+      <TabScreen title="Home">
+        <ScreenSkeleton />
+      </TabScreen>
+    );
   }
 
-  if (loading) {
+  if (status === 'error') {
     return (
-      <TabScreen title="Hoy">
-        <ScreenSkeleton />
+      <TabScreen title="Home">
+        <ErrorState fill error={error} onRetry={reload} />
       </TabScreen>
     );
   }
 
   if (!profile) {
     return (
-      <TabScreen title="Hoy">
+      <TabScreen title="Home">
         <EmptyState
           fill
           icon="storefront-outline"
@@ -106,7 +105,7 @@ export function ProviderTodayScreen() {
 
   if (profile.status !== 'active') {
     return (
-      <TabScreen title="Hoy">
+      <TabScreen title="Home">
         <View style={{ paddingHorizontal: gutter, gap: Spacing.two }}>
           <Text variant="headline">Hola, {profile.brand_name}</Text>
           <Text variant="body" color="textSecondary">
@@ -136,13 +135,15 @@ export function ProviderTodayScreen() {
   const recentBookings = bookings.slice(0, 5);
 
   return (
-    <TabScreen title="Hoy">
+    <TabScreen title="Home">
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: bottomInset + Spacing.four, gap: Rhythm.section }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
+        {refreshError ? <RefreshErrorNotice error={refreshError} onRetry={reload} /> : null}
+
         <View style={{ gap: Rhythm.titleToContent }}>
           <Text variant="headline" numberOfLines={2}>
             Hola, {profile.brand_name}
@@ -175,23 +176,37 @@ export function ProviderTodayScreen() {
                 Tienes {pendingCount} {pendingCount === 1 ? 'reserva pendiente' : 'reservas pendientes'} de tu respuesta
               </Text>
             </View>
-            <Button label="Revisar reservas" size="sm" fullWidth onPress={() => router.push('/(provider)/calendar' as never)} />
+            <Button label="Revisar reservas" size="sm" fullWidth onPress={() => router.push({ pathname: '/provider/bookings', params: { segment: 'pending' } } as never)} />
           </View>
         )}
 
         <View style={{ gap: Rhythm.titleToContent }}>
-          <Text variant="headline" accessibilityRole="header">
-            Reservas recientes
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text variant="headline" accessibilityRole="header">
+              Reservas recientes
+            </Text>
+            <Button
+              label="Ver todas"
+              variant="ghost"
+              size="sm"
+              fullWidth={false}
+              onPress={() => router.push('/provider/bookings' as never)}
+              style={{ marginRight: -Spacing.three }}
+            />
+          </View>
 
           {recentBookings.length === 0 ? (
             <EmptyState icon="calendar-outline" title="Sin reservas por ahora" description="Todavía no has recibido reservas." />
           ) : (
             <View style={{ gap: Rhythm.cardGap }}>
               {recentBookings.map((booking) => (
-                <View
+                <Pressable
                   key={booking.booking_id}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: Rhythm.cardPadding, backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding }}
+                  onPress={() => router.push({ pathname: '/provider/booking/[id]', params: { id: booking.booking_id } } as never)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${booking.listing_title ?? 'Reserva'}, ${booking.client_name ?? 'cliente'}, ${BOOKING_STATUS_LABELS[booking.status] ?? booking.status}`}
+                  accessibilityHint="Abre el detalle de la reserva"
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: Rhythm.cardPadding, backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding, opacity: pressed ? 0.85 : 1 })}
                 >
                   <View style={{ width: Thumb.list, height: Thumb.list, borderRadius: Radius.xl, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
                     {booking.listing_cover_image_url ? (
@@ -214,7 +229,7 @@ export function ProviderTodayScreen() {
                   <View style={{ flexShrink: 0 }}>
                     <Badge label={BOOKING_STATUS_LABELS[booking.status] ?? booking.status} tone={STATUS_TONE[toStatusKey(booking.status)]} />
                   </View>
-                </View>
+                </Pressable>
               ))}
             </View>
           )}
