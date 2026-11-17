@@ -1,15 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { cityKey } from '@/utils/city';
 import { View, ActivityIndicator, Pressable } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ClusteredMapView from 'react-native-map-clustering';
-import { Marker } from 'react-native-maps';
+import { Marker, type LatLng, type Region } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { PricePin } from '@/components/map/PricePin';
 import { MapPreviewCard } from '@/components/map/MapPreviewCard';
@@ -17,12 +17,35 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { getListings, type Listing } from '@/services/catalogService';
 
-const DEFAULT_REGION = {
-  latitude: -3.99313,
-  longitude: -79.20422,
-  latitudeDelta: 4,
-  longitudeDelta: 4,
+/** Loja: vista por defecto cuando no hay resultados con coordenadas (nunca el globo). */
+const DEFAULT_REGION: Region = {
+  latitude: -3.9931,
+  longitude: -79.2042,
+  latitudeDelta: 0.08,
+  longitudeDelta: 0.08,
 };
+
+/** Aire alrededor de los pines al encuadrarlos: arriba los botones «Lista»/contador, abajo la tarjeta de vista previa. */
+const FIT_EDGE_PADDING = { top: 120, right: 56, bottom: 200, left: 56 };
+/** Zoom mínimo (en grados) cuando los pines están casi en el mismo punto. */
+const MIN_DELTA = 0.02;
+
+/** Región que contiene todos los puntos (con margen); Loja por defecto si no hay ninguno. */
+function regionFor(points: LatLng[]): Region {
+  if (points.length === 0) return DEFAULT_REGION;
+  const lats = points.map((p) => p.latitude);
+  const lngs = points.map((p) => p.longitude);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  return {
+    latitude: (minLat + maxLat) / 2,
+    longitude: (minLng + maxLng) / 2,
+    latitudeDelta: Math.max((maxLat - minLat) * 1.6, MIN_DELTA),
+    longitudeDelta: Math.max((maxLng - minLng) * 1.6, MIN_DELTA),
+  };
+}
 
 export function MapScreen() {
   const { gutter } = useLayout();
@@ -56,7 +79,16 @@ export function MapScreen() {
     return list;
   }, [listings, params]);
 
-  const withCoords = filtered.filter((l) => l.address?.latitude != null && l.address?.longitude != null);
+  const withCoords = useMemo(() => filtered.filter((l) => l.address?.latitude != null && l.address?.longitude != null), [filtered]);
+  const coordinates = useMemo<LatLng[]>(() => withCoords.map((l) => ({ latitude: l.address!.latitude, longitude: l.address!.longitude })), [withCoords]);
+  // Región inicial calculada con los pines: el mapa nunca arranca en el mundo.
+  const initialRegion = useMemo(() => regionFor(coordinates), [coordinates]);
+
+  const mapRef = useRef<{ fitToCoordinates?: (coords: LatLng[], options?: { edgePadding?: typeof FIT_EDGE_PADDING; animated?: boolean }) => void } | null>(null);
+  const fitPins = useCallback(() => {
+    // Con un solo pin la región inicial ya lo centra; fitToCoordinates lo acercaría demasiado.
+    if (coordinates.length > 1) mapRef.current?.fitToCoordinates?.(coordinates, { edgePadding: FIT_EDGE_PADDING, animated: false });
+  }, [coordinates]);
 
   if (status === 'error') {
     return (
@@ -78,7 +110,11 @@ export function MapScreen() {
     <View style={{ flex: 1 }}>
       <ClusteredMapView
         style={{ flex: 1 }}
-        initialRegion={DEFAULT_REGION}
+        initialRegion={initialRegion}
+        mapRef={(ref) => {
+          mapRef.current = ref as unknown as typeof mapRef.current;
+        }}
+        onMapReady={fitPins}
         onPress={(e) => {
           // El toque en un marcador también dispara este onPress del mapa
           // de fondo — hay que ignorarlo en ese caso, o el card se cierra

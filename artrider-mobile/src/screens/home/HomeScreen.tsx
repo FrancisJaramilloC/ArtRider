@@ -1,33 +1,37 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, RefreshControl, View, TextInput, Pressable, FlatList } from 'react-native';
+import { ScrollView, RefreshControl, View, Pressable, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { CategoryStrip } from '@/components/home/CategoryStrip';
 import { CityCarousel } from '@/components/home/CityCarousel';
+import { SearchFilterBar, type ActiveFilter } from '@/components/home/SearchFilterBar';
+import { SearchFiltersSheet } from '@/components/home/SearchFiltersSheet';
 import { CartIconButton } from '@/components/cart/CartIconButton';
 import { FavoritesIconButton } from '@/components/cart/FavoritesIconButton';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
 import { useAsyncData } from '@/hooks/useAsyncData';
-import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { TabScreen } from '@/components/ui/TabScreen';
 import { ItemCardSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
-import { Fonts, MinTouch, Radius, Rhythm, Shadows, Spacing } from '@/constants/theme';
+import { MinTouch, Radius, Rhythm, Shadows, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getHomeData, type HomeData } from '@/services/homeService';
 import { getExploreItems, type ExploreItem } from '@/services/exploreService';
 import { getUserFavIds } from '@/services/favoritosService';
 import { useAuth } from '@/hooks/useAuth';
+import { CATEGORY_LABELS } from '@/constants/categories';
 import { cityKey } from '@/utils/city';
 
-/** Alto del botón «Mapa» + 16 arriba y 16 abajo: la lista deja ese espacio para no quedar tapada. */
-const MAP_BUTTON_CLEARANCE = MinTouch + Spacing.three * 2;
+/** Separación entre el botón «Mapa» y la barra inferior de vidrio. */
+const MAP_BUTTON_GAP = 12;
+/** Espacio que ocupa el botón «Mapa» sobre la barra (alto + separación + aire): la lista lo deja libre para no quedar tapada. */
+const MAP_BUTTON_CLEARANCE = MinTouch + MAP_BUTTON_GAP + Spacing.three;
 
 type HomeBundle = { homeData: HomeData; items: ExploreItem[]; favoriteIds: Set<string> };
 
@@ -49,6 +53,7 @@ export function HomeScreen() {
     const [searchFocused, setSearchFocused] = useState(false);
     const [city, setCity] = useState<string | null>(null);
     const [maxPrice, setMaxPrice] = useState('');
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     // Estados reales: cargando / error / éxito. Un fallo de red ya no se ve como «no hay equipos».
     const { status, data: bundle, error, refreshError, refreshing, reload, refresh } = useAsyncData<HomeBundle>(
@@ -118,6 +123,13 @@ export function HomeScreen() {
         setSearchFocused(false);
     }
 
+    const activeFilters: ActiveFilter[] = [
+        ...(city ? [{ id: 'city', label: city, onRemove: () => setCity(null) }] : []),
+        ...(maxPrice ? [{ id: 'price', label: `Hasta ${maxPrice}`, onRemove: () => setMaxPrice('') }] : []),
+        ...(activeCategory !== 'all' ? [{ id: 'category', label: CATEGORY_LABELS[activeCategory] ?? activeCategory, onRemove: () => setActiveCategory('all') }] : []),
+    ];
+    const activeFilterCount = activeFilters.length;
+
     const header = (
         <View style={{ paddingHorizontal: gutter }}>
             {/* Barra de búsqueda real — filtra en el mismo Home, nunca navega */}
@@ -175,44 +187,8 @@ export function HomeScreen() {
 
             {isSearching ? (
                 <>
-                    {/* Ciudad + precio — mismos filtros que antes tenía Explorar */}
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        // 12 de separación respecto a las chips de categoría y el mismo margen lateral.
-                        style={{ flexGrow: 0, marginTop: Rhythm.cardGap }}
-                        contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, alignItems: 'center' }}
-                    >
-                        {cities.map((c) => (
-                            <Chip key={c} label={c} active={city !== null && cityKey(city) === cityKey(c)} onPress={() => setCity(city !== null && cityKey(city) === cityKey(c) ? null : c)} />
-                        ))}
-                        <View
-                            style={{
-                                height: 40,
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                gap: Spacing.one,
-                                borderWidth: 1,
-                                borderColor: colors.border,
-                                borderRadius: Radius.full,
-                                paddingHorizontal: Spacing.three,
-                            }}
-                        >
-                            <Text variant="captionStrong" color="textSecondary">
-                                Hasta $
-                            </Text>
-                            <TextInput
-                                value={maxPrice}
-                                onChangeText={setMaxPrice}
-                                placeholder="400"
-                                placeholderTextColor={colors.textMuted}
-                                keyboardType="numeric"
-                                accessibilityLabel="Precio máximo por día"
-                                maxFontSizeMultiplier={1.2}
-                                style={{ minWidth: 44, fontSize: 13, fontFamily: Fonts.sansSemiBold, color: colors.text, padding: 0 }}
-                            />
-                        </View>
-                    </ScrollView>
+                    {/* Botón «Filtros» (con contador) + filtros activos como píldoras con X */}
+                    <SearchFilterBar gutter={gutter} count={activeFilterCount} onOpenFilters={() => setFiltersOpen(true)} filters={activeFilters} />
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: gutter, paddingTop: Rhythm.cardGap }}>
                         <Text variant="captionStrong" color="textSecondary" accessibilityRole="header">
@@ -244,37 +220,55 @@ export function HomeScreen() {
                         />
                     )}
 
-                    <Pressable
-                        onPress={() =>
-                            router.push({
-                                pathname: '/map',
-                                params: { category: activeCategory, city: city ?? '', query, maxPrice },
-                            } as never)
-                        }
-                        accessibilityRole="button"
-                        accessibilityLabel="Ver en el mapa"
-                        style={[
-                            {
-                                position: 'absolute',
-                                bottom: bottomInset + Spacing.three,
-                                alignSelf: 'center',
-                                zIndex: 3,
-                                minHeight: MinTouch,
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                gap: Spacing.two,
-                                backgroundColor: colors.primary,
-                                paddingHorizontal: gutter,
-                                borderRadius: Radius.full,
-                            },
-                            Shadows.floating,
-                        ]}
-                    >
-                        <Ionicons name="map" size={18} color={colors.onPrimary} />
-                        <Text variant="button" style={{ color: colors.onPrimary, fontSize: 14 }}>
-                            Mapa
-                        </Text>
-                    </Pressable>
+                    {/* Botón «Mapa»: centrado y anclado justo encima de la barra inferior (safe area incluida). */}
+                    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: bottomInset + MAP_BUTTON_GAP, alignItems: 'center', zIndex: 3 }}>
+                        <Pressable
+                            onPress={() =>
+                                router.push({
+                                    pathname: '/map',
+                                    params: { category: activeCategory, city: city ?? '', query, maxPrice },
+                                } as never)
+                            }
+                            accessibilityRole="button"
+                            accessibilityLabel="Ver en el mapa"
+                            style={[
+                                {
+                                    minHeight: MinTouch,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: Spacing.two,
+                                    backgroundColor: colors.primary,
+                                    paddingHorizontal: gutter,
+                                    borderRadius: Radius.full,
+                                },
+                                Shadows.floating,
+                            ]}
+                        >
+                            <Ionicons name="map" size={18} color={colors.onPrimary} />
+                            <Text variant="button" style={{ color: colors.onPrimary, fontSize: 14 }}>
+                                Mapa
+                            </Text>
+                        </Pressable>
+                    </View>
+
+                    <SearchFiltersSheet
+                        visible={filtersOpen}
+                        onClose={() => setFiltersOpen(false)}
+                        cities={cities}
+                        city={city}
+                        onCityChange={setCity}
+                        maxPrice={maxPrice}
+                        onMaxPriceChange={setMaxPrice}
+                        category={activeCategory}
+                        onCategoryChange={setActiveCategory}
+                        resultCount={filteredExploreItems.length}
+                        onReset={() => {
+                            setCity(null);
+                            setMaxPrice('');
+                            setActiveCategory('all');
+                        }}
+                        canReset={activeFilterCount > 0}
+                    />
                 </>
             ) : (
                 <ScrollView
