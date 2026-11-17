@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,6 +32,7 @@ export function RegisterScreen() {
 
     const form = useForm({ firstName: '', lastName: '', email: '', phone: '', birthDate: '', password: '', confirmPassword: '' }, RULES);
 
+    const [emailExists, setEmailExists] = useState(false);
     const birthField = form.field('birthDate');
 
     function handleSubmit() {
@@ -44,6 +46,7 @@ export function RegisterScreen() {
                 phone: values.phone.trim(),
                 birthDate: values.birthDate,
             });
+            setEmailExists(result.code === 'email_exists');
             if (result.error) return result.error;
 
             // Con «Confirm email» activo no hay sesión: se pide verificar el correo. Con sesión,
@@ -69,7 +72,25 @@ export function RegisterScreen() {
                             </Text>
                         </View>
 
-                        {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} /> : null}
+                        {form.submitError && emailExists ? (
+                            // Correo ya registrado: reintentar no sirve; se ofrece iniciar sesión o recuperar la contraseña.
+                            <FormErrorBanner message={form.submitError}>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.three }}>
+                                    <Pressable onPress={() => router.replace('/login')} accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center' }}>
+                                        <Text variant="bodyStrong" color="primary">
+                                            Iniciar sesión
+                                        </Text>
+                                    </Pressable>
+                                    <Pressable onPress={() => router.push('/forgot-password')} accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center' }}>
+                                        <Text variant="bodyStrong" color="primary">
+                                            ¿Olvidaste tu contraseña?
+                                        </Text>
+                                    </Pressable>
+                                </View>
+                            </FormErrorBanner>
+                        ) : form.submitError ? (
+                            <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} />
+                        ) : null}
 
                         <FormField
                             label="Nombre"

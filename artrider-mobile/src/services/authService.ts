@@ -12,7 +12,9 @@ export interface SignUpParams {
     birthDate: string; // formato YYYY-MM-DD
 }
 
-export type AuthErrorCode = 'invalid_credentials' | 'email_not_confirmed' | 'unexpected';
+export type AuthErrorCode = 'invalid_credentials' | 'email_not_confirmed' | 'email_exists' | 'unexpected';
+
+const EMAIL_EXISTS_MESSAGE = 'Ya existe una cuenta con este correo electrónico. Inicia sesión o recupera tu contraseña.';
 
 export interface AuthResult {
     error?: string;
@@ -88,6 +90,10 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
         });
 
         if (error) {
+            // Correo ya registrado: error esperado, sin console.error.
+            if (error.code === 'user_already_exists' || error.code === 'email_exists' || /already (been )?registered/i.test(error.message)) {
+                return { error: EMAIL_EXISTS_MESSAGE, code: 'email_exists' };
+            }
             console.error('SignUp Auth Error:', error);
             return { error: error.message };
         }
@@ -95,7 +101,7 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
         // Mismo comportamiento que la web: identities vacío = email ya existe
         // (Supabase "Prevent Email Enumeration" activo)
         if (data.user?.identities && data.user.identities.length === 0) {
-            return { error: 'Ya existe una cuenta con este correo electrónico.' };
+            return { error: EMAIL_EXISTS_MESSAGE, code: 'email_exists' };
         }
 
         // Con «Confirm email» activo Supabase no devuelve sesión hasta que el usuario abre el enlace.
@@ -142,6 +148,19 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
     } catch (error: any) {
         console.error('Error técnico durante el inicio de sesión:', error.message || error);
         return { error: 'Un error inesperado ocurrió durante el inicio de sesión. Por favor intenta de nuevo.', code: 'unexpected' };
+    }
+}
+
+/** Confirma la cuenta con el código numérico del correo ({{ .Token }}). Si sale bien, Supabase emite SIGNED_IN. */
+export async function verifySignupCode(email: string, code: string): Promise<AuthResult> {
+    try {
+        const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'signup' });
+        if (error) {
+            return { error: 'El código no es válido o ya expiró. Revisa el correo o reenvía el enlace.' };
+        }
+        return {};
+    } catch {
+        return { error: 'No pudimos validar el código. Revisa tu conexión e intenta de nuevo.' };
     }
 }
 

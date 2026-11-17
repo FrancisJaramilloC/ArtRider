@@ -97,7 +97,18 @@ export function FormField({ label, error, hint, leftIcon, labelAccessory, rightA
 }
 
 /** Error del servidor arriba del formulario, con «Reintentar» (repite el último envío). */
-export function FormErrorBanner({ message, onRetry, retrying = false }: { message: string; onRetry?: () => void; retrying?: boolean }) {
+export function FormErrorBanner({
+  message,
+  onRetry,
+  retrying = false,
+  children,
+}: {
+  message: string;
+  onRetry?: () => void;
+  retrying?: boolean;
+  /** Acciones propias bajo el mensaje (p. ej. enlaces a «Iniciar sesión»). */
+  children?: ReactNode;
+}) {
   const colors = useTheme();
   return (
     <View
@@ -117,6 +128,7 @@ export function FormErrorBanner({ message, onRetry, retrying = false }: { messag
           {message}
         </Text>
       </View>
+      {children}
       {onRetry ? <Button label="Reintentar" variant="destructive" size="sm" fullWidth={false} loading={retrying} onPress={onRetry} /> : null}
     </View>
   );
