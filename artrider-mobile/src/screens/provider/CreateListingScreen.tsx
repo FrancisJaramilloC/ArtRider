@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ModalScreen } from '@/components/ui/ModalScreen';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius, MinTouch } from '@/constants/theme';
+import { Colors, Spacing, Radius, MinTouch, FieldHeight } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { CATEGORIES } from '@/constants/categories';
 import { createListing, getListingForEdit, updateListing } from '@/services/providerCatalogService';
@@ -671,7 +671,7 @@ function FormField({ label, required, children }: { label: string; required?: bo
 
 function inputStyle(colors: any) {
     return {
-        minHeight: MinTouch,
+        minHeight: FieldHeight,
         backgroundColor: colors.backgroundElement,
         borderRadius: Radius.lg,
         paddingHorizontal: Spacing.three,

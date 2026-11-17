@@ -1,4 +1,4 @@
-import { AccessibilityInfo, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { AccessibilityInfo, LayoutAnimation, Platform } from 'react-native';
 
 let reduceMotion = false;
 AccessibilityInfo.isReduceMotionEnabled()
@@ -10,9 +10,6 @@ AccessibilityInfo.addEventListener('reduceMotionChanged', (value) => {
   reduceMotion = value;
 });
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 /**
  * Transición suave y corta (180 ms) para el siguiente cambio de layout: cambio de chip, aparición

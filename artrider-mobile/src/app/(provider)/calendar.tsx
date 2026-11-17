@@ -136,9 +136,10 @@ function BookingRow({ booking, onChanged }: { booking: ProviderBooking; onChange
         destructive
         loading={busy}
         onCancel={() => setShowReject(false)}
-        onConfirm={async () => {
-          await run('reject');
+        onConfirm={() => {
+          // Cierra la hoja primero: así un posible aviso de error no choca con su cierre.
           setShowReject(false);
+          run('reject');
         }}
       />
 
@@ -220,7 +221,11 @@ export default function ProviderCalendarScreen() {
   }
 
   if (loading) {
-    return <ScreenSkeleton />;
+    return (
+      <TabScreen title="Calendario">
+        <ScreenSkeleton />
+      </TabScreen>
+    );
   }
 
   const calendarTheme = {
@@ -403,7 +408,7 @@ export default function ProviderCalendarScreen() {
               >
                 <View style={{ width: Thumb.compact, height: Thumb.compact, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
                   {item.cover_image_url ? (
-                    <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                   ) : null}
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>

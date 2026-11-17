@@ -114,7 +114,11 @@ export function MyListingsScreen() {
     }
 
     if (loading) {
-        return <ScreenSkeleton />;
+        return (
+            <TabScreen title="Anuncios">
+                <ScreenSkeleton />
+            </TabScreen>
+        );
     }
 
     const activeData = tab === 'equipos' ? listings : packages;

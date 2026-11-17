@@ -1,8 +1,9 @@
-import { ActivityIndicator, Switch, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 
 import { IconButton } from '@/components/ui/IconButton';
+import { Switch } from '@/components/ui/Switch';
 import { Text } from '@/components/ui/Text';
 import { MinTouch, Radius, Rhythm, Spacing, Thumb } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -58,8 +59,7 @@ export function ManagedRow({ title, meta, coverUrl, published, busy, onTogglePub
             <Switch
               value={published}
               onValueChange={onTogglePublished}
-              trackColor={{ true: colors.primary }}
-              accessibilityLabel={published ? 'Publicado. Tocar para pasar a borrador' : 'Borrador. Tocar para publicar'}
+              label={published ? 'Publicado. Tocar para pasar a borrador' : 'Borrador. Tocar para publicar'}
             />
           )}
           <Text variant="captionStrong" color={published ? 'primary' : 'textSecondary'}>

@@ -82,7 +82,11 @@ export function ProviderTodayScreen() {
   }
 
   if (loading) {
-    return <ScreenSkeleton />;
+    return (
+      <TabScreen title="Hoy">
+        <ScreenSkeleton />
+      </TabScreen>
+    );
   }
 
   if (!profile) {

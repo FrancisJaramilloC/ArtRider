@@ -20,13 +20,15 @@ const FADE_WIDTH = 40;
  */
 export function ChipRow<T extends string>({ options, value, onChange }: { options: ChipOption<T>[]; value: T; onChange: (next: T) => void }) {
   const colors = useTheme();
-  const { gutter, width } = useLayout();
+  const { gutter } = useLayout();
+  // Ancho propio del carrusel (el contenido puede estar limitado a un máximo en tablets).
+  const [width, setWidth] = useState(0);
   const ref = useRef<ScrollViewInstance>(null);
   const spots = useRef<Record<string, { x: number; w: number }>>({});
   const [contentWidth, setContentWidth] = useState(0);
   const [offset, setOffset] = useState(0);
 
-  const hasMore = contentWidth > width + 1 && offset + width < contentWidth - 4;
+  const hasMore = width > 0 && contentWidth > width + 1 && offset + width < contentWidth - 4;
 
   // Mantiene la chip seleccionada completamente visible.
   useEffect(() => {
@@ -39,7 +41,7 @@ export function ChipRow<T extends string>({ options, value, onChange }: { option
   }, [value]);
 
   return (
-    <View testID="chip-row">
+    <View testID="chip-row" onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)}>
       <ScrollView
         ref={ref}
         horizontal

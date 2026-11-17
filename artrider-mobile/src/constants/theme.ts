@@ -149,6 +149,9 @@ export const MaxContentWidth = 800;
 /** Acento del corazón de favoritos: primary-400, legible sobre el botón translúcido en ambos modos. */
 export const FavoriteAccent = '#a97dc4';
 
+/** Alto de los campos de formulario (48–52pt: cómodos para el pulgar). */
+export const FieldHeight = 52;
+
 /** Alto de las filas de menú/ajustes (íconos alineados, chevron al margen). */
 export const RowHeight = 56;
 

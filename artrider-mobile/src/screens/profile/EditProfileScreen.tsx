@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius, StatusColors, MinTouch } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors, MinTouch, FieldHeight } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/useAuth';
@@ -122,7 +122,7 @@ export function EditProfileScreen() {
                                 backgroundColor: colors.backgroundElement,
                                 borderRadius: Radius.lg,
                                 paddingHorizontal: Spacing.three,
-                                minHeight: MinTouch,
+                                minHeight: FieldHeight,
                                 paddingVertical: Spacing.snug,
                                 fontSize: 15,
                                 color: colors.text,
@@ -144,7 +144,7 @@ export function EditProfileScreen() {
                                 backgroundColor: colors.backgroundElement,
                                 borderRadius: Radius.lg,
                                 paddingHorizontal: Spacing.three,
-                                minHeight: MinTouch,
+                                minHeight: FieldHeight,
                                 paddingVertical: Spacing.snug,
                                 fontSize: 15,
                                 color: colors.text,

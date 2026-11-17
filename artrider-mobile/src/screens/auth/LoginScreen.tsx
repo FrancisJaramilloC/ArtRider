@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors, Spacing, Radius, MinTouch } from '@/constants/theme';
+import { Colors, Spacing, Radius, MinTouch, FieldHeight } from '@/constants/theme';
 
 export function LoginScreen() {
     const { login } = useAuth();
@@ -106,7 +106,7 @@ export function LoginScreen() {
                                     maxLength={254}
                                     style={{
                                         flex: 1,
-                                        minHeight: MinTouch,
+                                        minHeight: FieldHeight,
                                         paddingVertical: Spacing.snug,
                                         paddingHorizontal: Spacing.two,
                                         fontSize: 15,
@@ -149,7 +149,7 @@ export function LoginScreen() {
                                     maxLength={72}
                                     style={{
                                         flex: 1,
-                                        minHeight: MinTouch,
+                                        minHeight: FieldHeight,
                                         paddingVertical: Spacing.snug,
                                         paddingHorizontal: Spacing.two,
                                         fontSize: 15,

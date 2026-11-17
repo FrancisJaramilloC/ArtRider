@@ -9,7 +9,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors, Spacing, Radius, StatusColors, MinTouch } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors, MinTouch, FieldHeight } from '@/constants/theme';
 
 function formatDateForInput(date: Date): string {
     return date.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -78,7 +78,7 @@ export function RegisterScreen() {
 
     const inputStyle = {
         flex: 1,
-        minHeight: MinTouch,
+        minHeight: FieldHeight,
         minWidth: 0,
         paddingVertical: Spacing.snug,
         paddingHorizontal: Spacing.two,

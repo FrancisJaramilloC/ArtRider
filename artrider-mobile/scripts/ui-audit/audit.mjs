@@ -97,7 +97,8 @@ function measure() {
 
 const fmt = (n) => (Math.round(n * 10) / 10).toString();
 
-const EXEMPT_MARGIN = ['/map'];
+// Pantallas a sangre completa (mapa) o con un único estado vacío centrado (texto que se ajusta a su contenido).
+const EXEMPT_MARGIN = ['/map', '/provider/reviews', '/provider/settings'];
 function evaluate(m, width, route) {
   const rows = [];
   const phone = width < 600;
@@ -244,7 +245,7 @@ for (const route of routes) {
       await page.goto(BASE + path, { waitUntil: 'networkidle', timeout: 120000 }).catch(() => {});
       await page.waitForTimeout(2500);
       if (tab && SAFE_TABS.has(tab)) {
-        await page.getByText(tab, { exact: true }).first().click({ timeout: 8000 }).catch(() => {});
+        await page.getByRole('tab', { name: tab, exact: true }).first().click({ timeout: 8000 }).catch(() => page.getByText(tab, { exact: true }).first().click({ timeout: 8000 })).catch(() => {});
         await page.waitForTimeout(2500);
       }
       const m = await page.evaluate(measure);

@@ -10,7 +10,7 @@ import { ModalScreen } from '@/components/ui/ModalScreen';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius, MinTouch } from '@/constants/theme';
+import { Colors, Spacing, Radius, MinTouch, FieldHeight } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import {
     getMyListings,
@@ -486,7 +486,7 @@ function FormField({ label, required, children }: { label: string; required?: bo
 
 function inputStyle(colors: any) {
     return {
-        minHeight: MinTouch,
+        minHeight: FieldHeight,
         backgroundColor: colors.backgroundElement,
         borderRadius: Radius.lg,
         paddingHorizontal: Spacing.three,

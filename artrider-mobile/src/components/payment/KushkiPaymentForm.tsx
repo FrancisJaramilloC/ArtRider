@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/ui/Button';
 import { Text } from '@/components/ui/Text';
-import { Colors, Fonts, MinTouch, Spacing, Radius } from '@/constants/theme';
+import { Colors, Fonts, MinTouch, Spacing, Radius, FieldHeight } from '@/constants/theme';
 
 const KUSHKI_MERCHANT_ID = process.env.EXPO_PUBLIC_KUSHKI_MERCHANT_ID || '7b1bae59194f4e74ae0aec0d506df181';
 
@@ -112,7 +112,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
 
     const inputStyle = {
         flex: 1,
-        minHeight: MinTouch,
+        minHeight: FieldHeight,
         paddingHorizontal: Spacing.two,
         fontSize: 15,
         fontFamily: Fonts.sans,

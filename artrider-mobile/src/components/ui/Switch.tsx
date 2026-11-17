@@ -19,7 +19,7 @@ export type SwitchProps = {
 export function Switch({ value, onValueChange, label, disabled = false }: SwitchProps) {
   const colors = useTheme();
   return (
-    <View style={{ minHeight: MinTouch, justifyContent: 'center' }}>
+    <View style={{ minHeight: MinTouch, minWidth: MinTouch, justifyContent: 'center' }}>
       <RNSwitch
         value={value}
         disabled={disabled}

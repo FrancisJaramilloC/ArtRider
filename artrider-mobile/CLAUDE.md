@@ -31,6 +31,9 @@ pnpm exec expo install <paquete>          # para librerías nativas (versión de
 - Pantallas con sesión: `/dev-gallery?s=cards|lists|messages|states` (fixtures locales, solo `__DEV__`).
 - Espaciado: margen 16 (<600) / 24, ritmo `Rhythm` (32/12/24/12/12) y `Thumb` en `constants/theme.ts`; nunca números sueltos.
 
+- Con sesión: `AUDIT_AUTH=1` usa `UI_AUDIT_EMAIL`/`UI_AUDIT_PASSWORD` de `.ui-audit/.env` (ignorado; el script es de solo lectura: únicamente navega por pestañas permitidas, mide y captura). No abrir ni imprimir ese archivo.
+- Pestañas: todas usan `TabScreen` (cabecera única; el contenido arranca en la misma y). Chips de filtro con `ChipRow`; Perfil/Menú con `AccountMenu`. Interacción: `Button`/`Chip`/`IconButton`/`Switch`/`ListRow` con estado presionado, `expo-haptics` (`utils/haptics.ts`, nunca en web) y `animateLayout()` (`utils/motion.ts`, respeta reducir movimiento).
+
 ## Estructura (`src/`)
 
 - `app/` rutas expo-router (finas, montan una pantalla): `(auth)`, `(tabs)`, `(provider)`, `listing/`, `package/`, `checkout/`, `chat/`, `provider/`…
