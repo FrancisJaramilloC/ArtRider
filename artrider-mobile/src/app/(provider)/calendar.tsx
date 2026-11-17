@@ -1,226 +1,107 @@
-import { useCallback, useEffect, useState } from 'react';
-import { View, FlatList, Pressable, Linking, Alert, RefreshControl } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Alert, FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps } from 'react';
-import { Calendar } from 'react-native-calendars';
 
-type CalendarTheme = NonNullable<ComponentProps<typeof Calendar>['theme']>;
-type CalendarMarking = NonNullable<ComponentProps<typeof Calendar>['markedDates']>[string];
-
+import { MonthCalendar } from '@/components/provider/MonthCalendar';
+import { ProviderBookingCard } from '@/components/provider/ProviderBookingCard';
+import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
 import { ModalScreen } from '@/components/ui/ModalScreen';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { Text } from '@/components/ui/Text';
-import { useLayout } from '@/hooks/use-layout';
-import { Badge, type BadgeTone } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
-import { Skeleton, ScreenSkeleton } from '@/components/ui/Skeleton';
+import { Sheet } from '@/components/ui/Sheet';
+import { ScreenSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { TabScreen } from '@/components/ui/TabScreen';
+import { Text } from '@/components/ui/Text';
+import { BOOKING_STATUS_LABELS, Radius, Rhythm, Spacing, Thumb } from '@/constants/theme';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
-import { formatShortDate } from '@/utils/format';
-import { Spacing, Radius, Rhythm, MinTouch, Thumb, BOOKING_STATUS_LABELS, toStatusKey, type BookingStatusKey } from '@/constants/theme';
-
-const CALENDAR_PLACEHOLDER_HEIGHT = 320;
-
-const STATUS_TONE: Record<BookingStatusKey, BadgeTone> = {
-  pending: 'warning',
-  confirmed: 'success',
-  cancelled: 'danger',
-  completed: 'neutral',
-};
-import {
-  getProviderBookings,
-  respondToBooking,
-  finalizeBooking,
-  getListingCalendar,
-  toggleBlockDate,
-  type ProviderBooking,
-  type CalendarMark,
-} from '@/services/providerService';
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
-import { ReviewModal } from '@/components/reviews/ReviewModal';
+import { getListingCalendar, getProviderBookings, toggleBlockDate, type CalendarMark, type ProviderBooking } from '@/services/providerService';
+import { formatDayLong } from '@/utils/calendar';
+import { formatPrice } from '@/utils/format';
+import { formatDateRange } from '@/utils/providerBookings';
 
-function BookingRow({ booking, onChanged }: { booking: ProviderBooking; onChanged: () => void }) {
-  const colors = useTheme();
-  const [busy, setBusy] = useState(false);
-  const statusLabel = BOOKING_STATUS_LABELS[booking.status] ?? booking.status;
-  const [showFinalize, setShowFinalize] = useState(false);
-  const [showReject, setShowReject] = useState(false);
+type CalendarBundle = { bookings: ProviderBooking[]; listings: MyListing[] };
+type DaySheet = { date: string; kind: 'free' | 'blocked' | 'booked' };
 
-  async function handleFinalize(rating: number, comment: string) {
-    const result = await finalizeBooking(booking.booking_id, rating, comment);
-    if (result.error) {
-      setShowFinalize(false);
-      Alert.alert('No se pudo completar', result.error);
-      return;
-    }
-    setShowFinalize(false);
-    onChanged();
-  }
+/** Alto reservado al calendario mientras carga (6 semanas × 44 + cabecera). */
+const CALENDAR_PLACEHOLDER_HEIGHT = 360;
 
-  async function run(action: 'accept' | 'reject') {
-    setBusy(true);
-    const result = await respondToBooking(booking.booking_id, action);
-    setBusy(false);
-    if (result.error) {
-      Alert.alert('No se pudo completar', result.error);
-      return;
-    }
-    onChanged();
-  }
-
+function LegendItem({ children, label }: { children: ReactNode; label: string }) {
   return (
-    <View style={{ backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding, gap: Rhythm.cardPadding }}>
-      <View style={{ flexDirection: 'row', gap: Rhythm.cardPadding }}>
-        <View style={{ width: Thumb.list, height: Thumb.list, borderRadius: Radius.xl, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
-          {booking.listing_cover_image_url ? (
-            <Image source={{ uri: booking.listing_cover_image_url }} style={{ width: Thumb.list, height: Thumb.list }} contentFit="cover" transition={150} cachePolicy="memory-disk" />
-          ) : (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="image-outline" size={22} color={colors.textMuted} />
-            </View>
-          )}
-        </View>
-        <View style={{ flex: 1, minWidth: 0, gap: Spacing.half }}>
-          <Badge label={statusLabel} tone={STATUS_TONE[toStatusKey(booking.status)]} />
-          <Text variant="bodyStrong" numberOfLines={2} style={{ marginTop: Spacing.one }}>
-            {booking.listing_title ?? 'Item reservado'}
-          </Text>
-          <Text variant="caption" color="textSecondary" numberOfLines={1}>
-            {formatShortDate(booking.start_date)} - {formatShortDate(booking.end_date)} · ${(booking.total_price / 100).toFixed(2)}
-          </Text>
-          {booking.client_name ? (
-            <Text variant="caption" color="textSecondary" numberOfLines={1}>
-              Cliente: {booking.client_name}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-
-      {booking.client_phone ? (
-        <Pressable
-          onPress={() => Linking.openURL(`tel:${booking.client_phone}`)}
-          accessibilityRole="link"
-          accessibilityLabel={`Llamar al cliente ${booking.client_phone}`}
-          style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}
-        >
-          <Ionicons name="call-outline" size={16} color={colors.primary} />
-          <Text variant="captionStrong" color="primary">
-            {booking.client_phone}
-          </Text>
-        </Pressable>
-      ) : null}
-
-      {booking.status === 'AWAITING_SIGNATURES' && (
-        <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-          <Button label="Rechazar" variant="destructive" size="sm" fullWidth disabled={busy} onPress={() => setShowReject(true)} style={{ flex: 1 }} />
-          <Button label="Aceptar" size="sm" fullWidth loading={busy} onPress={() => run('accept')} style={{ flex: 1 }} />
-        </View>
-      )}
-
-      {booking.status === 'ACTIVE' && (
-        <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-          <Button label="Cancelar reserva" variant="destructive" size="sm" fullWidth disabled={busy} onPress={() => setShowReject(true)} style={{ flex: 1 }} />
-          <Button label="Finalizar reserva" variant="tonal" size="sm" fullWidth disabled={busy} onPress={() => setShowFinalize(true)} style={{ flex: 1 }} />
-        </View>
-      )}
-
-      <ConfirmSheet
-        visible={showReject}
-        title={booking.status === 'ACTIVE' ? 'Cancelar reserva' : 'Rechazar reserva'}
-        message="Esto reembolsará automáticamente al cliente si ya se cobró. Esta acción no se puede deshacer."
-        confirmLabel={booking.status === 'ACTIVE' ? 'Sí, cancelar' : 'Rechazar'}
-        destructive
-        loading={busy}
-        onCancel={() => setShowReject(false)}
-        onConfirm={() => {
-          // Cierra la hoja primero: así un posible aviso de error no choca con su cierre.
-          setShowReject(false);
-          run('reject');
-        }}
-      />
-
-      <ReviewModal
-        visible={showFinalize}
-        title="Finalizar y calificar"
-        subtitle={`¿Cómo fue tu experiencia con ${booking.client_name ?? 'este cliente'}?`}
-        onCancel={() => setShowFinalize(false)}
-        onSubmit={handleFinalize}
-        submitLabel="Finalizar reserva"
-        allowSkip
-        onSkip={async () => {
-          const result = await finalizeBooking(booking.booking_id);
-          setShowFinalize(false);
-          if (result.error) {
-            Alert.alert('No se pudo completar', result.error);
-            return;
-          }
-          onChanged();
-        }}
-      />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+      {children}
+      <Text variant="caption" color="textSecondary">
+        {label}
+      </Text>
     </View>
   );
 }
 
 export default function ProviderCalendarScreen() {
-  const { gutter, bottomInset } = useLayout();
+  const { gutter, bottomInset, contentWidth } = useLayout();
   const colors = useTheme();
   const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
-  const [bookings, setBookings] = useState<ProviderBooking[]>([]);
-  const [myListings, setMyListings] = useState<MyListing[]>([]);
+
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
-  const [marks, setMarks] = useState<CalendarMark[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const [daySheet, setDaySheet] = useState<DaySheet | null>(null);
+  const [toggling, setToggling] = useState(false);
 
-  const load = useCallback(async () => {
-    const [b, listings] = await Promise.all([getProviderBookings(), getMyListings()]);
-    setBookings(b);
-    setMyListings(listings);
-    setSelectedListingId((prev) => prev ?? listings[0]?.id ?? null);
-    setLoading(false);
-  }, []);
+  const base = useAsyncData<CalendarBundle>(
+    async () => {
+      const [bookings, listings] = await Promise.all([getProviderBookings(), getMyListings()]);
+      return { bookings, listings };
+    },
+    { reloadOnFocus: true },
+  );
+  const myListings = base.data?.listings ?? [];
+  const allBookings = base.data?.bookings ?? [];
+  const listingId = selectedListingId ?? myListings[0]?.id ?? null;
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  const calendar = useAsyncData<CalendarMark[]>(() => getListingCalendar(listingId as string), { enabled: !!listingId, deps: [listingId] });
+  const marks = calendar.data ?? [];
 
-  async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
+  const selectedListing = myListings.find((l) => l.id === listingId) ?? null;
+  const bookingsForListing = allBookings.filter((b) => b.listing_id === listingId);
+  const pendingFirst = [...bookingsForListing].sort((a, b) => Number(b.status === 'AWAITING_SIGNATURES') - Number(a.status === 'AWAITING_SIGNATURES'));
+  const pendingCount = bookingsForListing.filter((b) => b.status === 'AWAITING_SIGNATURES').length;
+
+  const filteredPickerListings = pickerQuery.trim()
+    ? myListings.filter((l) => (l.title ?? '').toLowerCase().includes(pickerQuery.trim().toLowerCase()))
+    : myListings;
+
+  function bookingOn(date: string): ProviderBooking | null {
+    return (
+      bookingsForListing.find(
+        (b) => b.status !== 'CANCELLED' && b.status !== 'ARCHIVED' && b.start_date.slice(0, 10) <= date && date <= b.end_date.slice(0, 10),
+      ) ?? null
+    );
   }
 
-  useEffect(() => {
-    if (!selectedListingId) return;
-    setLoadingCalendar(true);
-    getListingCalendar(selectedListingId)
-      .then(setMarks)
-      .finally(() => setLoadingCalendar(false));
-  }, [selectedListingId]);
-
-  async function handleDayPress(dateStr: string) {
-    if (!selectedListingId) return;
-    const existing = marks.find((m) => m.date === dateStr);
-    if (existing?.mark === 'booked') return;
-
-    const result = await toggleBlockDate(selectedListingId, dateStr);
+  /** Mismo bloqueo/liberación de antes (`toggleBlockDate`); solo cambia desde dónde se dispara. */
+  async function toggleDay(date: string) {
+    if (!listingId || toggling) return;
+    setToggling(true);
+    const result = await toggleBlockDate(listingId, date);
+    setToggling(false);
+    setDaySheet(null);
     if (result.error) {
       Alert.alert('No se pudo bloquear', result.error);
       return;
     }
-    if (result.mark === 'blocked') {
-      setMarks((prev) => [...prev, { date: dateStr, mark: 'blocked' }]);
-    } else {
-      setMarks((prev) => prev.filter((m) => m.date !== dateStr));
-    }
+    calendar.setData((prev) => {
+      const list = prev ?? [];
+      return result.mark === 'blocked' ? [...list, { date, mark: 'blocked' }] : list.filter((m) => m.date !== date);
+    });
   }
 
-  if (loading) {
+  if (base.status === 'loading') {
     return (
       <TabScreen title="Calendario">
         <ScreenSkeleton />
@@ -228,55 +109,17 @@ export default function ProviderCalendarScreen() {
     );
   }
 
-  const calendarTheme = {
-    backgroundColor: colors.background,
-    calendarBackground: colors.backgroundElement,
-    textSectionTitleColor: colors.textSecondary,
-    dayTextColor: colors.text,
-    monthTextColor: colors.text,
-    arrowColor: colors.primary,
-    todayTextColor: colors.primary,
-    textDisabledColor: colors.textMuted,
-    textDayFontFamily: 'Inter_500Medium',
-    textMonthFontFamily: 'Inter_700Bold',
-    // Celdas de día de 44×44 (objetivo táctil mínimo); por defecto miden 32.
-    'stylesheet.day.basic': { base: { width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center' } },
-  } as CalendarTheme;
+  if (base.status === 'error') {
+    return (
+      <TabScreen title="Calendario">
+        <ErrorState fill error={base.error} onRetry={base.reload} />
+      </TabScreen>
+    );
+  }
 
-  // Marcas distinguibles SIN depender solo del color: reservado = relleno sólido y número en negrita;
-  // bloqueado = contorno discontinuo y número tachado.
-  const markedDates: Record<string, CalendarMarking> = {};
-  marks.forEach((m) => {
-    markedDates[m.date] =
-      m.mark === 'booked'
-        ? {
-            customStyles: {
-              container: { backgroundColor: colors.destructive, borderRadius: Radius.full },
-              text: { color: colors.onPrimary, fontFamily: 'Inter_700Bold' },
-            },
-          }
-        : {
-            customStyles: {
-              container: { borderWidth: 2, borderStyle: 'dashed', borderColor: colors.textMuted, borderRadius: Radius.full },
-              text: { color: colors.textMuted, textDecorationLine: 'line-through' },
-            },
-          };
-  });
-
-  const selectedListing = myListings.find((l) => l.id === selectedListingId) ?? null;
-  const bookingsForListing = selectedListingId
-    ? bookings.filter((b) => b.listing_id === selectedListingId)
-    : bookings;
-  const pending = bookingsForListing.filter((b) => b.status === 'AWAITING_SIGNATURES');
-  const rest = bookingsForListing.filter((b) => b.status !== 'AWAITING_SIGNATURES');
-
-  const filteredPickerListings = pickerQuery.trim()
-    ? myListings.filter((l) => (l.title ?? '').toLowerCase().includes(pickerQuery.trim().toLowerCase()))
-    : myListings;
-
-  return (
-    <TabScreen title="Calendario">
-      {myListings.length === 0 ? (
+  if (myListings.length === 0) {
+    return (
+      <TabScreen title="Calendario">
         <EmptyState
           fill
           icon="calendar-outline"
@@ -285,96 +128,162 @@ export default function ProviderCalendarScreen() {
           actionLabel="Publicar mi primer equipo"
           onAction={() => router.push('/provider/new-listing' as never)}
         />
-      ) : (
-        <FlatList
-          data={[...pending, ...rest]}
-          keyExtractor={(b) => b.booking_id}
-          contentInsetAdjustmentBehavior="automatic"
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-          contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Spacing.two, paddingBottom: bottomInset + Spacing.four, gap: Rhythm.cardGap }}
-          ListHeaderComponent={
-            <View style={{ gap: Rhythm.titleToContent, marginBottom: Rhythm.section - Rhythm.cardGap }}>
-              {/* Selector de equipo — botón que abre un buscador, escala a cientos de items */}
-              <Pressable
-                onPress={() => setShowPicker(true)}
-                accessibilityRole="button"
-                accessibilityLabel={`Equipo seleccionado: ${selectedListing?.title ?? 'ninguno'}. Cambiar`}
-                style={({ pressed }) => [
-                  {
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: Spacing.three,
-                    backgroundColor: colors.backgroundElement,
-                    borderRadius: Radius.card,
-                    padding: Rhythm.cardPadding,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-              >
-                <View style={{ width: Thumb.compact, height: Thumb.compact, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
-                  {selectedListing?.cover_image_url ? (
-                    <Image source={{ uri: selectedListing.cover_image_url }} style={{ width: Thumb.compact, height: Thumb.compact }} contentFit="cover" transition={150} cachePolicy="memory-disk" />
-                  ) : null}
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text variant="caption" color="textSecondary">
-                    Equipo seleccionado
-                  </Text>
-                  <Text variant="bodyStrong" numberOfLines={1}>
-                    {selectedListing?.title ?? 'Elige un equipo'}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
-              </Pressable>
+      </TabScreen>
+    );
+  }
 
-              {loadingCalendar ? (
-                <Skeleton height={CALENDAR_PLACEHOLDER_HEIGHT} radius={Radius.card} />
-              ) : (
-                <Calendar
-                  key={selectedListingId}
-                  markingType="custom"
-                  markedDates={markedDates}
-                  onDayPress={(day: { dateString: string }) => handleDayPress(day.dateString)}
-                  minDate={new Date().toISOString().split('T')[0]}
-                  theme={calendarTheme}
-                  style={{ borderRadius: Radius.card, overflow: 'hidden', backgroundColor: colors.backgroundElement }}
-                />
-              )}
+  const sheetBooking = daySheet?.kind === 'booked' ? bookingOn(daySheet.date) : null;
 
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                  <View style={{ width: Spacing.three, height: Spacing.three, borderRadius: Radius.full, backgroundColor: colors.destructive }} />
-                  <Text variant="caption" color="textSecondary">
-                    Reservado
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                  <View style={{ width: Spacing.three, height: Spacing.three, borderRadius: Radius.full, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.textMuted }} />
-                  <Text variant="caption" color="textSecondary">
-                    Bloqueado por ti
-                  </Text>
-                </View>
-              </View>
+  return (
+    <TabScreen title="Calendario">
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={base.refreshing} onRefresh={async () => { await Promise.all([base.refresh(), calendar.reload()]); }} tintColor={colors.primary} />}
+        // Todo el contenido se alcanza: el último bloque queda por encima de la barra de pestañas.
+        contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Spacing.two, paddingBottom: bottomInset + Spacing.four, gap: Rhythm.titleToContent, width: '100%', maxWidth: contentWidth, alignSelf: 'center' }}
+      >
+        {base.refreshError ? <RefreshErrorNotice error={base.refreshError} onRetry={base.reload} /> : null}
+
+        {/* Selector de equipo: tarjeta que abre un buscador (escala a cientos de equipos). */}
+        <Pressable
+          onPress={() => setShowPicker(true)}
+          accessibilityRole="button"
+          accessibilityLabel={`Equipo seleccionado: ${selectedListing?.title ?? 'ninguno'}. Cambiar`}
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding, opacity: pressed ? 0.85 : 1 })}
+        >
+          <View style={{ width: Thumb.compact, height: Thumb.compact, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.imageBackdrop }}>
+            {selectedListing?.cover_image_url ? (
+              <Image source={{ uri: selectedListing.cover_image_url }} style={{ width: Thumb.compact, height: Thumb.compact }} contentFit="contain" transition={150} cachePolicy="memory-disk" />
+            ) : null}
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text variant="caption" color="textSecondary">
+              Equipo seleccionado
+            </Text>
+            <Text variant="bodyStrong" numberOfLines={1}>
+              {selectedListing?.title ?? 'Elige un equipo'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
+        </Pressable>
+
+        {calendar.status === 'loading' ? (
+          <Skeleton height={CALENDAR_PLACEHOLDER_HEIGHT} radius={Radius.card} />
+        ) : calendar.status === 'error' ? (
+          <ErrorState error={calendar.error} message="No pudimos cargar el calendario de este equipo." onRetry={calendar.reload} />
+        ) : (
+          <MonthCalendar key={listingId} marks={marks} onDayPress={(date, kind) => setDaySheet({ date, kind })} />
+        )}
+
+        {/* Leyenda compacta, en una sola línea. */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.three, rowGap: Spacing.one }}>
+          <LegendItem label="Reservado">
+            <View style={{ width: Spacing.three, height: Spacing.three, borderRadius: Radius.full, backgroundColor: colors.primary }} />
+          </LegendItem>
+          <LegendItem label="Bloqueado">
+            <View style={{ width: Spacing.three, height: Spacing.three, borderRadius: Radius.full, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.textMuted }} />
+          </LegendItem>
+          <LegendItem label="Hoy">
+            <View style={{ width: Spacing.three, height: Spacing.three, borderRadius: Radius.full, borderWidth: 2, borderColor: colors.primary }} />
+          </LegendItem>
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Rhythm.cardGap }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text variant="headline" accessibilityRole="header">
+              Reservas de este equipo
+            </Text>
+            {pendingCount > 0 ? (
               <Text variant="caption" color="textSecondary">
-                Toca un día libre para bloquearlo (mantenimiento, uso propio) o un día bloqueado para liberarlo.
+                {pendingCount} {pendingCount === 1 ? 'pendiente' : 'pendientes'} de tu respuesta
               </Text>
+            ) : null}
+          </View>
+          <Button label="Ver todas" variant="ghost" size="sm" fullWidth={false} onPress={() => router.push('/provider/bookings' as never)} style={{ marginRight: -Spacing.three }} />
+        </View>
 
-              {pending.length > 0 && (
-                <Text variant="captionStrong" color="textSecondary" style={{ marginTop: Spacing.three }}>
-                  {pending.length} {pending.length === 1 ? 'reserva pendiente' : 'reservas pendientes'} de tu respuesta
+        {pendingFirst.length === 0 ? (
+          <EmptyState
+            icon="calendar-outline"
+            title="Este equipo todavía no tiene reservas"
+            description="Cuando alguien reserve, aparecerá en el calendario y aquí."
+            actionLabel="Ver reservas"
+            onAction={() => router.push('/provider/bookings' as never)}
+          />
+        ) : (
+          <View style={{ gap: Rhythm.cardGap }}>
+            {pendingFirst.map((booking) => (
+              <ProviderBookingCard
+                key={booking.booking_id}
+                booking={booking}
+                onOpen={() => router.push({ pathname: '/provider/booking/[id]', params: { id: booking.booking_id } } as never)}
+                onChanged={() => { base.reload(); calendar.reload(); }}
+              />
+            ))}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Acción del día tocado: bloquear / liberar o ver la reserva. */}
+      <Sheet visible={daySheet !== null} onClose={() => setDaySheet(null)}>
+        {daySheet ? (
+          <View style={{ gap: Spacing.three, paddingBottom: Spacing.two }}>
+            <Text variant="headline" accessibilityRole="header" style={{ textTransform: 'capitalize' }}>
+              {formatDayLong(daySheet.date)}
+            </Text>
+
+            {daySheet.kind === 'booked' ? (
+              <>
+                {sheetBooking ? (
+                  <View style={{ gap: Spacing.one }}>
+                    <Text variant="bodyStrong" numberOfLines={2}>
+                      {sheetBooking.listing_title ?? 'Equipo reservado'}
+                    </Text>
+                    <Text variant="body" color="textSecondary">
+                      {sheetBooking.client_name ?? 'Cliente'} · {formatDateRange(sheetBooking.start_date, sheetBooking.end_date)}
+                    </Text>
+                    <Text variant="caption" color="textSecondary">
+                      {BOOKING_STATUS_LABELS[sheetBooking.status] ?? sheetBooking.status} · {formatPrice(sheetBooking.total_price)}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text variant="body" color="textSecondary">
+                    Este día está reservado.
+                  </Text>
+                )}
+                {sheetBooking ? (
+                  <Button
+                    label="Ver reserva"
+                    onPress={() => {
+                      const id = sheetBooking.booking_id;
+                      setDaySheet(null);
+                      router.push({ pathname: '/provider/booking/[id]', params: { id } } as never);
+                    }}
+                  />
+                ) : null}
+              </>
+            ) : daySheet.kind === 'blocked' ? (
+              <>
+                <Text variant="body" color="textSecondary">
+                  Bloqueaste este día: nadie puede reservar el equipo. ¿Quieres liberarlo?
                 </Text>
-              )}
-            </View>
-          }
-          ListEmptyComponent={
-            <EmptyState icon="calendar-outline" title="Sin reservas" description="Este equipo todavía no tiene reservas." />
-          }
-          renderItem={({ item }) => <BookingRow booking={item} onChanged={load} />}
-        />
-      )}
+                <Button label="Liberar día" loading={toggling} onPress={() => toggleDay(daySheet.date)} />
+              </>
+            ) : (
+              <>
+                <Text variant="body" color="textSecondary">
+                  Día libre. Bloquéalo si no vas a poder rentar el equipo (mantenimiento, uso propio).
+                </Text>
+                <Button label="Bloquear día" loading={toggling} onPress={() => toggleDay(daySheet.date)} />
+              </>
+            )}
+            <Button label="Cerrar" variant="ghost" onPress={() => setDaySheet(null)} />
+          </View>
+        ) : null}
+      </Sheet>
 
-      {/* Modal buscador de equipo */}
-      {/* Selector de equipo: modal a pantalla completa con zona segura por insets */}
+      {/* Selector de equipo: pantalla completa con zona segura por insets y buscador. */}
       <ModalScreen visible={showPicker} title="Elige un equipo" onClose={() => setShowPicker(false)}>
         <View style={{ paddingHorizontal: gutter, paddingBottom: Spacing.three }}>
           <SearchBar value={pickerQuery} onChangeText={setPickerQuery} placeholder="Buscar equipo..." onClear={() => setPickerQuery('')} />
@@ -382,12 +291,11 @@ export default function ProviderCalendarScreen() {
         <FlatList
           data={filteredPickerListings}
           keyExtractor={(item) => item.id}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingHorizontal: gutter, gap: Spacing.two, paddingBottom: Spacing.six }}
-          ListEmptyComponent={
-            <EmptyState icon="search-outline" title="Sin coincidencias" description={`No hay equipos que coincidan con "${pickerQuery}".`} />
-          }
+          ListEmptyComponent={<EmptyState icon="search-outline" title="Sin coincidencias" description={`No hay equipos que coincidan con "${pickerQuery}".`} />}
           renderItem={({ item }) => {
-            const isSelected = item.id === selectedListingId;
+            const isSelected = item.id === listingId;
             return (
               <Pressable
                 onPress={() => {
@@ -397,29 +305,20 @@ export default function ProviderCalendarScreen() {
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`${item.title ?? 'Equipo'}${isSelected ? ', seleccionado' : ''}`}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: Spacing.three,
-                  padding: Rhythm.cardPadding,
-                  borderRadius: Radius.card,
-                  backgroundColor: isSelected ? colors.primarySoft : colors.backgroundElement,
-                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: Rhythm.cardPadding, borderRadius: Radius.card, backgroundColor: isSelected ? colors.primarySoft : colors.backgroundElement }}
               >
-                <View style={{ width: Thumb.compact, height: Thumb.compact, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
-                  {item.cover_image_url ? (
-                    <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-                  ) : null}
+                <View style={{ width: Thumb.compact, height: Thumb.compact, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.imageBackdrop }}>
+                  {item.cover_image_url ? <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} contentFit="contain" /> : null}
                 </View>
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text variant="bodyStrong" numberOfLines={1}>
                     {item.title ?? 'Equipo'}
                   </Text>
                   <Text variant="caption" color="textSecondary">
-                    ${(item.daily_price / 100).toFixed(0)}/día
+                    {formatPrice(item.daily_price)}/día
                   </Text>
                 </View>
-                {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+                {isSelected ? <Ionicons name="checkmark-circle" size={22} color={colors.primary} /> : null}
               </Pressable>
             );
           }}
