@@ -12,7 +12,7 @@ export function ProtectedScreen({ children }: { children: ReactNode }) {
     }
 
     if (!session) {
-        return <Redirect href="/login" />;
+        return <Redirect href="/welcome" />;
     }
 
     return <>{children}</>;

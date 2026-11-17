@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Pressable, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AuthScreen } from '@/components/auth/AuthScreen';
+import { BackButton } from '@/components/navigation/BackButton';
 import { Button } from '@/components/ui/Button';
 import { FormErrorBanner, FormField } from '@/components/ui/FormField';
+import { PasswordField } from '@/components/ui/PasswordField';
 import { Text } from '@/components/ui/Text';
 import { MinTouch, Spacing } from '@/constants/theme';
 import { useForm } from '@/hooks/useForm';
-import { useLayout } from '@/hooks/use-layout';
-import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
 import { useCooldown } from '@/hooks/useCooldown';
 import { RESEND_COOLDOWN_SECONDS, resendSignupEmail, type AuthErrorCode } from '@/services/authService';
@@ -22,8 +22,6 @@ const RULES = {
 
 export function LoginScreen() {
     const { login } = useAuth();
-    const colors = useTheme();
-    const { gutter } = useLayout();
     const router = useRouter();
     const form = useForm({ email: '', password: '' }, RULES);
     const [errorCode, setErrorCode] = useState<AuthErrorCode | null>(null);
@@ -64,94 +62,88 @@ export function LoginScreen() {
     const canRetryLogin = errorCode === null || errorCode === 'unexpected';
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-                <ScrollView ref={form.scrollRef} onScroll={form.onScroll} scrollEventThrottle={16} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
-                    <View style={{ paddingHorizontal: gutter, maxWidth: 480, width: '100%', alignSelf: 'center', gap: Spacing.three }}>
-                        <View style={{ marginBottom: Spacing.three, gap: Spacing.one }}>
-                            <Text variant="display" accessibilityRole="header">
-                                Iniciar sesión
-                            </Text>
-                            <Text variant="body" color="textSecondary">
-                                Bienvenido de vuelta a tu espacio creativo.
-                            </Text>
-                        </View>
+        <AuthScreen scrollRef={form.scrollRef} onScroll={form.onScroll} centered>
+            <BackButton style={{ alignSelf: 'flex-start' }} />
 
-                        {form.submitError ? (
-                            <FormErrorBanner message={form.submitError} onRetry={canRetryLogin ? form.retry : undefined} retrying={form.submitting} />
-                        ) : null}
-                        {errorCode === 'email_not_confirmed' && form.submitError ? (
-                            <Button
-                                label={remaining > 0 ? `Reenviar correo (${remaining} s)` : 'Reenviar correo'}
-                                variant="secondary"
-                                onPress={handleResend}
-                                loading={resending}
-                                disabled={remaining > 0}
-                            />
-                        ) : null}
-                        {resendError ? <FormErrorBanner message={resendError} onRetry={handleResend} retrying={resending} /> : null}
-                        {resendNotice ? (
-                            <Text variant="bodyStrong" color="primary" accessibilityLiveRegion="polite">
-                                {resendNotice}
-                            </Text>
-                        ) : null}
+            <View style={{ marginBottom: Spacing.three, gap: Spacing.one }}>
+                <Text variant="display" accessibilityRole="header">
+                    Iniciar sesión
+                </Text>
+                <Text variant="body" color="textSecondary">
+                    Bienvenido de vuelta a tu espacio creativo.
+                </Text>
+            </View>
 
-                        <FormField
-                            label="Correo electrónico"
-                            leftIcon="mail-outline"
-                            placeholder="tu@email.com"
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            autoComplete="email"
-                            autoCorrect={false}
-                            returnKeyType="next"
-                            maxLength={254}
-                            onSubmitEditing={() => form.field('password').inputRef.current?.focus()}
-                            {...form.field('email')}
-                        />
+            {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={canRetryLogin ? form.retry : undefined} retrying={form.submitting} /> : null}
+            {errorCode === 'email_not_confirmed' && form.submitError ? (
+                <Button
+                    label={remaining > 0 ? `Reenviar correo (${remaining} s)` : 'Reenviar correo'}
+                    variant="secondary"
+                    onPress={handleResend}
+                    loading={resending}
+                    disabled={remaining > 0}
+                />
+            ) : null}
+            {resendError ? <FormErrorBanner message={resendError} onRetry={handleResend} retrying={resending} /> : null}
+            {resendNotice ? (
+                <Text variant="bodyStrong" color="primary" accessibilityLiveRegion="polite">
+                    {resendNotice}
+                </Text>
+            ) : null}
 
-                        <FormField
-                            label="Contraseña"
-                            leftIcon="lock-closed-outline"
-                            placeholder="••••••••"
-                            secureTextEntry
-                            autoCapitalize="none"
-                            autoComplete="current-password"
-                            returnKeyType="go"
-                            maxLength={72}
-                            onSubmitEditing={handleSubmit}
-                            labelAccessory={
-                                <Pressable
-                                    onPress={() => router.push('/forgot-password')}
-                                    accessibilityRole="link"
-                                    accessibilityLabel="¿Olvidaste tu contraseña?"
-                                    style={{ minHeight: MinTouch, justifyContent: 'center' }}
-                                >
-                                    <Text variant="captionStrong" color="primary">
-                                        ¿La olvidaste?
-                                    </Text>
-                                </Pressable>
-                            }
-                            {...form.field('password')}
-                        />
+            <FormField
+                label="Correo electrónico"
+                leftIcon="mail-outline"
+                placeholder="tu@email.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                textContentType="username"
+                autoCorrect={false}
+                returnKeyType="next"
+                submitBehavior="submit"
+                maxLength={254}
+                onSubmitEditing={() => form.field('password').inputRef.current?.focus()}
+                {...form.field('email')}
+            />
 
-                        <Button label="Iniciar sesión" onPress={handleSubmit} loading={form.submitting} />
+            <PasswordField
+                label="Contraseña"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                textContentType="password"
+                returnKeyType="go"
+                maxLength={72}
+                onSubmitEditing={handleSubmit}
+                labelAccessory={
+                    <Pressable
+                        onPress={() => router.push('/forgot-password')}
+                        accessibilityRole="link"
+                        accessibilityLabel="¿Olvidaste tu contraseña?"
+                        style={{ minHeight: MinTouch, justifyContent: 'center' }}
+                    >
+                        <Text variant="captionStrong" color="primary">
+                            ¿La olvidaste?
+                        </Text>
+                    </Pressable>
+                }
+                {...form.field('password')}
+            />
 
-                        <View style={{ marginTop: Spacing.four, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
-                            <Text variant="body" color="textSecondary">
-                                ¿No tienes una cuenta?
-                            </Text>
-                            <Link href="/register" asChild>
-                                <Pressable accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
-                                    <Text variant="bodyStrong" color="primary">
-                                        Regístrate
-                                    </Text>
-                                </Pressable>
-                            </Link>
-                        </View>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+            <Button label="Iniciar sesión" onPress={handleSubmit} loading={form.submitting} />
+
+            <View style={{ marginTop: Spacing.three, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+                <Text variant="body" color="textSecondary">
+                    ¿No tienes una cuenta?
+                </Text>
+                <Link href="/register" asChild>
+                    <Pressable accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
+                        <Text variant="bodyStrong" color="primary">
+                            Regístrate
+                        </Text>
+                    </Pressable>
+                </Link>
+            </View>
+        </AuthScreen>
     );
 }

@@ -77,7 +77,7 @@ export function PackageDetailScreen() {
     async function handleContactarProveedor() {
         if (!pkg) return;
         if (!session?.user) {
-            router.push('/login');
+            router.push('/welcome');
             return;
         }
         try {

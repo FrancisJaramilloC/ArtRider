@@ -43,7 +43,7 @@ export function DetailCartFooter({ kind, id, title, dailyPrice, providerId }: De
 
   function handleCartPress() {
     if (!loggedIn) {
-      router.push('/login');
+      router.push('/welcome');
       return;
     }
     if (inCart) {

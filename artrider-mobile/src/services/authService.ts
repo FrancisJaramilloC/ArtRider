@@ -1,15 +1,16 @@
 import * as Linking from 'expo-linking';
 
+import { passwordRequirements } from '@/utils/validation';
+
 import { supabase } from './supabase';
 
 export interface SignUpParams {
     email: string;
     password: string;
-    confirmPassword: string;
     firstName: string;
     lastName: string;
-    phone: string;
-    birthDate: string; // formato YYYY-MM-DD
+    /** Casilla «Tengo 18 años o más y acepto los Términos y la Política de Privacidad». */
+    acceptedTerms: boolean;
 }
 
 export type AuthErrorCode = 'invalid_credentials' | 'email_not_confirmed' | 'email_exists' | 'invalid_code' | 'unexpected';
@@ -42,59 +43,37 @@ function normalizeEmail(email: string): string {
 /** Intervalo mínimo entre reenvíos del correo de confirmación. */
 export const RESEND_COOLDOWN_SECONDS = 60;
 
-function calculateAge(birthDate: Date): number {
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDifference = today.getMonth() - birthDate.getMonth();
-    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    return age;
-}
-
 export async function signUp(params: SignUpParams): Promise<AuthResult> {
-    const { email, password, confirmPassword, firstName, lastName, phone, birthDate } = params;
+    const { email, password, firstName, lastName, acceptedTerms } = params;
 
-    // Mismas validaciones que la web, replicadas aquí porque no están
-    // reforzadas a nivel de base de datos.
-    if (!email || !password || !confirmPassword || !firstName || !lastName || !phone || !birthDate) {
+    // Las pantallas ya validan; esto protege la capa de servicio (no hay reglas equivalentes en la base de datos).
+    if (!email || !password || !firstName || !lastName) {
         return { error: 'Todos los campos son obligatorios.' };
-    }
-
-    if (password !== confirmPassword) {
-        return { error: 'Las contraseñas no coinciden. Por favor verifícalas.' };
     }
 
     if (firstName.length < 2 || firstName.length > 50 || lastName.length < 2 || lastName.length > 50) {
         return { error: 'Nombres y apellidos deben tener entre 2 y 50 caracteres.' };
     }
 
-    const phoneRegex = /^\+?[0-9\s\-()]{10,15}$/;
-    if (!phoneRegex.test(phone)) {
-        return { error: 'El formato de teléfono ingresado es inválido.' };
+    if (!passwordRequirements(password).every((requirement) => requirement.met)) {
+        return { error: 'La contraseña no cumple los requisitos.' };
     }
 
-    const dob = new Date(birthDate);
-    const today = new Date();
-
-    if (isNaN(dob.getTime()) || dob.getFullYear() < 1900 || dob.getFullYear() > today.getFullYear()) {
-        return { error: 'Por favor ingresa una fecha de nacimiento legítima.' };
-    }
-
-    if (calculateAge(dob) < 18) {
-        return { error: 'Debes ser mayor de 18 años para utilizar ArtRider.' };
+    if (!acceptedTerms) {
+        return { error: 'Debes confirmar que tienes 18 años o más y aceptar los Términos y la Política de Privacidad.' };
     }
 
     try {
         const { data, error } = await supabase.auth.signUp({
-            email,
+            email: normalizeEmail(email),
             password,
             options: {
                 emailRedirectTo: emailConfirmRedirectUrl(),
                 data: {
                     full_name: `${firstName} ${lastName}`.trim(),
-                    phone,
-                    birth_date: birthDate,
+                    // Sin fecha de nacimiento: la mayoría de edad y los términos se confirman con la casilla.
+                    age_confirmed: true,
+                    terms_accepted_at: new Date().toISOString(),
                 },
             },
         });

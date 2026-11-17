@@ -32,6 +32,24 @@ export const maxLength =
   (value) =>
     value.trim().length <= max ? null : (message ?? `Máximo ${max} caracteres`);
 
+export const PASSWORD_MIN_LENGTH = 8;
+
+export type PasswordRequirement = { key: string; label: string; met: boolean };
+
+/** Requisitos de contraseña del registro (los muestra el indicador y los valida `strongPassword`). */
+export function passwordRequirements(value: string): PasswordRequirement[] {
+  return [
+    { key: 'length', label: `Al menos ${PASSWORD_MIN_LENGTH} caracteres`, met: value.length >= PASSWORD_MIN_LENGTH },
+    { key: 'letter', label: 'Una letra', met: /\p{L}/u.test(value) },
+    { key: 'number', label: 'Un número', met: /\d/.test(value) },
+  ];
+}
+
+export const strongPassword =
+  (message = 'La contraseña no cumple los requisitos'): Rule =>
+  (value) =>
+    value.length === 0 || passwordRequirements(value).every((requirement) => requirement.met) ? null : message;
+
 /** Números con coma o punto decimal («12,50» y «12.50»). NaN si no es un número. */
 export function parseNumber(value: string): number {
   const normalized = value.trim().replace(',', '.');

@@ -90,7 +90,7 @@ export function ListingDetailScreen() {
     async function handleContactarProveedor() {
         if (!listing) return;
         if (!session?.user) {
-            router.push('/login');
+            router.push('/welcome');
             return;
         }
         try {

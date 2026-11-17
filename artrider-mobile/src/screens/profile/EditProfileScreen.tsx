@@ -19,7 +19,7 @@ import { maxLength, minLength, phone, required } from '@/utils/validation';
 
 const RULES = {
     fullName: [required('Ingresa tu nombre completo'), minLength(2, 'El nombre debe tener al menos 2 caracteres'), maxLength(100, 'El nombre admite hasta 100 caracteres')],
-    phone: [required('Ingresa tu teléfono'), phone('Ingresa un teléfono válido, por ejemplo 099 123 4567')],
+    phone: [phone('Ingresa un teléfono válido, por ejemplo 099 123 4567')],
 };
 
 export function EditProfileScreen() {

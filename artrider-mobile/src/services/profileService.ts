@@ -28,12 +28,13 @@ export async function updateProfile(params: UpdateProfileParams): Promise<Update
             .eq('id', user.id)
             .single();
 
-        if (!fullName || !phone) {
+        if (!fullName) {
             return { error: 'Por favor completa todos los campos requeridos.' };
         }
 
+        // El teléfono es opcional (el registro ya no lo pide; se solicitará al reservar o al ser Partner).
         const phoneRegex = /^\+?[0-9\s\-()]{10,15}$/;
-        if (!phoneRegex.test(phone)) {
+        if (phone.trim() && !phoneRegex.test(phone.trim())) {
             return { error: 'El formato de teléfono ingresado es inválido.' };
         }
 
@@ -83,7 +84,8 @@ export async function updateProfile(params: UpdateProfileParams): Promise<Update
 
         const updatePayload: Record<string, any> = {
             full_name: fullName.trim(),
-            phone: phone.trim(),
+            // `phone` es UNIQUE: vacío se guarda como NULL, no como cadena vacía.
+            phone: phone.trim() || null,
         };
 
         if (finalAvatarUrl && targetAvatarUpdateTimestamp) {
