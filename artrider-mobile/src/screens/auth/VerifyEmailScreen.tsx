@@ -92,8 +92,13 @@ export function VerifyEmailScreen() {
         setCodeError(null);
         const result = await verifySignupCode(address, trimmed);
         setVerifying(false);
-        // Si fue bien, el listener de SIGNED_IN navega a Home.
-        if (result.error) setCodeError(result.error);
+        if (result.error) {
+            setCodeError(result.error);
+            return;
+        }
+        // Confirmada (código válido, o el enlace ya la había confirmado y hay sesión): a Home.
+        showToast('Cuenta verificada');
+        router.replace('/');
     }
 
     return (
@@ -157,6 +162,13 @@ export function VerifyEmailScreen() {
                                     onSubmitEditing={handleVerifyCode}
                                 />
                                 <Button label="Confirmar código" variant="tonal" onPress={handleVerifyCode} loading={verifying} />
+                                {codeError ? (
+                                    <Pressable onPress={() => router.replace('/login')} accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', alignItems: 'center' }}>
+                                        <Text variant="bodyStrong" color="primary">
+                                            Iniciar sesión
+                                        </Text>
+                                    </Pressable>
+                                ) : null}
                             </View>
                         ) : (
                             <Pressable

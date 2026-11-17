@@ -12,7 +12,7 @@ export interface SignUpParams {
     birthDate: string; // formato YYYY-MM-DD
 }
 
-export type AuthErrorCode = 'invalid_credentials' | 'email_not_confirmed' | 'email_exists' | 'unexpected';
+export type AuthErrorCode = 'invalid_credentials' | 'email_not_confirmed' | 'email_exists' | 'invalid_code' | 'unexpected';
 
 const EMAIL_EXISTS_MESSAGE = 'Ya existe una cuenta con este correo electrónico. Inicia sesión o recupera tu contraseña.';
 
@@ -25,8 +25,18 @@ export interface AuthResult {
 }
 
 /** URL a la que Supabase redirige tras confirmar el correo (esquema de la app, o exp:// en Expo Go). */
-export function emailConfirmRedirectUrl(): string {
-    return Linking.createURL('auth/confirm');
+export function emailConfirmRedirectUrl(origin: 'signUp' | 'resend' = 'signUp'): string {
+    const url = Linking.createURL('auth/confirm');
+    if (__DEV__) {
+        // Diagnóstico: esta URL debe estar en Supabase → Authentication → Redirect URLs; si no, Supabase usa el Site URL.
+        console.log(`[auth] emailRedirectTo (${origin}):`, url);
+    }
+    return url;
+}
+
+/** Correo en minúsculas y sin espacios, como lo guarda Supabase. */
+function normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
 }
 
 /** Intervalo mínimo entre reenvíos del correo de confirmación. */
@@ -154,9 +164,12 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
 /** Confirma la cuenta con el código numérico del correo ({{ .Token }}). Si sale bien, Supabase emite SIGNED_IN. */
 export async function verifySignupCode(email: string, code: string): Promise<AuthResult> {
     try {
-        const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'signup' });
+        const { error } = await supabase.auth.verifyOtp({ email: normalizeEmail(email), token: String(code).trim(), type: 'signup' });
         if (error) {
-            return { error: 'El código no es válido o ya expiró. Revisa el correo o reenvía el enlace.' };
+            // Si el enlace del correo ya confirmó la cuenta (y dejó sesión), el código sobra: no es un error.
+            const { data } = await supabase.auth.getSession();
+            if (data.session) return {};
+            return { error: 'El código no es válido o ya expiró. Revisa el correo o reenvía el enlace.', code: 'invalid_code' };
         }
         return {};
     } catch {
@@ -169,8 +182,8 @@ export async function resendSignupEmail(email: string): Promise<AuthResult> {
     try {
         const { error } = await supabase.auth.resend({
             type: 'signup',
-            email,
-            options: { emailRedirectTo: emailConfirmRedirectUrl() },
+            email: normalizeEmail(email),
+            options: { emailRedirectTo: emailConfirmRedirectUrl('resend') },
         });
         if (error) {
             if (error.status === 429 || /rate limit|seconds/i.test(error.message)) {
