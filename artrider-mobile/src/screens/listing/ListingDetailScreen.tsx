@@ -15,6 +15,7 @@ import { getListingByIdWithProvider, getListingGallery, getListingRatings, getLi
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
 import { getListingTotalUnits } from '@/services/availabilityService';
+import { emitFavoriteChange, onFavoriteChange } from '@/utils/favoritesSync';
 import { useAuth } from '@/hooks/useAuth';
 import { loadRelatedListings } from './relatedListings';
 
@@ -65,11 +66,23 @@ export function ListingDetailScreen() {
         if (bundle) setEsFavorito(bundle.fav);
     }, [bundle]);
 
+    // Si se cambia el favorito desde otro lado (lista de Favoritos, tarjetas), el corazón se actualiza sin recargar.
+    useEffect(
+        () =>
+            onFavoriteChange((c) => {
+                if (c.tipo === 'equipo' && c.id === id) setEsFavorito(c.esFavorito);
+            }),
+        [id],
+    );
+
     async function handleToggleFavorito() {
         if (!listing) return;
         setEsFavorito((prev) => !prev); // optimista
         const result = await toggleFavorito(listing.id, 'equipo');
-        if (!result.error) setEsFavorito(result.esFavorito);
+        if (!result.error) {
+            setEsFavorito(result.esFavorito);
+            emitFavoriteChange({ id: listing.id, tipo: 'equipo', esFavorito: result.esFavorito });
+        }
     }
 
     async function handleContactarProveedor() {
@@ -177,13 +190,13 @@ export function ListingDetailScreen() {
 
             {related?.fromProvider.length ? (
                 <DetailSection title="Más de este proveedor" divider>
-                    <ItemCarousel items={related.fromProvider} />
+                    <ItemCarousel items={related.fromProvider} favoriteIds={related.favoriteIds} />
                 </DetailSection>
             ) : null}
 
             {related?.similar.length ? (
                 <DetailSection title="Equipos similares">
-                    <ItemCarousel items={related.similar} />
+                    <ItemCarousel items={related.similar} favoriteIds={related.favoriteIds} />
                 </DetailSection>
             ) : null}
         </DetailScaffold>

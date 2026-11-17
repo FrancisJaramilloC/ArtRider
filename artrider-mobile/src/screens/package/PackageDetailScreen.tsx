@@ -16,6 +16,7 @@ import { getPackageById, getPackageReviews, type PackageWithItems, type PackageR
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
 import { loadRelatedListings } from '@/screens/listing/relatedListings';
+import { emitFavoriteChange, onFavoriteChange } from '@/utils/favoritesSync';
 import { useAuth } from '@/hooks/useAuth';
 
 type PackageBundle = { pkg: PackageWithItems | null; reviews: PackageReview[]; fav: boolean };
@@ -53,11 +54,23 @@ export function PackageDetailScreen() {
         if (bundle) setEsFavorito(bundle.fav);
     }, [bundle]);
 
+    // Si se cambia el favorito desde otro lado (lista de Favoritos, tarjetas), el corazón se actualiza sin recargar.
+    useEffect(
+        () =>
+            onFavoriteChange((c) => {
+                if (c.tipo === 'paquete' && c.id === id) setEsFavorito(c.esFavorito);
+            }),
+        [id],
+    );
+
     async function handleToggleFavorito() {
         if (!pkg) return;
         setEsFavorito((prev) => !prev);
         const result = await toggleFavorito(pkg.id, 'paquete');
-        if (!result.error) setEsFavorito(result.esFavorito);
+        if (!result.error) {
+            setEsFavorito(result.esFavorito);
+            emitFavoriteChange({ id: pkg.id, tipo: 'paquete', esFavorito: result.esFavorito });
+        }
     }
 
     async function handleContactarProveedor() {
@@ -156,7 +169,7 @@ export function PackageDetailScreen() {
 
             {related?.fromProvider.length ? (
                 <DetailSection title="Más de este proveedor" divider>
-                    <ItemCarousel items={related.fromProvider} />
+                    <ItemCarousel items={related.fromProvider} favoriteIds={related.favoriteIds} />
                 </DetailSection>
             ) : null}
         </DetailScaffold>

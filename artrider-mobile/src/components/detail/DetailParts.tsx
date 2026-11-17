@@ -279,7 +279,7 @@ export function SpecGrid({ items }: { items: SpecItem[] }) {
 }
 
 /** Carrusel horizontal de tarjetas: 2 completas + ~15 % de la tercera (3 en tablet). */
-export function ItemCarousel({ items }: { items: ItemCardData[] }) {
+export function ItemCarousel({ items, favoriteIds }: { items: ItemCardData[]; favoriteIds?: Set<string> }) {
   const { gutter, carouselCardWidth } = useLayout();
   return (
     <FlatList
@@ -289,7 +289,7 @@ export function ItemCarousel({ items }: { items: ItemCardData[] }) {
       keyExtractor={(item) => `${item.tipo}-${item.id}`}
       style={{ marginHorizontal: -gutter }}
       contentContainerStyle={{ paddingHorizontal: gutter, gap: Rhythm.cardGap }}
-      renderItem={({ item }) => <ItemCard item={item} width={carouselCardWidth} />}
+      renderItem={({ item }) => <ItemCard item={item} width={carouselCardWidth} isFavorito={favoriteIds?.has(item.id) ?? false} />}
     />
   );
 }

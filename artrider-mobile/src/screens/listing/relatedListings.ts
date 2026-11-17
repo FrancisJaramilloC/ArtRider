@@ -1,8 +1,9 @@
 import type { ItemCardData } from '@/components/ui/ItemCard';
+import { getUserFavIds } from '@/services/favoritosService';
 import { getListingRatings, getListings } from '@/services/catalogService';
 import { cityLabel } from '@/utils/city';
 
-export type RelatedListings = { fromProvider: ItemCardData[]; similar: ItemCardData[] };
+export type RelatedListings = { fromProvider: ItemCardData[]; similar: ItemCardData[]; favoriteIds: Set<string> };
 
 const MAX_PER_ROW = 8;
 
@@ -16,7 +17,10 @@ export async function loadRelatedListings(providerId: string, excludeId: string 
   const similar = category ? all.filter((l) => l.provider_id !== providerId && l.category === category).slice(0, MAX_PER_ROW) : [];
 
   const ids = [...fromProvider, ...similar].map((l) => l.id);
-  const ratings = ids.length > 0 ? await getListingRatings(ids).catch(() => ({}) as Record<string, number>) : {};
+  const [ratings, favs] = await Promise.all([
+    ids.length > 0 ? getListingRatings(ids).catch(() => ({}) as Record<string, number>) : Promise.resolve({} as Record<string, number>),
+    getUserFavIds(),
+  ]);
 
   const toCard = (l: (typeof all)[number]): ItemCardData => ({
     id: l.id,
@@ -29,5 +33,5 @@ export async function loadRelatedListings(providerId: string, excludeId: string 
     href: `/listing/${l.id}`,
     tipo: 'equipo',
   });
-  return { fromProvider: fromProvider.map(toCard), similar: similar.map(toCard) };
+  return { fromProvider: fromProvider.map(toCard), similar: similar.map(toCard), favoriteIds: new Set(favs.equipoIds) };
 }
