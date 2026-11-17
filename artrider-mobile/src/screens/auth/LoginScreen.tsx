@@ -26,14 +26,42 @@ export function LoginScreen() {
     const { gutter } = useLayout();
     const router = useRouter();
     const form = useForm({ email: '', password: '' }, RULES);
+    const [errorCode, setErrorCode] = useState<AuthErrorCode | null>(null);
+    const [resending, setResending] = useState(false);
+    const [resendNotice, setResendNotice] = useState<string | null>(null);
+    const [resendError, setResendError] = useState<string | null>(null);
+    const { remaining, start } = useCooldown();
 
     function handleSubmit() {
         form.submit(async (values) => {
+            setErrorCode(null);
+            setResendNotice(null);
+            setResendError(null);
             const result = await login({ email: values.email.trim(), password: values.password });
             // Si fue exitoso, useAuth detecta la sesión nueva y el guard del _layout raíz redirige solo.
+            setErrorCode(result.code ?? null);
             return result.error ?? null;
         });
     }
+
+    async function handleResend() {
+        if (resending || remaining > 0) return;
+        setResending(true);
+        setResendNotice(null);
+        setResendError(null);
+        const result = await resendSignupEmail(form.values.email.trim());
+        setResending(false);
+        if (result.error) {
+            // Error propio del reenvío: su «Reintentar» repite el reenvío, no el inicio de sesión.
+            setResendError(result.error);
+            return;
+        }
+        setResendNotice('Te enviamos un nuevo enlace. Revisa tu correo.');
+        start(RESEND_COOLDOWN_SECONDS);
+    }
+
+    // Credenciales inválidas y correo sin confirmar no mejoran al reintentar el login: sin «Reintentar».
+    const canRetryLogin = errorCode === null || errorCode === 'unexpected';
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -49,7 +77,24 @@ export function LoginScreen() {
                             </Text>
                         </View>
 
-                        {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} /> : null}
+                        {form.submitError ? (
+                            <FormErrorBanner message={form.submitError} onRetry={canRetryLogin ? form.retry : undefined} retrying={form.submitting} />
+                        ) : null}
+                        {errorCode === 'email_not_confirmed' && form.submitError ? (
+                            <Button
+                                label={remaining > 0 ? `Reenviar correo (${remaining} s)` : 'Reenviar correo'}
+                                variant="secondary"
+                                onPress={handleResend}
+                                loading={resending}
+                                disabled={remaining > 0}
+                            />
+                        ) : null}
+                        {resendError ? <FormErrorBanner message={resendError} onRetry={handleResend} retrying={resending} /> : null}
+                        {resendNotice ? (
+                            <Text variant="bodyStrong" color="primary" accessibilityLiveRegion="polite">
+                                {resendNotice}
+                            </Text>
+                        ) : null}
 
                         <FormField
                             label="Correo electrónico"
