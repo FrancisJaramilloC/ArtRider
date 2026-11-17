@@ -3,9 +3,12 @@
  * revisar diseño y medir (scripts/ui-audit) las pantallas que exigen sesión. No hay llamadas a
  * Supabase: todo son fixtures locales. Abrir en /dev-gallery?s=home|cards|lists|states.
  */
-import { View } from 'react-native';
+import { useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
+import { ImageGallery } from '@/components/listing/ImageGallery';
+import { ImageViewer } from '@/components/listing/ImageViewer';
 import { OrderGroupCard } from '@/components/bookings/OrderGroupCard';
 import { BookingListCard } from '@/components/bookings/BookingListCard';
 import { CityCarousel } from '@/components/home/CityCarousel';
@@ -172,9 +175,33 @@ function States() {
   );
 }
 
+/** Foto de ejemplo (SVG en data URI, sin red): color por número para distinguirlas. */
+function samplePhoto(n: number): string {
+  const hue = (n * 47) % 360;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="hsl(${hue},55%,60%)"/><text x="400" y="330" font-size="160" text-anchor="middle" fill="white" font-family="sans-serif">${n}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+/** Galería con 1, 3 y 8 fotos y el visor (se abre en la foto tocada). */
+function Photos() {
+  const [viewer, setViewer] = useState<{ images: string[]; index: number } | null>(null);
+  const sets = [1, 3, 8].map((n) => Array.from({ length: n }, (_, i) => samplePhoto(i + 1)));
+  return (
+    <ScrollView contentContainerStyle={{ gap: Rhythm.section, paddingBottom: Rhythm.section }}>
+      {sets.map((images) => (
+        <View key={images.length} testID={`photos-${images.length}`}>
+          <ImageGallery images={images} onPressImage={(index) => setViewer({ images, index })} />
+        </View>
+      ))}
+      <ImageViewer visible={viewer !== null} images={viewer?.images ?? []} initialIndex={viewer?.index ?? 0} onClose={() => setViewer(null)} />
+    </ScrollView>
+  );
+}
+
 export default function Gallery() {
   const { s = 'cards' } = useLocalSearchParams<{ s?: string }>();
   if (s === 'messages') return <Messages />;
+  if (s === 'photos') return <Photos />;
   return (
     <Screen scroll padded={s !== 'cards'}>
       <View style={{ paddingTop: Rhythm.chipsToSection }}>
