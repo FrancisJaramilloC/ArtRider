@@ -37,3 +37,30 @@ export function formatDayLong(dateStr: string): string {
   const d = new Date(dateStr.slice(0, 10) + 'T00:00:00Z');
   return `${WEEKDAYS_ES_SHORT[d.getUTCDay()]} ${d.getUTCDate()} de ${MONTHS_ES_LONG[d.getUTCMonth()]}`;
 }
+
+/** Suma días a una fecha «YYYY-MM-DD» sin pasar por la zona horaria (aritmética en UTC). */
+export function addDaysKey(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+  const next = new Date(Date.UTC(y, m - 1, d + days));
+  return dateKey(next.getUTCFullYear(), next.getUTCMonth(), next.getUTCDate());
+}
+
+/** Días de un rango contando llegada y salida (salida − llegada + 1): el mismo criterio que web y servidor. */
+export function daysInclusive(fromStr: string, toStr: string): number {
+  const [fy, fm, fd] = fromStr.slice(0, 10).split('-').map(Number);
+  const [ty, tm, td] = toStr.slice(0, 10).split('-').map(Number);
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000) + 1;
+}
+
+/** «17 nov». */
+export function formatShortDate(dateStr: string): string {
+  const [, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+  return `${d} ${MONTHS_ES_LONG[m - 1].slice(0, 3)}`;
+}
+
+/** «17 nov – 19 nov · 3 días» (o «17 nov · 1 día»). */
+export function formatRangeLabel(fromStr: string, toStr: string): string {
+  const days = daysInclusive(fromStr, toStr);
+  const dates = fromStr === toStr ? formatShortDate(fromStr) : `${formatShortDate(fromStr)} – ${formatShortDate(toStr)}`;
+  return `${dates} · ${days} ${days === 1 ? 'día' : 'días'}`;
+}

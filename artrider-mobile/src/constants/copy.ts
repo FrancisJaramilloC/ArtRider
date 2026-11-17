@@ -28,6 +28,15 @@ export const COPY = {
   providerSuspendedRow: 'Cuenta suspendida',
   backToProfile: 'Volver al perfil',
 
+  // Fechas del carrito
+  arrivalLabel: 'Llegada',
+  departureLabel: 'Salida',
+  dateNotChosen: 'Elegir',
+  pickDatesGuide: 'Toca el primer día y luego el último',
+  onlyThisDay: 'Solo este día',
+  cartTotalPending: 'Elige llegada y salida para ver el total',
+  rangeHasBlockedDays: 'Hay días no disponibles en ese rango',
+
   // Insignias y fichas
   providerVerified: `${ROLE_PROVIDER} verificado`,
   providerLabel: (name: string) => `${ROLE_PROVIDER}: ${name}`,

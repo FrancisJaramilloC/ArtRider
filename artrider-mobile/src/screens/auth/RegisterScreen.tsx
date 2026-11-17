@@ -13,10 +13,11 @@ import { useForm } from '@/hooks/useForm';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
+import { dateKey } from '@/utils/calendar';
 import { adult, email, maxLength, minLength, phone, required, sameAs } from '@/utils/validation';
 
 function formatDateForInput(date: Date): string {
-    return date.toISOString().split('T')[0]; // YYYY-MM-DD
+    return dateKey(date.getFullYear(), date.getMonth(), date.getDate()); // YYYY-MM-DD local
 }
 
 function formatDateForDisplay(date: Date): string {

@@ -16,6 +16,8 @@ import { CityCarousel } from '@/components/home/CityCarousel';
 import { ConversationsView } from '@/components/messages/ConversationsView';
 import { PartnerRow, type PartnerRowStatus } from '@/components/account/PartnerRow';
 import { ProviderStatusView } from '@/components/provider/ProviderStatusView';
+import { DateRangePicker } from '@/components/bookings/DateRangePicker';
+import { addDaysKey, todayKey } from '@/utils/calendar';
 import { ManagedRow } from '@/components/provider/ManagedRow';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -246,6 +248,17 @@ function PickerFixture() {
   );
 }
 
+/** Selector de fechas con días bloqueados de ejemplo (?s=dates). */
+function DatesFixture() {
+  const today = todayKey();
+  const blocked = [5, 6, 12].map((n) => addDaysKey(today, n));
+  return (
+    <View style={{ padding: 16 }}>
+      <DateRangePicker blockedDates={blocked} onChange={() => {}} />
+    </View>
+  );
+}
+
 /** «Ser Partner»: los estados sin solicitud / pendiente / activo / suspendido con fixtures locales (?s=partner&st=none|pending|sent|active|suspended). */
 function PartnerFixture() {
   const { st = 'none' } = useLocalSearchParams<{ st?: string }>();
@@ -266,6 +279,7 @@ export default function Gallery() {
   if (s === 'photos') return <Photos />;
   if (s === 'picker') return <PickerFixture />;
   if (s === 'partner') return <PartnerFixture />;
+  if (s === 'dates') return <ScrollView><DatesFixture /></ScrollView>;
   return (
     <Screen scroll padded={s !== 'cards'}>
       <View style={{ paddingTop: Rhythm.chipsToSection }}>

@@ -9,13 +9,15 @@ export type SheetProps = {
   visible: boolean;
   onClose: () => void;
   children: ReactNode;
+  /** Barra fija bajo el contenido (fuera del scroll), p. ej. total y botón principal. */
+  footer?: ReactNode;
 };
 
 /**
  * Bottom sheet (estilo Uber): fondo atenuado que cierra al tocar, hoja redondeada anclada
  * abajo con safe area, asa visual y manejo de teclado. Sustituye a los modales centrados.
  */
-export function Sheet({ visible, onClose, children }: SheetProps) {
+export function Sheet({ visible, onClose, children, footer }: SheetProps) {
   const colors = useTheme();
   const { gutter, insets, contentWidth } = useLayout();
 
@@ -47,9 +49,12 @@ export function Sheet({ visible, onClose, children }: SheetProps) {
             <View
               style={{ alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: Spacing.three }}
             />
-            <ScrollView keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" bounces={false} showsVerticalScrollIndicator={false}>
               {children}
             </ScrollView>
+            {footer ? (
+              <View style={{ paddingTop: Spacing.three, borderTopWidth: 1, borderTopColor: colors.border }}>{footer}</View>
+            ) : null}
           </Pressable>
         </Pressable>
       </KeyboardAvoidingView>
