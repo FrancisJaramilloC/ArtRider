@@ -1,42 +1,31 @@
 import { useEffect, useState } from 'react';
-import { View, ScrollView } from 'react-native';
+import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MapView, { Marker } from 'react-native-maps';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DetailBottomBar, DetailSection, DetailSheet, MetaItem, MetaRow, ProviderRow, ReviewList } from '@/components/detail/DetailParts';
-import { DetailHero } from '@/components/detail/DetailHero';
+import { DetailBottomBar, DetailSection, ExpandableText, ItemCarousel, MetaItem, MetaRow, ProviderRow, ReviewList, SpecGrid, type SpecItem } from '@/components/detail/DetailParts';
+import { DetailMessage, DetailScaffold, DetailSkeleton } from '@/components/detail/DetailScaffold';
 import { Badge } from '@/components/ui/Badge';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { ErrorState } from '@/components/ui/ErrorState';
 import { useAsyncData } from '@/hooks/useAsyncData';
-import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Rhythm, Spacing } from '@/constants/theme';
 import { CATEGORY_LABELS } from '@/constants/categories';
-import { useLayout } from '@/hooks/use-layout';
-import { useTheme } from '@/hooks/use-theme';
 import { getListingByIdWithProvider, getListingRatings, getListingReviews, type ListingWithProvider, type ListingReview } from '@/services/catalogService';
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
 import { getListingTotalUnits } from '@/services/availabilityService';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/utils/format';
+import { loadRelatedListings } from './relatedListings';
 
 type ListingBundle = { listing: ListingWithProvider | null; rating: number; totalUnits: number | null; reviews: ListingReview[]; fav: boolean };
-
-/** Espacio para que la barra inferior fija no tape el final del contenido. */
-const BOTTOM_BAR_CLEARANCE = 112;
 
 export function ListingDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
-    const colors = useTheme();
     const { session } = useAuth();
-    const { gutter, insets } = useLayout();
 
     const [esFavorito, setEsFavorito] = useState(false);
-    const [contacting, setContacting] = useState(false);
 
     // Dato principal: el equipo (si falla → ErrorState). Lo secundario (valoración, stock, reseñas,
     // favoritos) degrada en silencio para no bloquear la pantalla.
@@ -58,7 +47,12 @@ export function ListingDetailScreen() {
     const rating = { avg: bundle?.rating ?? 0, count: 0 };
     const totalUnits = bundle?.totalUnits ?? null;
     const reviews = bundle?.reviews ?? [];
-    const loading = status === 'loading';
+
+    // Secundario y no bloqueante: si falla simplemente no se muestran los carruseles.
+    const { data: related } = useAsyncData(
+        () => (listing ? loadRelatedListings(listing.provider_id, listing.id, listing.category).catch(() => null) : Promise.resolve(null)),
+        { enabled: !!listing, deps: [listing?.id] },
+    );
 
     useEffect(() => {
         if (bundle) setEsFavorito(bundle.fav);
@@ -77,7 +71,6 @@ export function ListingDetailScreen() {
             router.push('/login');
             return;
         }
-        setContacting(true);
         try {
             const existingId = await findExistingConversation(listing.provider_id, listing.id, null);
             if (existingId) {
@@ -98,141 +91,101 @@ export function ListingDetailScreen() {
             }
         } catch (e) {
             console.error('[ListingDetailScreen] handleContactarProveedor:', e);
-        } finally {
-            setContacting(false);
         }
     }
 
-    if (loading) {
-        return (
-            <View style={{ flex: 1, backgroundColor: colors.background }}>
-                <Skeleton height={260} radius={0} />
-                <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, gap: Spacing.three }}>
-                    <Skeleton width={90} height={24} radius={Radius.full} />
-                    <Skeleton width="80%" height={28} />
-                    <Skeleton width="50%" height={16} />
-                    <Skeleton height={64} radius={Radius.card} />
-                    <Skeleton height={96} radius={Radius.card} />
-                </View>
-            </View>
-        );
-    }
-
-    if (status === 'error') {
-        return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
-                <ErrorState error={error} onRetry={reload} />
-            </SafeAreaView>
-        );
-    }
-
-    if (!listing) {
-        return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
-                <EmptyState
-                    icon="alert-circle-outline"
-                    tone="error"
-                    title="No encontramos este equipo"
-                    description="Puede que ya no esté publicado."
-                    actionLabel="Volver"
-                    onAction={() => router.back()}
-                />
-            </SafeAreaView>
-        );
-    }
+    if (status === 'loading') return <DetailSkeleton />;
+    if (status === 'error') return <DetailMessage kind="error" error={error} onRetry={reload} />;
+    if (!listing) return <DetailMessage kind="not-found" title="No encontramos este equipo" onBack={() => router.back()} />;
 
     const catLabel = CATEGORY_LABELS[listing.category ?? ''] ?? listing.category ?? 'Equipo';
     const isOwnListing = session?.user?.id && listing.provider?.user_id === session.user.id;
     const images = [listing.cover_image_url].filter((x): x is string => Boolean(x));
     const { latitude, longitude } = listing.address ?? {};
+    const specs: SpecItem[] = [
+        listing.brand ? { label: 'Marca', value: listing.brand } : null,
+        listing.model ? { label: 'Modelo', value: listing.model } : null,
+    ].filter((x): x is SpecItem => x !== null);
 
     return (
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: BOTTOM_BAR_CLEARANCE + insets.bottom }}>
-                <DetailHero images={images} esFavorito={esFavorito} onToggleFavorito={handleToggleFavorito} />
+        <DetailScaffold
+            title={listing.title ?? 'Equipo'}
+            images={images}
+            esFavorito={esFavorito}
+            onToggleFavorito={handleToggleFavorito}
+            footer={
+                isOwnListing ? null : (
+                    <DetailBottomBar
+                        priceLabel={formatPrice(listing.daily_price)}
+                        onAddToCart={() => router.push(`/checkout/${listing.id}?mode=cart` as never)}
+                        onReserve={() => router.push(`/checkout/${listing.id}` as never)}
+                    />
+                )
+            }
+        >
+            <View style={{ gap: Rhythm.titleToContent }}>
+                <Badge label={catLabel} tone="accent" />
+                <Text variant="title">{listing.title ?? 'Equipo sin título'}</Text>
 
-                <DetailSheet>
-                    <View style={{ gap: Spacing.two, paddingBottom: Spacing.four }}>
-                        <Badge label={catLabel} tone="accent" />
-                        <Text variant="title">{listing.title ?? 'Equipo sin título'}</Text>
-
-                        <MetaRow>
-                            {rating.avg > 0 && (
-                                <MetaItem icon="star" strong label={`${rating.avg.toFixed(2)}${reviews.length > 0 ? ` (${reviews.length})` : ''}`} />
-                            )}
-                            {listing.address?.city ? <MetaItem icon="location-outline" label={listing.address.city} /> : null}
-                            {totalUnits !== null && (
-                                <MetaItem
-                                    icon="cube-outline"
-                                    label={totalUnits === 0 ? 'Sin unidades registradas' : `${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'} en stock`}
-                                />
-                            )}
-                        </MetaRow>
-                    </View>
-
-                    <DetailSection>
-                        <ProviderRow brandName={listing.provider?.brand_name} onPress={handleContactarProveedor} />
-                    </DetailSection>
-
-                    {(listing.brand || listing.model) && (
-                        <DetailSection>
-                            <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-                                {listing.brand ? <SpecTile label="Marca" value={listing.brand} /> : null}
-                                {listing.model ? <SpecTile label="Modelo" value={listing.model} /> : null}
-                            </View>
-                        </DetailSection>
+                <MetaRow>
+                    {rating.avg > 0 && <MetaItem icon="star" strong label={`${rating.avg.toFixed(2)}${reviews.length > 0 ? ` (${reviews.length})` : ''}`} />}
+                    {listing.address?.city ? <MetaItem icon="location-outline" label={listing.address.city} /> : null}
+                    {totalUnits !== null && (
+                        <MetaItem
+                            icon="cube-outline"
+                            label={totalUnits === 0 ? 'Sin unidades registradas' : `${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'} en stock`}
+                        />
                     )}
+                </MetaRow>
+            </View>
 
-                    {listing.description ? (
-                        <DetailSection title="Sobre este equipo">
-                            <Text variant="body" color="textSecondary">
-                                {listing.description}
-                            </Text>
-                        </DetailSection>
-                    ) : null}
+            <DetailSection divider>
+                <ProviderRow brandName={listing.provider?.brand_name} onPress={handleContactarProveedor} />
+            </DetailSection>
 
-                    <ReviewList rating={rating.avg} reviews={reviews} emptyText="Sé el primero en reseñar este equipo." />
+            {listing.category ? (
+                <DetailSection title="Categoría">
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+                        <Badge label={catLabel} tone="neutral" />
+                    </View>
+                </DetailSection>
+            ) : null}
 
-                    {latitude && longitude ? (
-                        <DetailSection title="Ubicación">
-                            <View style={{ aspectRatio: 16 / 9, borderRadius: Radius.card, overflow: 'hidden' }}>
-                                <MapView
-                                    style={{ flex: 1 }}
-                                    initialRegion={{ latitude, longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
-                                    scrollEnabled={false}
-                                    zoomEnabled={false}
-                                >
-                                    <Marker coordinate={{ latitude, longitude }} />
-                                </MapView>
-                            </View>
-                        </DetailSection>
-                    ) : null}
-                </DetailSheet>
-            </ScrollView>
+            {specs.length > 0 ? (
+                <DetailSection title="Especificaciones">
+                    <SpecGrid items={specs} />
+                </DetailSection>
+            ) : null}
 
-            {!isOwnListing && (
-                <DetailBottomBar
-                    priceLabel={formatPrice(listing.daily_price)}
-                    onChat={handleContactarProveedor}
-                    chatLoading={contacting}
-                    onAddToCart={() => router.push(`/checkout/${listing.id}?mode=cart` as never)}
-                    onReserve={() => router.push(`/checkout/${listing.id}` as never)}
-                />
-            )}
-        </View>
-    );
-}
+            {listing.description ? (
+                <DetailSection title="Descripción">
+                    <ExpandableText text={listing.description} />
+                </DetailSection>
+            ) : null}
 
-function SpecTile({ label, value }: { label: string; value: string }) {
-    const colors = useTheme();
-    return (
-        <View style={{ flex: 1, backgroundColor: colors.backgroundElement, borderRadius: Radius.xl, padding: Spacing.three, gap: Spacing.half }}>
-            <Text variant="caption" color="textSecondary">
-                {label}
-            </Text>
-            <Text variant="bodyStrong" numberOfLines={2}>
-                {value}
-            </Text>
-        </View>
+            <ReviewList rating={rating.avg} reviews={reviews} emptyText="Sé el primero en reseñar este equipo." />
+
+            {latitude && longitude ? (
+                <DetailSection title="Ubicación" divider>
+                    <View style={{ aspectRatio: 16 / 9, borderRadius: Radius.card, overflow: 'hidden' }}>
+                        <MapView style={{ flex: 1 }} initialRegion={{ latitude, longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }} scrollEnabled={false} zoomEnabled={false}>
+                            <Marker coordinate={{ latitude, longitude }} />
+                        </MapView>
+                    </View>
+                </DetailSection>
+            ) : null}
+
+            {related?.fromProvider.length ? (
+                <DetailSection title="Más de este proveedor" divider>
+                    <ItemCarousel items={related.fromProvider} />
+                </DetailSection>
+            ) : null}
+
+            {related?.similar.length ? (
+                <DetailSection title="Equipos similares">
+                    <ItemCarousel items={related.similar} />
+                </DetailSection>
+            ) : null}
+        </DetailScaffold>
     );
 }
