@@ -12,18 +12,13 @@ import { FormErrorBanner, FormField } from '@/components/ui/FormField';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius, StatusColors, type BookingStatusKey, MinTouch } from '@/constants/theme';
+import { ProviderStatusView } from '@/components/provider/ProviderStatusView';
+import { Colors, Spacing, Radius, StatusColors, MinTouch } from '@/constants/theme';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { useForm } from '@/hooks/useForm';
 import { maxLength, minLength, required } from '@/utils/validation';
 import { useLayout } from '@/hooks/use-layout';
 import { getMyProviderProfile, becomeProvider, type ProviderProfile } from '@/services/providerService';
-
-const STATUS_INFO: Record<ProviderProfile['status'], { label: string; tone: BookingStatusKey; icon: string }> = {
-  pending: { label: 'Pendiente de aprobación', tone: 'pending', icon: 'time-outline' },
-  active: { label: 'Activo', tone: 'confirmed', icon: 'checkmark-circle-outline' },
-  suspended: { label: 'Suspendido', tone: 'cancelled', icon: 'alert-circle-outline' },
-};
 
 const RULES = {
   brandName: [
@@ -76,55 +71,16 @@ export function BecomeProviderScreen() {
     );
   }
 
-  // Ya es proveedor (o acaba de enviar la solicitud) — muestra su estado, no el formulario
+  // Ya tiene solicitud o perfil (o acaba de enviarla): muestra su estado, no el formulario.
   if (profile || justSubmitted) {
-    const status = profile?.status ?? 'pending';
-    const statusInfo = STATUS_INFO[status];
-    const toneColors = StatusColors[scheme === 'dark' ? 'dark' : 'light'][statusInfo.tone];
-    const info = { ...statusInfo, bg: toneColors.bg, text: toneColors.fg };
-
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <BackButton style={{ position: 'absolute', top: Spacing.four, left: Spacing.four, zIndex: 1 }} />
-        <View style={{ flex: 1, paddingHorizontal: gutter, paddingVertical: Spacing.four, alignItems: 'center', justifyContent: 'center' }}>
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 36,
-              backgroundColor: info.bg,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: Spacing.four,
-            }}
-          >
-            <Ionicons name={info.icon as any} size={34} color={info.text} />
-          </View>
-
-          <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text, textAlign: 'center', marginBottom: Spacing.two }}>
-            {profile?.brand_name ?? brandName}
-          </ThemedText>
-
-          <View
-            style={{
-              backgroundColor: info.bg,
-              paddingHorizontal: Spacing.three,
-              paddingVertical: Spacing.two,
-              borderRadius: 999,
-              marginBottom: Spacing.four,
-            }}
-          >
-            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 12.5, color: info.text }}>{info.label}</ThemedText>
-          </View>
-
-          <ThemedText style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>
-            {status === 'pending'
-              ? 'Tu solicitud está siendo revisada. Te notificaremos cuando tu cuenta esté activa (1-3 días hábiles).'
-              : status === 'active'
-                ? COPY.providerAccountActive
-                : COPY.providerAccountSuspended}
-          </ThemedText>
-        </View>
+        <ProviderStatusView
+          status={profile?.status ?? 'pending'}
+          brandName={profile?.brand_name ?? brandName.trim()}
+          justSubmitted={justSubmitted}
+          onBack={() => router.back()}
+        />
       </SafeAreaView>
     );
   }

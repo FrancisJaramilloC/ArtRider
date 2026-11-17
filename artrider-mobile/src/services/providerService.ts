@@ -43,6 +43,11 @@ export interface BecomeProviderResult {
     success?: boolean;
 }
 
+/** En desarrollo muestra el código y el mensaje reales de Supabase; en producción, el mensaje amable. */
+function friendlyOrDebug(err: { code?: string; message: string }): string {
+    return __DEV__ ? `[${err.code ?? 'sin código'}] ${err.message}` : COPY.providerRegisterFailed;
+}
+
 /**
  * Registra al usuario autenticado como proveedor.
  * Estado inicial 'pending' — requiere aprobación manual antes de publicar equipos.
@@ -67,11 +72,16 @@ export async function becomeProvider(params: BecomeProviderParams): Promise<Beco
             return { error: 'La descripción no puede superar los 500 caracteres.' };
         }
 
-        const { data: existing } = await supabase
+        const { data: existing, error: existingError } = await supabase
             .from('providers')
             .select('id')
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
+
+        if (existingError) {
+            console.error('[providerService] becomeProvider existence check error:', existingError);
+            return { error: friendlyOrDebug(existingError) };
+        }
 
         if (existing) {
             return { error: COPY.alreadyProvider };
@@ -86,7 +96,7 @@ export async function becomeProvider(params: BecomeProviderParams): Promise<Beco
 
         if (insertError) {
             console.error('[providerService] becomeProvider insert error:', insertError);
-            return { error: 'No se pudo registrar tu perfil. Por favor intenta más tarde.' };
+            return { error: friendlyOrDebug(insertError) };
         }
 
         return { success: true };

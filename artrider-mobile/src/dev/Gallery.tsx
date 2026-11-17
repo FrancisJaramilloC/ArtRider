@@ -14,6 +14,8 @@ import { OrderGroupCard } from '@/components/bookings/OrderGroupCard';
 import { BookingListCard } from '@/components/bookings/BookingListCard';
 import { CityCarousel } from '@/components/home/CityCarousel';
 import { ConversationsView } from '@/components/messages/ConversationsView';
+import { PartnerRow, type PartnerRowStatus } from '@/components/account/PartnerRow';
+import { ProviderStatusView } from '@/components/provider/ProviderStatusView';
 import { ManagedRow } from '@/components/provider/ManagedRow';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -244,11 +246,26 @@ function PickerFixture() {
   );
 }
 
+/** «Ser Partner»: los estados sin solicitud / pendiente / activo / suspendido con fixtures locales (?s=partner&st=none|pending|sent|active|suspended). */
+function PartnerFixture() {
+  const { st = 'none' } = useLocalSearchParams<{ st?: string }>();
+  const status: PartnerRowStatus = st === 'none' ? null : st === 'sent' ? 'pending' : (st as PartnerRowStatus);
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+        <PartnerRow status={status} onPress={() => {}} />
+      </View>
+      {status ? <ProviderStatusView status={status} brandName="AudioPro Ecuador" justSubmitted={st === 'sent'} onBack={() => {}} /> : null}
+    </View>
+  );
+}
+
 export default function Gallery() {
   const { s = 'cards' } = useLocalSearchParams<{ s?: string }>();
   if (s === 'messages') return <Messages />;
   if (s === 'photos') return <Photos />;
   if (s === 'picker') return <PickerFixture />;
+  if (s === 'partner') return <PartnerFixture />;
   return (
     <Screen scroll padded={s !== 'cards'}>
       <View style={{ paddingTop: Rhythm.chipsToSection }}>

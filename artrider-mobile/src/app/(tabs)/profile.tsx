@@ -1,9 +1,9 @@
-import { COPY } from '@/constants/copy';
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Linking } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { AccountMenu } from '@/components/account/AccountMenu';
+import { PartnerRow, type PartnerRowStatus } from '@/components/account/PartnerRow';
 import { ProtectedScreen } from '@/components/protected-screen';
 import { ListRow, ListSection } from '@/components/ui/ListRow';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,13 +12,20 @@ import { getMyProviderProfile } from '@/services/providerService';
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile, logout } = useAuth();
-  const [isProvider, setIsProvider] = useState(false);
+  const [partnerStatus, setPartnerStatus] = useState<PartnerRowStatus>(null);
 
-  useEffect(() => {
-    getMyProviderProfile()
-      .then((p) => setIsProvider(p?.status === 'active'))
-      .catch(() => setIsProvider(false));
-  }, []);
+  // Se relee al volver a la pestaña: tras enviar la solicitud la fila pasa a «Solicitud en revisión».
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      getMyProviderProfile()
+        .then((p) => !cancelled && setPartnerStatus(p?.status ?? null))
+        .catch(() => !cancelled && setPartnerStatus(null));
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
 
   return (
     <ProtectedScreen>
@@ -34,10 +41,9 @@ export default function ProfileScreen() {
         </ListSection>
 
         <ListSection title="Negocio">
-          <ListRow
-            icon="storefront-outline"
-            label={isProvider ? COPY.switchToProviderMode : COPY.becomeProvider}
-            onPress={() => (isProvider ? router.replace('/(provider)/today') : router.push('/become-provider'))}
+          <PartnerRow
+            status={partnerStatus}
+            onPress={(status) => (status === 'active' ? router.replace('/(provider)/today') : router.push('/become-provider'))}
           />
         </ListSection>
 

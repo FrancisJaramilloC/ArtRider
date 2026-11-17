@@ -20,6 +20,13 @@ export const COPY = {
   providerAccountActive: `Tu cuenta de ${ROLE_PROVIDER} está activa. Ya puedes gestionar tu catálogo.`,
   providerAccountSuspended: `Tu cuenta de ${ROLE_PROVIDER} ha sido suspendida. Contacta a soporte para más información.`,
   providerSetupTitle: `Configura tu perfil de ${ROLE_PROVIDER}`,
+  providerRegisterFailed: 'No se pudo registrar tu perfil. Por favor intenta más tarde.',
+  providerRequestInReview: 'Solicitud en revisión',
+  providerRequestSent: 'Solicitud enviada',
+  providerRequestSentBody: `Recibimos tu solicitud para ser ${ROLE_PROVIDER}. Nuestro equipo la revisará y te avisaremos cuando tu cuenta esté activa (1-3 días hábiles).`,
+  providerRequestInReviewBody: `Tu solicitud para ser ${ROLE_PROVIDER} está en revisión. Te avisaremos cuando tu cuenta esté activa (1-3 días hábiles).`,
+  providerSuspendedRow: 'Cuenta suspendida',
+  backToProfile: 'Volver al perfil',
 
   // Insignias y fichas
   providerVerified: `${ROLE_PROVIDER} verificado`,
