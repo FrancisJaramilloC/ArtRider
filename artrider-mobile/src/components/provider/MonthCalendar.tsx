@@ -10,18 +10,21 @@ import { WEEKDAY_LETTERS_ES, dateKey, monthGrid, monthTitle, todayKey } from '@/
 
 type Props = {
   marks: CalendarMark[];
+  /** Modo «todos mis equipos»: nº de reservas por día (fecha ISO → cantidad). Sin bandas; cada día con reservas muestra un contador. */
+  counts?: Record<string, number>;
   /** Se llama con la fecha ISO y su estado: libre, bloqueada o reservada. Los días pasados no responden. */
   onDayPress: (date: string, kind: 'free' | 'blocked' | 'booked') => void;
 };
 
 const RING = 2;
 const DAY_VISUAL = 36;
+const COUNT_BADGE = 16;
 
 /**
  * Calendario mensual en español (lunes primero). Celdas de ≥44pt, hoy con aro, reservas como bandas
  * continuas entre días, bloqueados con contorno discontinuo y número tachado.
  */
-export function MonthCalendar({ marks, onDayPress }: Props) {
+export function MonthCalendar({ marks, counts, onDayPress }: Props) {
   const colors = useTheme();
   const today = todayKey();
   const [cursor, setCursor] = useState(() => {
@@ -65,13 +68,15 @@ export function MonthCalendar({ marks, onDayPress }: Props) {
             if (!day) return <View key={di} style={{ flex: 1, height: MinTouch }} />;
             const key = dateKey(cursor.year, cursor.month, day);
             const mark = byDate.get(key);
+            const count = counts?.[key] ?? 0;
             const past = key < today;
             const isToday = key === today;
-            const kind = mark === 'booked' ? 'booked' : mark === 'blocked' ? 'blocked' : 'free';
+            const kind = counts ? (count > 0 ? 'booked' : 'free') : mark === 'booked' ? 'booked' : mark === 'blocked' ? 'blocked' : 'free';
             // Banda continua: se une con el día anterior/siguiente reservado de la MISMA fila.
             const prevBooked = di > 0 && week[di - 1] !== null && byDate.get(dateKey(cursor.year, cursor.month, week[di - 1] as number)) === 'booked';
             const nextBooked = di < 6 && week[di + 1] !== null && byDate.get(dateKey(cursor.year, cursor.month, week[di + 1] as number)) === 'booked';
-            const label = `${day} de ${monthTitle(cursor.year, cursor.month)}${isToday ? ', hoy' : ''}${kind === 'booked' ? ', reservado' : kind === 'blocked' ? ', bloqueado' : past ? '' : ', libre'}`;
+            const label = `${day} de ${monthTitle(cursor.year, cursor.month)}${isToday ? ', hoy' : ''}${counts ? (count > 0 ? `, ${count} ${count === 1 ? 'reserva' : 'reservas'}` : '') : kind === 'booked' ? ', reservado' : kind === 'blocked' ? ', bloqueado' : past ? '' : ', libre'}`;
+            const showBand = kind === 'booked' && !counts;
 
             return (
               <Pressable
@@ -83,7 +88,7 @@ export function MonthCalendar({ marks, onDayPress }: Props) {
                 accessibilityState={{ disabled: past && kind === 'free' }}
                 style={{ flex: 1, height: MinTouch, alignItems: 'center', justifyContent: 'center' }}
               >
-                {kind === 'booked' ? (
+                {showBand ? (
                   <View
                     style={{
                       position: 'absolute',
@@ -111,15 +116,35 @@ export function MonthCalendar({ marks, onDayPress }: Props) {
                   }}
                 >
                   <Text
-                    variant={kind === 'booked' ? 'captionStrong' : 'caption'}
+                    variant={showBand ? 'captionStrong' : 'caption'}
                     style={{
-                      color: kind === 'booked' ? colors.onPrimary : past || kind === 'blocked' ? colors.textMuted : colors.text,
+                      color: showBand ? colors.onPrimary : (past && !count) || kind === 'blocked' ? colors.textMuted : colors.text,
                       textDecorationLine: kind === 'blocked' ? 'line-through' : 'none',
                     }}
                   >
                     {day}
                   </Text>
                 </View>
+                {counts && count > 0 ? (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: Spacing.half,
+                      minWidth: COUNT_BADGE,
+                      height: COUNT_BADGE,
+                      borderRadius: Radius.full,
+                      backgroundColor: colors.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: Spacing.half,
+                    }}
+                  >
+                    <Text variant="captionStrong" maxFontSizeMultiplier={1} style={{ color: colors.onPrimary, fontSize: 10, lineHeight: 12 }}>
+                      {count > 9 ? '9+' : count}
+                    </Text>
+                  </View>
+                ) : null}
               </Pressable>
             );
           })}
