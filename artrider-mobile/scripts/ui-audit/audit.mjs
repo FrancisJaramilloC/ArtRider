@@ -7,12 +7,15 @@
 //          node scripts/ui-audit/audit.mjs despues dev-gallery?s=home,dev-gallery?s=lists
 // Convención de testID: section, section-header, section-title, section-action, item-card, item-price, chip.
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { loadCreds } from './creds.mjs';
 import { chromium } from 'playwright-core';
 
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const BASE = process.env.AUDIT_BASE ?? 'http://localhost:8082';
 const [label = 'medicion', routesArg = '.', widthsArg = '360,390,430,768'] = process.argv.slice(2);
 const rawRoutes = routesArg.split(',');
+// Únicos clics permitidos además de abrir rutas: pestañas (navegación local, no escribe datos).
+const SAFE_TABS = new Set(['Home', 'Reservas', 'Mensajes', 'Perfil', 'Hoy', 'Calendario', 'Anuncios', 'Menú']);
 const widths = widthsArg.split(',').map(Number);
 const outDir = `.ui-audit/${label}`;
 mkdirSync(outDir, { recursive: true });
@@ -83,7 +86,10 @@ function measure() {
     .map((e) => ({ e, r: e.getBoundingClientRect() }))
     .filter(({ e, r }) => r.width >= vw * 0.5 && r.width < vw - 1.5 && r.height >= 24 && r.top + window.scrollY > 80 && !inHScroll(e) && getComputedStyle(e).position !== 'fixed');
   const edge = blocks.length ? { l: Math.min(...blocks.map(({ r }) => r.left)), r: vw - Math.max(...blocks.map(({ r }) => r.right)) } : null;
-  return { vw, scrollWidth: document.documentElement.scrollWidth, edge, headers, sections, cards, prices, clickable, clipped, offenders };
+  const heading = document.querySelector('[role="heading"]');
+  const firstChip = document.querySelector('[data-testid="chip"]');
+  const start = { headTop: heading ? heading.getBoundingClientRect().top : null, chipTop: firstChip ? firstChip.getBoundingClientRect().top : null };
+  return { vw, scrollWidth: document.documentElement.scrollWidth, edge, start, headers, sections, cards, prices, clickable, clipped, offenders };
 }
 
 const fmt = (n) => (Math.round(n * 10) / 10).toString();
@@ -153,6 +159,46 @@ function evaluate(m, width, route) {
 
 const browser = await chromium.launch({ executablePath: EDGE, headless: true });
 
+// ───────── Sesión (SOLO LECTURA) ─────────
+// AUDIT_AUTH=1 inicia sesión con UI_AUDIT_EMAIL / UI_AUDIT_PASSWORD de .ui-audit/.env (ignorado por git).
+// Las credenciales NUNCA se imprimen ni se capturan. El script solo navega, mide y captura: no hay
+// ninguna acción que escriba datos (ver SAFE_CLICKS).
+const STATE = '.ui-audit/state.json';
+async function login() {
+  const creds = loadCreds();
+  if (!creds) {
+    console.log('login: no hay credenciales válidas en .ui-audit/.env (se esperan UI_AUDIT_EMAIL y UI_AUDIT_PASSWORD)');
+    return false;
+  }
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 900 } });
+  const page = await ctx.newPage();
+  let step = 'abrir /login';
+  try {
+    await page.goto(BASE + '/login', { waitUntil: 'networkidle', timeout: 120000 });
+    await page.waitForTimeout(1500);
+    step = 'rellenar formulario';
+    await page.locator('input').nth(0).fill(creds.UI_AUDIT_EMAIL);
+    await page.locator('input').nth(1).fill(creds.UI_AUDIT_PASSWORD);
+    step = 'enviar';
+    await page.getByText('Iniciar sesión', { exact: true }).last().click({ timeout: 15000 });
+    step = 'esperar redirección';
+    await page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 30000 });
+    await page.waitForTimeout(2000);
+    await ctx.storageState({ path: STATE });
+    await ctx.close();
+    return true;
+  } catch (e) {
+    // Solo el nombre del paso y si la app mostró un mensaje de error genérico (sin valores).
+    const err = await page.locator('[role="alert"]').count().catch(() => 0);
+    const url = new URL(page.url()).pathname;
+    console.log('login: falló en el paso «' + step + '» · ruta actual ' + url + ' · avisos de error en pantalla: ' + err);
+    await ctx.close();
+    return false;
+  }
+}
+const authed = process.env.AUDIT_AUTH === '1' ? await login() : false;
+console.log('sesión:', process.env.AUDIT_AUTH === '1' ? (authed ? 'iniciada' : 'NO se pudo iniciar') : 'sin sesión');
+
 /** Resuelve @listing/@package/@checkout/@checkoutpkg navegando desde Home (ids públicos reales). */
 async function resolveRoutes(list) {
   const found = {};
@@ -189,15 +235,20 @@ const summary = [];
 for (const route of routes) {
   for (const scheme of ['light', 'dark']) {
     for (const width of widths) {
-      const ctx = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: scheme });
+      const ctx = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: scheme, ...(authed ? { storageState: STATE } : {}) });
       const page = await ctx.newPage();
-      await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 120000 }).catch(() => {});
+      const [path, tab] = route.split('@');
+      await page.goto(BASE + path, { waitUntil: 'networkidle', timeout: 120000 }).catch(() => {});
       await page.waitForTimeout(2500);
+      if (tab && SAFE_TABS.has(tab)) {
+        await page.getByText(tab, { exact: true }).first().click({ timeout: 8000 }).catch(() => {});
+        await page.waitForTimeout(2500);
+      }
       const m = await page.evaluate(measure);
       const rows = evaluate(m, width, route);
       const name = route.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home';
       await page.screenshot({ path: `${outDir}/${name}-${width}-${scheme}.png` });
-      summary.push({ route, scheme, width, rows });
+      summary.push({ route, scheme, width, rows, start: m.start });
       await ctx.close();
     }
   }
@@ -215,4 +266,11 @@ for (const s of summary) {
   }
 }
 console.log(`\nTOTAL: ${oks} OK · ${fails} FALLA`);
+// Arranque del contenido (título y primera chip) por pantalla, a 390 claro.
+console.log('ARRANQUE (y del título / y de la primera chip) a 390 claro:');
+for (const x of summary.filter((r) => r.width === 390 && r.scheme === 'light')) {
+  const h = x.start && x.start.headTop !== null ? Math.round(x.start.headTop) : '-';
+  const c = x.start && x.start.chipTop !== null ? Math.round(x.start.chipTop) : '-';
+  console.log('  ' + x.route.padEnd(34) + ' título ' + h + ' · chip ' + c);
+}
 writeFileSync(`${outDir}/audit.json`, JSON.stringify(summary, null, 1));
