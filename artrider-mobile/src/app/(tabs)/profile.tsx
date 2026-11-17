@@ -28,6 +28,10 @@ export default function ProfileScreen() {
         onOpenProfile={() => router.push('/profile/edit' as never)}
         onLogout={() => logout()}
       >
+        <ListSection title="Mis cosas">
+          <ListRow icon="heart-outline" label="Favoritos" onPress={() => router.push('/favorites' as never)} />
+        </ListSection>
+
         <ListSection title="Negocio">
           <ListRow
             icon="storefront-outline"

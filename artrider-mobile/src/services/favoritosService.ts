@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { serviceError } from '@/utils/errors';
 
 export type FavoritoTipo = 'equipo' | 'paquete';
 
@@ -60,65 +61,66 @@ export async function toggleFavorito(
     }
 }
 
+/**
+ * Equipos favoritos del usuario (publicados). Las consultas son las mismas de siempre; ahora un fallo
+ * se propaga (en vez de devolver []) para que la pantalla muestre error con «Reintentar».
+ */
 export async function getFavoritosEquipos() {
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-        const { data: favRows } = await supabase
-            .from('favorites')
-            .select('item_id')
-            .eq('usuario_id', user.id)
-            .eq('tipo', 'equipo');
+    const { data: favRows, error: favErr } = await supabase
+        .from('favorites')
+        .select('item_id')
+        .eq('usuario_id', user.id)
+        .eq('tipo', 'equipo');
+    if (favErr) throw serviceError('[favoritosService] getFavoritosEquipos', favErr);
 
-        if (!favRows?.length) return [];
-        const ids = favRows.map((r) => r.item_id);
+    if (!favRows?.length) return [];
+    const ids = favRows.map((r) => r.item_id);
 
-        // No necesita cliente admin: listings publicados ya son de lectura
-        // pública (confirmado en el item 005), así que el anon/auth key alcanza.
-        const { data: listings } = await supabase
-            .from('listings')
-            .select('id, title, category, cover_image_url, daily_price, address:addresses(city)')
-            .in('id', ids)
-            .eq('is_published', true)
-            .is('deleted_at', null);
+    // No necesita cliente admin: listings publicados ya son de lectura
+    // pública (confirmado en el item 005), así que el anon/auth key alcanza.
+    const { data: listings, error } = await supabase
+        .from('listings')
+        .select('id, title, category, cover_image_url, daily_price, address:addresses(city)')
+        .in('id', ids)
+        .eq('is_published', true)
+        .is('deleted_at', null);
+    if (error) throw serviceError('[favoritosService] getFavoritosEquipos', error);
 
-        return (listings ?? []).map((l: any) => {
-            const addr = Array.isArray(l.address) ? l.address[0] : l.address;
-            return { ...l, city: addr?.city ?? 'Ecuador' };
-        });
-    } catch {
-        return [];
-    }
+    return (listings ?? []).map((l: any) => {
+        const addr = Array.isArray(l.address) ? l.address[0] : l.address;
+        return { ...l, city: addr?.city ?? 'Ecuador' };
+    });
 }
 
+/** Paquetes favoritos del usuario (publicados). Un fallo se propaga, igual que en equipos. */
 export async function getFavoritosPaquetes() {
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-        const { data: favRows } = await supabase
-            .from('favorites')
-            .select('item_id')
-            .eq('usuario_id', user.id)
-            .eq('tipo', 'paquete');
+    const { data: favRows, error: favErr } = await supabase
+        .from('favorites')
+        .select('item_id')
+        .eq('usuario_id', user.id)
+        .eq('tipo', 'paquete');
+    if (favErr) throw serviceError('[favoritosService] getFavoritosPaquetes', favErr);
 
-        if (!favRows?.length) return [];
-        const ids = favRows.map((r) => r.item_id);
+    if (!favRows?.length) return [];
+    const ids = favRows.map((r) => r.item_id);
 
-        const { data: packages } = await supabase
-            .from('packages')
-            .select('id, title, cover_image_url, daily_price')
-            .in('id', ids)
-            .eq('is_published', true)
-            .is('deleted_at', null);
+    const { data: packages, error } = await supabase
+        .from('packages')
+        .select('id, title, cover_image_url, daily_price')
+        .in('id', ids)
+        .eq('is_published', true)
+        .is('deleted_at', null);
+    if (error) throw serviceError('[favoritosService] getFavoritosPaquetes', error);
 
-        return (packages ?? []).map((p: any) => ({
-            ...p,
-            category: 'paquete',
-            city: 'Ecuador',
-        }));
-    } catch {
-        return [];
-    }
+    return (packages ?? []).map((p: any) => ({
+        ...p,
+        category: 'paquete',
+        city: 'Ecuador',
+    }));
 }

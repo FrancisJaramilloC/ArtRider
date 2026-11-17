@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CategoryStrip } from '@/components/home/CategoryStrip';
 import { CityCarousel } from '@/components/home/CityCarousel';
 import { CartIconButton } from '@/components/cart/CartIconButton';
+import { FavoritesIconButton } from '@/components/cart/FavoritesIconButton';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
 import { useAsyncData } from '@/hooks/useAsyncData';
@@ -130,7 +131,12 @@ export function HomeScreen() {
             />
         </View>
     );
-    const tabActions = isAuthenticated ? <CartIconButton /> : undefined;
+    const tabActions = isAuthenticated ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+            <FavoritesIconButton />
+            <CartIconButton />
+        </View>
+    ) : undefined;
 
     if (loading) {
         return (
