@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { FlatList, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { COPY } from '@/constants/copy';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { ItemCard, type ItemCardData } from '@/components/ui/ItemCard';
@@ -48,28 +49,36 @@ export function DetailSection({ title, children, divider = false }: { title?: st
   );
 }
 
-/** Fila «Ofrecido por …» que abre el chat con el proveedor. */
-export function ProviderRow({ brandName, onPress }: { brandName: string | null | undefined; onPress: () => void }) {
+/** Ficha del Partner (avatar, nombre, insignia y ciudad). Aún no existe perfil público: toca para escribirle. */
+export function ProviderRow({ brandName, city, onPress }: { brandName: string | null | undefined; city?: string | null; onPress: () => void }) {
   const colors = useTheme();
-  const name = brandName ?? 'Proveedor ArtRider';
+  const name = brandName ?? COPY.providerFallbackName;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole='button'
-      accessibilityLabel={`Ofrecido por ${name}. Enviar mensaje`}
+      accessibilityLabel={`${COPY.providerLabel(name)}. ${COPY.providerVerified}${city ? `, ${city}` : ''}. Enviar mensaje`}
       style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56 }}
     >
       <Avatar name={name} size={48} />
       <View style={{ flex: 1, gap: Spacing.half }}>
         <Text variant='bodyStrong' numberOfLines={1}>
-          Ofrecido por {name}
+          {COPY.providerLabel(name)}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
           <Ionicons name='shield-checkmark' size={14} color={colors.primary} />
           <Text variant='caption' color='textSecondary'>
-            Proveedor verificado
+            {COPY.providerVerified}
           </Text>
         </View>
+        {city ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+            <Ionicons name='location-outline' size={14} color={colors.textSecondary} />
+            <Text variant='caption' color='textSecondary' numberOfLines={1} style={{ flexShrink: 1 }}>
+              {city}
+            </Text>
+          </View>
+        ) : null}
       </View>
       <Ionicons name='chatbubble-ellipses-outline' size={22} color={colors.primary} />
     </Pressable>
