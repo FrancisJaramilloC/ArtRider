@@ -370,6 +370,7 @@ export function CreateListingScreen() {
             onBack={canGoBack ? handleBack : undefined}
             preview={isReview ? undefined : preview}
             scrollRef={text.scrollRef}
+            onScroll={text.onScroll}
         >
             {currentStepId === 'category' && (
                 <View style={{ gap: Rhythm.titleToContent }}>

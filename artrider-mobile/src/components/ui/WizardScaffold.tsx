@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode, type RefObject } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View, type ScrollViewInstance } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewInstance } from 'react-native';
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import Animated, { SlideInLeft, SlideInRight, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -37,6 +37,8 @@ export type WizardScaffoldProps = {
   preview?: ReactNode;
   /** Mismo ref del `useForm` para desplazar al primer error. */
   scrollRef?: RefObject<ScrollViewInstance | null>;
+  /** `onScroll` del `useForm` (guarda el offset para el desplazamiento al primer error). */
+  onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   /** Aviso fijo sobre los botones (p. ej. «3 equipos seleccionados»). */
   footerNote?: ReactNode;
   exitTitle?: string;
@@ -61,6 +63,7 @@ export function WizardScaffold({
   onBack,
   preview,
   scrollRef,
+  onScroll,
   footerNote,
   exitTitle = '¿Salir sin publicar?',
   exitMessage = 'Si sales ahora, perderás lo que escribiste.',
@@ -129,6 +132,8 @@ export function WizardScaffold({
           <Animated.View key={stepIndex} entering={entering} style={{ flex: 1 }}>
             <ScrollView
               ref={scrollRef}
+              onScroll={onScroll}
+              scrollEventThrottle={16}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Rhythm.section, paddingBottom: Rhythm.section, gap: Rhythm.section }}

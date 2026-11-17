@@ -133,7 +133,7 @@ export function BecomeProviderScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView ref={form.scrollRef} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={form.scrollRef} onScroll={form.onScroll} scrollEventThrottle={16} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
             <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Volver" style={{ marginBottom: Spacing.four, minWidth: MinTouch, minHeight: MinTouch, justifyContent: 'center' }}>
               <Ionicons name="arrow-back" size={22} color={colors.text} />

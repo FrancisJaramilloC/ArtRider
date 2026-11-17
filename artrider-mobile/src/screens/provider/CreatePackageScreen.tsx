@@ -288,6 +288,7 @@ export function CreatePackageScreen() {
             onBack={canGoBack ? handleBack : undefined}
             preview={isReview ? undefined : preview}
             scrollRef={text.scrollRef}
+            onScroll={text.onScroll}
             footerNote={
                 currentStepId === 'items' && myListings.length > 0 ? (
                     <Text variant="captionStrong" color={selectedCount > 0 ? 'primary' : 'textSecondary'} accessibilityLiveRegion="polite">

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type ComponentRef, type RefObject } from 'react';
-import { findNodeHandle, type ScrollViewInstance, type TextInputInstance, type View } from 'react-native';
+import type { NativeScrollEvent, NativeSyntheticEvent, ScrollViewInstance, TextInputInstance, View } from 'react-native';
 
 import { runRules, type Rule } from '@/utils/validation';
 
@@ -15,6 +15,31 @@ export type FieldBinding = {
 };
 
 const SCROLL_MARGIN = 24;
+/** Si la medición no responde en este tiempo, se enfoca el campo sin desplazar. */
+const MEASURE_TIMEOUT_MS = 250;
+
+type Measurable = { measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => void };
+
+/** Posición Y de una vista en la ventana, o null si no se pudo medir (nunca lanza ni se queda esperando). */
+function windowY(node: unknown): Promise<number | null> {
+  return new Promise((resolve) => {
+    const target = node as Partial<Measurable> | null | undefined;
+    if (!target || typeof target.measureInWindow !== 'function') {
+      resolve(null);
+      return;
+    }
+    const timer = setTimeout(() => resolve(null), MEASURE_TIMEOUT_MS);
+    try {
+      target.measureInWindow((_x, y) => {
+        clearTimeout(timer);
+        resolve(Number.isFinite(y) ? y : null);
+      });
+    } catch {
+      clearTimeout(timer);
+      resolve(null);
+    }
+  });
+}
 
 /** Vista nativa de un campo que no es TextInput (p. ej. el selector de fecha). */
 export type FieldViewInstance = ComponentRef<typeof View>;
@@ -32,6 +57,11 @@ export function useForm<K extends string>(initial: Values<K>, rules: { [P in K]?
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const scrollRef = useRef<ScrollViewInstance | null>(null);
+  /** Offset vertical actual del scroll (solo para el cálculo alternativo si no hay vista interna). */
+  const scrollOffset = useRef(0);
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollOffset.current = e.nativeEvent.contentOffset.y;
+  }, []);
   const refs = useRef<Partial<Record<K, RefObject<TextInputInstance | null>>>>({});
   const viewRefs = useRef<Partial<Record<K, RefObject<FieldViewInstance | null>>>>({});
   const submittingRef = useRef(false);
@@ -111,29 +141,32 @@ export function useForm<K extends string>(initial: Values<K>, rules: { [P in K]?
     };
   }
 
-  function focusAndScroll(name: K) {
+  /**
+   * Desplaza hasta el campo y lo enfoca. Posición en el contenido = Y del campo en la ventana − Y de la
+   * vista interna del ScrollView en la ventana (la vista interna se mueve con el scroll, así que no
+   * depende del offset). Sin vista interna: Y del campo − Y del ScrollView + offset guardado en onScroll.
+   * Cualquier fallo de medición se ignora: solo se enfoca el input.
+   */
+  async function focusAndScroll(name: K) {
     const input = refFor(name).current;
     const scroll = scrollRef.current;
-    const view = viewRefs.current[name]?.current;
-    if (!input && view && scroll) {
-      const scrollNode = findNodeHandle(scroll);
-      if (scrollNode) view.measureLayout(scrollNode, (_x: number, y: number) => scroll.scrollTo({ y: Math.max(0, y - SCROLL_MARGIN), animated: true }), () => undefined);
-      return;
+    const target = input ?? viewRefs.current[name]?.current ?? null;
+    try {
+      if (scroll && target) {
+        const fieldY = await windowY(target);
+        const inner = (scroll as { getInnerViewRef?: () => unknown }).getInnerViewRef?.();
+        const contentY = fieldY === null ? null : await windowY(inner);
+        let yInContent: number | null = contentY !== null && fieldY !== null ? fieldY - contentY : null;
+        if (yInContent === null && fieldY !== null) {
+          const scrollY = await windowY(scroll);
+          if (scrollY !== null) yInContent = fieldY - scrollY + scrollOffset.current;
+        }
+        if (yInContent !== null) scroll.scrollTo({ y: Math.max(0, yInContent - SCROLL_MARGIN), animated: true });
+      }
+    } catch {
+      // Un fallo de medición nunca debe verse en pantalla.
     }
-    if (!input) return;
-    const node = scroll ? findNodeHandle(scroll) : null;
-    if (scroll && node) {
-      input.measureLayout(
-        node,
-        (_x: number, y: number) => {
-          scroll.scrollTo({ y: Math.max(0, y - SCROLL_MARGIN), animated: true });
-          input.focus();
-        },
-        () => input.focus(),
-      );
-    } else {
-      input.focus();
-    }
+    input?.focus();
   }
 
   /**
@@ -153,7 +186,7 @@ export function useForm<K extends string>(initial: Values<K>, rules: { [P in K]?
       return { ...kept, ...next };
     });
     const first = scope.find((name) => next[name]);
-    if (first) focusAndScroll(first);
+    if (first) void focusAndScroll(first);
     return first === undefined;
   }
 
@@ -191,5 +224,5 @@ export function useForm<K extends string>(initial: Values<K>, rules: { [P in K]?
     lastSubmit.current?.();
   }, []);
 
-  return { values, errors, field, viewRefFor, setValue, reset, validateAll, submit, retry, submitting, submitError, setSubmitError, scrollRef };
+  return { values, errors, field, viewRefFor, setValue, reset, validateAll, submit, retry, submitting, submitError, setSubmitError, scrollRef, onScroll };
 }
