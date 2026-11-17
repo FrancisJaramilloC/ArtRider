@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
-import { Shadows } from '@/constants/theme';
+import { Shadows, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export function PricePin({ price, isSelected }: { price: number; isSelected: boolean }) {
@@ -10,8 +10,8 @@ export function PricePin({ price, isSelected }: { price: number; isSelected: boo
   return (
     <View
       style={{
-        paddingHorizontal: 12,
-        paddingVertical: 7,
+        paddingHorizontal: Spacing.snug,
+        paddingVertical: Spacing.two,
         borderRadius: 999,
         backgroundColor: isSelected ? colors.primary : colors.background,
         transform: [{ scale: isSelected ? 1.15 : 1 }],

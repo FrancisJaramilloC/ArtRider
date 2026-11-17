@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, TextInput, Pressable, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { View, TextInput, Pressable, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,9 +8,11 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ModalScreen } from '@/components/ui/ModalScreen';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, MinTouch } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import { CATEGORIES } from '@/constants/categories';
 import { createListing, getListingForEdit, updateListing } from '@/services/providerCatalogService';
 
@@ -69,6 +71,7 @@ const EMPTY_STATE: FormState = {
 };
 
 export function CreateListingScreen() {
+  const { gutter } = useLayout();
     const { id: editListingId } = useLocalSearchParams<{ id?: string }>();
     const isEdit = !!editListingId;
     const router = useRouter();
@@ -269,16 +272,16 @@ export function CreateListingScreen() {
                         <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
                     )}
                 </View>
-                <View style={{ padding: Spacing.four }}>
+                <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
                     <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 18, color: colors.text }}>
                         {form.title || 'Sin título'}
                     </ThemedText>
                     {(form.brand || form.model) && (
-                        <ThemedText style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+                        <ThemedText style={{ fontSize: 13, color: colors.textSecondary, marginTop: Spacing.half }}>
                             {[form.brand, form.model].filter(Boolean).join(' · ')}
                         </ThemedText>
                     )}
-                    <ThemedText style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
+                    <ThemedText style={{ fontSize: 13, color: colors.textSecondary, marginTop: Spacing.one }}>
                         {form.city || 'Ciudad'}{form.state ? `, ${form.state}` : ''}
                     </ThemedText>
                     <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text, marginTop: Spacing.two }}>
@@ -303,12 +306,12 @@ export function CreateListingScreen() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <View style={{ paddingHorizontal: Spacing.four, paddingTop: Spacing.two }}>
+                <View style={{ paddingHorizontal: gutter, paddingTop: Spacing.two }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, marginBottom: Spacing.three }}>
                         <Pressable onPress={handleBack} hitSlop={8}>
                             <Ionicons name="chevron-back" size={24} color={colors.text} />
                         </Pressable>
-                        <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
+                        <View style={{ flex: 1, flexDirection: 'row', gap: Spacing.one }}>
                             {steps.map((_, i) => (
                                 <View
                                     key={i}
@@ -333,7 +336,7 @@ export function CreateListingScreen() {
                     </ThemedText>
                 </View>
 
-                <ScrollView contentContainerStyle={{ paddingHorizontal: Spacing.four, paddingBottom: Spacing.six }} keyboardShouldPersistTaps="handled">
+                <ScrollView contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: Spacing.six }} keyboardShouldPersistTaps="handled">
                     {currentStepId === 'category' && (
                         <View style={{ gap: Spacing.two }}>
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: Spacing.two }}>
@@ -410,7 +413,7 @@ export function CreateListingScreen() {
                                     placeholderTextColor={colors.textSecondary}
                                     multiline
                                     numberOfLines={4}
-                                    style={[inputStyle(colors), { minHeight: 100, textAlignVertical: 'top', paddingTop: 12 }]}
+                                    style={[inputStyle(colors), { minHeight: 100, textAlignVertical: 'top', paddingTop: Spacing.snug }]}
                                 />
                             </FormField>
                         </View>
@@ -619,7 +622,7 @@ export function CreateListingScreen() {
                     )}
                 </ScrollView>
 
-                <View style={{ padding: Spacing.four, borderTopWidth: 1, borderColor: colors.border }}>
+                <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, borderTopWidth: 1, borderColor: colors.border }}>
                     <Pressable
                         onPress={handleContinue}
                         disabled={!canContinue || publishing}
@@ -640,22 +643,14 @@ export function CreateListingScreen() {
                     </Pressable>
                 </View>
 
-                <Modal visible={showPreview} animationType="slide" onRequestClose={() => setShowPreview(false)}>
-                    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.four }}>
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 18, color: colors.text }}>Vista previa</ThemedText>
-                            <Pressable onPress={() => setShowPreview(false)} hitSlop={8}>
-                                <Ionicons name="close" size={24} color={colors.text} />
-                            </Pressable>
-                        </View>
-                        <ScrollView contentContainerStyle={{ padding: Spacing.four }}>
-                            {renderPreviewCard()}
-                            <ThemedText style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginTop: Spacing.four }}>
-                                Así se ve por ahora — sigue completando los pasos para publicar.
-                            </ThemedText>
-                        </ScrollView>
-                    </SafeAreaView>
-                </Modal>
+                <ModalScreen visible={showPreview} title="Vista previa" onClose={() => setShowPreview(false)}>
+                    <ScrollView contentContainerStyle={{ padding: Spacing.three }}>
+                        {renderPreviewCard()}
+                        <ThemedText style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginTop: Spacing.four }}>
+                            Así se ve por ahora — sigue completando los pasos para publicar.
+                        </ThemedText>
+                    </ScrollView>
+                </ModalScreen>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -676,10 +671,11 @@ function FormField({ label, required, children }: { label: string; required?: bo
 
 function inputStyle(colors: any) {
     return {
+        minHeight: MinTouch,
         backgroundColor: colors.backgroundElement,
         borderRadius: Radius.lg,
         paddingHorizontal: Spacing.three,
-        paddingVertical: 13,
+        paddingVertical: Spacing.snug,
         fontSize: 15,
         fontFamily: 'Inter_400Regular',
         color: colors.text,

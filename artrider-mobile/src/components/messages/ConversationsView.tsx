@@ -64,7 +64,7 @@ function ConversationRow({ item, onOpen, onLongPress }: { item: ConversationSumm
         )}
       </View>
 
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: Spacing.half }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
           <Text variant={unread ? 'bodyStrong' : 'body'} numberOfLines={1} style={{ flex: 1, fontFamily: unread ? undefined : 'Inter_500Medium' }}>
             {title}

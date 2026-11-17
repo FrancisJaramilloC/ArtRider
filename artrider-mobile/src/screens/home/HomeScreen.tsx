@@ -262,7 +262,7 @@ export function HomeScreen() {
                                 alignItems: 'center',
                                 gap: Spacing.two,
                                 backgroundColor: colors.primary,
-                                paddingHorizontal: Spacing.four,
+                                paddingHorizontal: gutter,
                                 borderRadius: Radius.full,
                             },
                             Shadows.floating,

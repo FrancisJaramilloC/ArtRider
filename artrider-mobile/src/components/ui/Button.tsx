@@ -22,7 +22,7 @@ export type ButtonProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-const HEIGHT: Record<ButtonSize, number> = { md: 52, sm: 40 };
+const HEIGHT: Record<ButtonSize, number> = { md: 52, sm: MinTouch };
 
 export function Button({
   label,
@@ -48,7 +48,6 @@ export function Button({
     destructive: { bg: 'transparent', fg: colors.destructive, border: colors.destructive },
   }[variant];
 
-  const slop = (MinTouch - HEIGHT.sm) / 2;
 
   return (
     <Pressable
@@ -57,8 +56,6 @@ export function Button({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      // Garantiza un objetivo táctil ≥ 44pt también en tamaño `sm`.
-      hitSlop={size === 'sm' ? { top: slop, bottom: slop } : undefined}
       style={({ pressed }) => [
         {
           minHeight: HEIGHT[size],

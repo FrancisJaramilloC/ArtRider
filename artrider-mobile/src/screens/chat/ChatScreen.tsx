@@ -9,6 +9,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, MinTouch, Radius, Spacing, StatusColors } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/services/supabase';
 import {
@@ -33,6 +34,7 @@ function formatTime(iso: string): string {
 }
 
 export function ChatScreen() {
+  const { gutter } = useLayout();
     const {
         id: conversationId,
         otherName,
@@ -195,14 +197,14 @@ export function ChatScreen() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two, borderBottomWidth: 1, borderColor: colors.border }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: gutter, paddingVertical: Spacing.two, borderBottomWidth: 1, borderColor: colors.border }}>
                 <BackButton />
                 <View style={{ flex: 1 }}>
                     <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text }}>
                         {otherName ?? 'Conversación'}
                     </ThemedText>
                     {!isDraft && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
                             <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: otherOnline ? StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.fg : colors.textMuted }} />
                             <ThemedText style={{ fontSize: 11, color: colors.textSecondary }}>
                                 {otherTyping ? 'escribiendo...' : otherOnline ? 'en línea' : 'desconectado'}
@@ -226,7 +228,7 @@ export function ChatScreen() {
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: Spacing.two,
-                        paddingHorizontal: Spacing.four,
+                        paddingHorizontal: gutter,
                         paddingVertical: Spacing.two,
                         borderBottomWidth: 1,
                         borderColor: colors.border,
@@ -252,7 +254,7 @@ export function ChatScreen() {
 
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
                 {isDraft ? (
-                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.four }}>
+                    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
                         <ThemedText style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
                             Envía tu primer mensaje para iniciar la conversación
                         </ThemedText>
@@ -262,7 +264,7 @@ export function ChatScreen() {
                         ref={flatListRef}
                         data={messages}
                         keyExtractor={(item) => item.id}
-                        contentContainerStyle={{ padding: Spacing.four, gap: Spacing.two }}
+                        contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, gap: Spacing.two }}
                         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
                         renderItem={({ item }) => {
                             const isMine = item.sender_id === myUserId;
@@ -281,7 +283,7 @@ export function ChatScreen() {
                                     >
                                         <ThemedText style={{ fontSize: 14, color: isMine ? colors.onPrimary : colors.text }}>{item.content}</ThemedText>
                                     </View>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: Spacing.half }}>
                                         <ThemedText style={{ fontSize: 10, color: colors.textSecondary }}>{formatTime(item.sent_at)}</ThemedText>
                                         {isMine && (
                                             <Ionicons
@@ -306,7 +308,7 @@ export function ChatScreen() {
                             placeholder="Escribe un mensaje..."
                             placeholderTextColor={colors.textMuted}
                             multiline
-                            style={{ paddingVertical: 10, fontSize: 14, color: colors.text, fontFamily: 'Inter_400Regular', maxHeight: 100 }}
+                            style={{ minHeight: MinTouch, paddingVertical: Spacing.snug, fontSize: 14, color: colors.text, fontFamily: 'Inter_400Regular', maxHeight: 100 }}
                         />
                     </View>
                     <Pressable

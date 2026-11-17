@@ -153,7 +153,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
                 <Text variant="subtitle">Pago seguro</Text>
             </View>
 
-            <View style={{ gap: 6 }}>
+            <View style={{ gap: Spacing.two }}>
                 <Text variant="captionStrong">Nombre en la tarjeta</Text>
                 <View style={fieldWrapperStyle}>
                     <TextInput
@@ -168,7 +168,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
                 </View>
             </View>
 
-            <View style={{ gap: 6 }}>
+            <View style={{ gap: Spacing.two }}>
                 <Text variant="captionStrong">Número de tarjeta</Text>
                 <View style={fieldWrapperStyle}>
                     <TextInput
@@ -185,7 +185,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
             </View>
 
             <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-                <View style={{ flex: 1, gap: 6 }}>
+                <View style={{ flex: 1, gap: Spacing.two }}>
                     <Text variant="captionStrong">Vencimiento</Text>
                     <View style={fieldWrapperStyle}>
                         <TextInput
@@ -200,7 +200,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
                         />
                     </View>
                 </View>
-                <View style={{ flex: 1, gap: 6 }}>
+                <View style={{ flex: 1, gap: Spacing.two }}>
                     <Text variant="captionStrong">CVV</Text>
                     <View style={fieldWrapperStyle}>
                         <TextInput

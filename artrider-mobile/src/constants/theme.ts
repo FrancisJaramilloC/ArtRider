@@ -121,6 +121,7 @@ export const Spacing = {
   half: 2,
   one: 4,
   two: 8,
+  snug: 12, // paddings internos de tarjetas y campos
   three: 16,
   four: 24,
   five: 32,

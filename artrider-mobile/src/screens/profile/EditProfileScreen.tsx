@@ -7,12 +7,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius, StatusColors } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors, MinTouch } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/useAuth';
 import { updateProfile } from '@/services/profileService';
 
 export function EditProfileScreen() {
+  const { gutter } = useLayout();
     const router = useRouter();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
@@ -71,7 +73,7 @@ export function EditProfileScreen() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView contentContainerStyle={{ padding: Spacing.four }} keyboardShouldPersistTaps="handled">
+                <ScrollView contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }} keyboardShouldPersistTaps="handled">
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.five }}>
                         <BackButton />
                         <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 17, color: colors.text }}>Editar perfil</ThemedText>
@@ -120,7 +122,8 @@ export function EditProfileScreen() {
                                 backgroundColor: colors.backgroundElement,
                                 borderRadius: Radius.lg,
                                 paddingHorizontal: Spacing.three,
-                                paddingVertical: 13,
+                                minHeight: MinTouch,
+                                paddingVertical: Spacing.snug,
                                 fontSize: 15,
                                 color: colors.text,
                             }}
@@ -141,7 +144,8 @@ export function EditProfileScreen() {
                                 backgroundColor: colors.backgroundElement,
                                 borderRadius: Radius.lg,
                                 paddingHorizontal: Spacing.three,
-                                paddingVertical: 13,
+                                minHeight: MinTouch,
+                                paddingVertical: Spacing.snug,
                                 fontSize: 15,
                                 color: colors.text,
                             }}

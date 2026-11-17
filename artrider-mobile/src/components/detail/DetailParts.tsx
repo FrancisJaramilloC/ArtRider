@@ -61,11 +61,11 @@ export function ProviderRow({ brandName, onPress }: { brandName: string | null |
       style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56 }}
     >
       <Avatar name={name} size={48} />
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: Spacing.half }}>
         <Text variant="bodyStrong" numberOfLines={1}>
           Ofrecido por {name}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
           <Ionicons name="shield-checkmark" size={14} color={colors.primary} />
           <Text variant="caption" color="textSecondary">
             Proveedor verificado
@@ -85,7 +85,7 @@ export function MetaRow({ children }: { children: ReactNode }) {
 export function MetaItem({ icon, label, strong = false }: { icon: keyof typeof Ionicons.glyphMap; label: string; strong?: boolean }) {
   const colors = useTheme();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
       <Ionicons name={icon} size={15} color={strong ? colors.text : colors.textSecondary} />
       <Text variant={strong ? 'captionStrong' : 'caption'} color={strong ? 'text' : 'textSecondary'}>
         {label}
@@ -110,7 +110,7 @@ export function ReviewList({ rating, reviews, emptyText }: { rating: number; rev
 
   return (
     <DetailSection>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
         {rating > 0 && <Ionicons name="star" size={18} color={colors.text} />}
         <Text variant="headline" accessibilityRole="header">
           {title}
@@ -135,7 +135,7 @@ export function ReviewList({ rating, reviews, emptyText }: { rating: number; rev
                 </Text>
               </View>
             </View>
-            <View style={{ flexDirection: 'row', gap: 2 }} accessibilityLabel={`${review.rating} de 5 estrellas`} accessible>
+            <View style={{ flexDirection: 'row', gap: Spacing.half }} accessibilityLabel={`${review.rating} de 5 estrellas`} accessible>
               {[1, 2, 3, 4, 5].map((n) => (
                 <Ionicons
                   key={n}

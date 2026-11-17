@@ -4,7 +4,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Text } from '@/components/ui/Text';
-import { MinTouch, Radius } from '@/constants/theme';
+import { MinTouch, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getCartCount } from '@/services/cartService';
 
@@ -48,7 +48,7 @@ export function CartIconButton() {
                         backgroundColor: colors.primary,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        paddingHorizontal: 4,
+                        paddingHorizontal: Spacing.one,
                     }}
                 >
                     <Text variant="captionStrong" maxFontSizeMultiplier={1} style={{ fontSize: 10, lineHeight: 14, color: colors.onPrimary }}>

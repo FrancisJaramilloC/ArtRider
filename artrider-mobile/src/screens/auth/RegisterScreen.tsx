@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useLayout } from '@/hooks/use-layout';
 import { useRouter, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +9,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors, Spacing, Radius, StatusColors } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors, MinTouch } from '@/constants/theme';
 
 function formatDateForInput(date: Date): string {
     return date.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -22,6 +23,7 @@ export function RegisterScreen() {
     const { register } = useAuth();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const { gutter } = useLayout();
     const router = useRouter();
 
     const [firstName, setFirstName] = useState('');
@@ -76,7 +78,9 @@ export function RegisterScreen() {
 
     const inputStyle = {
         flex: 1,
-        paddingVertical: 14,
+        minHeight: MinTouch,
+        minWidth: 0,
+        paddingVertical: Spacing.snug,
         paddingHorizontal: Spacing.two,
         fontSize: 15,
         fontFamily: 'Inter_400Regular',
@@ -102,7 +106,7 @@ export function RegisterScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-                    <View style={{ padding: Spacing.four, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
+                    <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
                         {/* Header */}
                         <View style={{ marginBottom: Spacing.four }}>
                             <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text, marginBottom: Spacing.one }}>
@@ -151,7 +155,7 @@ export function RegisterScreen() {
 
                         {/* Nombre y Apellido */}
                         <View style={{ flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three }}>
-                            <View style={{ flex: 1 }}>
+                            <View style={{ flex: 1, minWidth: 0 }}>
                                 <ThemedText style={labelStyle}>Nombre</ThemedText>
                                 <View style={fieldWrapperStyle}>
                                     <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
@@ -165,7 +169,7 @@ export function RegisterScreen() {
                                     />
                                 </View>
                             </View>
-                            <View style={{ flex: 1 }}>
+                            <View style={{ flex: 1, minWidth: 0 }}>
                                 <ThemedText style={labelStyle}>Apellido</ThemedText>
                                 <View style={fieldWrapperStyle}>
                                     <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
@@ -294,7 +298,7 @@ export function RegisterScreen() {
                             style={({ pressed }) => ({
                                 backgroundColor: loading || !isFormValid ? colors.backgroundSelected : colors.primary,
                                 borderRadius: Radius.xl,
-                                paddingVertical: 16,
+                                paddingVertical: Spacing.three,
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 opacity: pressed ? 0.9 : 1,
@@ -312,14 +316,14 @@ export function RegisterScreen() {
 
                         {/* Footer */}
                         <View style={{ marginTop: Spacing.five, alignItems: 'center' }}>
-                            <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.textSecondary }}>
-                                ¿Ya tienes una cuenta?{' '}
-                                <Link href="/login">
-                                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.primary }}>
-                                        Inicia sesión
-                                    </ThemedText>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+                                <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.textSecondary }}>¿Ya tienes una cuenta?</ThemedText>
+                                <Link href="/login" asChild>
+                                    <Pressable accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
+                                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.primary }}>Inicia sesión</ThemedText>
+                                    </Pressable>
                                 </Link>
-                            </ThemedText>
+                            </View>
                         </View>
                     </View>
                 </ScrollView>

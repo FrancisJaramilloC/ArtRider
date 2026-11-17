@@ -57,10 +57,10 @@ export function ImageGallery({ images }: { images: string[] }) {
                         bottom: Spacing.four + Radius.sheet / 2,
                         alignSelf: 'center',
                         flexDirection: 'row',
-                        gap: 6,
+                        gap: Spacing.two,
                         backgroundColor: colors.onImageSurface,
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
+                        paddingHorizontal: Spacing.snug,
+                        paddingVertical: Spacing.two,
                         borderRadius: Radius.full,
                     }}
                 >

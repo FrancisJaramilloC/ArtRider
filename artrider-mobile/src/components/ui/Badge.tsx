@@ -1,7 +1,7 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Radius, StatusColors } from '@/constants/theme';
+import { Radius, StatusColors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { Text } from './Text';
@@ -36,9 +36,9 @@ export function Badge({ label, tone = 'neutral', icon, style }: BadgeProps) {
           flexDirection: 'row',
           alignItems: 'center',
           alignSelf: 'flex-start',
-          gap: 4,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
+          gap: Spacing.one,
+          paddingHorizontal: Spacing.snug,
+          paddingVertical: Spacing.one,
           borderRadius: Radius.full,
           backgroundColor: palette.bg,
         },

@@ -24,6 +24,7 @@ import { formatPrice } from '@/utils/format';
 const BOTTOM_BAR_CLEARANCE = 112;
 
 export function PackageDetailScreen() {
+  const { gutter } = useLayout();
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const colors = useTheme();
@@ -101,7 +102,7 @@ export function PackageDetailScreen() {
         return (
             <View style={{ flex: 1, backgroundColor: colors.background }}>
                 <Skeleton height={260} radius={0} />
-                <View style={{ padding: Spacing.four, gap: Spacing.three }}>
+                <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, gap: Spacing.three }}>
                     <Skeleton width={90} height={24} radius={Radius.full} />
                     <Skeleton width="80%" height={28} />
                     <Skeleton height={64} radius={Radius.card} />

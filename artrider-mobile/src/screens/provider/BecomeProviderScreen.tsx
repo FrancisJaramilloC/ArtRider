@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius, StatusColors, type BookingStatusKey } from '@/constants/theme';
+import { Colors, Spacing, Radius, StatusColors, type BookingStatusKey, MinTouch } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import { getMyProviderProfile, becomeProvider, type ProviderProfile } from '@/services/providerService';
 
 const STATUS_INFO: Record<ProviderProfile['status'], { label: string; tone: BookingStatusKey; icon: string }> = {
@@ -18,6 +19,7 @@ const STATUS_INFO: Record<ProviderProfile['status'], { label: string; tone: Book
 };
 
 export function BecomeProviderScreen() {
+  const { gutter } = useLayout();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
@@ -83,7 +85,7 @@ export function BecomeProviderScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <BackButton style={{ position: 'absolute', top: Spacing.four, left: Spacing.four, zIndex: 1 }} />
-        <View style={{ flex: 1, padding: Spacing.four, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ flex: 1, paddingHorizontal: gutter, paddingVertical: Spacing.four, alignItems: 'center', justifyContent: 'center' }}>
           <View
             style={{
               width: 72,
@@ -106,7 +108,7 @@ export function BecomeProviderScreen() {
             style={{
               backgroundColor: info.bg,
               paddingHorizontal: Spacing.three,
-              paddingVertical: 6,
+              paddingVertical: Spacing.two,
               borderRadius: 999,
               marginBottom: Spacing.four,
             }}
@@ -131,7 +133,7 @@ export function BecomeProviderScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          <View style={{ padding: Spacing.four }}>
+          <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
             <Pressable onPress={() => router.back()} style={{ marginBottom: Spacing.four }}>
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
@@ -175,7 +177,7 @@ export function BecomeProviderScreen() {
             {/* Nombre del negocio */}
             <View style={{ marginBottom: Spacing.three }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: 6 }}>
+                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: Spacing.two }}>
                   Nombre de tu negocio / marca *
                 </ThemedText>
                 <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary }}>{brandName.length}/80</ThemedText>
@@ -186,10 +188,10 @@ export function BecomeProviderScreen() {
                   onChangeText={(t) => setBrandName(t.slice(0, 80))}
                   placeholder="Ej: AudioPro Ecuador"
                   placeholderTextColor={colors.textSecondary}
-                  style={{ paddingVertical: 12, fontSize: 14, fontFamily: 'Inter_400Regular', color: colors.text }}
+                  style={{ minHeight: MinTouch, paddingVertical: Spacing.snug, fontSize: 14, fontFamily: 'Inter_400Regular', color: colors.text }}
                 />
               </View>
-              <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 4 }}>
+              <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: Spacing.one }}>
                 Este nombre será visible públicamente en tus equipos.
               </ThemedText>
             </View>
@@ -197,7 +199,7 @@ export function BecomeProviderScreen() {
             {/* Descripción */}
             <View style={{ marginBottom: Spacing.four }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: 6 }}>
+                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: Spacing.two }}>
                   Descripción breve (opcional)
                 </ThemedText>
                 <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary }}>{bio.length}/500</ThemedText>
@@ -210,7 +212,7 @@ export function BecomeProviderScreen() {
                   placeholderTextColor={colors.textSecondary}
                   multiline
                   numberOfLines={4}
-                  style={{ paddingVertical: 12, fontSize: 14, fontFamily: 'Inter_400Regular', color: colors.text, minHeight: 90, textAlignVertical: 'top' }}
+                  style={{ paddingVertical: Spacing.snug, fontSize: 14, fontFamily: 'Inter_400Regular', color: colors.text, minHeight: 90, textAlignVertical: 'top' }}
                 />
               </View>
             </View>

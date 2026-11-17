@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import type { ComponentProps } from 'react';
 import { Calendar, type DateData } from 'react-native-calendars';
 
+type CalendarTheme = NonNullable<ComponentProps<typeof Calendar>['theme']>;
+
 import { Text } from '@/components/ui/Text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, MinTouch, Spacing, Radius } from '@/constants/theme';
 
 export type DateRange = { from: string | null; to: string | null }; // YYYY-MM-DD
 
@@ -114,6 +117,20 @@ export function DateRangePicker({
 
     const days = range.from && range.to ? daysBetween(range.from, range.to) : 0;
 
+    const calendarTheme = {
+        calendarBackground: colors.background,
+        dayTextColor: colors.text,
+        monthTextColor: colors.text,
+        textDisabledColor: colors.textMuted,
+        arrowColor: colors.primary,
+        todayTextColor: colors.primary,
+        textDayFontFamily: 'Inter_500Medium',
+        textMonthFontFamily: 'Inter_700Bold',
+        // Celdas de día de 44×44 (objetivo táctil mínimo); por defecto miden 38×34.
+        'stylesheet.day.period': { base: { width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center' } },
+        'stylesheet.day.basic': { base: { width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center' } },
+    } as CalendarTheme;
+
     return (
         <View>
             <Calendar
@@ -121,16 +138,7 @@ export function DateRangePicker({
                 markingType="period"
                 markedDates={markedDates}
                 onDayPress={handleDayPress}
-                theme={{
-                    calendarBackground: colors.background,
-                    dayTextColor: colors.text,
-                    monthTextColor: colors.text,
-                    textDisabledColor: colors.textMuted,
-                    arrowColor: colors.primary,
-                    todayTextColor: colors.primary,
-                    textDayFontFamily: 'Inter_500Medium',
-                    textMonthFontFamily: 'Inter_700Bold',
-                }}
+                theme={calendarTheme}
                 style={{ borderRadius: Radius.card, overflow: 'hidden' }}
             />
 

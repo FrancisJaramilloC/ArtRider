@@ -69,9 +69,9 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
                 )}
             </View>
 
-            <View style={{ flex: 1, gap: 2 }}>
+            <View style={{ flex: 1, gap: Spacing.half }}>
                 <Badge label={statusLabel} tone={STATUS_TONE[toStatusKey(booking.status)]} />
-                <Text variant="bodyStrong" numberOfLines={1} style={{ marginTop: 4 }}>
+                <Text variant="bodyStrong" numberOfLines={1} style={{ marginTop: Spacing.one }}>
                     {booking.listing_title ?? 'Equipo reservado'}
                 </Text>
                 <Text variant="caption" color="textSecondary">
@@ -83,7 +83,7 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
                         onPress={() => Linking.openURL(`tel:${booking.provider_phone}`)}
                         accessibilityRole="link"
                         accessibilityLabel={`Llamar a ${booking.provider_name ?? 'Proveedor'}`}
-                        style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                        style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}
                     >
                         <Ionicons name="call-outline" size={14} color={colors.primary} />
                         <Text variant="captionStrong" color="primary" numberOfLines={1} style={{ flexShrink: 1 }}>

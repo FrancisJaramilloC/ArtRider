@@ -25,6 +25,7 @@ import { formatPrice } from '@/utils/format';
 const BOTTOM_BAR_CLEARANCE = 112;
 
 export function ListingDetailScreen() {
+  const { gutter } = useLayout();
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const colors = useTheme();
@@ -107,7 +108,7 @@ export function ListingDetailScreen() {
         return (
             <View style={{ flex: 1, backgroundColor: colors.background }}>
                 <Skeleton height={260} radius={0} />
-                <View style={{ padding: Spacing.four, gap: Spacing.three }}>
+                <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, gap: Spacing.three }}>
                     <Skeleton width={90} height={24} radius={Radius.full} />
                     <Skeleton width="80%" height={28} />
                     <Skeleton width="50%" height={16} />
@@ -218,7 +219,7 @@ export function ListingDetailScreen() {
 function SpecTile({ label, value }: { label: string; value: string }) {
     const colors = useTheme();
     return (
-        <View style={{ flex: 1, backgroundColor: colors.backgroundElement, borderRadius: Radius.xl, padding: Spacing.three, gap: 2 }}>
+        <View style={{ flex: 1, backgroundColor: colors.backgroundElement, borderRadius: Radius.xl, padding: Spacing.three, gap: Spacing.half }}>
             <Text variant="caption" color="textSecondary">
                 {label}
             </Text>

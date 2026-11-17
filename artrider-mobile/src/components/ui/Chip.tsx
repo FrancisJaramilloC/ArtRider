@@ -41,7 +41,7 @@ export function Chip({ label, active = false, onPress, icon, style }: ChipProps)
         style,
       ]}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
         {icon ? <Ionicons name={icon} size={16} color={fg} /> : null}
         <Text variant="captionStrong" maxFontSizeMultiplier={1.2} style={{ color: fg }} numberOfLines={1}>
           {label}

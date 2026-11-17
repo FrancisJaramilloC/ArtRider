@@ -97,7 +97,7 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
 
         {/* Texto: bloque superior de alto reservado + precio anclado al fondo de la tarjeta. */}
         <View style={{ flex: 1, minWidth: 0, justifyContent: 'space-between', paddingTop: Spacing.two, gap: Spacing.one }}>
-          <View style={{ gap: 2 }}>
+          <View style={{ gap: Spacing.half }}>
             <Text variant="overline" color="textMuted" numberOfLines={1}>
               {catLabel}
             </Text>
@@ -105,7 +105,7 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
               {item.title}
             </Text>
             <View style={{ height: META_HEIGHT, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-              <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+              <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
                 {item.city ? (
                   <>
                     <Ionicons name="location-outline" size={13} color={colors.textSecondary} />
@@ -116,7 +116,7 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
                 ) : null}
               </View>
               {/* Espacio reservado: el rating siempre ocupa la misma posición, haya o no calificación. */}
-              <View style={{ width: RATING_SLOT, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 2 }}>
+              <View style={{ width: RATING_SLOT, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.half }}>
                 {hasRating ? (
                   <>
                     <Ionicons name="star" size={12} color={colors.text} />

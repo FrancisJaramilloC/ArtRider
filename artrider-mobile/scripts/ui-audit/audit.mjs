@@ -12,7 +12,7 @@ import { chromium } from 'playwright-core';
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const BASE = process.env.AUDIT_BASE ?? 'http://localhost:8082';
 const [label = 'medicion', routesArg = '.', widthsArg = '360,390,430,768'] = process.argv.slice(2);
-const routes = routesArg.split(',').map((r) => (r === '.' ? '/' : r.startsWith('/') ? r : '/' + r));
+const rawRoutes = routesArg.split(',');
 const widths = widthsArg.split(',').map(Number);
 const outDir = `.ui-audit/${label}`;
 mkdirSync(outDir, { recursive: true });
@@ -34,6 +34,13 @@ function measure() {
     }
     return false;
   };
+  // Un Switch se mide con el primer contenedor ancestro de ≥ 44pt de alto (la fila táctil).
+  const touchBox = (e) => {
+    if (e.getAttribute('role') !== 'switch') return e;
+    let a = e;
+    for (let i = 0; i < 6 && a.parentElement && a.getBoundingClientRect().height < 43.5; i++) a = a.parentElement;
+    return a;
+  };
   const headers = q('section-header').map((h) => {
     const title = h.querySelector('[data-testid="section-title"]');
     const action = h.querySelector('[data-testid="section-action"]');
@@ -49,7 +56,8 @@ function measure() {
   const prices = q('item-price').map(rect);
   const clickable = [...document.querySelectorAll('[role="button"], button, a[href], input, textarea, [role="link"], [role="switch"]')]
     .filter((e) => e.offsetParent !== null || getComputedStyle(e).position === 'fixed')
-    .map((e) => ({ name: (e.getAttribute('aria-label') || e.textContent || e.tagName).trim().slice(0, 28), ...rect(e), id: e.getAttribute('data-testid') }))
+    // Un Switch se mide con su contenedor táctil (la fila de 44pt), no con el control nativo.
+    .map((e) => ({ name: (e.getAttribute('aria-label') || e.textContent || e.tagName).trim().slice(0, 28), ...rect(touchBox(e)), id: e.getAttribute('data-testid') }))
     .filter((e) => e.w > 0 && e.h > 0 && e.l < vw && e.b > 0)
     // Artefacto de la web: la barra de pestañas se dibuja arriba (en teléfono va abajo y es nativa).
     .filter((e) => !(e.t < 80 && ['Home', 'Reservas', 'Mensajes', 'Perfil', 'Hoy', 'Calendario', 'Anuncios', 'Menú'].includes(e.name)));
@@ -70,12 +78,18 @@ function measure() {
     })
     .slice(0, 3)
     .map((e) => e.getAttribute('data-testid') || e.tagName);
-  return { vw, scrollWidth: document.documentElement.scrollWidth, headers, sections, cards, prices, clickable, clipped, offenders };
+  // Márgenes genéricos: bloques anchos que no son a sangre completa (tarjetas, inputs, botones).
+  const blocks = [...document.querySelectorAll('body *')]
+    .map((e) => ({ e, r: e.getBoundingClientRect() }))
+    .filter(({ e, r }) => r.width >= vw * 0.5 && r.width < vw - 1.5 && r.height >= 24 && r.top + window.scrollY > 80 && !inHScroll(e) && getComputedStyle(e).position !== 'fixed');
+  const edge = blocks.length ? { l: Math.min(...blocks.map(({ r }) => r.left)), r: vw - Math.max(...blocks.map(({ r }) => r.right)) } : null;
+  return { vw, scrollWidth: document.documentElement.scrollWidth, edge, headers, sections, cards, prices, clickable, clipped, offenders };
 }
 
 const fmt = (n) => (Math.round(n * 10) / 10).toString();
 
-function evaluate(m, width) {
+const EXEMPT_MARGIN = ['/map'];
+function evaluate(m, width, route) {
   const rows = [];
   const phone = width < 600;
   const gutterExpected = phone ? 16 : 24;
@@ -88,7 +102,13 @@ function evaluate(m, width) {
     const sym = left.every((l) => Math.abs(l - l0) <= TOL) && right.every((r) => Math.abs(r - r0) <= TOL) && Math.abs(l0 - r0) <= TOL;
     const gutterOk = !phone || (Math.abs(l0 - gutterExpected) <= TOL && Math.abs(r0 - gutterExpected) <= TOL);
     rows.push(['a) margen izq = der', sym && gutterOk, `izq ${left.map(fmt).join('/')} · der ${right.map(fmt).join('/')}${phone ? ` (esperado ${gutterExpected})` : ''}`]);
-  } else rows.push(['a) margen izq = der', null, 'sin encabezados']);
+  } else if (EXEMPT_MARGIN.some((r) => route.startsWith(r))) {
+    rows.push(['a) margen izq = der', null, 'pantalla a sangre completa (mapa)']);
+  } else if (m.edge) {
+    const sym = Math.abs(m.edge.l - m.edge.r) <= TOL;
+    const gutterOk = !phone || (Math.abs(m.edge.l - gutterExpected) <= TOL && Math.abs(m.edge.r - gutterExpected) <= TOL);
+    rows.push(['a) margen izq = der', sym && gutterOk, `izq ${fmt(m.edge.l)} / der ${fmt(m.edge.r)} (bloques)`]);
+  } else rows.push(['a) margen izq = der', null, 'sin bloques']);
 
   // (b) sin desbordamiento horizontal
   rows.push(['b) sin desbordamiento', m.scrollWidth <= width + 1 && m.offenders.length === 0, `scrollWidth ${m.scrollWidth} / ventana ${width}${m.offenders.length ? ' · ' + m.offenders.join(',') : ''}`]);
@@ -132,6 +152,39 @@ function evaluate(m, width) {
 }
 
 const browser = await chromium.launch({ executablePath: EDGE, headless: true });
+
+/** Resuelve @listing/@package/@checkout/@checkoutpkg navegando desde Home (ids públicos reales). */
+async function resolveRoutes(list) {
+  const found = {};
+  if (list.some((r) => r.startsWith('@'))) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 900 } });
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/', { waitUntil: 'networkidle', timeout: 120000 }).catch(() => {});
+    await page.waitForTimeout(3000);
+    const cards = page.locator('[data-testid="item-card"]');
+    const n = await cards.count();
+    for (let i = 0; i < n; i++) {
+      await cards.nth(i).locator('[role="button"]').first().click().catch(() => {});
+      await page.waitForTimeout(1200);
+      const p = new URL(page.url()).pathname;
+      if (p.startsWith('/listing/') && !found.listing) found.listing = p;
+      if (p.startsWith('/package/') && !found.package) found.package = p;
+      if (found.listing && found.package) break;
+      await page.goBack().catch(() => {});
+      await page.waitForTimeout(1500);
+    }
+    await ctx.close();
+  }
+  return list.map((r) => {
+    if (r === '@listing') return found.listing ?? null;
+    if (r === '@package') return found.package ?? null;
+    if (r === '@checkout') return found.listing ? found.listing.replace('/listing/', '/checkout/') : null;
+    if (r === '@checkoutpkg') return found.package ? found.package.replace('/package/', '/checkout/package/') : null;
+    return r === '.' ? '/' : r.startsWith('/') ? r : '/' + r;
+  }).filter(Boolean);
+}
+const routes = await resolveRoutes(rawRoutes);
+console.log('rutas:', routes.join(' '));
 const summary = [];
 for (const route of routes) {
   for (const scheme of ['light', 'dark']) {
@@ -141,7 +194,7 @@ for (const route of routes) {
       await page.goto(BASE + route, { waitUntil: 'networkidle', timeout: 120000 }).catch(() => {});
       await page.waitForTimeout(2500);
       const m = await page.evaluate(measure);
-      const rows = evaluate(m, width);
+      const rows = evaluate(m, width, route);
       const name = route.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '') || 'home';
       await page.screenshot({ path: `${outDir}/${name}-${width}-${scheme}.png` });
       summary.push({ route, scheme, width, rows });

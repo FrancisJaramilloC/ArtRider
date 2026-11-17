@@ -7,15 +7,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 
 export function NewListingChooserScreen() {
+  const { gutter } = useLayout();
     const router = useRouter();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            <View style={{ padding: Spacing.four }}>
+            <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
                 <BackButton style={{ marginBottom: Spacing.four }} />
                 <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 26, color: colors.text, marginBottom: Spacing.one }}>
                     ¿Qué quieres publicar?
@@ -44,7 +46,7 @@ export function NewListingChooserScreen() {
                         <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>
                             Equipo individual
                         </ThemedText>
-                        <ThemedText style={{ fontSize: 12.5, color: colors.textSecondary, marginTop: 2 }}>
+                        <ThemedText style={{ fontSize: 12.5, color: colors.textSecondary, marginTop: Spacing.half }}>
                             Publica una pieza de equipo suelta, con su propia ubicación y stock.
                         </ThemedText>
                     </View>
@@ -70,7 +72,7 @@ export function NewListingChooserScreen() {
                         <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>
                             Paquete
                         </ThemedText>
-                        <ThemedText style={{ fontSize: 12.5, color: colors.textSecondary, marginTop: 2 }}>
+                        <ThemedText style={{ fontSize: 12.5, color: colors.textSecondary, marginTop: Spacing.half }}>
                             Combina varios equipos que ya publicaste en un solo combo con precio propio.
                         </ThemedText>
                     </View>

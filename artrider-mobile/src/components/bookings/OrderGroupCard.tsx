@@ -79,7 +79,7 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
                             onPress={() => Linking.openURL(`tel:${booking.provider_phone}`)}
                             accessibilityRole="link"
                             accessibilityLabel={`Llamar al proveedor ${booking.provider_phone}`}
-                            style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 1 }}
+                            style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: Spacing.one, flexShrink: 1 }}
                         >
                             <Ionicons name="call-outline" size={14} color={colors.primary} />
                             <Text variant="captionStrong" color="primary" numberOfLines={1}>

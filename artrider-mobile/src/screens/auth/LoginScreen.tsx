@@ -2,18 +2,20 @@ import { useState } from 'react';
 
 import { View, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useLayout } from '@/hooks/use-layout';
 import { Link, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, MinTouch } from '@/constants/theme';
 
 export function LoginScreen() {
     const { login } = useAuth();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const { gutter } = useLayout();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -45,7 +47,7 @@ export function LoginScreen() {
                     contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View style={{ paddingHorizontal: Spacing.four, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
+                    <View style={{ paddingHorizontal: gutter, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
                         {/* Header */}
                         <View style={{ marginBottom: Spacing.five }}>
                             <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text, marginBottom: Spacing.one }}>
@@ -104,7 +106,8 @@ export function LoginScreen() {
                                     maxLength={254}
                                     style={{
                                         flex: 1,
-                                        paddingVertical: 14,
+                                        minHeight: MinTouch,
+                                        paddingVertical: Spacing.snug,
                                         paddingHorizontal: Spacing.two,
                                         fontSize: 15,
                                         fontFamily: 'Inter_400Regular',
@@ -146,7 +149,8 @@ export function LoginScreen() {
                                     maxLength={72}
                                     style={{
                                         flex: 1,
-                                        paddingVertical: 14,
+                                        minHeight: MinTouch,
+                                        paddingVertical: Spacing.snug,
                                         paddingHorizontal: Spacing.two,
                                         fontSize: 15,
                                         fontFamily: 'Inter_400Regular',
@@ -163,7 +167,7 @@ export function LoginScreen() {
                             style={({ pressed }) => ({
                                 backgroundColor: loading || !email || !password ? colors.backgroundSelected : colors.primary,
                                 borderRadius: Radius.xl,
-                                paddingVertical: 16,
+                                paddingVertical: Spacing.three,
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 opacity: pressed ? 0.9 : 1,
@@ -182,14 +186,14 @@ export function LoginScreen() {
 
                         {/* Footer */}
                         <View style={{ marginTop: Spacing.five, alignItems: 'center' }}>
-                            <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.textSecondary }}>
-                                ¿No tienes una cuenta?{' '}
-                                <Link href="/register">
-                                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.primary }}>
-                                        Regístrate
-                                    </ThemedText>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+                                <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.textSecondary }}>¿No tienes una cuenta?</ThemedText>
+                                <Link href="/register" asChild>
+                                    <Pressable accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
+                                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.primary }}>Regístrate</ThemedText>
+                                    </Pressable>
                                 </Link>
-                            </ThemedText>
+                            </View>
                         </View>
                     </View>
                 </ScrollView>

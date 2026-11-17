@@ -5,9 +5,11 @@ import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius, StatusColors, BOOKING_STATUS_LABELS, toStatusKey } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { getMyProviderProfile, getProviderBookings, type ProviderProfile, type ProviderBooking } from '@/services/providerService';
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
@@ -29,12 +31,13 @@ function KpiCard({ icon, label, value, colors }: { icon: any; label: string; val
     <View style={{ flex: 1, backgroundColor: colors.backgroundElement, borderRadius: Radius.lg, padding: Spacing.three }}>
       <Ionicons name={icon} size={18} color={colors.primary} style={{ marginBottom: Spacing.two }} />
       <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 20, color: colors.text }}>{value}</ThemedText>
-      <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: 2 }}>{label}</ThemedText>
+      <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: Spacing.half }}>{label}</ThemedText>
     </View>
   );
 }
 
 export function ProviderTodayScreen() {
+  const { gutter } = useLayout();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
@@ -73,10 +76,14 @@ export function ProviderTodayScreen() {
 
   if (!profile) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: Spacing.four }}>
-        <ThemedText style={{ color: colors.textSecondary, textAlign: 'center' }}>
-          No tienes un perfil de proveedor todavía.
-        </ThemedText>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+        <EmptyState
+          icon="storefront-outline"
+          title="Aún no eres proveedor"
+          description="No tienes un perfil de proveedor todavía."
+          actionLabel="Convertirme en proveedor"
+          onAction={() => router.push('/become-provider' as never)}
+        />
       </SafeAreaView>
     );
   }
@@ -84,7 +91,7 @@ export function ProviderTodayScreen() {
   if (profile.status !== 'active') {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={{ padding: Spacing.four }}>
+        <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
           <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 22, color: colors.text, marginBottom: Spacing.one }}>
             Hola, {profile.brand_name}
           </ThemedText>
@@ -117,7 +124,7 @@ export function ProviderTodayScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
       <ScrollView
-        contentContainerStyle={{ padding: Spacing.four }}
+        contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 22, color: colors.text, marginBottom: Spacing.one }}>
@@ -162,9 +169,7 @@ export function ProviderTodayScreen() {
         </ThemedText>
 
         {recentBookings.length === 0 ? (
-          <ThemedText style={{ fontSize: 13.5, color: colors.textSecondary }}>
-            Todavía no has recibido reservas.
-          </ThemedText>
+          <EmptyState icon="calendar-outline" title="Sin reservas por ahora" description="Todavía no has recibido reservas." />
         ) : (
           <View style={{ gap: Spacing.two }}>
             {recentBookings.map((booking) => {
@@ -190,7 +195,7 @@ export function ProviderTodayScreen() {
                       {booking.client_name ?? 'Cliente'} · {fmtDate(booking.start_date)}
                     </ThemedText>
                   </View>
-                  <View style={{ backgroundColor: statusColors.bg, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999 }}>
+                  <View style={{ backgroundColor: statusColors.bg, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one, borderRadius: 999 }}>
                     <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 9.5, color: statusColors.fg }}>
                       {statusLabel}
                     </ThemedText>

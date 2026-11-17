@@ -108,7 +108,7 @@ export function CartScreen() {
                                             </View>
                                         )}
                                     </View>
-                                    <View style={{ flex: 1, gap: 2 }}>
+                                    <View style={{ flex: 1, gap: Spacing.half }}>
                                         <Text variant="bodyStrong" numberOfLines={2}>
                                             {item.title ?? (item.item_type === 'package' ? 'Paquete' : 'Equipo')}
                                         </Text>

@@ -42,13 +42,13 @@ export function MapPreviewCard({ listing, onClose }: { listing: Listing; onClose
           )}
         </View>
         <View style={{ flex: 1, padding: Spacing.three, justifyContent: 'center' }}>
-          <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: 3 }}>
+          <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.textSecondary, marginBottom: Spacing.one }}>
             {catLabel}
           </ThemedText>
           <ThemedText numberOfLines={2} style={{ fontFamily: 'Inter_700Bold', fontSize: 13.5, color: colors.text }}>
             {listing.title ?? 'Equipo'}
           </ThemedText>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: Spacing.one }}>
             <ThemedText style={{ fontSize: 12.5, color: colors.textSecondary }}>
               <ThemedText style={{ fontFamily: 'Inter_700Bold', color: colors.text }}>{price}</ThemedText> /día
             </ThemedText>

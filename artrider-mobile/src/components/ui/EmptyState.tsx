@@ -26,7 +26,7 @@ export function EmptyState({ icon = 'albums-outline', title, description, action
     <View
       accessible
       accessibilityRole="summary"
-      style={[{ alignItems: 'center', justifyContent: 'center', gap: Spacing.three, paddingVertical: Spacing.five, paddingHorizontal: Spacing.four }, style]}
+      style={[{ alignItems: 'center', justifyContent: 'center', gap: Spacing.three, paddingVertical: Spacing.five, paddingHorizontal: Spacing.three }, style]}
     >
       <View
         style={{

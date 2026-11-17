@@ -18,7 +18,7 @@ export function SectionHeader({ title, subtitle, actionLabel, onActionPress, sty
   const colors = useTheme();
   return (
     <View testID="section-header" style={[{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }, style]}>
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: Spacing.half }}>
         <Text testID="section-title" variant="headline" numberOfLines={2} accessibilityRole="header">
           {title}
         </Text>

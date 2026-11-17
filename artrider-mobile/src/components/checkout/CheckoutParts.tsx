@@ -41,7 +41,7 @@ export function SummaryItem({ title, subtitle, extra, imageUri, size = 64 }: { t
           </View>
         )}
       </View>
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, gap: Spacing.half }}>
         <Text variant="bodyStrong" numberOfLines={2}>
           {title}
         </Text>

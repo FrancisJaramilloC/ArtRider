@@ -60,7 +60,7 @@ export default function ProfileScreen() {
           }}
         >
           <Avatar uri={profile?.avatar_url} name={profile?.full_name} size={56} />
-          <View style={{ flex: 1, gap: 2 }}>
+          <View style={{ flex: 1, gap: Spacing.half }}>
             <Text variant="subtitle" numberOfLines={1}>
               {profile?.full_name ?? 'Tu perfil'}
             </Text>

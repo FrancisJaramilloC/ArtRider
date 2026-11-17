@@ -1,13 +1,16 @@
 import { useCallback, useState } from 'react';
-import { View, FlatList, Image, Pressable, Switch, ActivityIndicator, Alert } from 'react-native';
+import { View, FlatList, Pressable, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ManagedRow } from '@/components/provider/ManagedRow';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CATEGORY_LABELS } from '@/constants/categories';
 import { Chip } from '@/components/ui/Chip';
@@ -37,32 +40,16 @@ function ListingRow({ item, onChanged }: { item: MyListing; onChanged: () => voi
     }
 
     return (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, backgroundColor: colors.backgroundElement, borderRadius: Radius.lg, padding: Spacing.three }}>
-            <View style={{ width: 56, height: 56, borderRadius: Radius.md, overflow: 'hidden' }}>
-                {item.cover_image_url ? (
-                    <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                ) : (
-                    <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
-                )}
-            </View>
-            <View style={{ flex: 1 }}>
-                <ThemedText numberOfLines={1} style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text }}>
-                    {item.title ?? 'Sin título'}
-                </ThemedText>
-                <ThemedText style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                    {CATEGORY_LABELS[item.category ?? ''] ?? 'Sin categoría'} · ${(item.daily_price / 100).toFixed(0)}/día
-                </ThemedText>
-            </View>
-            <Pressable onPress={() => router.push(`/provider/edit-listing/${item.id}` as any)} hitSlop={8}>
-                <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
-            </Pressable>
-            {busy ? <ActivityIndicator size="small" color={colors.primary} /> : (
-                <Switch value={item.is_published} onValueChange={handleToggle} trackColor={{ true: colors.primary }} />
-            )}
-            <Pressable onPress={handleDelete} hitSlop={8}>
-                <Ionicons name="trash-outline" size={18} color={colors.textSecondary} />
-            </Pressable>
-        </View>
+        <ManagedRow
+            title={item.title ?? 'Sin título'}
+            meta={`${CATEGORY_LABELS[item.category ?? ''] ?? 'Sin categoría'} · $${(item.daily_price / 100).toFixed(0)}/día`}
+            coverUrl={item.cover_image_url}
+            published={item.is_published}
+            busy={busy}
+            onTogglePublished={handleToggle}
+            onEdit={() => router.push(`/provider/edit-listing/${item.id}` as never)}
+            onDelete={handleDelete}
+        />
     );
 }
 
@@ -87,36 +74,21 @@ function PackageRow({ item, onChanged }: { item: MyPackage; onChanged: () => voi
     }
 
     return (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, backgroundColor: colors.backgroundElement, borderRadius: Radius.lg, padding: Spacing.three }}>
-            <View style={{ width: 56, height: 56, borderRadius: Radius.md, overflow: 'hidden' }}>
-                {item.cover_image_url ? (
-                    <Image source={{ uri: item.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                ) : (
-                    <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
-                )}
-            </View>
-            <View style={{ flex: 1 }}>
-                <ThemedText numberOfLines={1} style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text }}>
-                    {item.title ?? 'Sin título'}
-                </ThemedText>
-                <ThemedText style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                    Paquete · ${(item.daily_price / 100).toFixed(0)}/día
-                </ThemedText>
-            </View>
-            <Pressable onPress={() => router.push(`/provider/edit-package/${item.id}` as any)} hitSlop={8}>
-                <Ionicons name="pencil-outline" size={18} color={colors.textSecondary} />
-            </Pressable>
-            {busy ? <ActivityIndicator size="small" color={colors.primary} /> : (
-                <Switch value={item.is_published} onValueChange={handleToggle} trackColor={{ true: colors.primary }} />
-            )}
-            <Pressable onPress={handleDelete} hitSlop={8}>
-                <Ionicons name="trash-outline" size={18} color={colors.textSecondary} />
-            </Pressable>
-        </View>
+        <ManagedRow
+            title={item.title ?? 'Sin título'}
+            meta={`Paquete · $${(item.daily_price / 100).toFixed(0)}/día`}
+            coverUrl={item.cover_image_url}
+            published={item.is_published}
+            busy={busy}
+            onTogglePublished={handleToggle}
+            onEdit={() => router.push(`/provider/edit-package/${item.id}` as never)}
+            onDelete={handleDelete}
+        />
     );
 }
 
 export function MyListingsScreen() {
+  const { gutter } = useLayout();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
     const router = useRouter();
@@ -146,7 +118,7 @@ export function MyListingsScreen() {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.four, paddingVertical: Spacing.three }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: gutter, paddingVertical: Spacing.three }}>
                 <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 22, color: colors.text }}>Anuncios</ThemedText>
                 <Pressable
                     onPress={() => router.push('/provider/new-listing' as any)}
@@ -156,7 +128,7 @@ export function MyListingsScreen() {
                 </Pressable>
             </View>
 
-            <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingBottom: Spacing.three }}>
+            <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: gutter, paddingBottom: Spacing.three }}>
                 {(['equipos', 'paquetes'] as const).map((t) => (
                     <Chip
                         key={t}
@@ -168,25 +140,19 @@ export function MyListingsScreen() {
             </View>
 
             {activeData.length === 0 ? (
-                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.five }}>
-                    <Ionicons name={tab === 'equipos' ? 'cube-outline' : 'layers-outline'} size={40} color={colors.textSecondary} style={{ marginBottom: Spacing.three }} />
-                    <ThemedText style={{ color: colors.textSecondary, textAlign: 'center', marginBottom: Spacing.four }}>
-                        {tab === 'equipos' ? 'Todavía no tienes equipos publicados.' : 'Todavía no tienes paquetes publicados.'}
-                    </ThemedText>
-                    <Pressable
-                        onPress={() => router.push('/provider/new-listing' as any)}
-                        style={{ backgroundColor: colors.primary, paddingHorizontal: Spacing.five, paddingVertical: Spacing.three, borderRadius: Radius.lg }}
-                    >
-                        <ThemedText style={{ color: colors.onPrimary, fontFamily: 'Inter_700Bold', fontSize: 14 }}>
-                            {tab === 'equipos' ? 'Publicar mi primer equipo' : 'Crear mi primer paquete'}
-                        </ThemedText>
-                    </Pressable>
-                </View>
+                <EmptyState
+                    icon={tab === 'equipos' ? 'cube-outline' : 'layers-outline'}
+                    title={tab === 'equipos' ? 'Aún no publicas equipos' : 'Aún no creas paquetes'}
+                    description={tab === 'equipos' ? 'Todavía no tienes equipos publicados.' : 'Todavía no tienes paquetes publicados.'}
+                    actionLabel={tab === 'equipos' ? 'Publicar mi primer equipo' : 'Crear mi primer paquete'}
+                    onAction={() => router.push('/provider/new-listing' as never)}
+                    style={{ flex: 1 }}
+                />
             ) : (
                 <FlatList
                     data={activeData}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ padding: Spacing.four, gap: Spacing.three }}
+                    contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, gap: Spacing.three }}
                     renderItem={({ item }) =>
                         tab === 'equipos'
                             ? <ListingRow item={item as MyListing} onChanged={load} />

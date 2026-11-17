@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -43,6 +44,7 @@ function SectionLabel({ children, colors }: { children: string; colors: any }) {
 }
 
 export function ProviderMenuScreen() {
+  const { gutter } = useLayout();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
@@ -58,7 +60,7 @@ export function ProviderMenuScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ padding: Spacing.four, paddingBottom: Spacing.six }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, paddingBottom: Spacing.six }}>
         <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 26, color: colors.text, marginBottom: Spacing.five }}>
           Menú
         </ThemedText>
@@ -87,7 +89,7 @@ export function ProviderMenuScreen() {
             <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.text }}>
               {profile?.full_name ?? 'Tu perfil'}
             </ThemedText>
-            <ThemedText style={{ fontSize: 12.5, color: colors.primary, marginTop: 2 }}>Ver perfil</ThemedText>
+            <ThemedText style={{ fontSize: 12.5, color: colors.primary, marginTop: Spacing.half }}>Ver perfil</ThemedText>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </Pressable>

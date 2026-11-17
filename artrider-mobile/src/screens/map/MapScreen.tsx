@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import { PricePin } from '@/components/map/PricePin';
 import { MapPreviewCard } from '@/components/map/MapPreviewCard';
 import { getListings, type Listing } from '@/services/catalogService';
@@ -22,6 +23,7 @@ const DEFAULT_REGION = {
 };
 
 export function MapScreen() {
+  const { gutter } = useLayout();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
@@ -94,13 +96,13 @@ export function MapScreen() {
 
       {/* Botón "Lista" para volver — mismo patrón que "Mapa" en Explorar */}
       <SafeAreaView style={{ position: 'absolute', top: 0, left: 0, right: 0 }} edges={['top']}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.four, paddingTop: Spacing.two }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: gutter, paddingTop: Spacing.two }}>
           <Pressable
             onPress={() => router.back()}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 6,
+              gap: Spacing.two,
               backgroundColor: colors.primary,
               paddingHorizontal: Spacing.three,
               paddingVertical: Spacing.two,

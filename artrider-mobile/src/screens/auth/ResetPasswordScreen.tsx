@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { View, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useLayout } from '@/hooks/use-layout';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, MinTouch } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
 
 export function ResetPasswordScreen() {
@@ -14,6 +15,7 @@ export function ResetPasswordScreen() {
     const router = useRouter();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const { gutter } = useLayout();
 
     const [exchanging, setExchanging] = useState(true);
     const [linkError, setLinkError] = useState<string | null>(null);
@@ -73,7 +75,7 @@ export function ResetPasswordScreen() {
 
     if (linkError) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: Spacing.four }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
                 <Ionicons name="alert-circle-outline" size={40} color={colors.destructive} style={{ marginBottom: Spacing.three }} />
                 <ThemedText style={{ fontSize: 15, color: colors.text, textAlign: 'center', marginBottom: Spacing.four }}>
                     {linkError}
@@ -89,7 +91,7 @@ export function ResetPasswordScreen() {
 
     if (success) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: Spacing.four }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
                 <Ionicons name="checkmark-circle" size={40} color={colors.primary} style={{ marginBottom: Spacing.three }} />
                 <ThemedText style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: colors.text, textAlign: 'center' }}>
                     Contraseña actualizada
@@ -102,7 +104,7 @@ export function ResetPasswordScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
-                    <View style={{ paddingHorizontal: Spacing.four, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
+                    <View style={{ paddingHorizontal: gutter, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
                         <View style={{ marginBottom: Spacing.five }}>
                             <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 28, color: colors.text, marginBottom: Spacing.one }}>
                                 Nueva contraseña
@@ -132,7 +134,7 @@ export function ResetPasswordScreen() {
                                     secureTextEntry
                                     autoCapitalize="none"
                                     maxLength={72}
-                                    style={{ flex: 1, paddingVertical: 14, paddingHorizontal: Spacing.two, fontSize: 15, fontFamily: 'Inter_400Regular', color: colors.text }}
+                                    style={{ flex: 1, minHeight: MinTouch, paddingVertical: Spacing.snug, paddingHorizontal: Spacing.two, fontSize: 15, fontFamily: 'Inter_400Regular', color: colors.text }}
                                 />
                             </View>
                         </View>
@@ -151,7 +153,7 @@ export function ResetPasswordScreen() {
                                     secureTextEntry
                                     autoCapitalize="none"
                                     maxLength={72}
-                                    style={{ flex: 1, paddingVertical: 14, paddingHorizontal: Spacing.two, fontSize: 15, fontFamily: 'Inter_400Regular', color: colors.text }}
+                                    style={{ flex: 1, minHeight: MinTouch, paddingVertical: Spacing.snug, paddingHorizontal: Spacing.two, fontSize: 15, fontFamily: 'Inter_400Regular', color: colors.text }}
                                 />
                             </View>
                         </View>
@@ -162,7 +164,7 @@ export function ResetPasswordScreen() {
                             style={({ pressed }) => ({
                                 backgroundColor: loading || !password || !confirmPassword ? colors.backgroundSelected : colors.primary,
                                 borderRadius: Radius.xl,
-                                paddingVertical: 16,
+                                paddingVertical: Spacing.three,
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 opacity: pressed ? 0.9 : 1,

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { View, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useLayout } from '@/hooks/use-layout';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius } from '@/constants/theme';
+import { Colors, Spacing, Radius, MinTouch } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
 
 const REDIRECT_URL = 'artridermobile://reset-password';
@@ -16,6 +17,7 @@ export function ForgotPasswordScreen() {
     const router = useRouter();
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const { gutter } = useLayout();
 
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
@@ -41,7 +43,7 @@ export function ForgotPasswordScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
                 <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
-                    <View style={{ paddingHorizontal: Spacing.four, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
+                    <View style={{ paddingHorizontal: gutter, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
                         <BackButton style={{ marginBottom: Spacing.four, alignSelf: 'flex-start' }} />
 
                         {sent ? (
@@ -120,7 +122,7 @@ export function ForgotPasswordScreen() {
                                             autoCapitalize="none"
                                             autoComplete="email"
                                             maxLength={254}
-                                            style={{ flex: 1, paddingVertical: 14, paddingHorizontal: Spacing.two, fontSize: 15, fontFamily: 'Inter_400Regular', color: colors.text }}
+                                            style={{ flex: 1, minHeight: MinTouch, paddingVertical: Spacing.snug, paddingHorizontal: Spacing.two, fontSize: 15, fontFamily: 'Inter_400Regular', color: colors.text }}
                                         />
                                     </View>
                                 </View>
@@ -131,7 +133,7 @@ export function ForgotPasswordScreen() {
                                     style={({ pressed }) => ({
                                         backgroundColor: loading || !email ? colors.backgroundSelected : colors.primary,
                                         borderRadius: Radius.xl,
-                                        paddingVertical: 16,
+                                        paddingVertical: Spacing.three,
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         opacity: pressed ? 0.9 : 1,
