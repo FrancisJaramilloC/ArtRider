@@ -2,6 +2,7 @@ import { View, type StyleProp, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Radius, Spacing } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { Button } from './Button';
 import { Text } from './Text';
@@ -14,19 +15,25 @@ export type EmptyStateProps = {
   onAction?: () => void;
   /** `error` usa un tono de aviso en lugar del acento. */
   tone?: 'default' | 'error';
+  /**
+   * Ocupa el área libre y centra el contenido descontando la barra de pestañas flotante (iOS 26),
+   * para que no quede tapado ni descentrado.
+   */
+  fill?: boolean;
   style?: StyleProp<ViewStyle>;
 };
 
 /** Estado vacío o de error: ícono en círculo tenue, título, descripción y acción opcional. */
-export function EmptyState({ icon = 'albums-outline', title, description, actionLabel, onAction, tone = 'default', style }: EmptyStateProps) {
+export function EmptyState({ icon = 'albums-outline', title, description, actionLabel, onAction, tone = 'default', fill = false, style }: EmptyStateProps) {
   const colors = useTheme();
+  const { bottomInset } = useLayout();
   const accent = tone === 'error' ? colors.destructive : colors.primary;
 
   return (
     <View
       accessible
       accessibilityRole="summary"
-      style={[{ alignItems: 'center', justifyContent: 'center', gap: Spacing.three, paddingVertical: Spacing.five, paddingHorizontal: Spacing.three }, style]}
+      style={[{ alignItems: 'center', justifyContent: 'center', gap: Spacing.three, paddingVertical: Spacing.five, paddingHorizontal: Spacing.three }, fill ? { flex: 1, paddingBottom: bottomInset } : null, style]}
     >
       <View
         style={{
@@ -50,7 +57,7 @@ export function EmptyState({ icon = 'albums-outline', title, description, action
           </Text>
         ) : null}
       </View>
-      {actionLabel && onAction ? <Button label={actionLabel} onPress={onAction} variant="tonal" size="sm" /> : null}
+      {actionLabel && onAction ? <Button label={actionLabel} onPress={onAction} variant="tonal" size="sm" style={{ alignSelf: 'center' }} /> : null}
     </View>
   );
 }

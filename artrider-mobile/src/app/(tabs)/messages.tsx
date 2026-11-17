@@ -82,7 +82,9 @@ function ConversationsContent() {
       onRefresh={onRefresh}
       onOpen={(item) => router.push({ pathname: '/chat/[id]', params: { id: item.id, otherName: item.other_name } })}
       onLongPress={handleLongPress}
-      emptyText="No tienes conversaciones todavía."
+      emptyText="Cuando consultes o reserves un equipo, tus conversaciones aparecerán aquí."
+      helpText="Las conversaciones aparecen al consultar o reservar un equipo."
+      onExplore={() => router.push("/(tabs)" as never)}
     />
   );
 }

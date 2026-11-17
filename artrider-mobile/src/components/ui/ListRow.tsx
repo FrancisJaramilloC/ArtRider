@@ -1,7 +1,7 @@
 import { Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { MinTouch, Spacing } from '@/constants/theme';
+import { RowHeight, Rhythm, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { Text } from './Text';
 
@@ -25,9 +25,11 @@ export function ListRow({ icon, label, onPress, destructive = false, chevron }: 
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={{ minHeight: MinTouch + Spacing.two, flexDirection: 'row', alignItems: 'center', gap: Spacing.three }}
+      style={({ pressed }) => [{ minHeight: RowHeight, flexDirection: 'row', alignItems: 'center', gap: Spacing.three, opacity: pressed ? 0.7 : 1 }]}
     >
-      <Ionicons name={icon} size={22} color={fg} />
+      <View style={{ width: 24, alignItems: 'center' }}>
+        <Ionicons name={icon} size={22} color={fg} />
+      </View>
       <Text variant="body" numberOfLines={1} style={{ flex: 1, color: fg }}>
         {label}
       </Text>
@@ -39,7 +41,7 @@ export function ListRow({ icon, label, onPress, destructive = false, chevron }: 
 /** Rótulo de sección (mayúsculas, color tenue) con separación consistente. */
 export function ListSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <View style={{ gap: Spacing.one, paddingTop: Spacing.four }}>
+    <View style={{ gap: Rhythm.titleToContent, paddingTop: Rhythm.section }}>
       <Text variant="overline" color="textMuted" accessibilityRole="header">
         {title}
       </Text>

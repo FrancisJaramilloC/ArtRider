@@ -32,7 +32,10 @@ export function IconButton({ icon, onPress, label, variant = 'surface', color, l
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: disabled || loading, busy: loading }}
-      style={[{ width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center' }, style]}
+      style={({ pressed }) => [
+        { width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }], opacity: pressed ? 0.8 : 1 },
+        style,
+      ]}
     >
       <View
         style={{

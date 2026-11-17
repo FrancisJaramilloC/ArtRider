@@ -1,19 +1,24 @@
-import { View } from 'react-native';
-import { ThemedText } from '@/components/themed-text';
-import { BackButton } from '@/components/navigation/BackButton';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Spacing } from '@/constants/theme';
-import { useLayout } from '@/hooks/use-layout';
+
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function ProviderSettingsPlaceholder() {
-  const { gutter } = useLayout();
-    return (
-        <SafeAreaView style={{ flex: 1 }}>
-            <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }}><BackButton /></View>
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
-                <ThemedText type="title">Configuración</ThemedText>
-                <ThemedText>Próximamente</ThemedText>
-            </View>
-        </SafeAreaView>
-    );
+  const colors = useTheme();
+  const router = useRouter();
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScreenHeader title="Configuración" />
+      <EmptyState
+        fill
+        icon="settings-outline"
+        title="Próximamente"
+        description="Estamos preparando la configuración de tu negocio."
+        actionLabel="Volver al menú"
+        onAction={() => router.back()}
+      />
+    </SafeAreaView>
+  );
 }

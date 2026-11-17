@@ -25,7 +25,8 @@ const TOL = 1.5; // px de tolerancia por redondeo del navegador
 /** Se ejecuta dentro de la página: devuelve mediciones crudas. */
 function measure() {
   const vw = window.innerWidth;
-  const q = (sel) => [...document.querySelectorAll(`[data-testid="${sel}"]`)];
+  // Solo elementos visibles: las pestañas no activas siguen montadas (ancho 0) en la vista web.
+  const q = (sel) => [...document.querySelectorAll(`[data-testid="${sel}"]`)].filter((e) => e.getBoundingClientRect().width > 0);
   const rect = (el) => {
     const r = el.getBoundingClientRect();
     return { l: r.left, r: r.right, t: r.top + window.scrollY, b: r.bottom + window.scrollY, w: r.width, h: r.height };
@@ -88,7 +89,9 @@ function measure() {
   const edge = blocks.length ? { l: Math.min(...blocks.map(({ r }) => r.left)), r: vw - Math.max(...blocks.map(({ r }) => r.right)) } : null;
   const heading = document.querySelector('[role="heading"]');
   const firstChip = document.querySelector('[data-testid="chip"]');
-  const start = { headTop: heading ? heading.getBoundingClientRect().top : null, chipTop: firstChip ? firstChip.getBoundingClientRect().top : null };
+  // Con pestañas montadas a la vez, solo cuenta la visible (ancho > 0).
+  const tabContent = [...document.querySelectorAll('[data-testid="tab-content"]')].find((e) => e.getBoundingClientRect().width > 0) ?? null;
+  const start = { contentTop: tabContent ? tabContent.getBoundingClientRect().top : null, headTop: heading ? heading.getBoundingClientRect().top : null, chipTop: firstChip ? firstChip.getBoundingClientRect().top : null };
   return { vw, scrollWidth: document.documentElement.scrollWidth, edge, start, headers, sections, cards, prices, clickable, clipped, offenders };
 }
 
@@ -273,4 +276,18 @@ for (const x of summary.filter((r) => r.width === 390 && r.scheme === 'light')) 
   const c = x.start && x.start.chipTop !== null ? Math.round(x.start.chipTop) : '-';
   console.log('  ' + x.route.padEnd(34) + ' título ' + h + ' · chip ' + c);
 }
+// (g) El contenido de TODAS las pantallas de pestaña arranca en la misma coordenada y.
+let startFails = 0;
+console.log('ARRANQUE DEL CONTENIDO (y de tab-content) por ancho y esquema:');
+for (const scheme of ['light', 'dark']) {
+  for (const width of widths) {
+    const group = summary.filter((r) => r.width === width && r.scheme === scheme && r.start && r.start.contentTop !== null);
+    if (group.length < 2) continue;
+    const ys = group.map((g) => Math.round(g.start.contentTop));
+    const ok = ys.every((y) => Math.abs(y - ys[0]) <= 1);
+    if (!ok) startFails++;
+    console.log('  [' + (ok ? ' OK  ' : 'FALLA') + '] ' + width + 'px ' + scheme + ' · ' + group.map((g, k) => g.route.split('@')[0] + '=' + ys[k]).join(' '));
+  }
+}
+console.log('TOTAL ARRANQUE: ' + (startFails === 0 ? 'OK' : startFails + ' FALLA'));
 writeFileSync(`${outDir}/audit.json`, JSON.stringify(summary, null, 1));

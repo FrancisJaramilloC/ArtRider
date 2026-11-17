@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { ScrollView, RefreshControl, View, TextInput, Pressable, FlatList } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -11,6 +10,7 @@ import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { TabScreen } from '@/components/ui/TabScreen';
 import { ItemCardSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { Fonts, MinTouch, Radius, Rhythm, Shadows, Spacing } from '@/constants/theme';
@@ -29,9 +29,7 @@ export function HomeScreen() {
     const colors = useTheme();
     const router = useRouter();
     const { isAuthenticated } = useAuth();
-    const { gutter, columns, cardWidth, bottomInset, contentWidth } = useLayout();
-    // En ≥ 600 el contenido se centra con ancho máximo; en teléfono ocupa todo el ancho.
-    const frame = { flex: 1, width: '100%', maxWidth: contentWidth, alignSelf: 'center' } as const;
+    const { gutter, columns, cardWidth, bottomInset } = useLayout();
 
     const [data, setData] = useState<HomeData | null>(null);
     const [exploreItems, setExploreItems] = useState<ExploreItem[]>([]);
@@ -119,14 +117,7 @@ export function HomeScreen() {
     }
 
     const header = (
-        <View style={{ paddingHorizontal: gutter, paddingTop: Spacing.three, gap: Spacing.three }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Text variant="title" accessibilityRole="header">
-                    ArtRider
-                </Text>
-                {isAuthenticated && <CartIconButton />}
-            </View>
-
+        <View style={{ paddingHorizontal: gutter }}>
             {/* Barra de búsqueda real — filtra en el mismo Home, nunca navega */}
             <SearchBar
                 value={rawQuery}
@@ -138,11 +129,11 @@ export function HomeScreen() {
             />
         </View>
     );
+    const tabActions = isAuthenticated ? <CartIconButton /> : undefined;
 
     if (loading) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-            <View style={frame}>
+            <TabScreen title="ArtRider" actions={tabActions}>
                 {header}
                 <View style={{ flexDirection: 'row', gap: Spacing.two, paddingHorizontal: gutter, paddingVertical: Spacing.three }}>
                     {[88, 104, 96, 80].map((w, i) => (
@@ -154,17 +145,15 @@ export function HomeScreen() {
                         <ItemCardSkeleton key={i} width={cardWidth()} />
                     ))}
                 </View>
-            </View>
-            </SafeAreaView>
+            </TabScreen>
         );
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-            <View style={frame}>
+        <TabScreen title="ArtRider" actions={tabActions}>
             {header}
 
-            <View style={{ paddingTop: Spacing.three }}>
+            <View style={{ paddingTop: Rhythm.titleToContent }}>
                 <CategoryStrip activeCategory={activeCategory} onSelect={setActiveCategory} gutter={gutter} />
             </View>
 
@@ -314,7 +303,6 @@ export function HomeScreen() {
                     )}
                 </ScrollView>
             )}
-        </View>
-        </SafeAreaView>
+        </TabScreen>
     );
 }

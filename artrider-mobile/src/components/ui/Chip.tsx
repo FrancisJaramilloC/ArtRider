@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { MinTouch, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { hapticSelect } from '@/utils/haptics';
 import { Text } from './Text';
 
 /** Alto = objetivo táctil mínimo: sin hitSlop ni recortes. */
@@ -24,12 +25,17 @@ export function Chip({ label, active = false, onPress, icon, style }: ChipProps)
   return (
     <Pressable
       testID="chip"
-      onPress={onPress}
+      onPress={() => {
+        hapticSelect();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
-      style={[
+      style={({ pressed }) => [
         {
+          opacity: pressed ? 0.85 : 1,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
           height: CHIP_HEIGHT,
           borderRadius: Radius.full,
           paddingHorizontal: Spacing.three,

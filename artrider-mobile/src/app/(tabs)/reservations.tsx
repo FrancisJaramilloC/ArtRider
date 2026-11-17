@@ -1,26 +1,37 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, FlatList, ScrollView, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, FlatList, RefreshControl } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { ProtectedScreen } from '@/components/protected-screen';
 import { BookingListCard } from '@/components/bookings/BookingListCard';
 import { OrderGroupCard } from '@/components/bookings/OrderGroupCard';
-import { Chip } from '@/components/ui/Chip';
+import { ChipRow } from '@/components/ui/ChipRow';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Text } from '@/components/ui/Text';
-import { Radius, Spacing } from '@/constants/theme';
+import { TabScreen } from '@/components/ui/TabScreen';
+import { Radius, Rhythm, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getClientBookings, type ClientBooking, type BookingStatus } from '@/services/bookingsService';
 
-const FILTERS: { id: 'all' | BookingStatus[]; label: string }[] = [
-  { id: 'all', label: 'Todas' },
-  { id: ['AWAITING_SIGNATURES'], label: 'Pendientes' },
-  { id: ['PAID', 'ACTIVE'], label: 'Activas' },
-  { id: ['COMPLETED'], label: 'Completadas' },
-  { id: ['CANCELLED'], label: 'Canceladas' },
+type FilterId = 'all' | 'pending' | 'active' | 'completed' | 'cancelled';
+
+const FILTERS: { id: FilterId; label: string; statuses: BookingStatus[] | null }[] = [
+  { id: 'all', label: 'Todas', statuses: null },
+  { id: 'pending', label: 'Pendientes', statuses: ['AWAITING_SIGNATURES'] },
+  { id: 'active', label: 'Activas', statuses: ['PAID', 'ACTIVE'] },
+  { id: 'completed', label: 'Completadas', statuses: ['COMPLETED'] },
+  { id: 'cancelled', label: 'Canceladas', statuses: ['CANCELLED'] },
 ];
+
+/** Frase del estado vacío por filtro: siempre distinta del título. */
+const EMPTY_TEXT: Record<FilterId, string> = {
+  all: 'Cuando reserves un equipo, lo verás aquí con su estado.',
+  pending: 'Aquí aparecen las reservas que esperan la respuesta del proveedor.',
+  active: 'Aquí aparecen las reservas confirmadas y en curso.',
+  completed: 'Aquí aparecerán las reservas que ya terminaron.',
+  cancelled: 'Aquí aparecerán las reservas que se cancelaron.',
+};
 
 type ListRow =
   | { kind: 'single'; key: string; booking: ClientBooking }
@@ -60,10 +71,11 @@ function groupBookings(bookings: ClientBooking[]): ListRow[] {
 
 function ReservationsContent() {
   const colors = useTheme();
-  const { gutter, contentWidth } = useLayout();
+  const router = useRouter();
+  const { gutter, bottomInset } = useLayout();
 
   const [bookings, setBookings] = useState<ClientBooking[]>([]);
-  const [activeFilter, setActiveFilter] = useState(0);
+  const [activeFilter, setActiveFilter] = useState<FilterId>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -82,68 +94,35 @@ function ReservationsContent() {
     setRefreshing(false);
   }
 
-  const filter = FILTERS[activeFilter].id;
-  const filteredBookings = filter === 'all' ? bookings : bookings.filter((b) => filter.includes(b.status));
+  const statuses = FILTERS.find((f) => f.id === activeFilter)?.statuses ?? null;
+  const filteredBookings = statuses ? bookings.filter((b) => statuses.includes(b.status)) : bookings;
   const rows = useMemo(() => groupBookings(filteredBookings), [filteredBookings]);
 
-  const header = (
-    <>
-      <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.three }}>
-        <Text variant="title" accessibilityRole="header">
-          Mis Reservas
-        </Text>
-      </View>
+  return (
+    <TabScreen title="Mis Reservas">
+      <ChipRow options={FILTERS.map((f) => ({ id: f.id, label: f.label }))} value={activeFilter} onChange={setActiveFilter} />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ flexGrow: 0 }}
-        contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, paddingBottom: Spacing.three }}
-      >
-        {FILTERS.map((f, i) => (
-          <Chip key={f.label} label={f.label} active={activeFilter === i} onPress={() => setActiveFilter(i)} />
-        ))}
-      </ScrollView>
-    </>
-  );
-
-  if (loading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-        {header}
-        <View style={{ padding: gutter, gap: Spacing.three }}>
+      {loading ? (
+        <View style={{ padding: gutter, gap: Rhythm.cardGap }}>
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} height={104} radius={Radius.card} />
           ))}
         </View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      {header}
-
-      {rows.length === 0 ? (
+      ) : rows.length === 0 ? (
         <EmptyState
+          fill
           icon="calendar-outline"
-          title={activeFilter !== 0 ? 'Nada por aquí' : 'Aún no tienes reservas'}
-          description={`No tienes reservas ${activeFilter !== 0 ? 'en esta categoría' : 'todavía'}.`}
-          style={{ flex: 1 }}
+          title={activeFilter === 'all' ? 'Aún no tienes reservas' : 'Nada por aquí'}
+          description={EMPTY_TEXT[activeFilter]}
+          actionLabel="Explorar equipos"
+          onAction={() => router.push('/(tabs)' as never)}
         />
       ) : (
         <FlatList
           data={rows}
           keyExtractor={(row) => row.key}
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerStyle={{
-            padding: gutter,
-            paddingBottom: Spacing.six,
-            gap: Spacing.three,
-            width: '100%',
-            maxWidth: contentWidth,
-            alignSelf: 'center',
-          }}
+          contentContainerStyle={{ padding: gutter, paddingBottom: bottomInset + Spacing.four, gap: Rhythm.cardGap }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
           renderItem={({ item }) =>
             item.kind === 'single' ? (
@@ -154,7 +133,7 @@ function ReservationsContent() {
           }
         />
       )}
-    </SafeAreaView>
+    </TabScreen>
   );
 }
 

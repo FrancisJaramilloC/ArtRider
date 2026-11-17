@@ -87,7 +87,8 @@ export function ProviderMessagesScreen() {
       onRefresh={onRefresh}
       onOpen={(item) => router.push({ pathname: '/chat/[id]', params: { id: item.id, otherName: item.other_name } })}
       onLongPress={handleLongPress}
-      emptyText="Todavía no tienes conversaciones con clientes."
+      emptyText="Cuando un cliente te consulte sobre un equipo, la conversación aparecerá aquí."
+      helpText="Las conversaciones aparecen cuando un cliente te consulta o reserva."
     />
   );
 }

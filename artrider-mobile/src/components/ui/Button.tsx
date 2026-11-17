@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { MinTouch, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { hapticTap } from '@/utils/haptics';
 import { Text } from './Text';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'tonal' | 'ghost' | 'destructive';
@@ -50,7 +51,11 @@ export function Button({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        // Sin doble toque: `loading` ya deshabilita el botón. Háptica ligera en toda acción.
+        hapticTap();
+        onPress();
+      }}
       disabled={isDisabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
@@ -67,6 +72,7 @@ export function Button({
           alignItems: 'center',
           justifyContent: 'center',
           opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
         },
         style,
       ]}

@@ -129,7 +129,7 @@ function Lists() {
 
 function Messages() {
   return (
-    <ConversationsView conversations={CONVERSATIONS} loading={false} refreshing={false} onRefresh={() => {}} onOpen={() => {}} onLongPress={() => {}} emptyText="No tienes conversaciones todavía." />
+    <ConversationsView conversations={CONVERSATIONS} loading={false} refreshing={false} onRefresh={() => {}} onOpen={() => {}} onLongPress={() => {}} emptyText="No tienes conversaciones todavía." helpText="Las conversaciones aparecen al consultar o reservar un equipo." onExplore={() => {}} />
   );
 }
 

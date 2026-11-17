@@ -149,6 +149,9 @@ export const MaxContentWidth = 800;
 /** Acento del corazón de favoritos: primary-400, legible sobre el botón translúcido en ambos modos. */
 export const FavoriteAccent = '#a97dc4';
 
+/** Alto de las filas de menú/ajustes (íconos alineados, chevron al margen). */
+export const RowHeight = 56;
+
 /** Objetivo táctil mínimo (Apple HIG / Material): 44pt. */
 export const MinTouch = 44;
 

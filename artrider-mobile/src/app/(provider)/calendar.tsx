@@ -1,19 +1,36 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, FlatList, Image, Pressable, ActivityIndicator, Linking, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { View, FlatList, Pressable, Linking, Alert, RefreshControl } from 'react-native';
+import { Image } from 'expo-image';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
 import { Calendar } from 'react-native-calendars';
+
+type CalendarTheme = NonNullable<ComponentProps<typeof Calendar>['theme']>;
+type CalendarMarking = NonNullable<ComponentProps<typeof Calendar>['markedDates']>[string];
 
 import { ModalScreen } from '@/components/ui/ModalScreen';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Text } from '@/components/ui/Text';
 import { useLayout } from '@/hooks/use-layout';
-import { ScreenSkeleton } from '@/components/ui/Skeleton';
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius, Rhythm, StatusColors, Thumb, BOOKING_STATUS_LABELS, toStatusKey } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Badge, type BadgeTone } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
+import { Skeleton, ScreenSkeleton } from '@/components/ui/Skeleton';
+import { TabScreen } from '@/components/ui/TabScreen';
+import { useTheme } from '@/hooks/use-theme';
+import { formatShortDate } from '@/utils/format';
+import { Spacing, Radius, Rhythm, MinTouch, Thumb, BOOKING_STATUS_LABELS, toStatusKey, type BookingStatusKey } from '@/constants/theme';
+
+const CALENDAR_PLACEHOLDER_HEIGHT = 320;
+
+const STATUS_TONE: Record<BookingStatusKey, BadgeTone> = {
+  pending: 'warning',
+  confirmed: 'success',
+  cancelled: 'danger',
+  completed: 'neutral',
+};
 import {
   getProviderBookings,
   respondToBooking,
@@ -26,34 +43,12 @@ import {
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
 
-function fmtDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-  return `${d.getUTCDate()} ${months[d.getUTCMonth()]}`;
-}
-
 function BookingRow({ booking, onChanged }: { booking: ProviderBooking; onChanged: () => void }) {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const colors = useTheme();
   const [busy, setBusy] = useState(false);
-  const statusColors = StatusColors[scheme === 'dark' ? 'dark' : 'light'][toStatusKey(booking.status)];
   const statusLabel = BOOKING_STATUS_LABELS[booking.status] ?? booking.status;
   const [showFinalize, setShowFinalize] = useState(false);
-
-  async function handleRespond(action: 'accept' | 'reject') {
-    if (action === 'reject') {
-      Alert.alert(
-        'Rechazar reserva',
-        'Esto reembolsará automáticamente al cliente si ya se cobró. Esta acción no se puede deshacer.',
-        [
-          { text: 'Volver', style: 'cancel' },
-          { text: 'Rechazar', style: 'destructive', onPress: () => run('reject') },
-        ]
-      );
-      return;
-    }
-    run('accept');
-  }
+  const [showReject, setShowReject] = useState(false);
 
   async function handleFinalize(rating: number, comment: string) {
     const result = await finalizeBooking(booking.booking_id, rating, comment);
@@ -78,80 +73,74 @@ function BookingRow({ booking, onChanged }: { booking: ProviderBooking; onChange
   }
 
   return (
-    <View style={{ backgroundColor: colors.backgroundElement, borderRadius: Radius.lg, padding: Spacing.three }}>
-      <View style={{ flexDirection: 'row', gap: Spacing.three }}>
-        <View style={{ width: 56, height: 56, borderRadius: Radius.md, overflow: 'hidden' }}>
+    <View style={{ backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding, gap: Rhythm.cardPadding }}>
+      <View style={{ flexDirection: 'row', gap: Rhythm.cardPadding }}>
+        <View style={{ width: Thumb.list, height: Thumb.list, borderRadius: Radius.xl, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
           {booking.listing_cover_image_url ? (
-            <Image source={{ uri: booking.listing_cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+            <Image source={{ uri: booking.listing_cover_image_url }} style={{ width: Thumb.list, height: Thumb.list }} contentFit="cover" transition={150} cachePolicy="memory-disk" />
           ) : (
-            <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="image-outline" size={22} color={colors.textMuted} />
+            </View>
           )}
         </View>
-        <View style={{ flex: 1 }}>
-          <View style={{ alignSelf: 'flex-start', backgroundColor: statusColors.bg, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one, borderRadius: 999, marginBottom: Spacing.one }}>
-            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 10, color: statusColors.fg }}>{statusLabel}</ThemedText>
-          </View>
-          <ThemedText numberOfLines={1} style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.text }}>
+        <View style={{ flex: 1, minWidth: 0, gap: Spacing.half }}>
+          <Badge label={statusLabel} tone={STATUS_TONE[toStatusKey(booking.status)]} />
+          <Text variant="bodyStrong" numberOfLines={2} style={{ marginTop: Spacing.one }}>
             {booking.listing_title ?? 'Item reservado'}
-          </ThemedText>
-          <ThemedText style={{ fontSize: 12, color: colors.textSecondary, marginTop: Spacing.half }}>
-            {fmtDate(booking.start_date)} - {fmtDate(booking.end_date)} · ${(booking.total_price / 100).toFixed(2)}
-          </ThemedText>
-          {booking.client_name && (
-            <ThemedText style={{ fontSize: 12, color: colors.textSecondary, marginTop: Spacing.half }}>
+          </Text>
+          <Text variant="caption" color="textSecondary" numberOfLines={1}>
+            {formatShortDate(booking.start_date)} - {formatShortDate(booking.end_date)} · ${(booking.total_price / 100).toFixed(2)}
+          </Text>
+          {booking.client_name ? (
+            <Text variant="caption" color="textSecondary" numberOfLines={1}>
               Cliente: {booking.client_name}
-            </ThemedText>
-          )}
+            </Text>
+          ) : null}
         </View>
       </View>
 
-      {booking.client_phone && (
+      {booking.client_phone ? (
         <Pressable
           onPress={() => Linking.openURL(`tel:${booking.client_phone}`)}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.two }}
+          accessibilityRole="link"
+          accessibilityLabel={`Llamar al cliente ${booking.client_phone}`}
+          style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}
         >
-          <Ionicons name="call-outline" size={14} color={colors.primary} />
-          <ThemedText style={{ fontSize: 12.5, fontFamily: 'Inter_600SemiBold', color: colors.primary }}>
+          <Ionicons name="call-outline" size={16} color={colors.primary} />
+          <Text variant="captionStrong" color="primary">
             {booking.client_phone}
-          </ThemedText>
+          </Text>
         </Pressable>
-      )}
+      ) : null}
 
       {booking.status === 'AWAITING_SIGNATURES' && (
-        <View style={{ flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.three }}>
-          <Pressable
-            onPress={() => handleRespond('reject')}
-            disabled={busy}
-            style={{ flex: 1, paddingVertical: Spacing.two, borderRadius: Radius.md, borderWidth: 1, borderColor: colors.destructive, alignItems: 'center' }}
-          >
-            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.destructive }}>Rechazar</ThemedText>
-          </Pressable>
-          <Pressable
-            onPress={() => handleRespond('accept')}
-            disabled={busy}
-            style={{ flex: 1, paddingVertical: Spacing.two, borderRadius: Radius.md, backgroundColor: colors.primary, alignItems: 'center' }}
-          >
-            {busy ? <ActivityIndicator size="small" color={colors.onPrimary} /> : (
-              <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.onPrimary }}>Aceptar</ThemedText>
-            )}
-          </Pressable>
+        <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+          <Button label="Rechazar" variant="destructive" size="sm" fullWidth disabled={busy} onPress={() => setShowReject(true)} style={{ flex: 1 }} />
+          <Button label="Aceptar" size="sm" fullWidth loading={busy} onPress={() => run('accept')} style={{ flex: 1 }} />
         </View>
       )}
 
       {booking.status === 'ACTIVE' && (
-        <View style={{ flexDirection: 'row', gap: Spacing.four, marginTop: Spacing.three }}>
-          <Pressable onPress={() => handleRespond('reject')} disabled={busy}>
-            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.destructive }}>
-              Cancelar reserva
-            </ThemedText>
-          </Pressable>
-          <Pressable onPress={() => setShowFinalize(true)} disabled={busy}>
-            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: colors.primary }}>
-              Finalizar reserva
-            </ThemedText>
-          </Pressable>
+        <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+          <Button label="Cancelar reserva" variant="destructive" size="sm" fullWidth disabled={busy} onPress={() => setShowReject(true)} style={{ flex: 1 }} />
+          <Button label="Finalizar reserva" variant="tonal" size="sm" fullWidth disabled={busy} onPress={() => setShowFinalize(true)} style={{ flex: 1 }} />
         </View>
       )}
+
+      <ConfirmSheet
+        visible={showReject}
+        title={booking.status === 'ACTIVE' ? 'Cancelar reserva' : 'Rechazar reserva'}
+        message="Esto reembolsará automáticamente al cliente si ya se cobró. Esta acción no se puede deshacer."
+        confirmLabel={booking.status === 'ACTIVE' ? 'Sí, cancelar' : 'Rechazar'}
+        destructive
+        loading={busy}
+        onCancel={() => setShowReject(false)}
+        onConfirm={async () => {
+          await run('reject');
+          setShowReject(false);
+        }}
+      />
 
       <ReviewModal
         visible={showFinalize}
@@ -176,9 +165,10 @@ function BookingRow({ booking, onChanged }: { booking: ProviderBooking; onChange
 }
 
 export default function ProviderCalendarScreen() {
-  const { gutter } = useLayout();
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const { gutter, bottomInset } = useLayout();
+  const colors = useTheme();
+  const router = useRouter();
+  const [refreshing, setRefreshing] = useState(false);
   const [bookings, setBookings] = useState<ProviderBooking[]>([]);
   const [myListings, setMyListings] = useState<MyListing[]>([]);
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
@@ -197,6 +187,12 @@ export default function ProviderCalendarScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
 
   useEffect(() => {
     if (!selectedListingId) return;
@@ -224,17 +220,42 @@ export default function ProviderCalendarScreen() {
   }
 
   if (loading) {
-    return (
-      <ScreenSkeleton />
-    );
+    return <ScreenSkeleton />;
   }
 
-  const markedDates: Record<string, any> = {};
+  const calendarTheme = {
+    backgroundColor: colors.background,
+    calendarBackground: colors.backgroundElement,
+    textSectionTitleColor: colors.textSecondary,
+    dayTextColor: colors.text,
+    monthTextColor: colors.text,
+    arrowColor: colors.primary,
+    todayTextColor: colors.primary,
+    textDisabledColor: colors.textMuted,
+    textDayFontFamily: 'Inter_500Medium',
+    textMonthFontFamily: 'Inter_700Bold',
+    // Celdas de día de 44×44 (objetivo táctil mínimo); por defecto miden 32.
+    'stylesheet.day.basic': { base: { width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center' } },
+  } as CalendarTheme;
+
+  // Marcas distinguibles SIN depender solo del color: reservado = relleno sólido y número en negrita;
+  // bloqueado = contorno discontinuo y número tachado.
+  const markedDates: Record<string, CalendarMarking> = {};
   marks.forEach((m) => {
-    markedDates[m.date] = {
-      selected: true,
-      selectedColor: m.mark === 'booked' ? colors.destructive : colors.textMuted,
-    };
+    markedDates[m.date] =
+      m.mark === 'booked'
+        ? {
+            customStyles: {
+              container: { backgroundColor: colors.destructive, borderRadius: Radius.full },
+              text: { color: colors.onPrimary, fontFamily: 'Inter_700Bold' },
+            },
+          }
+        : {
+            customStyles: {
+              container: { borderWidth: 2, borderStyle: 'dashed', borderColor: colors.textMuted, borderRadius: Radius.full },
+              text: { color: colors.textMuted, textDecorationLine: 'line-through' },
+            },
+          };
   });
 
   const selectedListing = myListings.find((l) => l.id === selectedListingId) ?? null;
@@ -249,94 +270,94 @@ export default function ProviderCalendarScreen() {
     : myListings;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.three }}>
-        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 22, color: colors.text }}>Calendario</ThemedText>
-      </View>
-
+    <TabScreen title="Calendario">
       {myListings.length === 0 ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.five }}>
-          <ThemedText style={{ color: colors.textSecondary, textAlign: 'center' }}>
-            Publica al menos un equipo para gestionar su calendario.
-          </ThemedText>
-        </View>
+        <EmptyState
+          fill
+          icon="calendar-outline"
+          title="Aún no hay calendario"
+          description="Publica al menos un equipo para gestionar su calendario."
+          actionLabel="Publicar mi primer equipo"
+          onAction={() => router.push('/provider/new-listing' as never)}
+        />
       ) : (
         <FlatList
           data={[...pending, ...rest]}
           keyExtractor={(b) => b.booking_id}
-          contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, gap: Spacing.three }}
+          contentInsetAdjustmentBehavior="automatic"
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Spacing.two, paddingBottom: bottomInset + Spacing.four, gap: Rhythm.cardGap }}
           ListHeaderComponent={
-            <View style={{ marginBottom: Spacing.four }}>
+            <View style={{ gap: Rhythm.titleToContent, marginBottom: Rhythm.section - Rhythm.cardGap }}>
               {/* Selector de equipo — botón que abre un buscador, escala a cientos de items */}
               <Pressable
                 onPress={() => setShowPicker(true)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: Spacing.three,
-                  backgroundColor: colors.backgroundElement,
-                  borderRadius: Radius.lg,
-                  padding: Spacing.three,
-                  marginBottom: Spacing.three,
-                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Equipo seleccionado: ${selectedListing?.title ?? 'ninguno'}. Cambiar`}
+                style={({ pressed }) => [
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: Spacing.three,
+                    backgroundColor: colors.backgroundElement,
+                    borderRadius: Radius.card,
+                    padding: Rhythm.cardPadding,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
               >
-                <View style={{ width: 40, height: 40, borderRadius: Radius.md, overflow: 'hidden' }}>
+                <View style={{ width: Thumb.compact, height: Thumb.compact, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
                   {selectedListing?.cover_image_url ? (
-                    <Image source={{ uri: selectedListing.cover_image_url }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                  ) : (
-                    <View style={[{ width: '100%', height: '100%' }, { backgroundColor: colors.backgroundSelected }]} />
-                  )}
+                    <Image source={{ uri: selectedListing.cover_image_url }} style={{ width: Thumb.compact, height: Thumb.compact }} contentFit="cover" transition={150} cachePolicy="memory-disk" />
+                  ) : null}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <ThemedText style={{ fontSize: 11, color: colors.textSecondary }}>Equipo seleccionado</ThemedText>
-                  <ThemedText numberOfLines={1} style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.text }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text variant="caption" color="textSecondary">
+                    Equipo seleccionado
+                  </Text>
+                  <Text variant="bodyStrong" numberOfLines={1}>
                     {selectedListing?.title ?? 'Elige un equipo'}
-                  </ThemedText>
+                  </Text>
                 </View>
-                <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
+                <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
               </Pressable>
 
               {loadingCalendar ? (
-                <View style={{ height: 320, alignItems: 'center', justifyContent: 'center' }}>
-                  <ActivityIndicator color={colors.primary} />
-                </View>
+                <Skeleton height={CALENDAR_PLACEHOLDER_HEIGHT} radius={Radius.card} />
               ) : (
                 <Calendar
                   key={selectedListingId}
+                  markingType="custom"
                   markedDates={markedDates}
                   onDayPress={(day: { dateString: string }) => handleDayPress(day.dateString)}
                   minDate={new Date().toISOString().split('T')[0]}
-                  theme={{
-                    backgroundColor: colors.background,
-                    calendarBackground: colors.background,
-                    textSectionTitleColor: colors.textSecondary,
-                    dayTextColor: colors.text,
-                    monthTextColor: colors.text,
-                    arrowColor: colors.primary,
-                    todayTextColor: colors.primary,
-                  }}
-                  style={{ borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.backgroundElement }}
+                  theme={calendarTheme}
+                  style={{ borderRadius: Radius.card, overflow: 'hidden', backgroundColor: colors.backgroundElement }}
                 />
               )}
 
-              <View style={{ flexDirection: 'row', gap: Spacing.four, marginTop: Spacing.three, paddingHorizontal: Spacing.one }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.three }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.destructive }} />
-                  <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Reservado</ThemedText>
+                  <View style={{ width: Spacing.three, height: Spacing.three, borderRadius: Radius.full, backgroundColor: colors.destructive }} />
+                  <Text variant="caption" color="textSecondary">
+                    Reservado
+                  </Text>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.textMuted }} />
-                  <ThemedText style={{ fontSize: 12, color: colors.textSecondary }}>Bloqueado por ti</ThemedText>
+                  <View style={{ width: Spacing.three, height: Spacing.three, borderRadius: Radius.full, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.textMuted }} />
+                  <Text variant="caption" color="textSecondary">
+                    Bloqueado por ti
+                  </Text>
                 </View>
               </View>
-              <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: Spacing.two }}>
+              <Text variant="caption" color="textSecondary">
                 Toca un día libre para bloquearlo (mantenimiento, uso propio) o un día bloqueado para liberarlo.
-              </ThemedText>
+              </Text>
 
               {pending.length > 0 && (
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 13, color: colors.textSecondary, marginTop: Spacing.five, marginBottom: Spacing.two }}>
+                <Text variant="captionStrong" color="textSecondary" style={{ marginTop: Spacing.three }}>
                   {pending.length} {pending.length === 1 ? 'reserva pendiente' : 'reservas pendientes'} de tu respuesta
-                </ThemedText>
+                </Text>
               )}
             </View>
           }
@@ -399,6 +420,6 @@ export default function ProviderCalendarScreen() {
           }}
         />
       </ModalScreen>
-    </SafeAreaView>
+    </TabScreen>
   );
 }
