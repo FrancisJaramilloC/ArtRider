@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { serviceError } from '@/utils/errors';
+import { resolvePackageCity } from '@/utils/city';
 
 export type Package = {
     id: string;
@@ -40,6 +41,8 @@ export type PackageWithItems = Package & {
         } | null;
     })[];
     provider: { brand_name: string; created_at: string } | null;
+    /** Ciudad a mostrar (paquete → primer equipo con ciudad); null si no hay dato. */
+    city: string | null;
 };
 
 function normalizePackageData(raw: any): PackageWithItems {
@@ -52,7 +55,7 @@ function normalizePackageData(raw: any): PackageWithItems {
         return { ...item, listing: { ...rawListing, address } };
     });
 
-    return { ...raw, provider, items } as PackageWithItems;
+    return { ...raw, provider, items, city: resolvePackageCity({ address: raw.address, items }) } as PackageWithItems;
 }
 
 /** Detalle público de un paquete, con sus equipos y proveedor. */
@@ -61,6 +64,7 @@ export async function getPackageById(id: string): Promise<PackageWithItems | nul
         .from('packages')
         .select(`
       *,
+      address:addresses(city),
       items:package_items(
         *,
         listing:listings(id, title, brand, model, category, cover_image_url, daily_price, address_id, address:addresses(latitude, longitude, city, state))
@@ -84,13 +88,15 @@ export type PackageSummary = {
     title: string;
     daily_price: number;
     cover_image_url: string | null;
+    /** Ciudad a mostrar; null si ni el paquete ni sus equipos la tienen. */
+    city: string | null;
 };
 
 /** Paquetes publicados, para la sección de destacados del Home. */
 export async function getPublishedPackages(): Promise<PackageSummary[]> {
     const { data, error } = await supabase
         .from('packages')
-        .select('id, title, daily_price, cover_image_url')
+        .select('id, title, daily_price, cover_image_url, address:addresses(city), items:package_items(listing:listings(address:addresses(city)))')
         .eq('is_published', true)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
@@ -100,7 +106,13 @@ export async function getPublishedPackages(): Promise<PackageSummary[]> {
         throw serviceError('[packagesService] getPublishedPackages', error);
     }
 
-    return (data ?? []) as PackageSummary[];
+    return (data ?? []).map((row: any) => ({
+        id: row.id,
+        title: row.title,
+        daily_price: row.daily_price,
+        cover_image_url: row.cover_image_url,
+        city: resolvePackageCity(row),
+    }));
 }
 export type PackageReview = {
     id: string;

@@ -122,6 +122,7 @@ export function PackageDetailScreen() {
                 <Text variant="title">{pkg.title}</Text>
                 <MetaRow>
                     {avgRating > 0 && <MetaItem icon="star" strong label={`${avgRating.toFixed(2)} (${reviews.length})`} />}
+                    {pkg.city ? <MetaItem icon="location-outline" label={pkg.city} /> : null}
                     {pkg.capacity_people != null && (
                         <MetaItem icon="people-outline" label={`Hasta ${pkg.capacity_people} ${pkg.capacity_people === 1 ? 'persona' : 'personas'}`} />
                     )}

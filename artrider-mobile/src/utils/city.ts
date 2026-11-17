@@ -16,3 +16,34 @@ export function cityKey(raw: string): string {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '');
 }
+
+
+/** Ciudad lista para mostrar, o null si no hay dato o el dato es solo el país (nunca se muestra «Ecuador»). */
+export function cityOrNull(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const label = cityLabel(raw);
+  return label.length === 0 || cityKey(label) === 'ecuador' ? null : label;
+}
+
+type MaybeAddress = { city?: string | null } | { city?: string | null }[] | null | undefined;
+
+/** Un embed de Supabase puede llegar como objeto o como arreglo de uno. */
+function addressCity(address: MaybeAddress): string | null {
+  const one = Array.isArray(address) ? address[0] : address;
+  return cityOrNull(one?.city);
+}
+
+/**
+ * Ciudad de un paquete con los datos existentes: primero la de la dirección del paquete; si no tiene,
+ * la del primer equipo (por orden) que sí la tenga. Si no hay ninguna → null (se oculta la línea).
+ */
+export function resolvePackageCity(pkg: { address?: MaybeAddress; items?: { listing?: { address?: MaybeAddress } | { address?: MaybeAddress }[] | null }[] | null }): string | null {
+  const own = addressCity(pkg.address);
+  if (own) return own;
+  for (const item of pkg.items ?? []) {
+    const listing = Array.isArray(item.listing) ? item.listing[0] : item.listing;
+    const c = addressCity(listing?.address);
+    if (c) return c;
+  }
+  return null;
+}

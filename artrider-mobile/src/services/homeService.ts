@@ -8,7 +8,7 @@ export type HomeCardItem = {
     category: string | null;
     cover_image_url: string | null;
     daily_price: number;
-    city: string;
+    city: string | null;
     rating: number;
     href: string;
     tipo: 'equipo' | 'paquete';
@@ -63,7 +63,7 @@ export async function getHomeData(): Promise<HomeData> {
         category: null,
         cover_image_url: pkg.cover_image_url,
         daily_price: pkg.daily_price,
-        city: 'Ecuador',
+        city: pkg.city,
         rating: 0,
         href: `/package/${pkg.id}`,
         tipo: 'paquete',

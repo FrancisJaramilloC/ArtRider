@@ -17,6 +17,7 @@ import { findExistingConversation } from '@/services/messagesService';
 import { getListingTotalUnits } from '@/services/availabilityService';
 import { emitFavoriteChange, onFavoriteChange } from '@/utils/favoritesSync';
 import { useAuth } from '@/hooks/useAuth';
+import { cityOrNull } from '@/utils/city';
 import { loadRelatedListings } from './relatedListings';
 
 type ListingBundle = { listing: ListingWithProvider | null; rating: number; totalUnits: number | null; reviews: ListingReview[]; fav: boolean; gallery: string[]; galleryFailed: boolean };
@@ -142,7 +143,7 @@ export function ListingDetailScreen() {
 
                 <MetaRow>
                     {rating.avg > 0 && <MetaItem icon="star" strong label={`${rating.avg.toFixed(2)}${reviews.length > 0 ? ` (${reviews.length})` : ''}`} />}
-                    {listing.address?.city ? <MetaItem icon="location-outline" label={listing.address.city} /> : null}
+                    {cityOrNull(listing.address?.city) ? <MetaItem icon="location-outline" label={cityOrNull(listing.address?.city)!} /> : null}
                     {totalUnits !== null && (
                         <MetaItem
                             icon="cube-outline"

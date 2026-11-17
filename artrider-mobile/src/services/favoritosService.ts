@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { serviceError } from '@/utils/errors';
+import { cityOrNull, resolvePackageCity } from '@/utils/city';
 
 export type FavoritoTipo = 'equipo' | 'paquete';
 
@@ -91,7 +92,7 @@ export async function getFavoritosEquipos() {
 
     return (listings ?? []).map((l: any) => {
         const addr = Array.isArray(l.address) ? l.address[0] : l.address;
-        return { ...l, city: addr?.city ?? 'Ecuador' };
+        return { ...l, city: cityOrNull(addr?.city) };
     });
 }
 
@@ -112,7 +113,7 @@ export async function getFavoritosPaquetes() {
 
     const { data: packages, error } = await supabase
         .from('packages')
-        .select('id, title, cover_image_url, daily_price')
+        .select('id, title, cover_image_url, daily_price, address:addresses(city), items:package_items(listing:listings(address:addresses(city)))')
         .in('id', ids)
         .eq('is_published', true)
         .is('deleted_at', null);
@@ -121,6 +122,6 @@ export async function getFavoritosPaquetes() {
     return (packages ?? []).map((p: any) => ({
         ...p,
         category: 'paquete',
-        city: 'Ecuador',
+        city: resolvePackageCity(p),
     }));
 }
