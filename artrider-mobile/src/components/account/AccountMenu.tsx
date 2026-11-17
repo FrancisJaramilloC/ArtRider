@@ -23,7 +23,7 @@ export type AccountMenuProps = {
 };
 
 /**
- * Estructura única de Perfil (cliente) y Menú (proveedor): tarjeta de usuario, Apariencia
+ * Estructura única de Perfil (Rider) y Menú (Partner): tarjeta de usuario, Apariencia
  * (Claro/Oscuro), secciones agrupadas con filas de 56pt y «Cerrar sesión». Solo cambian las filas.
  */
 export function AccountMenu({ title, fullName, avatarUrl, onOpenProfile, children, onLogout }: AccountMenuProps) {

@@ -1,3 +1,4 @@
+import { COPY, ROLE_CLIENT } from '@/constants/copy';
 import { useState, type ReactNode } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -131,11 +132,11 @@ function Detail({ booking, onChanged }: { booking: ProviderBooking; onChanged: (
           </View>
         </Card>
 
-        <Card title="Cliente">
+        <Card title={COPY.clientCardTitle}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three }}>
             <Avatar name={booking.client_name} size={44} />
             <Text variant="bodyStrong" numberOfLines={2} style={{ flex: 1, minWidth: 0 }}>
-              {booking.client_name ?? 'Cliente'}
+              {booking.client_name ?? ROLE_CLIENT}
             </Text>
             <Button label="Mensaje" icon="chatbubble-outline" variant="tonal" size="sm" fullWidth={false} loading={opening} onPress={openChat} />
           </View>
@@ -143,7 +144,7 @@ function Detail({ booking, onChanged }: { booking: ProviderBooking; onChanged: (
             <Pressable
               onPress={() => Linking.openURL(`tel:${booking.client_phone}`)}
               accessibilityRole="link"
-              accessibilityLabel={`Llamar al cliente ${booking.client_phone}`}
+              accessibilityLabel={COPY.callClient(booking.client_phone)}
               style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}
             >
               <Ionicons name="call-outline" size={18} color={colors.primary} />

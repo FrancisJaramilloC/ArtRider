@@ -1,3 +1,4 @@
+import { ROLE_CLIENT } from '@/constants/copy';
 import { Pressable, View } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,7 +41,7 @@ export function ProviderBookingCard({ booking, onOpen, onChanged }: Props) {
       <Pressable
         onPress={onOpen}
         accessibilityRole="button"
-        accessibilityLabel={`${booking.listing_title ?? 'Equipo'}, ${booking.client_name ?? 'cliente'}, ${dates}, ${total}, ${statusLabel}`}
+        accessibilityLabel={`${booking.listing_title ?? 'Equipo'}, ${booking.client_name ?? ROLE_CLIENT}, ${dates}, ${total}, ${statusLabel}`}
         accessibilityHint="Abre el detalle de la reserva"
         style={({ pressed }) => ({ flexDirection: 'row', gap: Rhythm.cardPadding, opacity: pressed ? 0.85 : 1 })}
       >
@@ -63,7 +64,7 @@ export function ProviderBookingCard({ booking, onOpen, onChanged }: Props) {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
             <Avatar name={booking.client_name} size={20} />
             <Text variant="caption" color="textSecondary" numberOfLines={1} style={{ flex: 1, minWidth: 0 }}>
-              {booking.client_name ?? 'Cliente'}
+              {booking.client_name ?? ROLE_CLIENT}
             </Text>
           </View>
           <Text variant="caption" color="textSecondary" numberOfLines={1}>

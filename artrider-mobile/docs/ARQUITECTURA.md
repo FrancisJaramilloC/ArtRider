@@ -22,7 +22,7 @@ src/
     _layout.tsx     Stack raíz + providers (ColorScheme, Auth), fuentes Inter
     (auth)/         login, register, forgot-password (Stack.Protected: solo sin sesión)
     (tabs)/         Home, Reservas, Mensajes, Perfil  (NativeTabs, barra flotante iOS 26)
-    (provider)/     Hoy, Calendario, Anuncios, Mensajes, Menú  (NativeTabs del proveedor)
+    (provider)/     Hoy, Calendario, Anuncios, Mensajes, Menú  (NativeTabs del Partner)
     listing/[id], package/[id], cart, map, chat/[id], profile/edit, become-provider,
     checkout/…, provider/{create-*,edit-*,reviews,settings}, reset-password
   screens/        Pantallas completas por dominio (auth, home, explore, listing, package,
@@ -63,11 +63,11 @@ Alias `@/*` → `src/*`.
 | `homeService`, `exploreService` | Agrupan listings + paquetes para Home/búsqueda |
 | `packagesService` | Paquetes publicados y detalle |
 | `availabilityService` | Fechas no disponibles y unidades libres (RPC) |
-| `cartService` | Carrito y creación de orden multi-proveedor (edge `kushki-charge`) |
-| `bookingsService` | Reservas del cliente, `create_booking`, pago Kushki, reseñas |
+| `cartService` | Carrito y creación de orden multi-Partner (edge `kushki-charge`) |
+| `bookingsService` | Reservas del Rider, `create_booking`, pago Kushki, reseñas |
 | `messagesService` | Conversaciones, mensajes, Realtime (mensajes, «escribiendo», presencia) |
 | `favoritosService`, `notificationsService`, `profileService` | Favoritos, notificaciones, perfil y avatar |
-| `providerService`, `providerCatalogService`, `getMyProviderId` | Modo proveedor: perfil, reservas, calendario, CRUD de anuncios y paquetes |
+| `providerService`, `providerCatalogService`, `getMyProviderId` | Modo Partner: perfil, reservas, calendario, CRUD de anuncios y paquetes |
 
 ## Librerías clave
 
@@ -78,11 +78,11 @@ expo-router (rutas), react-native-reanimated + worklets (animaciones; `scheduleO
 1. **Autenticación**: login/registro/olvidé contraseña/reset por deep link (`reset-password`). Registro crea `profiles` por trigger.
 2. **Exploración**: Home con buscador en píldora, chips de categoría, carruseles por ciudad y paquetes; al enfocar el buscador se muestra la grilla con filtros de ciudad y precio. Mapa con pines de precio.
 3. **Detalle y reserva directa**: detalle con galería, reseñas, calendario de disponibilidad → `checkout/[id]` (rango de fechas + cantidad) → resumen → **pago con Kushki** (WebView invisible tokeniza la tarjeta; edge `kushki-charge` cobra y crea la reserva) → éxito.
-4. **Carrito**: agregar equipos/paquetes con fechas, resumen multi-proveedor y un único pago (`create_cart_order`).
-5. **Reservas del cliente**: lista agrupada, estado, cancelación, reseña tras completar.
+4. **Carrito**: agregar equipos/paquetes con fechas, resumen multi-Partner y un único pago (`create_cart_order`).
+5. **Reservas del Rider**: lista agrupada, estado, cancelación, reseña tras completar.
 6. **Chat**: lista de conversaciones (carga única + pull-to-refresh) y chat con Realtime, «escribiendo…» y presencia.
-7. **Perfil**: datos, avatar (Storage `avatars`), tema claro/oscuro, ser proveedor.
-8. **Modo proveedor**: «Hoy» (reservas pendientes: aceptar/rechazar con reembolso, finalizar), calendario por anuncio (bloquear fechas), anuncios y paquetes (crear/editar/publicar/borrar, portada vía edge `upload-listing-cover`), mensajes, reseñas, ajustes.
+7. **Perfil**: datos, avatar (Storage `avatars`), tema claro/oscuro, ser Partner.
+8. **Modo Partner**: «Hoy» (reservas pendientes: aceptar/rechazar con reembolso, finalizar), calendario por anuncio (bloquear fechas), anuncios y paquetes (crear/editar/publicar/borrar, portada vía edge `upload-listing-cover`), mensajes, reseñas, ajustes.
 
 ## Sistema de diseño
 

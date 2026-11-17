@@ -1,3 +1,4 @@
+import { COPY, ROLE_CLIENT } from '@/constants/copy';
 import { View, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -22,8 +23,8 @@ type HomeBundle = { profile: ProviderProfile | null; bookings: ProviderBooking[]
 
 const STATUS_MESSAGE: Record<ProviderProfile['status'], string> = {
   pending: 'Tu solicitud está siendo revisada. Te notificaremos cuando tu cuenta esté activa (1-3 días hábiles).',
-  active: 'Tu cuenta de proveedor está activa. Ya puedes gestionar tu catálogo.',
-  suspended: 'Tu cuenta de proveedor ha sido suspendida. Contacta a soporte para más información.',
+  active: COPY.providerAccountActive,
+  suspended: COPY.providerAccountSuspended,
 };
 
 const STATUS_TONE: Record<BookingStatusKey, BadgeTone> = {
@@ -94,9 +95,9 @@ export function ProviderTodayScreen() {
         <EmptyState
           fill
           icon="storefront-outline"
-          title="Aún no eres proveedor"
-          description="No tienes un perfil de proveedor todavía."
-          actionLabel="Convertirme en proveedor"
+          title={COPY.notProviderYetTitle}
+          description={COPY.notProviderYetBody}
+          actionLabel={COPY.becomeProviderAction}
           onAction={() => router.push('/become-provider' as never)}
         />
       </TabScreen>
@@ -204,7 +205,7 @@ export function ProviderTodayScreen() {
                   key={booking.booking_id}
                   onPress={() => router.push({ pathname: '/provider/booking/[id]', params: { id: booking.booking_id } } as never)}
                   accessibilityRole="button"
-                  accessibilityLabel={`${booking.listing_title ?? 'Reserva'}, ${booking.client_name ?? 'cliente'}, ${BOOKING_STATUS_LABELS[booking.status] ?? booking.status}`}
+                  accessibilityLabel={`${booking.listing_title ?? 'Reserva'}, ${booking.client_name ?? ROLE_CLIENT}, ${BOOKING_STATUS_LABELS[booking.status] ?? booking.status}`}
                   accessibilityHint="Abre el detalle de la reserva"
                   style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: Rhythm.cardPadding, backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding, opacity: pressed ? 0.85 : 1 })}
                 >
@@ -223,7 +224,7 @@ export function ProviderTodayScreen() {
                       {booking.listing_title ?? 'Item reservado'}
                     </Text>
                     <Text variant="caption" color="textSecondary" numberOfLines={1}>
-                      {booking.client_name ?? 'Cliente'} · {formatShortDate(booking.start_date)}
+                      {booking.client_name ?? ROLE_CLIENT} · {formatShortDate(booking.start_date)}
                     </Text>
                   </View>
                   <View style={{ flexShrink: 0 }}>

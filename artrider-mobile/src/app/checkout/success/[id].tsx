@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -48,7 +49,7 @@ export default function CheckoutSuccessScreen() {
                     ¡Solicitud enviada!
                 </Text>
                 <Text variant="body" color="textSecondary" style={{ textAlign: 'center' }}>
-                    El proveedor revisará tu solicitud y la confirmará pronto.
+                    {COPY.checkoutSuccessNote}
                 </Text>
 
                 <View style={{ alignSelf: 'stretch', backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Spacing.four, gap: Spacing.two, marginTop: Spacing.two }}>

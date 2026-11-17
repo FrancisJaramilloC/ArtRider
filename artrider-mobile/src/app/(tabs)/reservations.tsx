@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useMemo, useState } from 'react';
 import { View, FlatList, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -29,7 +30,7 @@ const FILTERS: { id: FilterId; label: string; statuses: BookingStatus[] | null }
 /** Frase del estado vacío por filtro: siempre distinta del título. */
 const EMPTY_TEXT: Record<FilterId, string> = {
   all: 'Cuando reserves un equipo, lo verás aquí con su estado.',
-  pending: 'Aquí aparecen las reservas que esperan la respuesta del proveedor.',
+  pending: COPY.pendingBookingsEmpty,
   active: 'Aquí aparecen las reservas confirmadas y en curso.',
   completed: 'Aquí aparecerán las reservas que ya terminaron.',
   cancelled: 'Aquí aparecerán las reservas que se cancelaron.',

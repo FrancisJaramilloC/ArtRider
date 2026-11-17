@@ -1,3 +1,4 @@
+import { ROLE_PROVIDER } from '@/constants/copy';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { toErrorInfo, type ErrorInfo } from '@/utils/errors';
@@ -189,7 +190,7 @@ export function ChatScreen() {
                 // ya carga todo normal (mensajes, realtime, etc.)
                 router.replace({
                     pathname: '/chat/[id]',
-                    params: { id: realId, otherName: otherName ?? 'Proveedor' },
+                    params: { id: realId, otherName: otherName ?? ROLE_PROVIDER },
                 });
             } else if (conversationId) {
                 const sent = await sendMessage(conversationId, trimmed);

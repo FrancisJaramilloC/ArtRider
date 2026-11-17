@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useEffect, useState } from 'react';
 import { View, Pressable, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -433,14 +434,14 @@ export function CreateListingScreen() {
                                     <FormField label="Modelo" placeholder="PartyBox 300" maxLength={60} {...text.field('model')} />
                                 </View>
                             </View>
-                            <FormField label="Descripción" placeholder="Cuenta a los clientes qué incluye, estado, accesorios..." multiline maxLength={2000} {...text.field('description')} />
+                            <FormField label="Descripción" placeholder={COPY.describeToClients} multiline maxLength={2000} {...text.field('description')} />
                         </View>
                     )}
 
                     {currentStepId === 'photo' && (
                         <View>
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: Spacing.three }}>
-                                {isEdit ? 'Toca la foto para cambiarla.' : 'Una buena foto es lo primero que ven los clientes.'}
+                                {isEdit ? 'Toca la foto para cambiarla.' : COPY.photoFirstThing}
                             </ThemedText>
                             <Pressable
                                 onPress={pickImage}
@@ -500,7 +501,7 @@ export function CreateListingScreen() {
                     {currentStepId === 'location' && (
                         <View style={{ gap: Spacing.four }}>
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary }}>
-                                ¿De dónde sale este equipo? Solo lo verán clientes con reserva confirmada.
+                                {COPY.originVisibility}
                             </ThemedText>
                             <FormField label="Dirección" placeholder="Calle y número" autoComplete="street-address" {...text.field('addressLine1')} />
                             <View style={{ flexDirection: 'row', gap: Spacing.three }}>
@@ -595,7 +596,7 @@ export function CreateListingScreen() {
                     {currentStepId === 'review' && (
                         <View>
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: Spacing.four }}>
-                                {isEdit ? 'Así van a ver el anuncio actualizado:' : 'Así lo van a ver tus clientes:'}
+                                {isEdit ? COPY.previewListingUpdated : COPY.previewListingNew}
                             </ThemedText>
                             {renderPreviewCard()}
                             {error ? (

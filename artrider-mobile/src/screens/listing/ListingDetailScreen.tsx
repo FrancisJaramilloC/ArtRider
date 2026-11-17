@@ -1,3 +1,4 @@
+import { COPY, ROLE_PROVIDER } from '@/constants/copy';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -97,14 +98,14 @@ export function ListingDetailScreen() {
             if (existingId) {
                 router.push({
                     pathname: '/chat/[id]',
-                    params: { id: existingId, otherName: listing.provider?.brand_name ?? 'Proveedor' },
+                    params: { id: existingId, otherName: listing.provider?.brand_name ?? ROLE_PROVIDER },
                 });
             } else {
                 router.push({
                     pathname: '/chat/[id]',
                     params: {
                         id: 'new',
-                        otherName: listing.provider?.brand_name ?? 'Proveedor',
+                        otherName: listing.provider?.brand_name ?? ROLE_PROVIDER,
                         providerId: listing.provider_id,
                         listingId: listing.id,
                     },
@@ -154,7 +155,7 @@ export function ListingDetailScreen() {
             </View>
 
             <DetailSection divider>
-                <ProviderRow brandName={listing.provider?.brand_name} onPress={handleContactarProveedor} />
+                <ProviderRow brandName={listing.provider?.brand_name} city={cityOrNull(listing.address?.city)} onPress={handleContactarProveedor} />
             </DetailSection>
 
             {listing.category ? (
@@ -190,7 +191,7 @@ export function ListingDetailScreen() {
             ) : null}
 
             {related?.fromProvider.length ? (
-                <DetailSection title="Más de este proveedor" divider>
+                <DetailSection title={COPY.moreFromProvider} divider>
                     <ItemCarousel items={related.fromProvider} favoriteIds={related.favoriteIds} />
                 </DetailSection>
             ) : null}

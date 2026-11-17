@@ -1,3 +1,4 @@
+import { COPY, ROLE_PROVIDER } from '@/constants/copy';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
@@ -84,14 +85,14 @@ export function PackageDetailScreen() {
             if (existingId) {
                 router.push({
                     pathname: '/chat/[id]',
-                    params: { id: existingId, otherName: pkg.provider?.brand_name ?? 'Proveedor' },
+                    params: { id: existingId, otherName: pkg.provider?.brand_name ?? ROLE_PROVIDER },
                 });
             } else {
                 router.push({
                     pathname: '/chat/[id]',
                     params: {
                         id: 'new',
-                        otherName: pkg.provider?.brand_name ?? 'Proveedor',
+                        otherName: pkg.provider?.brand_name ?? ROLE_PROVIDER,
                         providerId: pkg.provider_id,
                         packageId: pkg.id,
                     },
@@ -130,7 +131,7 @@ export function PackageDetailScreen() {
             </View>
 
             <DetailSection divider>
-                <ProviderRow brandName={pkg.provider?.brand_name} onPress={handleContactarProveedor} />
+                <ProviderRow brandName={pkg.provider?.brand_name} city={pkg.city} onPress={handleContactarProveedor} />
             </DetailSection>
 
             <DetailSection title="Qué incluye">
@@ -169,7 +170,7 @@ export function PackageDetailScreen() {
             <ReviewList rating={avgRating} reviews={reviews} emptyText="Sé el primero en reseñar este paquete." />
 
             {related?.fromProvider.length ? (
-                <DetailSection title="Más de este proveedor" divider>
+                <DetailSection title={COPY.moreFromProvider} divider>
                     <ItemCarousel items={related.fromProvider} favoriteIds={related.favoriteIds} />
                 </DetailSection>
             ) : null}

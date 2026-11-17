@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useState } from 'react';
 import { FlatList, RefreshControl, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -136,7 +137,7 @@ export function MyListingsScreen() {
                     fill
                     icon={tab === 'equipos' ? 'cube-outline' : 'layers-outline'}
                     title={tab === 'equipos' ? 'Aún no publicas equipos' : 'Aún no creas paquetes'}
-                    description={tab === 'equipos' ? 'Publica tu primer equipo para que los clientes puedan rentarlo.' : 'Combina varios de tus equipos en un paquete listo para rentar.'}
+                    description={tab === 'equipos' ? COPY.emptyListings : 'Combina varios de tus equipos en un paquete listo para rentar.'}
                     actionLabel={tab === 'equipos' ? 'Publicar mi primer equipo' : 'Crear mi primer paquete'}
                     onAction={() => router.push('/provider/new-listing' as never)}
                 />

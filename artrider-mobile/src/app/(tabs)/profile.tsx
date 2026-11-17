@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useEffect, useState } from 'react';
 import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -35,7 +36,7 @@ export default function ProfileScreen() {
         <ListSection title="Negocio">
           <ListRow
             icon="storefront-outline"
-            label={isProvider ? 'Cambiar a modo proveedor' : 'Conviértete en proveedor'}
+            label={isProvider ? COPY.switchToProviderMode : COPY.becomeProvider}
             onPress={() => (isProvider ? router.replace('/(provider)/today') : router.push('/become-provider'))}
           />
         </ListSection>

@@ -19,7 +19,7 @@ export type TabScreenProps = {
 /**
  * Pantalla de pestaña: safe area superior, cabecera única (título a la izquierda, acciones a la
  * derecha, mismo alto y mismo desplazamiento superior) y área de contenido. Todas las pestañas del
- * cliente y del proveedor la usan, así los chips y el contenido arrancan en la misma coordenada y.
+ * Rider y del Partner la usan, así los chips y el contenido arrancan en la misma coordenada y.
  */
 export function TabScreen({ title, actions, children }: TabScreenProps) {
   const colors = useTheme();

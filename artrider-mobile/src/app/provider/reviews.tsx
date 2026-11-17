@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,7 +16,7 @@ export default function ProviderReviewsPlaceholder() {
         fill
         icon="star-outline"
         title="Próximamente"
-        description="Aquí verás las reseñas que dejan tus clientes."
+        description={COPY.reviewsEmpty}
         actionLabel="Volver al menú"
         onAction={() => router.back()}
       />

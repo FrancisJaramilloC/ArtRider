@@ -1,3 +1,4 @@
+import { ROLE_CLIENT } from '@/constants/copy';
 import { useState, type ReactNode } from 'react';
 import { Alert, FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
@@ -241,7 +242,7 @@ export default function ProviderCalendarScreen() {
                       {sheetBooking.listing_title ?? 'Equipo reservado'}
                     </Text>
                     <Text variant="body" color="textSecondary">
-                      {sheetBooking.client_name ?? 'Cliente'} · {formatDateRange(sheetBooking.start_date, sheetBooking.end_date)}
+                      {sheetBooking.client_name ?? ROLE_CLIENT} · {formatDateRange(sheetBooking.start_date, sheetBooking.end_date)}
                     </Text>
                     <Text variant="caption" color="textSecondary">
                       {BOOKING_STATUS_LABELS[sheetBooking.status] ?? sheetBooking.status} · {formatPrice(sheetBooking.total_price)}

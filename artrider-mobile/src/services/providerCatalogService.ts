@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { supabase, SUPABASE_URL } from './supabase';
 import { serviceError } from '@/utils/errors';
 import { getMyProviderProfile } from './providerService';
@@ -32,8 +33,8 @@ export type CreateListingResult = { listingId?: string; error?: string };
 export async function createListing(params: CreateListingParams): Promise<CreateListingResult> {
     try {
         const provider = await getMyProviderProfile();
-        if (!provider) return { error: 'No tienes un perfil de proveedor activo.' };
-        if (provider.status !== 'active') return { error: 'Tu cuenta de proveedor todavía no está activa.' };
+        if (!provider) return { error: COPY.noActiveProviderProfile };
+        if (provider.status !== 'active') return { error: COPY.providerNotActiveYet };
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return { error: 'No autenticado.' };
@@ -346,8 +347,8 @@ export type CreatePackageParams = {
 export async function createPackage(params: CreatePackageParams): Promise<{ packageId?: string; error?: string }> {
     try {
         const provider = await getMyProviderProfile();
-        if (!provider) return { error: 'No tienes un perfil de proveedor activo.' };
-        if (provider.status !== 'active') return { error: 'Tu cuenta de proveedor todavía no está activa.' };
+        if (!provider) return { error: COPY.noActiveProviderProfile };
+        if (provider.status !== 'active') return { error: COPY.providerNotActiveYet };
         if (params.items.length === 0) return { error: 'Selecciona al menos un equipo para el paquete.' };
 
         const { data: { session } } = await supabase.auth.getSession();

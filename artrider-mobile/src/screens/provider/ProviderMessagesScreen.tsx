@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -75,8 +76,8 @@ export function ProviderMessagesScreen() {
       onRetry={reload}
       onOpen={(item) => router.push({ pathname: '/chat/[id]', params: { id: item.id, otherName: item.other_name } })}
       onLongPress={handleLongPress}
-      emptyText="Cuando un cliente te consulte sobre un equipo, la conversación aparecerá aquí."
-      helpText="Las conversaciones aparecen cuando un cliente te consulta o reserva."
+      emptyText={COPY.providerMessagesEmpty}
+      helpText={COPY.providerMessagesHelp}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useState } from 'react';
 import { Alert } from 'react-native';
 
@@ -41,7 +42,7 @@ export function useBookingActions(booking: ProviderBooking, onChanged: () => voi
       <ConfirmSheet
         visible={showReject}
         title={booking.status === 'ACTIVE' ? 'Cancelar reserva' : 'Rechazar reserva'}
-        message="Esto reembolsará automáticamente al cliente si ya se cobró. Esta acción no se puede deshacer."
+        message={COPY.refundNote}
         confirmLabel={booking.status === 'ACTIVE' ? 'Sí, cancelar' : 'Rechazar'}
         destructive
         loading={busy}
@@ -55,7 +56,7 @@ export function useBookingActions(booking: ProviderBooking, onChanged: () => voi
       <ReviewModal
         visible={showFinalize}
         title="Finalizar y calificar"
-        subtitle={`¿Cómo fue tu experiencia con ${booking.client_name ?? 'este cliente'}?`}
+        subtitle={`¿Cómo fue tu experiencia con ${booking.client_name ?? COPY.thisClient}?`}
         onCancel={() => setShowFinalize(false)}
         onSubmit={async (rating, comment) => finalize(rating, comment)}
         submitLabel="Finalizar reserva"

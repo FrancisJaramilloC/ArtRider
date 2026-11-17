@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useState } from 'react';
 import { View, Pressable, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -120,8 +121,8 @@ export function BecomeProviderScreen() {
             {status === 'pending'
               ? 'Tu solicitud está siendo revisada. Te notificaremos cuando tu cuenta esté activa (1-3 días hábiles).'
               : status === 'active'
-                ? 'Tu cuenta de proveedor está activa. Ya puedes gestionar tu catálogo.'
-                : 'Tu cuenta de proveedor ha sido suspendida. Contacta a soporte para más información.'}
+                ? COPY.providerAccountActive
+                : COPY.providerAccountSuspended}
           </ThemedText>
         </View>
       </SafeAreaView>
@@ -139,7 +140,7 @@ export function BecomeProviderScreen() {
             </Pressable>
 
             <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 24, color: colors.text, marginBottom: Spacing.one }}>
-              Configura tu perfil de proveedor
+              {COPY.providerSetupTitle}
             </ThemedText>
             <ThemedText style={{ fontSize: 13.5, color: colors.textSecondary, lineHeight: 20, marginBottom: Spacing.four }}>
               Una vez enviado, nuestro equipo revisará tu solicitud junto a la verificación de identidad. Te notificaremos cuando tu cuenta esté activa.

@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { supabase, SUPABASE_URL } from './supabase';
 import { serviceError } from '@/utils/errors';
 
@@ -52,7 +53,7 @@ export async function becomeProvider(params: BecomeProviderParams): Promise<Beco
     try {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) {
-            return { error: 'Debes iniciar sesión para registrarte como proveedor.' };
+            return { error: COPY.mustLoginToBecomeProvider };
         }
 
         const trimmedName = brandName.trim();
@@ -73,7 +74,7 @@ export async function becomeProvider(params: BecomeProviderParams): Promise<Beco
             .single();
 
         if (existing) {
-            return { error: 'Ya tienes un perfil de proveedor registrado.' };
+            return { error: COPY.alreadyProvider };
         }
 
         const { error: insertError } = await supabase.from('providers').insert({

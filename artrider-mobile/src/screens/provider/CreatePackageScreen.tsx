@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useEffect, useState } from 'react';
 import { View, Pressable, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -474,7 +475,7 @@ export function CreatePackageScreen() {
                     {currentStepId === 'review' && (
                         <View>
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: Spacing.four }}>
-                                {isEdit ? 'Así van a ver el paquete actualizado:' : 'Así lo van a ver tus clientes:'}
+                                {isEdit ? COPY.previewPackageUpdated : COPY.previewListingNew}
                             </ThemedText>
                             {renderPreviewCard()}
                             {error ? (

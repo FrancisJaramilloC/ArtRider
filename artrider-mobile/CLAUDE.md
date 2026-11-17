@@ -43,6 +43,7 @@ pnpm exec expo install <paquete>          # para librerías nativas (versión de
 
 ## Convenciones
 
+- Roles en la UI: el cliente es **Rider** y el proveedor es **Partner** (plurales Riders/Partners; invariables en género, mejor sin artículo: «Modo Rider», «Ser Partner»). Todo texto visible sale de `src/constants/copy.ts`. No cambian los identificadores de código, las rutas ni los valores de rol en Supabase.
 - Importes en centavos (`daily_price`, `total_price`); mostrar dividiendo entre 100.
 - Colores, radios, espaciado y tipografía salen de `constants/theme.ts`; UI con los componentes de `components/ui/` y layout con `useLayout()` (sin anchos fijos, margen lateral `gutter`, objetivos táctiles ≥ 44pt). No hardcodear hex en pantallas.
 - Usar `useTheme()`/`useColorScheme()` de `@/hooks/*`, nunca el de `react-native` (ignora el toggle de tema).

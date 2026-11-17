@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -31,7 +32,7 @@ export function ProviderMenuScreen() {
       </ListSection>
 
       <ListSection title="Cuenta">
-        <ListRow icon="swap-horizontal-outline" label="Cambiar a modo cliente" onPress={() => router.replace('/(tabs)')} />
+        <ListRow icon="swap-horizontal-outline" label={COPY.switchToClientMode} onPress={() => router.replace('/(tabs)')} />
       </ListSection>
 
       <ListSection title="Soporte">

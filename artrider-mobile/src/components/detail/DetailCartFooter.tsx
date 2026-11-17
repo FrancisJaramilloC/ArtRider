@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 
@@ -62,7 +63,7 @@ export function DetailCartFooter({ kind, id, title, dailyPrice, providerId }: De
         justAdded={justAdded}
         onCartPress={handleCartPress}
         onReserve={() => router.push(reservePath as never)}
-        disabledReason={isOwn ? `Este ${kind === 'listing' ? 'equipo' : 'paquete'} es tuyo: no puedes reservarlo ni agregarlo al carrito.` : undefined}
+        disabledReason={isOwn ? COPY.ownItemNotice(kind === 'listing' ? 'equipo' : 'paquete') : undefined}
       />
       <AddToCartSheet
         visible={sheetOpen}

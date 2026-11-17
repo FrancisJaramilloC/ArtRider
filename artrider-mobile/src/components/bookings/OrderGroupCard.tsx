@@ -1,3 +1,4 @@
+import { COPY } from '@/constants/copy';
 import { useState } from 'react';
 import { View, Pressable, Linking } from 'react-native';
 import { Image } from 'expo-image';
@@ -78,7 +79,7 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
                         <Pressable
                             onPress={() => Linking.openURL(`tel:${booking.provider_phone}`)}
                             accessibilityRole="link"
-                            accessibilityLabel={`Llamar al proveedor ${booking.provider_phone}`}
+                            accessibilityLabel={COPY.callProvider(booking.provider_phone)}
                             style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: Spacing.one, flexShrink: 1 }}
                         >
                             <Ionicons name="call-outline" size={14} color={colors.primary} />

@@ -1,3 +1,4 @@
+import { ROLE_PROVIDER } from '@/constants/copy';
 import { useState } from 'react';
 import { View, Pressable, Linking } from 'react-native';
 import { Image } from 'expo-image';
@@ -82,12 +83,12 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
                     <Pressable
                         onPress={() => Linking.openURL(`tel:${booking.provider_phone}`)}
                         accessibilityRole="link"
-                        accessibilityLabel={`Llamar a ${booking.provider_name ?? 'Proveedor'}`}
+                        accessibilityLabel={`Llamar a ${booking.provider_name ?? ROLE_PROVIDER}`}
                         style={{ minHeight: MinTouch, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}
                     >
                         <Ionicons name="call-outline" size={14} color={colors.primary} />
                         <Text variant="captionStrong" color="primary" numberOfLines={1} style={{ flexShrink: 1 }}>
-                            {booking.provider_name ?? 'Proveedor'}: {booking.provider_phone}
+                            {booking.provider_name ?? ROLE_PROVIDER}: {booking.provider_phone}
                         </Text>
                     </Pressable>
                 ) : null}
