@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ItemPickerSheet, type PickerItem } from '@/components/provider/ItemPickerSheet';
 import { BigPriceInput, FieldError, PhotoStep, ReviewSections, WizardPreviewCard, pickCoverImage, priceFromInput, type ReviewItem } from '@/components/provider/WizardParts';
+import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { FormErrorBanner, FormField } from '@/components/ui/FormField';
@@ -15,7 +17,7 @@ import { ScreenSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { WizardScaffold } from '@/components/ui/WizardScaffold';
 import { COPY } from '@/constants/copy';
-import { Radius, Rhythm, Spacing, Thumb } from '@/constants/theme';
+import { MinTouch, Radius, Rhythm, Spacing, Thumb } from '@/constants/theme';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { useForm } from '@/hooks/useForm';
 import { useTheme } from '@/hooks/use-theme';
@@ -76,6 +78,7 @@ export function CreatePackageScreen() {
     const [coverUri, setCoverUri] = useState<string | null>(null);
     const [coverMime, setCoverMime] = useState<string | null>(null);
     const [publishing, setPublishing] = useState(false);
+    const [showPicker, setShowPicker] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     // Hay cambios sin guardar si el estado difiere del inicial (vacío al crear, lo cargado al editar).
@@ -144,6 +147,12 @@ export function CreatePackageScreen() {
         setCoverMime(picked.mime);
         setStepError(null);
     }
+
+    // Equipos publicados en el formato del selector (sin reservas: aquí no se necesitan).
+    const pickerItems: PickerItem[] = useMemo(
+        () => myListings.map((l) => ({ id: l.id, title: l.title, brand: l.brand, model: l.model, category: l.category, cover_image_url: l.cover_image_url, daily_price: l.daily_price, is_published: l.is_published, upcoming: 0 })),
+        [myListings],
+    );
 
     const currentStepId = STEPS[step];
     const selectedCount = Object.keys(selected).length;
@@ -317,52 +326,35 @@ export function CreatePackageScreen() {
                             onAction={() => router.push('/provider/create-listing' as never)}
                         />
                     ) : (
-                        <View style={{ gap: Rhythm.cardGap }}>
-                            {myListings.map((listing) => {
-                                const isSelected = !!selected[listing.id];
-                                return (
-                                    <View
-                                        key={listing.id}
-                                        style={{
-                                            borderRadius: Radius.card,
-                                            borderWidth: 2,
-                                            borderColor: isSelected ? colors.primary : colors.border,
-                                            backgroundColor: isSelected ? colors.primarySoft : colors.background,
-                                            padding: Rhythm.cardPadding,
-                                            gap: Rhythm.cardPadding,
-                                        }}
-                                    >
-                                        <Pressable
-                                            onPress={() => toggleItem(listing.id)}
-                                            accessibilityRole="checkbox"
-                                            accessibilityState={{ checked: isSelected }}
-                                            accessibilityLabel={`${listing.title ?? 'Equipo'}, ${formatPrice(listing.daily_price)} por día`}
-                                            style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: Thumb.compact }}
-                                        >
-                                            <View style={{ width: Thumb.compact, height: Thumb.compact, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.imageBackdrop, alignItems: 'center', justifyContent: 'center' }}>
-                                                {listing.cover_image_url ? (
-                                                    <Image source={{ uri: listing.cover_image_url }} style={{ width: '100%', height: '100%' }} contentFit="contain" accessibilityIgnoresInvertColors />
-                                                ) : (
-                                                    <Ionicons name="cube-outline" size={20} color={colors.textSecondary} />
-                                                )}
-                                            </View>
-                                            <View style={{ flex: 1, minWidth: 0 }}>
-                                                <Text variant="bodyStrong" numberOfLines={2}>
-                                                    {listing.title ?? 'Equipo'}
+                        <>
+                            <Button label="Buscar y añadir equipos" icon="search" variant="tonal" onPress={() => setShowPicker(true)} />
+                            {selectedCount > 0 ? (
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+                                    {myListings
+                                        .filter((l) => selected[l.id])
+                                        .map((l) => (
+                                            <Pressable
+                                                key={l.id}
+                                                onPress={() => setShowPicker(true)}
+                                                accessibilityRole="button"
+                                                accessibilityLabel={`${l.title ?? 'Equipo'}, ${selected[l.id]} ${selected[l.id] === 1 ? 'unidad' : 'unidades'}. Editar`}
+                                                style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one, minHeight: MinTouch, maxWidth: '100%', paddingHorizontal: Spacing.three, borderRadius: Radius.full, backgroundColor: colors.primarySoft, borderWidth: 1, borderColor: colors.primary }}
+                                            >
+                                                <Text variant="captionStrong" color="primary">
+                                                    {selected[l.id]}×
                                                 </Text>
-                                                <Text variant="caption" color="textSecondary">
-                                                    {formatPrice(listing.daily_price)} por día
+                                                <Text variant="captionStrong" numberOfLines={1} style={{ flexShrink: 1 }}>
+                                                    {l.title ?? 'Equipo'}
                                                 </Text>
-                                            </View>
-                                            <Ionicons name={isSelected ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={isSelected ? colors.primary : colors.textMuted} />
-                                        </Pressable>
-                                        {isSelected ? (
-                                            <QuantityStepper label="Unidades" value={selected[listing.id]} max={99} onChange={(q) => setItemQuantity(listing.id, q)} />
-                                        ) : null}
-                                    </View>
-                                );
-                            })}
-                        </View>
+                                            </Pressable>
+                                        ))}
+                                </View>
+                            ) : (
+                                <Text variant="caption" color="textSecondary">
+                                    Aún no añadiste equipos. Busca por nombre, marca, modelo o categoría.
+                                </Text>
+                            )}
+                        </>
                     )}
                 </View>
             )}
@@ -422,6 +414,19 @@ export function CreatePackageScreen() {
                     <ReviewSections items={reviewItems} />
                     {error ? <FormErrorBanner message={error} onRetry={handleContinue} retrying={publishing} /> : null}
                 </View>
+            )}
+            {currentStepId === 'items' && (
+                <ItemPickerSheet
+                    visible={showPicker}
+                    title="Equipos del paquete"
+                    onClose={() => setShowPicker(false)}
+                    items={pickerItems}
+                    mode="multi"
+                    selected={selected}
+                    onPick={toggleItem}
+                    onChangeQuantity={setItemQuantity}
+                    recentsScope="package-listings"
+                />
             )}
         </WizardScaffold>
     );

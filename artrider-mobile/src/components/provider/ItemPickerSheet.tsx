@@ -176,7 +176,7 @@ export function ItemPickerSheet({ visible, title, onClose, items, loading = fals
     const categories = Array.from(new Set(items.map((i) => i.category).filter((c): c is string => !!c)));
     return [
       { id: 'all', label: 'Todos' },
-      { id: 'upcoming', label: 'Con reservas' },
+      ...(items.some((i) => i.upcoming > 0) ? [{ id: 'upcoming' as FilterId, label: 'Con reservas' }] : []),
       { id: 'paused', label: 'Pausados' },
       ...categories.map((c) => ({ id: `cat:${c}` as FilterId, label: CATEGORY_LABELS[c] ?? c })),
     ];
