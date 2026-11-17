@@ -113,7 +113,7 @@ export function ResetPasswordScreen() {
                         <FormField
                             label="Nueva contraseña"
                             leftIcon="lock-closed-outline"
-                            placeholder="••••••••"
+                            placeholder="Tu contraseña"
                             hint="Mínimo 6 caracteres."
                             secureTextEntry
                             autoCapitalize="none"
@@ -126,7 +126,7 @@ export function ResetPasswordScreen() {
                         <FormField
                             label="Confirmar contraseña"
                             leftIcon="lock-closed-outline"
-                            placeholder="••••••••"
+                            placeholder="Tu contraseña"
                             secureTextEntry
                             autoCapitalize="none"
                             autoComplete="new-password"

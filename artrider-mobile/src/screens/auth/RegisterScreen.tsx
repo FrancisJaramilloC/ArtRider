@@ -61,7 +61,7 @@ export function RegisterScreen() {
 
     return (
         <AuthScreen scrollRef={form.scrollRef} onScroll={form.onScroll}>
-            <BackButton style={{ alignSelf: 'flex-start' }} />
+            <BackButton fallbackHref="/welcome" style={{ alignSelf: 'flex-start' }} />
 
             <View style={{ marginBottom: Spacing.two, gap: Spacing.one }}>
                 <Text variant="display" accessibilityRole="header">
@@ -134,7 +134,7 @@ export function RegisterScreen() {
             <View style={{ gap: Spacing.two }}>
                 <PasswordField
                     label="Contraseña"
-                    placeholder="••••••••"
+                    placeholder="Tu contraseña"
                     autoComplete="new-password"
                     textContentType="newPassword"
                     passwordRules="minlength: 8; required: lower; required: digit;"

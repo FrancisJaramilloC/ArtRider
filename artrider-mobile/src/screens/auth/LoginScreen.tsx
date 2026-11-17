@@ -63,7 +63,7 @@ export function LoginScreen() {
 
     return (
         <AuthScreen scrollRef={form.scrollRef} onScroll={form.onScroll} centered>
-            <BackButton style={{ alignSelf: 'flex-start' }} />
+            <BackButton fallbackHref="/welcome" style={{ alignSelf: 'flex-start' }} />
 
             <View style={{ marginBottom: Spacing.three, gap: Spacing.one }}>
                 <Text variant="display" accessibilityRole="header">
@@ -109,7 +109,7 @@ export function LoginScreen() {
 
             <PasswordField
                 label="Contraseña"
-                placeholder="••••••••"
+                placeholder="Tu contraseña"
                 autoComplete="current-password"
                 textContentType="password"
                 returnKeyType="go"

@@ -16,6 +16,7 @@ export function ProviderMenuScreen() {
     // layout raíz que causaba el bug al cerrar sesión en este modo.
     router.replace('/(tabs)');
     await logout();
+    router.replace('/welcome');
   }
 
   return (

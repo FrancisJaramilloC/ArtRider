@@ -34,7 +34,10 @@ export default function ProfileScreen() {
         fullName={profile?.full_name}
         avatarUrl={profile?.avatar_url}
         onOpenProfile={() => router.push('/profile/edit' as never)}
-        onLogout={() => logout()}
+        onLogout={async () => {
+          await logout();
+          router.replace('/welcome');
+        }}
       >
         <ListSection title="Mis cosas">
           <ListRow icon="heart-outline" label="Favoritos" onPress={() => router.push('/favorites' as never)} />

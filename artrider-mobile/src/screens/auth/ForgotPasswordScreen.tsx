@@ -43,7 +43,7 @@ export function ForgotPasswordScreen() {
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
                 <ScrollView ref={form.scrollRef} onScroll={form.onScroll} scrollEventThrottle={16} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
                     <View style={{ paddingHorizontal: gutter, maxWidth: 480, width: '100%', alignSelf: 'center', gap: Spacing.three }}>
-                        <BackButton style={{ marginBottom: Spacing.two, alignSelf: 'flex-start' }} />
+                        <BackButton fallbackHref="/welcome" style={{ marginBottom: Spacing.two, alignSelf: 'flex-start' }} />
 
                         {sentTo ? (
                             <View style={{ alignItems: 'center', gap: Spacing.three }}>
@@ -56,7 +56,7 @@ export function ForgotPasswordScreen() {
                                 <Text variant="body" color="textSecondary" style={{ textAlign: 'center' }}>
                                     Te enviamos un enlace a {sentTo} para restablecer tu contraseña.
                                 </Text>
-                                <Pressable onPress={() => router.back()} accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', marginTop: Spacing.two }}>
+                                <Pressable onPress={() => (router.canGoBack() ? router.back() : router.replace('/welcome'))} accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', marginTop: Spacing.two }}>
                                     <Text variant="bodyStrong" color="primary">
                                         Volver a iniciar sesión
                                     </Text>

@@ -14,7 +14,7 @@ export function WelcomeScreen() {
 
     return (
         <AuthScreen centered>
-            <BackButton style={{ alignSelf: 'flex-start' }} />
+            <BackButton fallbackHref="/" style={{ alignSelf: 'flex-start' }} />
 
             <View style={{ gap: Spacing.one, marginVertical: Spacing.three }}>
                 <Text variant="display" accessibilityRole="header">
