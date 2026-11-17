@@ -1,44 +1,44 @@
-import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { FlatList, Pressable, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
 import { IconButton } from '@/components/ui/IconButton';
+import { ItemCard, type ItemCardData } from '@/components/ui/ItemCard';
+import { StickyFooter } from '@/components/ui/StickyFooter';
 import { Text } from '@/components/ui/Text';
-import { Radius, Spacing } from '@/constants/theme';
+import { MinTouch, Radius, Rhythm, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { formatRelativeTime } from '@/utils/format';
 
-/** Hoja de contenido con esquinas superiores redondeadas que sube sobre la foto. */
+/** Columna de contenido: margen lateral = Gutter y ancho máximo en tablet (la foto va a sangre arriba). */
 export function DetailSheet({ children }: { children: ReactNode }) {
-  const colors = useTheme();
   const { gutter, contentWidth } = useLayout();
   return (
-    <View
-      style={{
-        marginTop: -Radius.sheet,
-        borderTopLeftRadius: Radius.sheet,
-        borderTopRightRadius: Radius.sheet,
-        backgroundColor: colors.background,
-        paddingTop: Spacing.four,
-        paddingHorizontal: gutter,
-        width: '100%',
-        maxWidth: contentWidth,
-        alignSelf: 'center',
-      }}
-    >
+    <View style={{ paddingTop: Spacing.four, paddingHorizontal: gutter, width: '100%', maxWidth: contentWidth, alignSelf: 'center' }}>
       {children}
     </View>
   );
 }
 
-/** Sección con línea divisoria superior y título opcional. */
-export function DetailSection({ title, children }: { title?: string; children: ReactNode }) {
+/**
+ * Sección: 32 sobre ella (Rhythm.section), 12 entre título y contenido. `divider` añade un separador
+ * fino arriba (solo entre bloques grandes).
+ */
+export function DetailSection({ title, children, divider = false }: { title?: string; children: ReactNode; divider?: boolean }) {
   const colors = useTheme();
   return (
-    <View style={{ paddingVertical: Spacing.four, borderTopWidth: 1, borderColor: colors.border, gap: Spacing.three }}>
+    <View
+      style={{
+        marginTop: Rhythm.section,
+        paddingTop: divider ? Rhythm.section : 0,
+        borderTopWidth: divider ? 1 : 0,
+        borderColor: colors.border,
+        gap: Rhythm.titleToContent,
+      }}
+    >
       {title ? (
         <Text variant="headline" accessibilityRole="header">
           {title}
@@ -109,7 +109,7 @@ export function ReviewList({ rating, reviews, emptyText }: { rating: number; rev
     rating > 0 ? `${rating.toFixed(2)} · ${reviews.length} ${reviews.length === 1 ? 'reseña' : 'reseñas'}` : 'Reseñas';
 
   return (
-    <DetailSection>
+    <DetailSection divider>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
         {rating > 0 && <Ionicons name="star" size={18} color={colors.text} />}
         <Text variant="headline" accessibilityRole="header">
@@ -159,46 +159,105 @@ export function ReviewList({ rating, reviews, emptyText }: { rating: number; rev
 
 export type DetailBottomBarProps = {
   priceLabel: string;
-  onChat: () => void;
-  chatLoading?: boolean;
   onAddToCart: () => void;
   onReserve: () => void;
+  /** Texto del botón principal. */
+  reserveLabel?: string;
 };
 
-/** Barra inferior fija: chat, carrito, precio por día y botón «Reservar» (respeta safe area). */
-export function DetailBottomBar({ priceLabel, onChat, chatLoading, onAddToCart, onReserve }: DetailBottomBarProps) {
-  const colors = useTheme();
-  const { gutter, insets, isCompact } = useLayout();
-
+/** Barra inferior fija (StickyFooter, respeta safe area): precio por día a la izquierda, carrito y reservar a la derecha. */
+export function DetailBottomBar({ priceLabel, onAddToCart, onReserve, reserveLabel = 'Reservar' }: DetailBottomBarProps) {
+  const { isCompact } = useLayout();
   return (
-    <View
-      style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Spacing.one,
-        paddingTop: Spacing.three,
-        paddingBottom: Math.max(insets.bottom, Spacing.three),
-        paddingHorizontal: gutter - 2,
-        backgroundColor: colors.background,
-        borderTopWidth: 1,
-        borderColor: colors.border,
-      }}
-    >
-      <IconButton icon="chatbubble-ellipses-outline" label="Contactar al proveedor" variant="outline" onPress={onChat} loading={chatLoading} />
-      <IconButton icon="cart-outline" label="Agregar al carrito" variant="outline" onPress={onAddToCart} />
-      <View style={{ flex: 1, paddingLeft: Spacing.one }}>
-        <Text variant="headline" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
-          {priceLabel}
-        </Text>
-        <Text variant="caption" color="textSecondary">
-          por día
-        </Text>
+    <StickyFooter>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text variant="headline" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+            {priceLabel}
+          </Text>
+          <Text variant="caption" color="textSecondary">
+            por día
+          </Text>
+        </View>
+        <IconButton icon="cart-outline" label="Agregar al carrito" variant="outline" onPress={onAddToCart} />
+        <Button label={reserveLabel} onPress={onReserve} fullWidth={false} style={{ paddingHorizontal: isCompact ? Spacing.three : Spacing.four }} />
       </View>
-      <Button label="Reservar" onPress={onReserve} fullWidth={false} style={{ paddingHorizontal: isCompact ? Spacing.three : Spacing.four }} />
+    </StickyFooter>
+  );
+}
+
+/** Texto largo que se colapsa a 4 líneas con «Leer más» (solo si de verdad se corta). */
+export function ExpandableText({ text, lines = 4 }: { text: string; lines?: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const [lineCount, setLineCount] = useState<number | null>(null);
+  const overflow = lineCount !== null && lineCount > lines;
+  return (
+    <View style={{ gap: Spacing.one, alignItems: 'flex-start' }}>
+      <Text
+        variant="body"
+        color="textSecondary"
+        numberOfLines={expanded || lineCount === null ? undefined : lines}
+        onTextLayout={(e) => {
+          if (lineCount === null) setLineCount(e.nativeEvent.lines.length);
+        }}
+      >
+        {text}
+      </Text>
+      {overflow ? (
+        <Pressable
+          onPress={() => setExpanded((v) => !v)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded }}
+          accessibilityLabel={expanded ? 'Leer menos' : 'Leer más'}
+          style={{ minHeight: MinTouch, justifyContent: 'center' }}
+        >
+          <Text variant="bodyStrong" color="primary">
+            {expanded ? 'Leer menos' : 'Leer más'}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
+  );
+}
+
+export type SpecItem = { label: string; value: string };
+/** Valores más largos que esto ocupan el ancho completo para no cortarse. */
+const SPEC_LONG_VALUE = 18;
+
+/** Tarjetas de especificaciones en 2 columnas con alturas iguales por fila; los valores largos ocupan toda la fila. */
+export function SpecGrid({ items }: { items: SpecItem[] }) {
+  const colors = useTheme();
+  const { contentWidth, gutter } = useLayout();
+  const half = Math.floor((contentWidth - gutter * 2 - Rhythm.cardGap) / 2);
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Rhythm.cardGap }}>
+      {items.map((item) => (
+        <View
+          key={item.label}
+          style={{ width: item.value.length > SPEC_LONG_VALUE ? '100%' : half, backgroundColor: colors.backgroundElement, borderRadius: Radius.xl, padding: Rhythm.cardPadding + Spacing.one, gap: Spacing.half }}
+        >
+          <Text variant="caption" color="textSecondary">
+            {item.label}
+          </Text>
+          <Text variant="bodyStrong">{item.value}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Carrusel horizontal de tarjetas: 2 completas + ~15 % de la tercera (3 en tablet). */
+export function ItemCarousel({ items }: { items: ItemCardData[] }) {
+  const { gutter, carouselCardWidth } = useLayout();
+  return (
+    <FlatList
+      data={items}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyExtractor={(item) => `${item.tipo}-${item.id}`}
+      style={{ marginHorizontal: -gutter }}
+      contentContainerStyle={{ paddingHorizontal: gutter, gap: Rhythm.cardGap }}
+      renderItem={({ item }) => <ItemCard item={item} width={carouselCardWidth} />}
+    />
   );
 }

@@ -63,3 +63,7 @@ pnpm exec expo install <paquete>          # para librerías nativas (versión de
 - No versionar `.env`, `dist/` ni `.expo/` (ya ignorados).
 - Sin push, merge ni force push salvo petición explícita.
 - Los cambios de base de datos se proponen, no se aplican.
+
+## Futuro
+
+- TODO: Futuro: vista AR "ver en tu espacio" (requiere development build, no Expo Go). No implementar hasta migrar a development build.
