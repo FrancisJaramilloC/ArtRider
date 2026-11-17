@@ -1,199 +1,105 @@
-import { useState } from 'react';
-
-import { View, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useLayout } from '@/hooks/use-layout';
+import { Pressable, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/Button';
+import { FormErrorBanner, FormField } from '@/components/ui/FormField';
+import { Text } from '@/components/ui/Text';
+import { MinTouch, Spacing } from '@/constants/theme';
+import { useForm } from '@/hooks/useForm';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors, Spacing, Radius, MinTouch, FieldHeight } from '@/constants/theme';
+import { email, required } from '@/utils/validation';
+
+const RULES = {
+    email: [required('Ingresa tu correo electrónico'), email()],
+    password: [required('Ingresa tu contraseña')],
+};
 
 export function LoginScreen() {
     const { login } = useAuth();
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
     const { gutter } = useLayout();
-
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const form = useForm({ email: '', password: '' }, RULES);
 
-    async function handleSubmit() {
-        setError(null);
-        setLoading(true);
-        const result = await login({ email, password });
-        setLoading(false);
-
-        if (result.error) {
-            setError(result.error);
-        }
-        // Si fue exitoso, useAuth detecta la sesión nueva automáticamente y
-        // el guard del _layout raíz redirige solo a (tabs) — no hace falta
-        // navegar manualmente desde aquí.
+    function handleSubmit() {
+        form.submit(async (values) => {
+            const result = await login({ email: values.email.trim(), password: values.password });
+            // Si fue exitoso, useAuth detecta la sesión nueva y el guard del _layout raíz redirige solo.
+            return result.error ?? null;
+        });
     }
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                style={{ flex: 1 }}
-            >
-                <ScrollView
-                    contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    <View style={{ paddingHorizontal: gutter, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
-                        {/* Header */}
-                        <View style={{ marginBottom: Spacing.five }}>
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text, marginBottom: Spacing.one }}>
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+                <ScrollView ref={form.scrollRef} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+                    <View style={{ paddingHorizontal: gutter, maxWidth: 480, width: '100%', alignSelf: 'center', gap: Spacing.three }}>
+                        <View style={{ marginBottom: Spacing.three, gap: Spacing.one }}>
+                            <Text variant="display" accessibilityRole="header">
                                 Iniciar sesión
-                            </ThemedText>
-                            <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 16, color: colors.textSecondary }}>
+                            </Text>
+                            <Text variant="body" color="textSecondary">
                                 Bienvenido de vuelta a tu espacio creativo.
-                            </ThemedText>
+                            </Text>
                         </View>
 
-                        {/* Error banner */}
-                        {error && (
-                            <View
-                                style={{
-                                    backgroundColor: colors.destructiveSoft,
-                                    borderWidth: 1,
-                                    borderColor: colors.destructive,
-                                    borderRadius: Radius.lg,
-                                    padding: Spacing.three,
-                                    marginBottom: Spacing.four,
-                                    flexDirection: 'row',
-                                    gap: Spacing.two,
-                                    alignItems: 'flex-start',
-                                }}
-                            >
-                                <Ionicons name="alert-circle" size={20} color={colors.destructive} />
-                                <ThemedText style={{ color: colors.destructive, fontFamily: 'Inter_500Medium', fontSize: 14, flex: 1 }}>
-                                    {error}
-                                </ThemedText>
-                            </View>
-                        )}
+                        {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} /> : null}
 
-                        {/* Email */}
-                        <View style={{ marginBottom: Spacing.three }}>
-                            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.text, marginBottom: Spacing.two }}>
-                                Correo electrónico
-                            </ThemedText>
-                            <View
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: colors.backgroundElement,
-                                    borderRadius: Radius.xl,
-                                    paddingHorizontal: Spacing.three,
-                                }}
-                            >
-                                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
-                                <TextInput
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    placeholder="tu@email.com"
-                                    placeholderTextColor={colors.textSecondary}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    autoComplete="email"
-                                    maxLength={254}
-                                    style={{
-                                        flex: 1,
-                                        minHeight: FieldHeight,
-                                        paddingVertical: Spacing.snug,
-                                        paddingHorizontal: Spacing.two,
-                                        fontSize: 15,
-                                        fontFamily: 'Inter_400Regular',
-                                        color: colors.text,
-                                    }}
-                                />
-                            </View>
-                        </View>
+                        <FormField
+                            label="Correo electrónico"
+                            leftIcon="mail-outline"
+                            placeholder="tu@email.com"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            autoCorrect={false}
+                            returnKeyType="next"
+                            maxLength={254}
+                            onSubmitEditing={() => form.field('password').inputRef.current?.focus()}
+                            {...form.field('email')}
+                        />
 
-                        {/* Password */}
-                        <View style={{ marginBottom: Spacing.four }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.two }}>
-                                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.text }}>
-                                    Contraseña
-                                </ThemedText>
-                                <Pressable onPress={() => router.push('/forgot-password')}>
-                                    <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.primary }}>
+                        <FormField
+                            label="Contraseña"
+                            leftIcon="lock-closed-outline"
+                            placeholder="••••••••"
+                            secureTextEntry
+                            autoCapitalize="none"
+                            autoComplete="current-password"
+                            returnKeyType="go"
+                            maxLength={72}
+                            onSubmitEditing={handleSubmit}
+                            labelAccessory={
+                                <Pressable
+                                    onPress={() => router.push('/forgot-password')}
+                                    accessibilityRole="link"
+                                    accessibilityLabel="¿Olvidaste tu contraseña?"
+                                    style={{ minHeight: MinTouch, justifyContent: 'center' }}
+                                >
+                                    <Text variant="captionStrong" color="primary">
                                         ¿La olvidaste?
-                                    </ThemedText>
+                                    </Text>
                                 </Pressable>
-                            </View>
-                            <View
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    backgroundColor: colors.backgroundElement,
-                                    borderRadius: Radius.xl,
-                                    paddingHorizontal: Spacing.three,
-                                }}
-                            >
-                                <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
-                                <TextInput
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={colors.textSecondary}
-                                    secureTextEntry
-                                    autoCapitalize="none"
-                                    maxLength={72}
-                                    style={{
-                                        flex: 1,
-                                        minHeight: FieldHeight,
-                                        paddingVertical: Spacing.snug,
-                                        paddingHorizontal: Spacing.two,
-                                        fontSize: 15,
-                                        fontFamily: 'Inter_400Regular',
-                                        color: colors.text,
-                                    }}
-                                />
-                            </View>
-                        </View>
+                            }
+                            {...form.field('password')}
+                        />
 
-                        {/* Submit */}
-                        <Pressable
-                            onPress={handleSubmit}
-                            disabled={loading || !email || !password}
-                            style={({ pressed }) => ({
-                                backgroundColor: loading || !email || !password ? colors.backgroundSelected : colors.primary,
-                                borderRadius: Radius.xl,
-                                paddingVertical: Spacing.three,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: pressed ? 0.9 : 1,
-                                flexDirection: 'row',
-                                gap: Spacing.two,
-                            })}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color={colors.onPrimary} />
-                            ) : (
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.onPrimary }}>
-                                    Iniciar sesión
-                                </ThemedText>
-                            )}
-                        </Pressable>
+                        <Button label="Iniciar sesión" onPress={handleSubmit} loading={form.submitting} />
 
-                        {/* Footer */}
-                        <View style={{ marginTop: Spacing.five, alignItems: 'center' }}>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
-                                <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.textSecondary }}>¿No tienes una cuenta?</ThemedText>
-                                <Link href="/register" asChild>
-                                    <Pressable accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
-                                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.primary }}>Regístrate</ThemedText>
-                                    </Pressable>
-                                </Link>
-                            </View>
+                        <View style={{ marginTop: Spacing.four, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+                            <Text variant="body" color="textSecondary">
+                                ¿No tienes una cuenta?
+                            </Text>
+                            <Link href="/register" asChild>
+                                <Pressable accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
+                                    <Text variant="bodyStrong" color="primary">
+                                        Regístrate
+                                    </Text>
+                                </Pressable>
+                            </Link>
                         </View>
                     </View>
                 </ScrollView>

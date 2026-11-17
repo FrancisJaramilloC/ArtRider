@@ -1,15 +1,19 @@
 import { useState } from 'react';
-import { View, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useLayout } from '@/hooks/use-layout';
+import { View, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/Button';
+import { FormErrorBanner, FormField } from '@/components/ui/FormField';
+import { Text } from '@/components/ui/Text';
+import { MinTouch, Radius, Spacing, FieldHeight } from '@/constants/theme';
+import { useForm } from '@/hooks/useForm';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
-import { Colors, Spacing, Radius, StatusColors, MinTouch, FieldHeight } from '@/constants/theme';
+import { adult, email, maxLength, minLength, phone, required, sameAs } from '@/utils/validation';
 
 function formatDateForInput(date: Date): string {
     return date.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -19,311 +23,207 @@ function formatDateForDisplay(date: Date): string {
     return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
+const RULES = {
+    firstName: [required('Ingresa tu nombre'), minLength(2, 'El nombre debe tener al menos 2 caracteres'), maxLength(50, 'El nombre admite hasta 50 caracteres')],
+    lastName: [required('Ingresa tu apellido'), minLength(2, 'El apellido debe tener al menos 2 caracteres'), maxLength(50, 'El apellido admite hasta 50 caracteres')],
+    email: [required('Ingresa tu correo electrónico'), email()],
+    phone: [required('Ingresa tu teléfono de contacto'), phone()],
+    birthDate: [required('Selecciona tu fecha de nacimiento'), adult()],
+    password: [required('Crea una contraseña'), minLength(6, 'La contraseña debe tener al menos 6 caracteres')],
+    confirmPassword: [required('Confirma tu contraseña'), sameAs('password', 'Las contraseñas no coinciden')],
+};
+
 export function RegisterScreen() {
     const { register } = useAuth();
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
     const { gutter } = useLayout();
     const router = useRouter();
 
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [birthDate, setBirthDate] = useState<Date | null>(null);
+    const form = useForm({ firstName: '', lastName: '', email: '', phone: '', birthDate: '', password: '', confirmPassword: '' }, RULES);
     const [showDatePicker, setShowDatePicker] = useState(false);
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-
-    const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-    const [loading, setLoading] = useState(false);
 
-    // Validación en vivo — igual que setCustomValidity() de la web
-    const passwordsMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+    const birthDate = form.values.birthDate ? new Date(`${form.values.birthDate}T00:00:00`) : null;
+    const birthField = form.field('birthDate');
 
-    async function handleSubmit() {
-        setError(null);
+    function handleSubmit() {
+        form.submit(async (values) => {
+            const result = await register({
+                email: values.email.trim(),
+                password: values.password,
+                confirmPassword: values.confirmPassword,
+                firstName: values.firstName.trim(),
+                lastName: values.lastName.trim(),
+                phone: values.phone.trim(),
+                birthDate: values.birthDate,
+            });
+            if (result.error) return result.error;
 
-        if (!birthDate) {
-            setError('Por favor selecciona tu fecha de nacimiento.');
-            return;
-        }
-
-        setLoading(true);
-        const result = await register({
-            email,
-            password,
-            confirmPassword,
-            firstName,
-            lastName,
-            phone,
-            birthDate: formatDateForInput(birthDate),
+            // register() ya cerró la sesión automáticamente (decisión del item 004).
+            // Mostramos confirmación y mandamos a login manual, igual que la web.
+            setSuccess(true);
+            setTimeout(() => router.replace('/login'), 1500);
+            return null;
         });
-        setLoading(false);
-
-        if (result.error) {
-            setError(result.error);
-            return;
-        }
-
-        // register() ya cerró la sesión automáticamente (decisión del item 004).
-        // Mostramos confirmación y mandamos a login manual, igual que la web.
-        setSuccess(true);
-        setTimeout(() => router.replace('/login'), 1500);
     }
-
-    const isFormValid =
-        firstName && lastName && email && phone && birthDate && password && confirmPassword && !passwordsMismatch;
-
-    const inputStyle = {
-        flex: 1,
-        minHeight: FieldHeight,
-        minWidth: 0,
-        paddingVertical: Spacing.snug,
-        paddingHorizontal: Spacing.two,
-        fontSize: 15,
-        fontFamily: 'Inter_400Regular',
-        color: colors.text,
-    } as const;
-
-    const fieldWrapperStyle = {
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
-        backgroundColor: colors.backgroundElement,
-        borderRadius: Radius.xl,
-        paddingHorizontal: Spacing.three,
-    };
-
-    const labelStyle = {
-        fontFamily: 'Inter_600SemiBold',
-        fontSize: 13,
-        color: colors.text,
-        marginBottom: Spacing.one,
-    } as const;
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-                <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-                    <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
-                        {/* Header */}
-                        <View style={{ marginBottom: Spacing.four }}>
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text, marginBottom: Spacing.one }}>
+                <ScrollView ref={form.scrollRef} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+                    <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, maxWidth: 480, width: '100%', alignSelf: 'center', gap: Spacing.three }}>
+                        <View style={{ marginBottom: Spacing.two, gap: Spacing.one }}>
+                            <Text variant="display" accessibilityRole="header">
                                 Crear cuenta
-                            </ThemedText>
-                            <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 16, color: colors.textSecondary }}>
+                            </Text>
+                            <Text variant="body" color="textSecondary">
                                 Únete a la comunidad de ArtRider hoy.
-                            </ThemedText>
+                            </Text>
                         </View>
 
-                        {/* Success banner */}
-                        {success && (
-                            <View
-                                style={{
-                                    backgroundColor: StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.bg,
-                                    borderRadius: Radius.lg,
-                                    padding: Spacing.three,
-                                    marginBottom: Spacing.three,
-                                }}
-                            >
-                                <ThemedText style={{ color: StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.fg, fontFamily: 'Inter_600SemiBold', fontSize: 14 }}>
+                        {success ? (
+                            <View accessibilityRole="alert" style={{ backgroundColor: colors.primarySoft, borderRadius: Radius.lg, padding: Spacing.three }}>
+                                <Text variant="bodyStrong" color="primary">
                                     ¡Cuenta creada! Redirigiendo a inicio de sesión...
-                                </ThemedText>
+                                </Text>
                             </View>
-                        )}
+                        ) : null}
 
-                        {/* Error banner */}
-                        {error && (
-                            <View
+                        {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} /> : null}
+
+                        <FormField
+                            label="Nombre"
+                            placeholder="Tu nombre"
+                            autoComplete="given-name"
+                            autoCapitalize="words"
+                            returnKeyType="next"
+                            maxLength={50}
+                            onSubmitEditing={() => form.field('lastName').inputRef.current?.focus()}
+                            {...form.field('firstName')}
+                        />
+                        <FormField
+                            label="Apellido"
+                            placeholder="Tu apellido"
+                            autoComplete="family-name"
+                            autoCapitalize="words"
+                            returnKeyType="next"
+                            maxLength={50}
+                            onSubmitEditing={() => form.field('email').inputRef.current?.focus()}
+                            {...form.field('lastName')}
+                        />
+                        <FormField
+                            label="Correo electrónico"
+                            leftIcon="mail-outline"
+                            placeholder="tu@email.com"
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            autoCorrect={false}
+                            returnKeyType="next"
+                            maxLength={254}
+                            onSubmitEditing={() => form.field('phone').inputRef.current?.focus()}
+                            {...form.field('email')}
+                        />
+                        <FormField
+                            label="Teléfono de contacto"
+                            leftIcon="call-outline"
+                            placeholder="+593 999 999 999"
+                            keyboardType="phone-pad"
+                            autoComplete="tel"
+                            maxLength={15}
+                            {...form.field('phone')}
+                        />
+
+                        {/* Fecha de nacimiento: selector (no es un campo de texto) con el mismo estilo de error. */}
+                        <View ref={form.viewRefFor('birthDate')} style={{ gap: Spacing.two }}>
+                            <Text variant="bodyStrong">Fecha de nacimiento</Text>
+                            <Pressable
+                                onPress={() => setShowDatePicker(true)}
+                                accessibilityRole="button"
+                                accessibilityLabel="Fecha de nacimiento"
+                                accessibilityValue={{ text: birthDate ? formatDateForDisplay(birthDate) : 'Sin seleccionar' }}
+                                accessibilityHint={birthField.error ?? 'Abre el selector de fecha'}
                                 style={{
-                                    backgroundColor: colors.destructiveSoft,
-                                    borderRadius: Radius.lg,
-                                    padding: Spacing.three,
-                                    marginBottom: Spacing.three,
                                     flexDirection: 'row',
+                                    alignItems: 'center',
                                     gap: Spacing.two,
-                                    alignItems: 'flex-start',
+                                    minHeight: FieldHeight,
+                                    backgroundColor: colors.backgroundElement,
+                                    borderRadius: Radius.xl,
+                                    borderWidth: 1.5,
+                                    borderColor: birthField.error ? colors.destructive : 'transparent',
+                                    paddingHorizontal: Spacing.three,
                                 }}
                             >
-                                <Ionicons name="alert-circle" size={20} color={colors.destructive} />
-                                <ThemedText style={{ color: colors.destructive, fontFamily: 'Inter_500Medium', fontSize: 14, flex: 1 }}>
-                                    {error}
-                                </ThemedText>
-                            </View>
-                        )}
-
-                        {/* Nombre y Apellido */}
-                        <View style={{ flexDirection: 'row', gap: Spacing.two, marginBottom: Spacing.three }}>
-                            <View style={{ flex: 1, minWidth: 0 }}>
-                                <ThemedText style={labelStyle}>Nombre</ThemedText>
-                                <View style={fieldWrapperStyle}>
-                                    <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
-                                    <TextInput
-                                        value={firstName}
-                                        onChangeText={setFirstName}
-                                        placeholder="Tu nombre"
-                                        placeholderTextColor={colors.textSecondary}
-                                        maxLength={50}
-                                        style={inputStyle}
-                                    />
-                                </View>
-                            </View>
-                            <View style={{ flex: 1, minWidth: 0 }}>
-                                <ThemedText style={labelStyle}>Apellido</ThemedText>
-                                <View style={fieldWrapperStyle}>
-                                    <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
-                                    <TextInput
-                                        value={lastName}
-                                        onChangeText={setLastName}
-                                        placeholder="Tu apellido"
-                                        placeholderTextColor={colors.textSecondary}
-                                        maxLength={50}
-                                        style={inputStyle}
-                                    />
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Email */}
-                        <View style={{ marginBottom: Spacing.three }}>
-                            <ThemedText style={labelStyle}>Correo electrónico</ThemedText>
-                            <View style={fieldWrapperStyle}>
-                                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
-                                <TextInput
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    placeholder="tu@email.com"
-                                    placeholderTextColor={colors.textSecondary}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                    maxLength={254}
-                                    style={inputStyle}
-                                />
-                            </View>
-                        </View>
-
-                        {/* Teléfono */}
-                        <View style={{ marginBottom: Spacing.three }}>
-                            <ThemedText style={labelStyle}>Teléfono de contacto</ThemedText>
-                            <View style={fieldWrapperStyle}>
-                                <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
-                                <TextInput
-                                    value={phone}
-                                    onChangeText={setPhone}
-                                    placeholder="+593 999 999 999"
-                                    placeholderTextColor={colors.textSecondary}
-                                    keyboardType="phone-pad"
-                                    maxLength={15}
-                                    style={inputStyle}
-                                />
-                            </View>
-                        </View>
-
-                        {/* Fecha de nacimiento */}
-                        <View style={{ marginBottom: Spacing.three }}>
-                            <ThemedText style={labelStyle}>Fecha de nacimiento</ThemedText>
-                            <Pressable onPress={() => setShowDatePicker(true)} style={fieldWrapperStyle}>
-                                <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
-                                <View style={inputStyle}>
-                                    <ThemedText style={{ color: birthDate ? colors.text : colors.textSecondary, fontFamily: 'Inter_400Regular', fontSize: 15 }}>
-                                        {birthDate ? formatDateForDisplay(birthDate) : 'Selecciona una fecha'}
-                                    </ThemedText>
-                                </View>
+                                <Ionicons name="calendar-outline" size={18} color={birthField.error ? colors.destructive : colors.textSecondary} />
+                                <Text variant="body" color={birthDate ? 'text' : 'textSecondary'} style={{ flex: 1 }}>
+                                    {birthDate ? formatDateForDisplay(birthDate) : 'Selecciona una fecha'}
+                                </Text>
                             </Pressable>
+                            {birthField.error ? (
+                                <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one }}>
+                                    <Ionicons name="alert-circle" size={16} color={colors.destructive} style={{ marginTop: Spacing.half }} />
+                                    <Text variant="caption" color="destructive" style={{ flex: 1, minWidth: 0 }}>
+                                        {birthField.error}
+                                    </Text>
+                                </View>
+                            ) : null}
                             {showDatePicker && (
                                 <DateTimePicker
                                     value={birthDate ?? new Date(2000, 0, 1)}
                                     mode="date"
                                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                                     maximumDate={new Date()}
-                                    onChange={(event, selectedDate) => {
-                                        setShowDatePicker(Platform.OS === 'ios'); // iOS: spinner queda abierto hasta que el usuario confirme
-                                        if (selectedDate) setBirthDate(selectedDate);
+                                    onChange={(_event, selectedDate) => {
+                                        setShowDatePicker(Platform.OS === 'ios'); // iOS: el spinner queda abierto hasta confirmar
+                                        if (selectedDate) {
+                                            birthField.onChangeText(formatDateForInput(selectedDate));
+                                            if (Platform.OS !== 'ios') birthField.onBlur();
+                                        }
                                     }}
                                 />
                             )}
                         </View>
 
-                        {/* Contraseña */}
-                        <View style={{ marginBottom: Spacing.three }}>
-                            <ThemedText style={labelStyle}>Contraseña</ThemedText>
-                            <View style={fieldWrapperStyle}>
-                                <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
-                                <TextInput
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={colors.textSecondary}
-                                    secureTextEntry
-                                    autoCapitalize="none"
-                                    maxLength={72}
-                                    style={inputStyle}
-                                />
-                            </View>
-                        </View>
+                        <FormField
+                            label="Contraseña"
+                            leftIcon="lock-closed-outline"
+                            placeholder="••••••••"
+                            hint="Mínimo 6 caracteres."
+                            secureTextEntry
+                            autoCapitalize="none"
+                            autoComplete="new-password"
+                            returnKeyType="next"
+                            maxLength={72}
+                            onSubmitEditing={() => form.field('confirmPassword').inputRef.current?.focus()}
+                            {...form.field('password')}
+                        />
+                        <FormField
+                            label="Confirmar contraseña"
+                            leftIcon="lock-closed-outline"
+                            placeholder="••••••••"
+                            secureTextEntry
+                            autoCapitalize="none"
+                            autoComplete="new-password"
+                            returnKeyType="go"
+                            maxLength={72}
+                            onSubmitEditing={handleSubmit}
+                            {...form.field('confirmPassword')}
+                        />
 
-                        {/* Confirmar contraseña */}
-                        <View style={{ marginBottom: Spacing.two }}>
-                            <ThemedText style={labelStyle}>Confirmar contraseña</ThemedText>
-                            <View
-                                style={[
-                                    fieldWrapperStyle,
-                                    passwordsMismatch ? { borderWidth: 1, borderColor: colors.destructive } : null,
-                                ]}
-                            >
-                                <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
-                                <TextInput
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={colors.textSecondary}
-                                    secureTextEntry
-                                    autoCapitalize="none"
-                                    maxLength={72}
-                                    style={inputStyle}
-                                />
-                            </View>
-                            {passwordsMismatch && (
-                                <ThemedText style={{ color: colors.destructive, fontFamily: 'Inter_500Medium', fontSize: 13, marginTop: Spacing.one }}>
-                                    Las contraseñas no coinciden
-                                </ThemedText>
-                            )}
-                        </View>
+                        <Button label="Crear cuenta" onPress={handleSubmit} loading={form.submitting} disabled={success} style={{ marginTop: Spacing.two }} />
 
-                        {/* Submit */}
-                        <Pressable
-                            onPress={handleSubmit}
-                            disabled={loading || !isFormValid}
-                            style={({ pressed }) => ({
-                                backgroundColor: loading || !isFormValid ? colors.backgroundSelected : colors.primary,
-                                borderRadius: Radius.xl,
-                                paddingVertical: Spacing.three,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: pressed ? 0.9 : 1,
-                                marginTop: Spacing.two,
-                            })}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color={colors.onPrimary} />
-                            ) : (
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.onPrimary }}>
-                                    Crear cuenta
-                                </ThemedText>
-                            )}
-                        </Pressable>
-
-                        {/* Footer */}
-                        <View style={{ marginTop: Spacing.five, alignItems: 'center' }}>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
-                                <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.textSecondary }}>¿Ya tienes una cuenta?</ThemedText>
-                                <Link href="/login" asChild>
-                                    <Pressable accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
-                                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.primary }}>Inicia sesión</ThemedText>
-                                    </Pressable>
-                                </Link>
-                            </View>
+                        <View style={{ marginTop: Spacing.four, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+                            <Text variant="body" color="textSecondary">
+                                ¿Ya tienes una cuenta?
+                            </Text>
+                            <Link href="/login" asChild>
+                                <Pressable accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
+                                    <Text variant="bodyStrong" color="primary">
+                                        Inicia sesión
+                                    </Text>
+                                </Pressable>
+                            </Link>
                         </View>
                     </View>
                 </ScrollView>

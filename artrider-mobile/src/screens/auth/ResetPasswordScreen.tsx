@@ -1,29 +1,34 @@
 import { useEffect, useState } from 'react';
-import { View, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useLayout } from '@/hooks/use-layout';
+import { View, Pressable, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius, MinTouch } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { FormErrorBanner, FormField } from '@/components/ui/FormField';
+import { Text } from '@/components/ui/Text';
+import { MinTouch, Spacing } from '@/constants/theme';
+import { useForm } from '@/hooks/useForm';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
 import { supabase } from '@/services/supabase';
+import { minLength, required, sameAs } from '@/utils/validation';
+
+const RULES = {
+    password: [required('Crea una contraseña nueva'), minLength(6, 'La contraseña debe tener al menos 6 caracteres')],
+    confirmPassword: [required('Confirma tu contraseña'), sameAs('password', 'Las contraseñas no coinciden')],
+};
 
 export function ResetPasswordScreen() {
     const { code } = useLocalSearchParams<{ code?: string }>();
     const router = useRouter();
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
     const { gutter } = useLayout();
 
     const [exchanging, setExchanging] = useState(true);
     const [linkError, setLinkError] = useState<string | null>(null);
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const form = useForm({ password: '', confirmPassword: '' }, RULES);
 
     useEffect(() => {
         async function exchange() {
@@ -32,37 +37,26 @@ export function ResetPasswordScreen() {
                 setExchanging(false);
                 return;
             }
-            const { error: err } = await supabase.auth.exchangeCodeForSession(code);
-            if (err) {
-                setLinkError('Este enlace ya expiró o ya fue usado. Solicita uno nuevo.');
+            try {
+                const { error: err } = await supabase.auth.exchangeCodeForSession(code);
+                if (err) setLinkError('Este enlace ya expiró o ya fue usado. Solicita uno nuevo.');
+            } catch {
+                setLinkError('No pudimos validar el enlace. Revisa tu conexión y solicita uno nuevo.');
+            } finally {
+                setExchanging(false);
             }
-            setExchanging(false);
         }
         exchange();
     }, [code]);
 
-    async function handleSubmit() {
-        setError(null);
-        if (password.length < 6) {
-            setError('La contraseña debe tener al menos 6 caracteres.');
-            return;
-        }
-        if (password !== confirmPassword) {
-            setError('Las contraseñas no coinciden.');
-            return;
-        }
-        setLoading(true);
-        const { error: err } = await supabase.auth.updateUser({ password });
-        setLoading(false);
-
-        if (err) {
-            setError('No se pudo actualizar la contraseña. Intenta de nuevo.');
-            return;
-        }
-        setSuccess(true);
-        setTimeout(() => {
-            router.replace('/');
-        }, 1500);
+    function handleSubmit() {
+        form.submit(async (values) => {
+            const { error: err } = await supabase.auth.updateUser({ password: values.password });
+            if (err) return 'No se pudo actualizar la contraseña. Intenta de nuevo.';
+            setSuccess(true);
+            setTimeout(() => router.replace('/'), 1500);
+            return null;
+        });
     }
 
     if (exchanging) {
@@ -75,15 +69,15 @@ export function ResetPasswordScreen() {
 
     if (linkError) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
-                <Ionicons name="alert-circle-outline" size={40} color={colors.destructive} style={{ marginBottom: Spacing.three }} />
-                <ThemedText style={{ fontSize: 15, color: colors.text, textAlign: 'center', marginBottom: Spacing.four }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: gutter, paddingVertical: Spacing.four, gap: Spacing.three }}>
+                <Ionicons name="alert-circle-outline" size={40} color={colors.destructive} />
+                <Text variant="body" style={{ textAlign: 'center' }}>
                     {linkError}
-                </ThemedText>
-                <Pressable onPress={() => router.replace('/login')}>
-                    <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.primary }}>
+                </Text>
+                <Pressable onPress={() => router.replace('/login')} accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center' }}>
+                    <Text variant="bodyStrong" color="primary">
                         Volver a iniciar sesión
-                    </ThemedText>
+                    </Text>
                 </Pressable>
             </SafeAreaView>
         );
@@ -91,11 +85,11 @@ export function ResetPasswordScreen() {
 
     if (success) {
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
-                <Ionicons name="checkmark-circle" size={40} color={colors.primary} style={{ marginBottom: Spacing.three }} />
-                <ThemedText style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: colors.text, textAlign: 'center' }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingHorizontal: gutter, paddingVertical: Spacing.four, gap: Spacing.three }}>
+                <Ionicons name="checkmark-circle" size={40} color={colors.primary} />
+                <Text variant="subtitle" style={{ textAlign: 'center' }}>
                     Contraseña actualizada
-                </ThemedText>
+                </Text>
             </SafeAreaView>
         );
     }
@@ -103,79 +97,46 @@ export function ResetPasswordScreen() {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-                <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
-                    <View style={{ paddingHorizontal: gutter, maxWidth: 480, width: '100%', alignSelf: 'center' }}>
-                        <View style={{ marginBottom: Spacing.five }}>
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 28, color: colors.text, marginBottom: Spacing.one }}>
+                <ScrollView ref={form.scrollRef} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+                    <View style={{ paddingHorizontal: gutter, maxWidth: 480, width: '100%', alignSelf: 'center', gap: Spacing.three }}>
+                        <View style={{ marginBottom: Spacing.three, gap: Spacing.one }}>
+                            <Text variant="display" accessibilityRole="header">
                                 Nueva contraseña
-                            </ThemedText>
-                            <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.textSecondary }}>
+                            </Text>
+                            <Text variant="body" color="textSecondary">
                                 Elige una contraseña nueva para tu cuenta.
-                            </ThemedText>
+                            </Text>
                         </View>
 
-                        {error && (
-                            <View style={{ backgroundColor: colors.destructiveSoft, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.four }}>
-                                <ThemedText style={{ color: colors.destructive, fontFamily: 'Inter_500Medium', fontSize: 14 }}>{error}</ThemedText>
-                            </View>
-                        )}
+                        {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} /> : null}
 
-                        <View style={{ marginBottom: Spacing.three }}>
-                            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.text, marginBottom: Spacing.two }}>
-                                Nueva contraseña
-                            </ThemedText>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.backgroundElement, borderRadius: Radius.xl, paddingHorizontal: Spacing.three }}>
-                                <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
-                                <TextInput
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={colors.textSecondary}
-                                    secureTextEntry
-                                    autoCapitalize="none"
-                                    maxLength={72}
-                                    style={{ flex: 1, minHeight: MinTouch, paddingVertical: Spacing.snug, paddingHorizontal: Spacing.two, fontSize: 15, fontFamily: 'Inter_400Regular', color: colors.text }}
-                                />
-                            </View>
-                        </View>
+                        <FormField
+                            label="Nueva contraseña"
+                            leftIcon="lock-closed-outline"
+                            placeholder="••••••••"
+                            hint="Mínimo 6 caracteres."
+                            secureTextEntry
+                            autoCapitalize="none"
+                            autoComplete="new-password"
+                            returnKeyType="next"
+                            maxLength={72}
+                            onSubmitEditing={() => form.field('confirmPassword').inputRef.current?.focus()}
+                            {...form.field('password')}
+                        />
+                        <FormField
+                            label="Confirmar contraseña"
+                            leftIcon="lock-closed-outline"
+                            placeholder="••••••••"
+                            secureTextEntry
+                            autoCapitalize="none"
+                            autoComplete="new-password"
+                            returnKeyType="go"
+                            maxLength={72}
+                            onSubmitEditing={handleSubmit}
+                            {...form.field('confirmPassword')}
+                        />
 
-                        <View style={{ marginBottom: Spacing.four }}>
-                            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 14, color: colors.text, marginBottom: Spacing.two }}>
-                                Confirmar contraseña
-                            </ThemedText>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.backgroundElement, borderRadius: Radius.xl, paddingHorizontal: Spacing.three }}>
-                                <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
-                                <TextInput
-                                    value={confirmPassword}
-                                    onChangeText={setConfirmPassword}
-                                    placeholder="••••••••"
-                                    placeholderTextColor={colors.textSecondary}
-                                    secureTextEntry
-                                    autoCapitalize="none"
-                                    maxLength={72}
-                                    style={{ flex: 1, minHeight: MinTouch, paddingVertical: Spacing.snug, paddingHorizontal: Spacing.two, fontSize: 15, fontFamily: 'Inter_400Regular', color: colors.text }}
-                                />
-                            </View>
-                        </View>
-
-                        <Pressable
-                            onPress={handleSubmit}
-                            disabled={loading || !password || !confirmPassword}
-                            style={({ pressed }) => ({
-                                backgroundColor: loading || !password || !confirmPassword ? colors.backgroundSelected : colors.primary,
-                                borderRadius: Radius.xl,
-                                paddingVertical: Spacing.three,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                opacity: pressed ? 0.9 : 1,
-                            })}
-                        >
-                            {loading ? <ActivityIndicator color={colors.onPrimary} /> : (
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 16, color: colors.onPrimary }}>
-                                    Actualizar contraseña
-                                </ThemedText>
-                            )}
-                        </Pressable>
+                        <Button label="Actualizar contraseña" onPress={handleSubmit} loading={form.submitting} />
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>

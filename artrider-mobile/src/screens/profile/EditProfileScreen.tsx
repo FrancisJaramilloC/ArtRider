@@ -1,32 +1,37 @@
 import { useState } from 'react';
-import { View, TextInput, Pressable, Image, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Pressable, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
-import { Colors, Spacing, Radius, StatusColors, MinTouch, FieldHeight } from '@/constants/theme';
+import { Button } from '@/components/ui/Button';
+import { FormErrorBanner, FormField } from '@/components/ui/FormField';
+import { Text } from '@/components/ui/Text';
+import { Radius, Spacing } from '@/constants/theme';
+import { useForm } from '@/hooks/useForm';
 import { useLayout } from '@/hooks/use-layout';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
 import { updateProfile } from '@/services/profileService';
+import { maxLength, minLength, phone, required } from '@/utils/validation';
+
+const RULES = {
+    fullName: [required('Ingresa tu nombre completo'), minLength(2, 'El nombre debe tener al menos 2 caracteres'), maxLength(100, 'El nombre admite hasta 100 caracteres')],
+    phone: [required('Ingresa tu teléfono'), phone('Ingresa un teléfono válido, por ejemplo 099 123 4567')],
+};
 
 export function EditProfileScreen() {
-  const { gutter } = useLayout();
+    const { gutter } = useLayout();
     const router = useRouter();
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
     const { profile, refreshProfile } = useAuth();
 
-    const [fullName, setFullName] = useState(profile?.full_name ?? '');
-    const [phone, setPhone] = useState(profile?.phone ?? '');
+    const form = useForm({ fullName: profile?.full_name ?? '', phone: profile?.phone ?? '' }, RULES);
     const [avatarUri, setAvatarUri] = useState<string | null>(profile?.avatar_url ?? null);
     const [avatarMime, setAvatarMime] = useState<string | null>(null);
     const [avatarChanged, setAvatarChanged] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
     async function pickImage() {
@@ -45,49 +50,48 @@ export function EditProfileScreen() {
         }
     }
 
-    async function handleSave() {
-        setError(null);
+    function handleSave() {
         setSuccess(false);
-        if (!fullName.trim() || !phone.trim()) {
-            setError('Completa tu nombre y teléfono.');
-            return;
-        }
-        setSaving(true);
-        const result = await updateProfile({
-            fullName,
-            phone,
-            avatarUri: avatarChanged && avatarUri ? avatarUri : undefined,
-            avatarMimeType: avatarChanged ? (avatarMime ?? undefined) : undefined,
+        form.submit(async (values) => {
+            const result = await updateProfile({
+                fullName: values.fullName,
+                phone: values.phone,
+                avatarUri: avatarChanged && avatarUri ? avatarUri : undefined,
+                avatarMimeType: avatarChanged ? (avatarMime ?? undefined) : undefined,
+            });
+            if (result.error) return result.error;
+            await refreshProfile();
+            setSuccess(true);
+            setTimeout(() => router.back(), 700);
+            return null;
         });
-        setSaving(false);
-
-        if (result.error) {
-            setError(result.error);
-            return;
-        }
-        await refreshProfile();
-        setSuccess(true);
-        setTimeout(() => router.back(), 700);
     }
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-                <ScrollView contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }} keyboardShouldPersistTaps="handled">
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.five }}>
+                <ScrollView ref={form.scrollRef} contentContainerStyle={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, gap: Spacing.three }} keyboardShouldPersistTaps="handled">
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.three }}>
                         <BackButton />
-                        <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 17, color: colors.text }}>Editar perfil</ThemedText>
-                        <View style={{ width: 24 }} />
+                        <Text variant="subtitle" accessibilityRole="header">
+                            Editar perfil
+                        </Text>
+                        <View style={{ width: 44 }} />
                     </View>
 
-                    <Pressable onPress={pickImage} style={{ alignSelf: 'center', marginBottom: Spacing.five }}>
-                        <View style={{ width: 96, height: 96, borderRadius: 48, overflow: 'hidden', backgroundColor: colors.backgroundElement, alignItems: 'center', justifyContent: 'center' }}>
+                    <Pressable
+                        onPress={pickImage}
+                        accessibilityRole="button"
+                        accessibilityLabel="Cambiar foto de perfil"
+                        style={{ alignSelf: 'center', marginBottom: Spacing.three }}
+                    >
+                        <View style={{ width: 96, height: 96, borderRadius: Radius.full, overflow: 'hidden', backgroundColor: colors.backgroundElement, alignItems: 'center', justifyContent: 'center' }}>
                             {avatarUri ? (
                                 <Image source={{ uri: avatarUri }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
                             ) : (
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.textSecondary }}>
-                                    {(fullName || '?').charAt(0).toUpperCase()}
-                                </ThemedText>
+                                <Text variant="display" color="textSecondary">
+                                    {(form.values.fullName || '?').charAt(0).toUpperCase()}
+                                </Text>
                             )}
                         </View>
                         <View
@@ -97,7 +101,7 @@ export function EditProfileScreen() {
                                 right: 0,
                                 width: 30,
                                 height: 30,
-                                borderRadius: 15,
+                                borderRadius: Radius.full,
                                 backgroundColor: colors.primary,
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -109,69 +113,36 @@ export function EditProfileScreen() {
                         </View>
                     </Pressable>
 
-                    <View style={{ marginBottom: Spacing.three }}>
-                        <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: Spacing.two }}>
-                            Nombre completo
-                        </ThemedText>
-                        <TextInput
-                            value={fullName}
-                            onChangeText={setFullName}
-                            placeholder="Tu nombre"
-                            placeholderTextColor={colors.textSecondary}
-                            style={{
-                                backgroundColor: colors.backgroundElement,
-                                borderRadius: Radius.lg,
-                                paddingHorizontal: Spacing.three,
-                                minHeight: FieldHeight,
-                                paddingVertical: Spacing.snug,
-                                fontSize: 15,
-                                color: colors.text,
-                            }}
-                        />
-                    </View>
+                    {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} /> : null}
 
-                    <View style={{ marginBottom: Spacing.four }}>
-                        <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: Spacing.two }}>
-                            Teléfono
-                        </ThemedText>
-                        <TextInput
-                            value={phone}
-                            onChangeText={setPhone}
-                            placeholder="099 123 4567"
-                            placeholderTextColor={colors.textSecondary}
-                            keyboardType="phone-pad"
-                            style={{
-                                backgroundColor: colors.backgroundElement,
-                                borderRadius: Radius.lg,
-                                paddingHorizontal: Spacing.three,
-                                minHeight: FieldHeight,
-                                paddingVertical: Spacing.snug,
-                                fontSize: 15,
-                                color: colors.text,
-                            }}
-                        />
-                    </View>
+                    <FormField
+                        label="Nombre completo"
+                        placeholder="Tu nombre"
+                        autoComplete="name"
+                        autoCapitalize="words"
+                        returnKeyType="next"
+                        maxLength={100}
+                        onSubmitEditing={() => form.field('phone').inputRef.current?.focus()}
+                        {...form.field('fullName')}
+                    />
+                    <FormField
+                        label="Teléfono"
+                        placeholder="099 123 4567"
+                        keyboardType="phone-pad"
+                        autoComplete="tel"
+                        maxLength={15}
+                        {...form.field('phone')}
+                    />
 
-                    {error && (
-                        <View style={{ backgroundColor: colors.destructiveSoft, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.three }}>
-                            <ThemedText style={{ color: colors.destructive, fontSize: 13.5 }}>{error}</ThemedText>
+                    {success ? (
+                        <View accessibilityRole="alert" style={{ backgroundColor: colors.primarySoft, borderRadius: Radius.lg, padding: Spacing.three }}>
+                            <Text variant="bodyStrong" color="primary">
+                                ¡Perfil actualizado!
+                            </Text>
                         </View>
-                    )}
-                    {success && (
-                        <View style={{ backgroundColor: StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.bg, borderRadius: Radius.lg, padding: Spacing.three, marginBottom: Spacing.three }}>
-                            <ThemedText style={{ color: StatusColors[scheme === 'dark' ? 'dark' : 'light'].confirmed.fg, fontSize: 13.5 }}>¡Perfil actualizado!</ThemedText>
-                        </View>
-                    )}
+                    ) : null}
 
-                    <Pressable
-                        onPress={handleSave}
-                        disabled={saving}
-                        style={{ backgroundColor: colors.primary, paddingVertical: Spacing.three, borderRadius: Radius.lg, alignItems: 'center' }}
-                    >
-                        {saving ? <ActivityIndicator color={colors.onPrimary} /> : (
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.onPrimary }}>Guardar cambios</ThemedText>
-                        )}
-                    </Pressable>
+                    <Button label="Guardar cambios" onPress={handleSave} loading={form.submitting} disabled={success} />
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
