@@ -4,6 +4,7 @@ import { useActionState, useRef } from "react";
 import { signUp } from "@/services/authService";
 import Link from "next/link";
 import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
+import ResendConfirmation from "@/components/auth/ResendConfirmation";
 
 // componente para campos de formulario con icono
 function InputField({
@@ -139,6 +140,25 @@ export default function RegisterPage() {
 
         {/* div con el formulario de registro */}
         <div className="w-full max-w-md mx-auto">
+          {state?.pendingEmail ? (
+            /* cuenta creada sin sesión: falta confirmar el correo */
+            <div className="text-center space-y-6">
+              <div className="mx-auto w-16 h-16 rounded-full bg-[#875B9A]/10 flex items-center justify-center text-[#875B9A]">
+                <IconEmail />
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-[2rem] font-extrabold text-gray-900 tracking-tight">Verifica tu correo</h1>
+                <p className="text-[1rem] text-gray-500 font-medium">
+                  Te enviamos un enlace a <span className="font-bold text-gray-900 break-all">{state.pendingEmail}</span>. Ábrelo para activar tu cuenta.
+                </p>
+              </div>
+              <ResendConfirmation email={state.pendingEmail} startCooling />
+              <Link href="/login" className="inline-block font-bold text-[#875B9A] hover:text-[#6a437a] transition-colors underline-offset-4 hover:underline">
+                Ya confirmé, iniciar sesión
+              </Link>
+            </div>
+          ) : (
+          <>
           {/* header del formulario */}
           <div className="mb-8">
             <h1 className="text-[2rem] font-extrabold text-gray-900 tracking-tight mb-2">Crear cuenta</h1>
@@ -204,6 +224,8 @@ export default function RegisterPage() {
               </Link>
             </p>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>

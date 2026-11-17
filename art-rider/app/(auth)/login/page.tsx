@@ -4,6 +4,7 @@ import { useActionState, Suspense } from "react";
 import { signIn } from "@/services/authService";
 import Link from "next/link";
 import ArtRiderLogo from "@/components/layout/ArtRiderLogo";
+import ResendConfirmation from "@/components/auth/ResendConfirmation";
 import { useSearchParams } from "next/navigation";
 
 /* funcion para inicio de sesion */
@@ -11,6 +12,12 @@ function LoginContent() {
   const [state, formAction, isPending] = useActionState(signIn, null);
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/';
+  // El callback de confirmación redirige aquí con ?error=confirm_failed si el enlace expiró o ya se usó.
+  const callbackError =
+    searchParams.get('error') === 'confirm_failed'
+      ? 'El enlace de confirmación expiró o ya fue usado. Inicia sesión; si aún no confirmaste, podrás reenviar el correo.'
+      : null;
+  const errorMessage = state?.error ?? callbackError;
 /* return de la funcion de login */
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white font-sans">
@@ -81,12 +88,17 @@ function LoginContent() {
           </div>
 
           {/* Error Banner */}
-          {state?.error && (
+          {errorMessage && (
             <div className="mb-6 rounded-2xl bg-red-50/80 backdrop-blur-sm p-4 border border-red-100 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
               <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <p className="text-sm text-red-700 font-medium">{state.error}</p>
+              <p className="text-sm text-red-700 font-medium">{errorMessage}</p>
+            </div>
+          )}
+          {state?.code === 'email_not_confirmed' && state.email && (
+            <div className="mb-6">
+              <ResendConfirmation email={state.email} />
             </div>
           )}
           {/* formulario */}

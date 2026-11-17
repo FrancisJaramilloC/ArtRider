@@ -5,9 +5,20 @@
 import { createSupabaseServerClient } from '@/lib/supabaseServer';
 import { createSupabaseAdminClient } from '@/lib/supabaseAdmin';
 import { redirect } from 'next/navigation';
+import { getAuthCallbackUrl } from '@/lib/siteUrl';
+
+export type AuthActionState = {
+  error?: string;
+  /** signIn: permite mostrar «Reenviar correo» cuando falta confirmar. */
+  code?: 'email_not_confirmed';
+  /** Correo al que se debe reenviar el enlace de confirmación. */
+  email?: string;
+  /** signUp: cuenta creada sin sesión; falta confirmar el correo. */
+  pendingEmail?: string;
+} | null;
 
 //  Función de registro
-export async function signUp(prevState: any, formData: FormData) {
+export async function signUp(prevState: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const confirmPassword = formData.get('confirmPassword') as string;
@@ -57,17 +68,21 @@ export async function signUp(prevState: any, formData: FormData) {
   }
 
   //  Intenta crear la cuenta
+  let hasSession = false;
   try {
     const supabase = await createSupabaseServerClient();
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: { emailRedirectTo: await getAuthCallbackUrl() },
     });
     
     if (authError) {
       console.error('SignUp Auth Error Full:', authError);
       return { error: authError.message };
     }
+
+    hasSession = !!authData.session;
 
     if (authData.user) {
       // Supabase "Prevent Email Enumeration" active: If identities array is empty,
@@ -104,18 +119,48 @@ export async function signUp(prevState: any, formData: FormData) {
         return { error: `Account created but failed to initialize profile: ${insertError.message}` };
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Technical Error during signUp Full object:', error);
     // User Friendly Fallback protecting system traces
     return { error: 'We could not create your account at this time. Please try again.' };
   }
 
-  //  Redirige al usuario a la página de inicio
-  redirect('/login');
+  //  Con «Confirm email» activo no hay sesión: se pide confirmar el correo en lugar de redirigir en silencio.
+  if (!hasSession) {
+    return { pendingEmail: email };
+  }
+
+  redirect('/');
+}
+
+//  Reenvía el correo de confirmación de registro
+export async function resendConfirmation(email: string): Promise<{ error?: string }> {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: 'Ingresa un correo electrónico válido.' };
+  }
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: await getAuthCallbackUrl() },
+    });
+    if (error) {
+      if (error.status === 429 || /rate limit|seconds/i.test(error.message)) {
+        return { error: 'Espera un momento antes de volver a pedir el correo.' };
+      }
+      console.error('Resend confirmation error:', error.message);
+      return { error: 'No pudimos reenviar el correo. Intenta de nuevo.' };
+    }
+    return {};
+  } catch (error) {
+    console.error('Technical Error during resendConfirmation:', error);
+    return { error: 'No pudimos reenviar el correo. Intenta de nuevo.' };
+  }
 }
 
 //  Función de inicio de sesión
-export async function signIn(prevState: any, formData: FormData) {
+export async function signIn(prevState: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const rawRedirect = (formData.get('redirectUrl') as string) || '/';
@@ -136,11 +181,14 @@ export async function signIn(prevState: any, formData: FormData) {
 
     //  Maneja los errores de inicio de sesión
     if (error) {
+      if (error.code === 'email_not_confirmed' || /email not confirmed/i.test(error.message)) {
+        return { error: 'Aún no confirmas tu correo. Revisa tu bandeja de entrada o reenvía el enlace.', code: 'email_not_confirmed', email };
+      }
       console.error('Error de inicio de sesión:', error.message);
       return { error: 'El correo electrónico o la contraseña son incorrectos. Por favor intenta de nuevo.' };
     }
-  } catch (error: any) {
-    console.error('Error técnico durante el inicio de sesión:', error.message || error);
+  } catch (error: unknown) {
+    console.error('Error técnico durante el inicio de sesión:', error instanceof Error ? error.message : error);
     // User Friendly Fallback protecting system traces
     return { error: 'Un error inesperado ocurrió durante el inicio de sesión. Por favor intenta de nuevo.' };
   }
@@ -158,8 +206,8 @@ export async function signOut() {
     if (error) {
       console.error('Error al cerrar sesión:', error.message);
     }
-  } catch (error: any) {
-    console.error('Error técnico al cerrar sesión:', error.message || error);
+  } catch (error: unknown) {
+    console.error('Error técnico al cerrar sesión:', error instanceof Error ? error.message : error);
   }
 
   //  Redirige al usuario a la página de inicio de sesión
