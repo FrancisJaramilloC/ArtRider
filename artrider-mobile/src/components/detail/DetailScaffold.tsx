@@ -10,6 +10,7 @@ import { ImageViewer } from '@/components/listing/ImageViewer';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import type { ErrorInfo } from '@/utils/errors';
+import { Text } from '@/components/ui/Text';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Radius, Rhythm, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
@@ -23,6 +24,8 @@ export type DetailScaffoldProps = {
   images: string[];
   esFavorito: boolean;
   onToggleFavorito: () => void;
+  /** Aviso discreto bajo la galería (p. ej. fotos que no cargaron). */
+  notice?: string;
   /** Barra inferior fija (StickyFooter). */
   footer?: ReactNode;
   children: ReactNode;
@@ -32,9 +35,9 @@ export type DetailScaffoldProps = {
  * Armazón común del detalle de equipo y de paquete: scroll nativo con la galería arriba, cabecera fija
  * (atrás/corazón siempre visibles), visor a pantalla completa y barra de reserva fija abajo.
  */
-export function DetailScaffold({ title, images, esFavorito, onToggleFavorito, footer, children }: DetailScaffoldProps) {
+export function DetailScaffold({ title, images, esFavorito, onToggleFavorito, notice, footer, children }: DetailScaffoldProps) {
   const colors = useTheme();
-  const { insets } = useLayout();
+  const { insets, gutter } = useLayout();
   const { width } = useWindowDimensions();
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
@@ -53,6 +56,13 @@ export function DetailScaffold({ title, images, esFavorito, onToggleFavorito, fo
         contentContainerStyle={{ paddingBottom: CONTENT_BOTTOM_GAP }}
       >
         <ImageGallery images={images} onPressImage={setViewerIndex} />
+        {notice ? (
+          <View accessibilityRole="alert" style={{ paddingHorizontal: gutter, paddingTop: Spacing.two }}>
+            <Text variant="caption" color="textSecondary">
+              {notice}
+            </Text>
+          </View>
+        ) : null}
         <DetailSheet>{children}</DetailSheet>
       </Animated.ScrollView>
 

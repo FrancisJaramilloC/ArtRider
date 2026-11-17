@@ -181,3 +181,14 @@ export async function getListingReviews(listingId: string): Promise<ListingRevie
 
     return (data ?? []) as ListingReview[];
 }
+
+/**
+ * Fotos de galería del equipo (columna `listings.gallery_images TEXT[]`, en orden de subida). Solo lectura.
+ * Lanza si la columna no existe o la lectura falla: el detalle lo trata como un aviso y muestra la portada.
+ */
+export async function getListingGallery(listingId: string): Promise<string[]> {
+    const { data, error } = await supabase.from('listings').select('gallery_images').eq('id', listingId).single();
+    if (error) throw new Error(`[catalogService] getListingGallery: ${error.message} (${error.code ?? 'sin código'})`);
+    const raw = (data as { gallery_images?: unknown } | null)?.gallery_images;
+    return Array.isArray(raw) ? raw.filter((u): u is string => typeof u === 'string' && u.length > 0) : [];
+}

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, View, useWindowDimensions, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,6 +87,12 @@ export function ImageGallery({ images, onPressImage }: ImageGalleryProps) {
   const listRef = useRef<FlatList<string>>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const multiple = images.length > 1;
+
+  // Precarga la foto siguiente para que el swipe no muestre el placeholder.
+  useEffect(() => {
+    const next = images[activeIndex + 1];
+    if (next) Image.prefetch(next, { cachePolicy: 'memory-disk' }).catch(() => {});
+  }, [activeIndex, images]);
 
   function handleScroll(e: NativeSyntheticEvent<NativeScrollEvent>) {
     const next = Math.round(e.nativeEvent.contentOffset.x / width);

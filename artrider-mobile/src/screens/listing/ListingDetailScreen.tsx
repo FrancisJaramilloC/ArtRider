@@ -10,7 +10,7 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 import { Text } from '@/components/ui/Text';
 import { Radius, Rhythm, Spacing } from '@/constants/theme';
 import { CATEGORY_LABELS } from '@/constants/categories';
-import { getListingByIdWithProvider, getListingRatings, getListingReviews, type ListingWithProvider, type ListingReview } from '@/services/catalogService';
+import { getListingByIdWithProvider, getListingGallery, getListingRatings, getListingReviews, type ListingWithProvider, type ListingReview } from '@/services/catalogService';
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
 import { getListingTotalUnits } from '@/services/availabilityService';
@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/utils/format';
 import { loadRelatedListings } from './relatedListings';
 
-type ListingBundle = { listing: ListingWithProvider | null; rating: number; totalUnits: number | null; reviews: ListingReview[]; fav: boolean };
+type ListingBundle = { listing: ListingWithProvider | null; rating: number; totalUnits: number | null; reviews: ListingReview[]; fav: boolean; gallery: string[]; galleryFailed: boolean };
 
 export function ListingDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,14 +32,21 @@ export function ListingDetailScreen() {
     const { status, data: bundle, error, reload } = useAsyncData<ListingBundle>(
         async () => {
             const listing = await getListingByIdWithProvider(id);
-            if (!listing) return { listing: null, rating: 0, totalUnits: null, reviews: [], fav: false };
-            const [ratingsMap, totalUnits, reviews, favIds] = await Promise.all([
+            if (!listing) return { listing: null, rating: 0, totalUnits: null, reviews: [], fav: false, gallery: [], galleryFailed: false };
+            let galleryFailed = false;
+            const [ratingsMap, totalUnits, reviews, favIds, gallery] = await Promise.all([
                 getListingRatings([listing.id]).catch(() => ({}) as Record<string, number>),
                 getListingTotalUnits(listing.id).catch(() => null),
                 getListingReviews(listing.id).catch(() => [] as ListingReview[]),
                 session?.user ? getUserFavIds().catch(() => null) : Promise.resolve(null),
+                // Solo la galería: si falla, el detalle sigue con la portada y un aviso.
+                getListingGallery(listing.id).catch((e) => {
+                    galleryFailed = true;
+                    console.warn(e instanceof Error ? e.message : e);
+                    return [] as string[];
+                }),
             ]);
-            return { listing, rating: ratingsMap[listing.id] ?? 0, totalUnits, reviews, fav: favIds?.equipoIds.includes(id) ?? false };
+            return { listing, rating: ratingsMap[listing.id] ?? 0, totalUnits, reviews, fav: favIds?.equipoIds.includes(id) ?? false, gallery, galleryFailed };
         },
         { enabled: !!id, deps: [id, session] },
     );
@@ -100,7 +107,8 @@ export function ListingDetailScreen() {
 
     const catLabel = CATEGORY_LABELS[listing.category ?? ''] ?? listing.category ?? 'Equipo';
     const isOwnListing = session?.user?.id && listing.provider?.user_id === session.user.id;
-    const images = [listing.cover_image_url].filter((x): x is string => Boolean(x));
+    // Portada primero y luego la galería, sin duplicados (la portada suele repetirse como foto 1).
+    const images = Array.from(new Set([listing.cover_image_url, ...(bundle?.gallery ?? [])].filter((x): x is string => Boolean(x))));
     const { latitude, longitude } = listing.address ?? {};
     const specs: SpecItem[] = [
         listing.brand ? { label: 'Marca', value: listing.brand } : null,
@@ -113,6 +121,7 @@ export function ListingDetailScreen() {
             images={images}
             esFavorito={esFavorito}
             onToggleFavorito={handleToggleFavorito}
+            notice={bundle?.galleryFailed ? "No pudimos cargar todas las fotos. Mostramos la portada." : undefined}
             footer={
                 isOwnListing ? null : (
                     <DetailBottomBar
