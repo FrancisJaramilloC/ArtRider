@@ -236,3 +236,10 @@ export const Shadows = {
 
 /** Relaciones de aspecto únicas para imágenes. */
 export const Aspect = { card: 4 / 3, hero: 16 / 10, square: 1 } as const;
+
+
+/** Tamaños propios de los asistentes (título de paso y precio grande): sobre la escala `Type`, sin números sueltos. */
+export const WizardType = {
+  stepTitle: { fontSize: 28, lineHeight: 34 },
+  bigNumber: { fontSize: 48, lineHeight: 56 },
+} as const;

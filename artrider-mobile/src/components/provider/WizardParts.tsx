@@ -1,0 +1,197 @@
+import type { ReactNode, RefObject } from 'react';
+import { Pressable, TextInput, View, type TextInputInstance } from 'react-native';
+import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+
+import { Button } from '@/components/ui/Button';
+import { Text } from '@/components/ui/Text';
+import { Aspect, MinTouch, Radius, Rhythm, Spacing, WizardType } from '@/constants/theme';
+import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
+import type { FieldBinding } from '@/hooks/useForm';
+import { formatPrice } from '@/utils/format';
+
+/** Aviso de error de un paso que no es un campo de texto (categoría, foto, ubicación, equipos). */
+export function FieldError({ message }: { message: string }) {
+  const colors = useTheme();
+  return (
+    <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one }}>
+      <Ionicons name="alert-circle" size={16} color={colors.destructive} style={{ marginTop: Spacing.half }} />
+      <Text variant="caption" color="destructive" style={{ flex: 1, minWidth: 0 }}>
+        {message}
+      </Text>
+    </View>
+  );
+}
+
+/** Abre la galería y devuelve la foto elegida (sin forzar recorte); null si se cancela o no hay permiso. */
+export async function pickCoverImage(): Promise<{ uri: string; mime: string } | null> {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!permission.granted) return null;
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+  if (result.canceled || !result.assets[0]) return null;
+  return { uri: result.assets[0].uri, mime: result.assets[0].mimeType ?? 'image/jpeg' };
+}
+
+/** Paso «Foto»: área 4:3 con «Añadir foto» o vista previa con «Cambiar» y «Quitar», más consejos cortos. */
+export function PhotoStep({ uri, onPick, onRemove, error, tip }: { uri: string | null; onPick: () => void; onRemove: () => void; error: string | null; tip: string }) {
+  const colors = useTheme();
+  return (
+    <View style={{ gap: Rhythm.titleToContent }}>
+      {uri ? (
+        <>
+          <View style={{ aspectRatio: Aspect.card, borderRadius: Radius.card, overflow: 'hidden', backgroundColor: colors.imageBackdrop, borderWidth: 1, borderColor: colors.border }}>
+            <Image source={{ uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" accessibilityIgnoresInvertColors />
+          </View>
+          <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+            <Button label="Cambiar" icon="swap-horizontal" variant="tonal" size="sm" fullWidth={false} onPress={onPick} />
+            <Button label="Quitar" icon="trash-outline" variant="ghost" size="sm" fullWidth={false} onPress={onRemove} />
+          </View>
+        </>
+      ) : (
+        <Pressable
+          onPress={onPick}
+          accessibilityRole="button"
+          accessibilityLabel="Añadir foto"
+          style={({ pressed }) => ({
+            aspectRatio: Aspect.card,
+            borderRadius: Radius.card,
+            borderWidth: 2,
+            borderStyle: 'dashed',
+            borderColor: error ? colors.destructive : colors.border,
+            backgroundColor: colors.backgroundElement,
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: Spacing.two,
+            opacity: pressed ? 0.85 : 1,
+          })}
+        >
+          <Ionicons name="camera-outline" size={40} color={colors.primary} />
+          <Text variant="bodyStrong" color="primary">
+            Añadir foto
+          </Text>
+        </Pressable>
+      )}
+      {error ? <FieldError message={error} /> : null}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two }}>
+        <Ionicons name="bulb-outline" size={18} color={colors.textSecondary} style={{ marginTop: Spacing.half }} />
+        <Text variant="caption" color="textSecondary" style={{ flex: 1 }}>
+          {tip}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+/** Precio grande y centrado: «$» + número (48) + «/día», teclado decimal. Usa el binding de `useForm`. */
+export function BigPriceInput({ binding, onChangeText, children }: { binding: FieldBinding; onChangeText: (v: string) => void; children?: ReactNode }) {
+  const colors = useTheme();
+  return (
+    <View style={{ gap: Rhythm.titleToContent, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: Spacing.one }}>
+        <Text variant="display" color="textSecondary" style={WizardType.bigNumber}>
+          $
+        </Text>
+        <TextInput
+          ref={binding.inputRef as RefObject<TextInputInstance | null>}
+          value={binding.value}
+          onChangeText={onChangeText}
+          onBlur={binding.onBlur}
+          placeholder="0"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="decimal-pad"
+          maxLength={9}
+          accessibilityLabel="Precio por día en dólares"
+          accessibilityHint={binding.error ?? undefined}
+          aria-invalid={!!binding.error}
+          style={[{ minWidth: 72, textAlign: 'center', color: colors.text, fontFamily: 'Inter_700Bold', paddingVertical: Spacing.one }, WizardType.bigNumber]}
+        />
+        <Text variant="subtitle" color="textSecondary">
+          /día
+        </Text>
+      </View>
+      {binding.error ? <FieldError message={binding.error} /> : null}
+      {children}
+    </View>
+  );
+}
+
+/** Tarjeta de vista previa (la misma proporción 4:3 de las tarjetas): foto, título, líneas y precio. */
+export function WizardPreviewCard({ uri, title, lines, price }: { uri: string | null; title: string; lines: string[]; price: string }) {
+  const colors = useTheme();
+  return (
+    <View style={{ borderRadius: Radius.card, overflow: 'hidden', backgroundColor: colors.backgroundElement }}>
+      <View style={{ aspectRatio: Aspect.card, backgroundColor: colors.imageBackdrop, alignItems: 'center', justifyContent: 'center' }}>
+        {uri ? (
+          <Image source={{ uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" accessibilityIgnoresInvertColors />
+        ) : (
+          <Ionicons name="image-outline" size={36} color={colors.textSecondary} />
+        )}
+      </View>
+      <View style={{ padding: Rhythm.cardPadding + Spacing.one, gap: Spacing.one }}>
+        <Text variant="subtitle" numberOfLines={2}>
+          {title || 'Sin título'}
+        </Text>
+        {lines.map((line) => (
+          <Text key={line} variant="caption" color="textSecondary">
+            {line}
+          </Text>
+        ))}
+        <Text variant="headline" style={{ marginTop: Spacing.one }}>
+          {price}{' '}
+          <Text variant="caption" color="textSecondary">
+            /día
+          </Text>
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+export type ReviewItem = { key: string; label: string; value: string; onEdit: () => void };
+
+/** Secciones de la revisión: etiqueta, valor resumido y «Editar» (≥ 44pt). */
+export function ReviewSections({ items }: { items: ReviewItem[] }) {
+  const colors = useTheme();
+  return (
+    <View style={{ gap: 0 }}>
+      {items.map((item, i) => (
+        <View
+          key={item.key}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: Spacing.three,
+            minHeight: MinTouch + Spacing.three,
+            paddingVertical: Spacing.two,
+            borderTopWidth: i === 0 ? 0 : 1,
+            borderColor: colors.border,
+          }}
+        >
+          <View style={{ flex: 1, minWidth: 0, gap: Spacing.half }}>
+            <Text variant="caption" color="textSecondary">
+              {item.label}
+            </Text>
+            <Text variant="bodyStrong" numberOfLines={3}>
+              {item.value}
+            </Text>
+          </View>
+          <Button label="Editar" variant="tonal" size="sm" fullWidth={false} onPress={item.onEdit} accessibilityLabel={`Editar ${item.label}`} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Texto de precio por día para resúmenes («$25.00»); vacío si el valor no es válido. */
+export function priceFromInput(raw: string): string {
+  const n = Number(raw.replace(',', '.'));
+  return Number.isFinite(n) && n > 0 ? formatPrice(Math.round(n * 100)) : '$0';
+}
+
+/** Compat: ancho útil para tarjetas de categoría en 2 columnas. */
+export function useTwoColumnWidth(): number {
+  const { contentWidth, gutter } = useLayout();
+  return Math.floor((contentWidth - gutter * 2 - Rhythm.cardGap) / 2);
+}
