@@ -1,4 +1,5 @@
 import { supabase, SUPABASE_URL } from './supabase';
+import { serviceError } from '@/utils/errors';
 
 export type ProviderProfile = {
     id: string;
@@ -145,8 +146,7 @@ export type ProviderBooking = {
 export async function getProviderBookings(): Promise<ProviderBooking[]> {
     const { data, error } = await supabase.rpc('get_provider_bookings');
     if (error) {
-        console.error('[providerService] getProviderBookings:', error.message);
-        return [];
+        throw serviceError('[providerService] getProviderBookings', error);
     }
     return (data ?? []) as ProviderBooking[];
 }
@@ -196,8 +196,7 @@ export async function getListingCalendar(listingId: string): Promise<CalendarMar
         p_listing_id: listingId,
     });
     if (error) {
-        console.error('[providerService] getListingCalendar:', error.message);
-        return [];
+        throw serviceError('[providerService] getListingCalendar', error);
     }
     return (data ?? []).map((row: any) => ({ date: row.cal_date, mark: row.mark }));
 }

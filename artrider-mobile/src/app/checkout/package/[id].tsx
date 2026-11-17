@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DateRangePicker, type DateRange } from '@/components/bookings/DateRangePicker';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { StickyFooter } from '@/components/ui/StickyFooter';
@@ -23,20 +25,19 @@ export default function PackageCheckoutRoute() {
     const colors = useTheme();
     const { gutter, contentWidth } = useLayout();
 
-    const [pkg, setPkg] = useState<PackageWithItems | null>(null);
-    const [blockedDates, setBlockedDates] = useState<string[]>([]);
     const [range, setRange] = useState<DateRange>({ from: null, to: null });
-    const [loading, setLoading] = useState(true);
     const [addingToCart, setAddingToCart] = useState(false);
 
-    useEffect(() => {
-        if (!id) return;
-        Promise.all([getPackageById(id), getPackageUnavailableDates(id)]).then(([p, dates]) => {
-            setPkg(p);
-            setBlockedDates(dates);
-            setLoading(false);
-        });
-    }, [id]);
+    const { status, data: loaded, error, reload } = useAsyncData<{ pkg: PackageWithItems | null; blockedDates: string[] }>(
+        async () => {
+            const [pkg, blockedDates] = await Promise.all([getPackageById(id), getPackageUnavailableDates(id)]);
+            return { pkg, blockedDates };
+        },
+        { enabled: !!id, deps: [id] },
+    );
+    const pkg = loaded?.pkg ?? null;
+    const blockedDates = loaded?.blockedDates ?? [];
+    const loading = status === 'loading';
 
     async function handleContinue() {
         if (!pkg || !range.from || !range.to) return;
@@ -58,6 +59,15 @@ export default function PackageCheckoutRoute() {
             pathname: '/checkout/package/summary/[id]',
             params: { id: pkg.id, from: range.from, to: range.to },
         } as never);
+    }
+
+    if (status === 'error') {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+                <ScreenHeader title="Reservar" />
+                <ErrorState fill error={error} onRetry={reload} />
+            </SafeAreaView>
+        );
     }
 
     if (loading || !pkg) {

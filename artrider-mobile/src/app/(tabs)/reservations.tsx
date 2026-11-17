@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { View, FlatList, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -7,6 +7,8 @@ import { BookingListCard } from '@/components/bookings/BookingListCard';
 import { OrderGroupCard } from '@/components/bookings/OrderGroupCard';
 import { ChipRow } from '@/components/ui/ChipRow';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { TabScreen } from '@/components/ui/TabScreen';
 import { Radius, Rhythm, Spacing } from '@/constants/theme';
@@ -74,25 +76,9 @@ function ReservationsContent() {
   const router = useRouter();
   const { gutter, bottomInset } = useLayout();
 
-  const [bookings, setBookings] = useState<ClientBooking[]>([]);
+  const { data, status, error, refreshError, refreshing, reload, refresh } = useAsyncData<ClientBooking[]>(getClientBookings);
+  const bookings = data ?? [];
   const [activeFilter, setActiveFilter] = useState<FilterId>('all');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const load = useCallback(async () => {
-    const data = await getClientBookings();
-    setBookings(data);
-  }, []);
-
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
 
   const statuses = FILTERS.find((f) => f.id === activeFilter)?.statuses ?? null;
   const filteredBookings = statuses ? bookings.filter((b) => statuses.includes(b.status)) : bookings;
@@ -102,7 +88,9 @@ function ReservationsContent() {
     <TabScreen title="Mis Reservas">
       <ChipRow options={FILTERS.map((f) => ({ id: f.id, label: f.label }))} value={activeFilter} onChange={setActiveFilter} />
 
-      {loading ? (
+      {status === 'error' ? (
+        <ErrorState fill error={error} onRetry={reload} />
+      ) : status === 'loading' ? (
         <View style={{ padding: gutter, gap: Rhythm.cardGap }}>
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} height={104} radius={Radius.card} />
@@ -123,12 +111,13 @@ function ReservationsContent() {
           keyExtractor={(row) => row.key}
           contentInsetAdjustmentBehavior="automatic"
           contentContainerStyle={{ padding: gutter, paddingBottom: bottomInset + Spacing.four, gap: Rhythm.cardGap }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          ListHeaderComponent={refreshError ? <RefreshErrorNotice error={refreshError} onRetry={reload} /> : undefined}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
           renderItem={({ item }) =>
             item.kind === 'single' ? (
-              <BookingListCard booking={item.booking} onCancelled={load} />
+              <BookingListCard booking={item.booking} onCancelled={reload} />
             ) : (
-              <OrderGroupCard bookings={item.bookings} onCancelled={load} />
+              <OrderGroupCard bookings={item.bookings} onCancelled={reload} />
             )
           }
         />

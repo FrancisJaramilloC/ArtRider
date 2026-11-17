@@ -1,4 +1,5 @@
 import { supabase, SUPABASE_URL } from './supabase';
+import { serviceError } from '@/utils/errors';
 import { getMyProviderProfile } from './providerService';
 
 export type CreateListingParams = {
@@ -166,8 +167,7 @@ export async function getMyListings(): Promise<MyListing[]> {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('[providerCatalogService] getMyListings:', error.message);
-        return [];
+        throw serviceError('[providerCatalogService] getMyListings', error);
     }
     return (data ?? []) as MyListing[];
 }
@@ -213,10 +213,8 @@ export async function getListingForEdit(listingId: string): Promise<EditableList
         .eq('id', listingId)
         .single();
 
-    if (error || !data) {
-        console.error('[providerCatalogService] getListingForEdit:', error?.message);
-        return null;
-    }
+    if (error) throw serviceError('[providerCatalogService] getListingForEdit', error);
+    if (!data) return null;
 
     const address = Array.isArray((data as any).address) ? (data as any).address[0] : (data as any).address;
 
@@ -433,8 +431,7 @@ export async function getMyPackages(): Promise<MyPackage[]> {
         .order('created_at', { ascending: false });
 
     if (error) {
-        console.error('[providerCatalogService] getMyPackages:', error.message);
-        return [];
+        throw serviceError('[providerCatalogService] getMyPackages', error);
     }
     return (data ?? []) as MyPackage[];
 }
@@ -470,10 +467,8 @@ export async function getPackageForEdit(packageId: string): Promise<EditablePack
         .eq('id', packageId)
         .single();
 
-    if (error || !data) {
-        console.error('[providerCatalogService] getPackageForEdit:', error?.message);
-        return null;
-    }
+    if (error) throw serviceError('[providerCatalogService] getPackageForEdit', error);
+    if (!data) return null;
 
     return {
         id: data.id,

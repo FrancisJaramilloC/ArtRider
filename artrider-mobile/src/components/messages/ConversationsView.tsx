@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { ChipRow } from '@/components/ui/ChipRow';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
+import type { ErrorInfo } from '@/utils/errors';
 import { IconButton } from '@/components/ui/IconButton';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -122,6 +124,11 @@ export type ConversationsViewProps = {
   loading: boolean;
   refreshing: boolean;
   onRefresh: () => void;
+  /** Error de la carga inicial (sin datos): se muestra «Reintentar», no «aún no hay mensajes». */
+  error?: ErrorInfo | null;
+  /** Fallo de un refresco con datos en pantalla: aviso discreto, los datos se conservan. */
+  refreshError?: ErrorInfo | null;
+  onRetry?: () => void;
   onOpen: (item: ConversationSummary) => void;
   onLongPress: (item: ConversationSummary) => void;
   /** Frase del estado vacío cuando no hay ninguna conversación. */
@@ -133,7 +140,7 @@ export type ConversationsViewProps = {
 };
 
 /** Lista de conversaciones (cliente y proveedor): búsqueda, filtro Todos/Archivados, vacío y carga. */
-export function ConversationsView({ conversations, loading, refreshing, onRefresh, onOpen, onLongPress, emptyText, helpText, onExplore }: ConversationsViewProps) {
+export function ConversationsView({ conversations, loading, refreshing, onRefresh, error, refreshError, onRetry, onOpen, onLongPress, emptyText, helpText, onExplore }: ConversationsViewProps) {
   const colors = useTheme();
   const { gutter, bottomInset } = useLayout();
   const [query, setQuery] = useState('');
@@ -164,7 +171,9 @@ export function ConversationsView({ conversations, loading, refreshing, onRefres
         onChange={setFilter}
       />
 
-      {loading ? (
+      {error && onRetry ? (
+        <ErrorState fill error={error} onRetry={onRetry} />
+      ) : loading ? (
         <View style={{ padding: gutter, gap: Spacing.four }}>
           {[0, 1, 2, 3].map((i) => (
             <View key={i} style={{ flexDirection: 'row', gap: Rhythm.cardPadding, alignItems: 'center' }}>
@@ -187,6 +196,7 @@ export function ConversationsView({ conversations, loading, refreshing, onRefres
         />
       ) : (
         <FlatList
+          ListHeaderComponent={refreshError && onRetry ? <RefreshErrorNotice error={refreshError} onRetry={onRetry} /> : undefined}
           data={filtered}
           keyExtractor={(item) => item.id}
           contentInsetAdjustmentBehavior="automatic"

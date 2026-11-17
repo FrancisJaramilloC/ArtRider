@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DateRangePicker, type DateRange } from '@/components/bookings/DateRangePicker';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { QuantityStepper } from '@/components/ui/QuantityStepper';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -24,23 +26,22 @@ export default function CheckoutRoute() {
     const colors = useTheme();
     const { gutter, contentWidth } = useLayout();
 
-    const [listing, setListing] = useState<Listing | null>(null);
-    const [blockedDates, setBlockedDates] = useState<string[]>([]);
     const [range, setRange] = useState<DateRange>({ from: null, to: null });
-    const [loading, setLoading] = useState(true);
     const [availableCount, setAvailableCount] = useState<number | null>(null);
     const [checkingAvailability, setCheckingAvailability] = useState(false);
     const [quantity, setQuantity] = useState(1);
     const [addingToCart, setAddingToCart] = useState(false);
 
-    useEffect(() => {
-        if (!id) return;
-        Promise.all([getListingById(id), getUnavailableDates(id)]).then(([l, dates]) => {
-            setListing(l);
-            setBlockedDates(dates);
-            setLoading(false);
-        });
-    }, [id]);
+    const { status, data: loaded, error, reload } = useAsyncData<{ listing: Listing | null; blockedDates: string[] }>(
+        async () => {
+            const [listing, blockedDates] = await Promise.all([getListingById(id), getUnavailableDates(id)]);
+            return { listing, blockedDates };
+        },
+        { enabled: !!id, deps: [id] },
+    );
+    const listing = loaded?.listing ?? null;
+    const blockedDates = loaded?.blockedDates ?? [];
+    const loading = status === 'loading';
 
     useEffect(() => {
         if (!id || !range.from || !range.to) {
@@ -77,6 +78,15 @@ export default function CheckoutRoute() {
             pathname: '/checkout/summary/[id]',
             params: { id: listing.id, from: range.from, to: range.to, quantity: String(quantity) },
         } as never);
+    }
+
+    if (status === 'error') {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+                <ScreenHeader title="Reservar" />
+                <ErrorState fill error={error} onRetry={reload} />
+            </SafeAreaView>
+        );
     }
 
     if (loading || !listing) {

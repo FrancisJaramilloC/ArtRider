@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { ConversationsView } from '@/components/messages/ConversationsView';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { supabase } from '@/services/supabase';
 import {
   getConversations,
@@ -17,38 +18,22 @@ import { getMyProviderProfile } from '@/services/providerService';
 export function ProviderMessagesScreen() {
   const router = useRouter();
 
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const load = useCallback(async () => {
+  const { data, status, error, refreshError, refreshing, reload, refresh } = useAsyncData<ConversationSummary[]>(async () => {
     const profile = await getMyProviderProfile();
-    if (!profile) {
-      setConversations([]);
-      return;
-    }
+    if (!profile) return [];
     const all = await getConversations();
-    setConversations(all.filter((c) => c.provider_id === profile.id));
-  }, []);
-
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
+    return all.filter((c) => c.provider_id === profile.id);
+  });
+  const conversations = data ?? [];
 
   useEffect(() => {
     const channel = subscribeToConversationUpdates(() => {
-      load();
+      reload();
     });
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [load]);
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
+  }, [reload]);
 
   function handleLongPress(item: ConversationSummary) {
     Alert.alert(
@@ -63,7 +48,7 @@ export function ProviderMessagesScreen() {
             } else {
               await archiveConversation(item.id);
             }
-            load();
+            reload();
           },
         },
         {
@@ -71,7 +56,7 @@ export function ProviderMessagesScreen() {
           style: 'destructive',
           onPress: async () => {
             await deleteConversationForMe(item.id);
-            load();
+            reload();
           },
         },
         { text: 'Cancelar', style: 'cancel' },
@@ -82,9 +67,12 @@ export function ProviderMessagesScreen() {
   return (
     <ConversationsView
       conversations={conversations}
-      loading={loading}
+      loading={status === 'loading'}
       refreshing={refreshing}
-      onRefresh={onRefresh}
+      onRefresh={refresh}
+      error={error}
+      refreshError={refreshError}
+      onRetry={reload}
       onOpen={(item) => router.push({ pathname: '/chat/[id]', params: { id: item.id, otherName: item.other_name } })}
       onLongPress={handleLongPress}
       emptyText="Cuando un cliente te consulte sobre un equipo, la conversación aparecerá aquí."

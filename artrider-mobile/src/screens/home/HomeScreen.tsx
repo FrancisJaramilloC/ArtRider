@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, RefreshControl, View, TextInput, Pressable, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import { CategoryStrip } from '@/components/home/CategoryStrip';
 import { CityCarousel } from '@/components/home/CityCarousel';
 import { CartIconButton } from '@/components/cart/CartIconButton';
 import { Button } from '@/components/ui/Button';
+import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ItemCard } from '@/components/ui/ItemCard';
@@ -26,6 +28,8 @@ import { cityKey } from '@/utils/city';
 /** Alto del botón «Mapa» + 16 arriba y 16 abajo: la lista deja ese espacio para no quedar tapada. */
 const MAP_BUTTON_CLEARANCE = MinTouch + Spacing.three * 2;
 
+type HomeBundle = { homeData: HomeData; items: ExploreItem[]; favoriteIds: Set<string> };
+
 /** Cuántas tarjetas de esqueleto se muestran mientras carga (2 filas de la grilla). */
 const SKELETON_ROWS = 2;
 
@@ -35,11 +39,6 @@ export function HomeScreen() {
     const { isAuthenticated } = useAuth();
     const { gutter, columns, cardWidth, bottomInset } = useLayout();
 
-    const [data, setData] = useState<HomeData | null>(null);
-    const [exploreItems, setExploreItems] = useState<ExploreItem[]>([]);
-    const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
     const [activeCategory, setActiveCategory] = useState('all');
 
     // Estado de búsqueda/filtros — cuando cualquiera de esto está activo,
@@ -50,31 +49,29 @@ export function HomeScreen() {
     const [city, setCity] = useState<string | null>(null);
     const [maxPrice, setMaxPrice] = useState('');
 
-    const load = useCallback(async () => {
-        const [homeData, items, favIds] = await Promise.all([
-            getHomeData(),
-            getExploreItems(),
-            isAuthenticated ? getUserFavIds() : Promise.resolve({ equipoIds: [], paqueteIds: [] }),
-        ]);
-        setData(homeData);
-        setExploreItems(items);
-        setFavoriteIds(new Set([...favIds.equipoIds, ...favIds.paqueteIds]));
-    }, [isAuthenticated]);
-
-    useEffect(() => {
-        load().finally(() => setLoading(false));
-    }, [load]);
+    // Estados reales: cargando / error / éxito. Un fallo de red ya no se ve como «no hay equipos».
+    const { status, data: bundle, error, refreshError, refreshing, reload, refresh } = useAsyncData<HomeBundle>(
+        async () => {
+            const [homeData, items, favIds] = await Promise.all([
+                getHomeData(),
+                getExploreItems(),
+                isAuthenticated ? getUserFavIds() : Promise.resolve({ equipoIds: [], paqueteIds: [] }),
+            ]);
+            return { homeData, items, favoriteIds: new Set([...favIds.equipoIds, ...favIds.paqueteIds]) };
+        },
+        { deps: [isAuthenticated] },
+    );
+    const data = bundle?.homeData ?? null;
+    const exploreItems = useMemo(() => bundle?.items ?? [], [bundle]);
+    const favoriteIds = useMemo(() => bundle?.favoriteIds ?? new Set<string>(), [bundle]);
+    const loading = status === 'loading';
 
     useEffect(() => {
         const timer = setTimeout(() => setQuery(rawQuery), 300);
         return () => clearTimeout(timer);
     }, [rawQuery]);
 
-    async function onRefresh() {
-        setRefreshing(true);
-        await load();
-        setRefreshing(false);
-    }
+    const onRefresh = refresh;
 
     // Modo búsqueda activo: el usuario escribió algo, activó un filtro de
     // ciudad/precio, o simplemente tiene el input enfocado (para que ver
@@ -153,9 +150,18 @@ export function HomeScreen() {
         );
     }
 
+    if (status === 'error') {
+        return (
+            <TabScreen title="ArtRider" actions={tabActions}>
+                <ErrorState fill error={error} onRetry={reload} />
+            </TabScreen>
+        );
+    }
+
     return (
         <TabScreen title="ArtRider" actions={tabActions}>
             {header}
+            {refreshError ? <View style={{ paddingTop: Rhythm.titleToContent }}><RefreshErrorNotice error={refreshError} onRetry={reload} /></View> : null}
 
             <View style={{ paddingTop: Rhythm.titleToContent }}>
                 <CategoryStrip activeCategory={activeCategory} onSelect={setActiveCategory} gutter={gutter} />

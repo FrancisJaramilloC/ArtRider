@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { CheckoutLoading, CheckoutShell, ErrorBanner, SummaryCard, SummaryItem } from '@/components/checkout/CheckoutParts';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { PriceSummary } from '@/components/ui/PriceSummary';
 import { Text } from '@/components/ui/Text';
 import { Spacing } from '@/constants/theme';
@@ -17,20 +19,13 @@ export default function CheckoutSummaryScreen() {
     const router = useRouter();
     const quantity = Number(quantityParam ?? '1') || 1;
 
-    const [listing, setListing] = useState<Listing | null>(null);
-    const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!id) return;
-        getListingById(id).then((l) => {
-            setListing(l);
-            setLoading(false);
-        });
-    }, [id]);
+    const { status, data: listing, error: loadError, reload } = useAsyncData<Listing | null>(() => getListingById(id), { enabled: !!id, deps: [id] });
 
-    if (loading || !listing) return <CheckoutLoading />;
+    if (status === 'error') return <CheckoutShell title="Confirmar reserva"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;
+    if (status === 'loading' || !listing) return <CheckoutLoading />;
 
     const days = Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86400000) + 1;
     const subtotal = listing.daily_price * days * quantity;

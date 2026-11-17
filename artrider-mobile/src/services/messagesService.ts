@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { serviceError } from '@/utils/errors';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export type ConversationSummary = {
@@ -42,8 +43,7 @@ export async function getConversations(): Promise<ConversationSummary[]> {
     const { data, error } = await supabase.rpc('get_my_conversations');
 
     if (error) {
-        console.error('[messagesService] getConversations:', error.message);
-        return [];
+        throw serviceError('[messagesService] getConversations', error);
     }
 
     return (data ?? []) as ConversationSummary[];
@@ -57,8 +57,7 @@ export async function getMessages(conversationId: string): Promise<Message[]> {
         .order('sent_at', { ascending: true });
 
     if (error) {
-        console.error('[messagesService] getMessages:', error.message);
-        return [];
+        throw serviceError('[messagesService] getMessages', error);
     }
 
     return (data ?? []) as Message[];

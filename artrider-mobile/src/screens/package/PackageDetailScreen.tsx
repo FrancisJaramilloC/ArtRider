@@ -9,6 +9,8 @@ import { DetailBottomBar, DetailSection, DetailSheet, MetaItem, MetaRow, Provide
 import { DetailHero } from '@/components/detail/DetailHero';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -20,6 +22,8 @@ import { findExistingConversation } from '@/services/messagesService';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/utils/format';
 
+type PackageBundle = { pkg: PackageWithItems | null; reviews: PackageReview[]; fav: boolean };
+
 /** Espacio para que la barra inferior fija no tape el final del contenido. */
 const BOTTOM_BAR_CLEARANCE = 112;
 
@@ -30,33 +34,28 @@ export function PackageDetailScreen() {
     const { session } = useAuth();
     const { gutter, insets } = useLayout();
 
-    const [pkg, setPkg] = useState<PackageWithItems | null>(null);
     const [esFavorito, setEsFavorito] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [contacting, setContacting] = useState(false);
-    const [reviews, setReviews] = useState<PackageReview[]>([]);
+
+    const { status, data: bundle, error, reload } = useAsyncData<PackageBundle>(
+        async () => {
+            const pkg = await getPackageById(id);
+            if (!pkg) return { pkg: null, reviews: [], fav: false };
+            const [reviews, favIds] = await Promise.all([
+                getPackageReviews(pkg.id).catch(() => [] as PackageReview[]),
+                session?.user ? getUserFavIds().catch(() => null) : Promise.resolve(null),
+            ]);
+            return { pkg, reviews, fav: favIds?.paqueteIds.includes(id) ?? false };
+        },
+        { enabled: !!id, deps: [id, session] },
+    );
+    const pkg = bundle?.pkg ?? null;
+    const reviews = bundle?.reviews ?? [];
+    const loading = status === 'loading';
 
     useEffect(() => {
-        if (!id) return;
-
-        async function load() {
-            const data = await getPackageById(id);
-            setPkg(data);
-
-            if (data) {
-                getPackageReviews(data.id).then(setReviews);
-            }
-
-            if (session?.user) {
-                const favIds = await getUserFavIds();
-                setEsFavorito(favIds.paqueteIds.includes(id));
-            }
-
-            setLoading(false);
-        }
-
-        load();
-    }, [id, session]);
+        if (bundle) setEsFavorito(bundle.fav);
+    }, [bundle]);
 
     async function handleToggleFavorito() {
         if (!pkg) return;
@@ -108,6 +107,14 @@ export function PackageDetailScreen() {
                     <Skeleton height={96} radius={Radius.card} />
                 </View>
             </View>
+        );
+    }
+
+    if (status === 'error') {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+                <ErrorState error={error} onRetry={reload} />
+            </SafeAreaView>
         );
     }
 

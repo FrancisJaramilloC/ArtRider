@@ -1,4 +1,5 @@
 import { supabase, SUPABASE_URL } from './supabase';
+import { serviceError } from '@/utils/errors';
 
 export type CartItem = {
     id: string;
@@ -27,8 +28,7 @@ export async function getCartItems(): Promise<CartItem[]> {
         .order('added_at', { ascending: false });
 
     if (error) {
-        console.error('[cartService] getCartItems:', error.message);
-        return [];
+        throw serviceError('[cartService] getCartItems', error);
     }
 
     return (data ?? []).map((row: any) => {

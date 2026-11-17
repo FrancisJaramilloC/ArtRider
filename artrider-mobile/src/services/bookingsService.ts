@@ -1,4 +1,5 @@
 import { supabase, SUPABASE_URL } from './supabase';
+import { serviceError } from '@/utils/errors';
 
 export type CreateBookingResult = {
   bookingId?: string;
@@ -81,8 +82,7 @@ export async function getClientBookings(): Promise<ClientBooking[]> {
   const { data, error } = await supabase.rpc('get_client_bookings');
 
   if (error) {
-    console.error('[bookingsService] getClientBookings:', error.message);
-    return [];
+    throw serviceError('[bookingsService] getClientBookings', error);
   }
 
   return (data ?? []) as ClientBooking[];

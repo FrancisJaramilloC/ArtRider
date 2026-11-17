@@ -8,6 +8,8 @@ import { DetailBottomBar, DetailSection, DetailSheet, MetaItem, MetaRow, Provide
 import { DetailHero } from '@/components/detail/DetailHero';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { Radius, Spacing } from '@/constants/theme';
@@ -21,6 +23,8 @@ import { getListingTotalUnits } from '@/services/availabilityService';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/utils/format';
 
+type ListingBundle = { listing: ListingWithProvider | null; rating: number; totalUnits: number | null; reviews: ListingReview[]; fav: boolean };
+
 /** Espacio para que la barra inferior fija no tape el final del contenido. */
 const BOTTOM_BAR_CLEARANCE = 112;
 
@@ -31,38 +35,34 @@ export function ListingDetailScreen() {
     const { session } = useAuth();
     const { gutter, insets } = useLayout();
 
-    const [listing, setListing] = useState<ListingWithProvider | null>(null);
-    const [rating, setRating] = useState<{ avg: number; count: number }>({ avg: 0, count: 0 });
     const [esFavorito, setEsFavorito] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [contacting, setContacting] = useState(false);
-    const [totalUnits, setTotalUnits] = useState<number | null>(null);
-    const [reviews, setReviews] = useState<ListingReview[]>([]);
+
+    // Dato principal: el equipo (si falla → ErrorState). Lo secundario (valoración, stock, reseñas,
+    // favoritos) degrada en silencio para no bloquear la pantalla.
+    const { status, data: bundle, error, reload } = useAsyncData<ListingBundle>(
+        async () => {
+            const listing = await getListingByIdWithProvider(id);
+            if (!listing) return { listing: null, rating: 0, totalUnits: null, reviews: [], fav: false };
+            const [ratingsMap, totalUnits, reviews, favIds] = await Promise.all([
+                getListingRatings([listing.id]).catch(() => ({}) as Record<string, number>),
+                getListingTotalUnits(listing.id).catch(() => null),
+                getListingReviews(listing.id).catch(() => [] as ListingReview[]),
+                session?.user ? getUserFavIds().catch(() => null) : Promise.resolve(null),
+            ]);
+            return { listing, rating: ratingsMap[listing.id] ?? 0, totalUnits, reviews, fav: favIds?.equipoIds.includes(id) ?? false };
+        },
+        { enabled: !!id, deps: [id, session] },
+    );
+    const listing = bundle?.listing ?? null;
+    const rating = { avg: bundle?.rating ?? 0, count: 0 };
+    const totalUnits = bundle?.totalUnits ?? null;
+    const reviews = bundle?.reviews ?? [];
+    const loading = status === 'loading';
 
     useEffect(() => {
-        if (!id) return;
-
-        async function load() {
-            const data = await getListingByIdWithProvider(id);
-            setListing(data);
-
-            if (data) {
-                const ratingsMap = await getListingRatings([data.id]);
-                setRating({ avg: ratingsMap[data.id] ?? 0, count: 0 });
-                getListingTotalUnits(data.id).then(setTotalUnits);
-                getListingReviews(data.id).then(setReviews);
-            }
-
-            if (session?.user) {
-                const favIds = await getUserFavIds();
-                setEsFavorito(favIds.equipoIds.includes(id));
-            }
-
-            setLoading(false);
-        }
-
-        load();
-    }, [id, session]);
+        if (bundle) setEsFavorito(bundle.fav);
+    }, [bundle]);
 
     async function handleToggleFavorito() {
         if (!listing) return;
@@ -115,6 +115,14 @@ export function ListingDetailScreen() {
                     <Skeleton height={96} radius={Radius.card} />
                 </View>
             </View>
+        );
+    }
+
+    if (status === 'error') {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+                <ErrorState error={error} onRetry={reload} />
+            </SafeAreaView>
         );
     }
 

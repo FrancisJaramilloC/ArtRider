@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { serviceError } from '@/utils/errors';
 
 export type Package = {
     id: string;
@@ -96,8 +97,7 @@ export async function getPublishedPackages(): Promise<PackageSummary[]> {
         .limit(8);
 
     if (error) {
-        console.error('[packagesService] getPublishedPackages:', error.message);
-        return [];
+        throw serviceError('[packagesService] getPublishedPackages', error);
     }
 
     return (data ?? []) as PackageSummary[];

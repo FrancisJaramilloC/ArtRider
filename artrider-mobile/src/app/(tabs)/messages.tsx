@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { ProtectedScreen } from '@/components/protected-screen';
 import { ConversationsView } from '@/components/messages/ConversationsView';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { supabase } from '@/services/supabase';
 import {
   getConversations,
@@ -17,33 +18,18 @@ import {
 function ConversationsContent() {
   const router = useRouter();
 
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { data, status, error, refreshError, refreshing, reload, refresh } = useAsyncData<ConversationSummary[]>(getConversations);
+  const conversations = data ?? [];
 
-  const load = useCallback(async () => {
-    const all = await getConversations();
-    setConversations(all);
-  }, []);
-
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
-
+  // Realtime: ante un cambio se recarga en silencio (si falla, se conservan los datos).
   useEffect(() => {
     const channel = subscribeToConversationUpdates(() => {
-      load();
+      reload();
     });
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [load]);
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
+  }, [reload]);
 
   function handleLongPress(item: ConversationSummary) {
     Alert.alert(
@@ -58,7 +44,7 @@ function ConversationsContent() {
             } else {
               await archiveConversation(item.id);
             }
-            load();
+            reload();
           },
         },
         {
@@ -66,7 +52,7 @@ function ConversationsContent() {
           style: 'destructive',
           onPress: async () => {
             await deleteConversationForMe(item.id);
-            load();
+            reload();
           },
         },
         { text: 'Cancelar', style: 'cancel' },
@@ -77,9 +63,12 @@ function ConversationsContent() {
   return (
     <ConversationsView
       conversations={conversations}
-      loading={loading}
+      loading={status === 'loading'}
       refreshing={refreshing}
-      onRefresh={onRefresh}
+      onRefresh={refresh}
+      error={error}
+      refreshError={refreshError}
+      onRetry={reload}
       onOpen={(item) => router.push({ pathname: '/chat/[id]', params: { id: item.id, otherName: item.other_name } })}
       onLongPress={handleLongPress}
       emptyText="Cuando consultes o reserves un equipo, tus conversaciones aparecerán aquí."
