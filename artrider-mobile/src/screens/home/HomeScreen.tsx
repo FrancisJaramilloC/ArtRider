@@ -274,9 +274,12 @@ export function HomeScreen() {
                 <ScrollView
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
                     keyboardShouldPersistTaps="handled"
-                    contentInsetAdjustmentBehavior="automatic"
+                    // «never»: con «automatic» iOS ya suma por su cuenta el inset de la barra de pestañas y la safe area,
+                    // y se duplicaba con el padding de abajo (blanco enorme tras el último carrusel). El único margen
+                    // inferior es el del contentContainerStyle: barra de vidrio + safe area (bottomInset) + 16.
+                    contentInsetAdjustmentBehavior="never"
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingTop: Rhythm.chipsToSection, gap: Rhythm.section, paddingBottom: bottomInset + Spacing.four }}
+                    contentContainerStyle={{ paddingTop: Rhythm.chipsToSection, gap: Rhythm.section, paddingBottom: bottomInset + Spacing.three }}
                 >
                     {filteredCityGroups.map((group) => (
                         <CityCarousel
