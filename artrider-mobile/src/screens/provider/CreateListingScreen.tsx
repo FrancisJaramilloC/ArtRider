@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, TextInput, Pressable, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Pressable, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,11 +8,19 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Text } from '@/components/ui/Text';
+import { useTheme } from '@/hooks/use-theme';
+import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { FormErrorBanner, FormField } from '@/components/ui/FormField';
 import { ModalScreen } from '@/components/ui/ModalScreen';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius, MinTouch, FieldHeight } from '@/constants/theme';
+import { Colors, Spacing, Radius, MinTouch } from '@/constants/theme';
+import { useForm } from '@/hooks/useForm';
 import { useLayout } from '@/hooks/use-layout';
+import { maxLength, minLength, positivePrice, required } from '@/utils/validation';
+import { toErrorInfo, type ErrorInfo } from '@/utils/errors';
 import { CATEGORIES } from '@/constants/categories';
 import { createListing, getListingForEdit, updateListing } from '@/services/providerCatalogService';
 
@@ -30,17 +38,9 @@ const STEP_LABELS: Record<StepId, string> = {
     review: 'Revisión',
 };
 
-type FormState = {
+/** Campos que no son de texto (se validan por paso con un aviso propio). */
+type ExtraState = {
     category: string;
-    title: string;
-    brand: string;
-    model: string;
-    description: string;
-    dailyPrice: string;
-    addressLine1: string;
-    city: string;
-    state: string;
-    postalCode: string;
     country: string;
     latitude: number | null;
     longitude: number | null;
@@ -50,17 +50,8 @@ type FormState = {
     quantity: number;
 };
 
-const EMPTY_STATE: FormState = {
+const EMPTY_EXTRA: ExtraState = {
     category: '',
-    title: '',
-    brand: '',
-    model: '',
-    description: '',
-    dailyPrice: '',
-    addressLine1: '',
-    city: '',
-    state: '',
-    postalCode: '',
     country: 'Ecuador',
     latitude: null,
     longitude: null,
@@ -68,6 +59,27 @@ const EMPTY_STATE: FormState = {
     coverMime: null,
     photoChanged: false,
     quantity: 1,
+};
+
+const EMPTY_TEXT = { title: '', brand: '', model: '', description: '', dailyPrice: '', addressLine1: '', city: '', state: '', postalCode: '' };
+
+const TEXT_RULES = {
+    title: [required('Ingresa un título para tu anuncio'), minLength(3, 'El título debe tener al menos 3 caracteres'), maxLength(100, 'El título admite hasta 100 caracteres')],
+    brand: [maxLength(60, 'La marca admite hasta 60 caracteres')],
+    model: [maxLength(60, 'El modelo admite hasta 60 caracteres')],
+    description: [maxLength(2000, 'La descripción admite hasta 2000 caracteres')],
+    dailyPrice: [required('Ingresa el precio por día'), positivePrice('Ingresa un precio mayor a 0')],
+    addressLine1: [required('Ingresa la dirección')],
+    city: [required('Ingresa la ciudad')],
+    state: [required('Ingresa la provincia')],
+    postalCode: [required('Ingresa el código postal')],
+};
+
+/** Campos de texto que se validan en cada paso del asistente. */
+const STEP_FIELDS: Partial<Record<StepId, (keyof typeof EMPTY_TEXT)[]>> = {
+    details: ['title', 'brand', 'model', 'description'],
+    price: ['dailyPrice'],
+    location: ['addressLine1', 'city', 'state', 'postalCode'],
 };
 
 export function CreateListingScreen() {
@@ -84,7 +96,12 @@ export function CreateListingScreen() {
 
     const [loadingExisting, setLoadingExisting] = useState(isEdit);
     const [step, setStep] = useState(0);
-    const [form, setForm] = useState<FormState>(EMPTY_STATE);
+    const text = useForm(EMPTY_TEXT, TEXT_RULES);
+    const [extra, setExtra] = useState<ExtraState>(EMPTY_EXTRA);
+    const form = { ...extra, ...text.values };
+    const [stepError, setStepError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<ErrorInfo | null>(null);
+    const [reloadKey, setReloadKey] = useState(0);
     const [publishing, setPublishing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [geocoding, setGeocoding] = useState(false);
@@ -93,10 +110,13 @@ export function CreateListingScreen() {
 
     useEffect(() => {
         if (!isEdit || !editListingId) return;
-        getListingForEdit(editListingId).then((data) => {
-            if (data) {
-                setForm({
-                    category: data.category,
+        let cancelled = false;
+        setLoadingExisting(true);
+        setLoadError(null);
+        getListingForEdit(editListingId)
+            .then((data) => {
+                if (cancelled || !data) return;
+                text.reset({
                     title: data.title,
                     brand: data.brand,
                     model: data.model,
@@ -106,6 +126,9 @@ export function CreateListingScreen() {
                     city: data.city,
                     state: data.state,
                     postalCode: data.postalCode,
+                });
+                setExtra({
+                    category: data.category,
                     country: data.country,
                     latitude: data.latitude,
                     longitude: data.longitude,
@@ -114,13 +137,22 @@ export function CreateListingScreen() {
                     photoChanged: false,
                     quantity: 1,
                 });
-            }
-            setLoadingExisting(false);
-        });
-    }, [isEdit, editListingId]);
+            })
+            .catch((e) => {
+                if (!cancelled) setLoadError(toErrorInfo(e));
+            })
+            .finally(() => {
+                if (!cancelled) setLoadingExisting(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isEdit, editListingId, reloadKey]);
 
-    function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-        setForm((prev) => ({ ...prev, [key]: value }));
+    function update<K extends keyof ExtraState>(key: K, value: ExtraState[K]) {
+        setExtra((prev) => ({ ...prev, [key]: value }));
+        setStepError(null);
     }
 
     async function pickImage() {
@@ -174,17 +206,25 @@ export function CreateListingScreen() {
 
     const currentStepId = steps[step];
 
-    const canContinue = (() => {
-        switch (currentStepId) {
-            case 'category': return !!form.category;
-            case 'details': return form.title.trim().length >= 3;
-            case 'photo': return !!form.coverUri;
-            case 'price': return parseFloat(form.dailyPrice) > 0;
-            case 'location': return !!(form.addressLine1.trim() && form.city.trim() && form.state.trim() && form.postalCode.trim() && form.latitude !== null && form.longitude !== null);
-            case 'quantity': return form.quantity >= 1;
-            default: return true;
+    /** Valida el paso actual: muestra el error junto al campo (o un aviso) y devuelve si se puede avanzar. */
+    function validateStep(): boolean {
+        setStepError(null);
+        const fields = STEP_FIELDS[currentStepId];
+        if (fields && !text.validateAll(fields)) return false;
+        if (currentStepId === 'category' && !form.category) {
+            setStepError('Elige una categoría para continuar.');
+            return false;
         }
-    })();
+        if (currentStepId === 'photo' && !form.coverUri) {
+            setStepError('Elige una foto para continuar.');
+            return false;
+        }
+        if (currentStepId === 'location' && (form.latitude === null || form.longitude === null)) {
+            setStepError('Marca la ubicación en el mapa: toca «Buscar dirección» o toca el mapa.');
+            return false;
+        }
+        return true;
+    }
 
     function handleBack() {
         if (step === 0) {
@@ -193,9 +233,12 @@ export function CreateListingScreen() {
         }
         setStep((s) => s - 1);
         setError(null);
+        setStepError(null);
     }
 
     async function handleContinue() {
+        if (publishing) return; // sin doble toque
+        if (!validateStep()) return;
         if (step < steps.length - 1) {
             setStep((s) => s + 1);
             return;
@@ -297,6 +340,14 @@ export function CreateListingScreen() {
         );
     }
 
+    if (loadError) {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+                <ErrorState error={loadError} onRetry={() => setReloadKey((k) => k + 1)} />
+            </SafeAreaView>
+        );
+    }
+
     if (loadingExisting) {
         return (
             <ScreenSkeleton />
@@ -308,7 +359,7 @@ export function CreateListingScreen() {
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <View style={{ paddingHorizontal: gutter, paddingTop: Spacing.two }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, marginBottom: Spacing.three }}>
-                        <Pressable onPress={handleBack} hitSlop={8}>
+                        <Pressable onPress={handleBack} hitSlop={8} accessibilityRole="button" accessibilityLabel="Volver" style={{ minWidth: MinTouch, minHeight: MinTouch, justifyContent: 'center' }}>
                             <Ionicons name="chevron-back" size={24} color={colors.text} />
                         </Pressable>
                         <View style={{ flex: 1, flexDirection: 'row', gap: Spacing.one }}>
@@ -324,7 +375,7 @@ export function CreateListingScreen() {
                                 />
                             ))}
                         </View>
-                        <Pressable onPress={() => setShowPreview(true)} hitSlop={8}>
+                        <Pressable onPress={() => setShowPreview(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Vista previa" style={{ minWidth: MinTouch, minHeight: MinTouch, alignItems: 'flex-end', justifyContent: 'center' }}>
                             <Ionicons name="eye-outline" size={22} color={colors.text} />
                         </Pressable>
                     </View>
@@ -336,12 +387,13 @@ export function CreateListingScreen() {
                     </ThemedText>
                 </View>
 
-                <ScrollView contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: Spacing.six }} keyboardShouldPersistTaps="handled">
+                <ScrollView ref={text.scrollRef} contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: Spacing.six }} keyboardShouldPersistTaps="handled">
                     {currentStepId === 'category' && (
                         <View style={{ gap: Spacing.two }}>
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: Spacing.two }}>
                                 ¿Qué tipo de equipo vas a publicar?
                             </ThemedText>
+                            {stepError ? <StepError message={stepError} /> : null}
                             {categoryOptions.map(({ id, label, icon }) => {
                                 const isActive = form.category === id;
                                 return (
@@ -371,51 +423,17 @@ export function CreateListingScreen() {
                     )}
 
                     {currentStepId === 'details' && (
-                        <View style={{ gap: Spacing.four }}>
-                            <FormField label="Título del anuncio" required>
-                                <TextInput
-                                    value={form.title}
-                                    onChangeText={(v) => update('title', v)}
-                                    placeholder="Ej. Bocina JBL PartyBox 300"
-                                    placeholderTextColor={colors.textSecondary}
-                                    style={inputStyle(colors)}
-                                />
-                            </FormField>
+                        <View style={{ gap: Spacing.three }}>
+                            <FormField label="Título del anuncio" placeholder="Ej. Bocina JBL PartyBox 300" maxLength={100} returnKeyType="next" {...text.field('title')} />
                             <View style={{ flexDirection: 'row', gap: Spacing.three }}>
                                 <View style={{ flex: 1 }}>
-                                    <FormField label="Marca">
-                                        <TextInput
-                                            value={form.brand}
-                                            onChangeText={(v) => update('brand', v)}
-                                            placeholder="JBL"
-                                            placeholderTextColor={colors.textSecondary}
-                                            style={inputStyle(colors)}
-                                        />
-                                    </FormField>
+                                    <FormField label="Marca" placeholder="JBL" maxLength={60} {...text.field('brand')} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <FormField label="Modelo">
-                                        <TextInput
-                                            value={form.model}
-                                            onChangeText={(v) => update('model', v)}
-                                            placeholder="PartyBox 300"
-                                            placeholderTextColor={colors.textSecondary}
-                                            style={inputStyle(colors)}
-                                        />
-                                    </FormField>
+                                    <FormField label="Modelo" placeholder="PartyBox 300" maxLength={60} {...text.field('model')} />
                                 </View>
                             </View>
-                            <FormField label="Descripción">
-                                <TextInput
-                                    value={form.description}
-                                    onChangeText={(v) => update('description', v)}
-                                    placeholder="Cuenta a los clientes qué incluye, estado, accesorios..."
-                                    placeholderTextColor={colors.textSecondary}
-                                    multiline
-                                    numberOfLines={4}
-                                    style={[inputStyle(colors), { minHeight: 100, textAlignVertical: 'top', paddingTop: Spacing.snug }]}
-                                />
-                            </FormField>
+                            <FormField label="Descripción" placeholder="Cuenta a los clientes qué incluye, estado, accesorios..." multiline maxLength={2000} {...text.field('description')} />
                         </View>
                     )}
 
@@ -450,6 +468,7 @@ export function CreateListingScreen() {
                                     </>
                                 )}
                             </Pressable>
+                            {stepError ? <View style={{ marginTop: Spacing.three }}><StepError message={stepError} /></View> : null}
                             {form.coverUri && (
                                 <Pressable onPress={pickImage} style={{ marginTop: Spacing.three, alignSelf: 'center' }}>
                                     <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.primary }}>
@@ -465,18 +484,16 @@ export function CreateListingScreen() {
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: Spacing.four }}>
                                 ¿Cuánto cobras por día de renta?
                             </ThemedText>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text }}>$</ThemedText>
-                                <TextInput
-                                    value={form.dailyPrice}
-                                    onChangeText={(v) => update('dailyPrice', v.replace(/[^0-9.]/g, ''))}
-                                    placeholder="0"
-                                    placeholderTextColor={colors.textSecondary}
-                                    keyboardType="decimal-pad"
-                                    style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text, flex: 1 }}
-                                />
-                                <ThemedText style={{ fontSize: 15, color: colors.textSecondary }}>/día</ThemedText>
-                            </View>
+                            <FormField
+                                label="Precio por día (USD)"
+                                leftIcon="cash-outline"
+                                placeholder="0"
+                                keyboardType="decimal-pad"
+                                hint="Es lo que cobras por cada día de renta."
+                                maxLength={9}
+                                {...text.field('dailyPrice')}
+                                onChangeText={(v) => text.setValue('dailyPrice', v.replace(/[^0-9.]/g, ''))}
+                            />
                         </View>
                     )}
 
@@ -485,49 +502,16 @@ export function CreateListingScreen() {
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary }}>
                                 ¿De dónde sale este equipo? Solo lo verán clientes con reserva confirmada.
                             </ThemedText>
-                            <FormField label="Dirección" required>
-                                <TextInput
-                                    value={form.addressLine1}
-                                    onChangeText={(v) => update('addressLine1', v)}
-                                    placeholder="Calle y número"
-                                    placeholderTextColor={colors.textSecondary}
-                                    style={inputStyle(colors)}
-                                />
-                            </FormField>
+                            <FormField label="Dirección" placeholder="Calle y número" autoComplete="street-address" {...text.field('addressLine1')} />
                             <View style={{ flexDirection: 'row', gap: Spacing.three }}>
                                 <View style={{ flex: 1 }}>
-                                    <FormField label="Ciudad" required>
-                                        <TextInput
-                                            value={form.city}
-                                            onChangeText={(v) => update('city', v)}
-                                            placeholder="Loja"
-                                            placeholderTextColor={colors.textSecondary}
-                                            style={inputStyle(colors)}
-                                        />
-                                    </FormField>
+                                    <FormField label="Ciudad" placeholder="Loja" {...text.field('city')} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <FormField label="Provincia" required>
-                                        <TextInput
-                                            value={form.state}
-                                            onChangeText={(v) => update('state', v)}
-                                            placeholder="Loja"
-                                            placeholderTextColor={colors.textSecondary}
-                                            style={inputStyle(colors)}
-                                        />
-                                    </FormField>
+                                    <FormField label="Provincia" placeholder="Loja" {...text.field('state')} />
                                 </View>
                             </View>
-                            <FormField label="Código postal" required>
-                                <TextInput
-                                    value={form.postalCode}
-                                    onChangeText={(v) => update('postalCode', v)}
-                                    placeholder="110150"
-                                    placeholderTextColor={colors.textSecondary}
-                                    keyboardType="number-pad"
-                                    style={inputStyle(colors)}
-                                />
-                            </FormField>
+                            <FormField label="Código postal" placeholder="110150" keyboardType="number-pad" autoComplete="postal-code" {...text.field('postalCode')} />
 
                             <View>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.two }}>
@@ -570,6 +554,7 @@ export function CreateListingScreen() {
                                         )}
                                     </MapView>
                                 </View>
+                                {stepError ? <View style={{ marginTop: Spacing.two }}><StepError message={stepError} /></View> : null}
                                 <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: Spacing.two }}>
                                     {form.latitude !== null
                                         ? 'Puedes arrastrar el pin o tocar el mapa para ajustarlo.'
@@ -613,34 +598,21 @@ export function CreateListingScreen() {
                                 {isEdit ? 'Así van a ver el anuncio actualizado:' : 'Así lo van a ver tus clientes:'}
                             </ThemedText>
                             {renderPreviewCard()}
-                            {error && (
-                                <View style={{ marginTop: Spacing.four, backgroundColor: colors.destructiveSoft, borderRadius: Radius.lg, padding: Spacing.three }}>
-                                    <ThemedText style={{ color: colors.destructive, fontSize: 13.5 }}>{error}</ThemedText>
+                            {error ? (
+                                <View style={{ marginTop: Spacing.four }}>
+                                    <FormErrorBanner message={error} onRetry={handleContinue} retrying={publishing} />
                                 </View>
-                            )}
+                            ) : null}
                         </View>
                     )}
                 </ScrollView>
 
                 <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, borderTopWidth: 1, borderColor: colors.border }}>
-                    <Pressable
+                    <Button
+                        label={step === steps.length - 1 ? (isEdit ? 'Guardar cambios' : 'Publicar anuncio') : 'Continuar'}
                         onPress={handleContinue}
-                        disabled={!canContinue || publishing}
-                        style={{
-                            backgroundColor: canContinue ? colors.primary : colors.backgroundSelected,
-                            paddingVertical: Spacing.three,
-                            borderRadius: Radius.lg,
-                            alignItems: 'center',
-                        }}
-                    >
-                        {publishing ? (
-                            <ActivityIndicator color={colors.onPrimary} />
-                        ) : (
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: canContinue ? colors.onPrimary : colors.textSecondary }}>
-                                {step === steps.length - 1 ? (isEdit ? 'Guardar cambios' : 'Publicar anuncio') : 'Continuar'}
-                            </ThemedText>
-                        )}
-                    </Pressable>
+                        loading={publishing}
+                    />
                 </View>
 
                 <ModalScreen visible={showPreview} title="Vista previa" onClose={() => setShowPreview(false)}>
@@ -656,28 +628,15 @@ export function CreateListingScreen() {
     );
 }
 
-function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+/** Aviso de error de un paso que no es un campo de texto (categoría, foto, ubicación). */
+function StepError({ message }: { message: string }) {
+    const colors = useTheme();
     return (
-        <View>
-            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: Spacing.two }}>
-                {label}{required && <ThemedText style={{ color: colors.destructive }}> *</ThemedText>}
-            </ThemedText>
-            {children}
+        <View accessibilityRole="alert" style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one }}>
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} style={{ marginTop: Spacing.half }} />
+            <Text variant="caption" color="destructive" style={{ flex: 1, minWidth: 0 }}>
+                {message}
+            </Text>
         </View>
     );
-}
-
-function inputStyle(colors: any) {
-    return {
-        minHeight: FieldHeight,
-        backgroundColor: colors.backgroundElement,
-        borderRadius: Radius.lg,
-        paddingHorizontal: Spacing.three,
-        paddingVertical: Spacing.snug,
-        fontSize: 15,
-        fontFamily: 'Inter_400Regular',
-        color: colors.text,
-    };
 }

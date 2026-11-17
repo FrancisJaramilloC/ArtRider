@@ -1,23 +1,31 @@
 import { useEffect, useState } from 'react';
-import { View, TextInput, Pressable, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { View, Pressable, ScrollView, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { FormErrorBanner, FormField } from '@/components/ui/FormField';
 import { ModalScreen } from '@/components/ui/ModalScreen';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Text } from '@/components/ui/Text';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, Radius, MinTouch, FieldHeight } from '@/constants/theme';
+import { Spacing, Radius, MinTouch } from '@/constants/theme';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import { useForm } from '@/hooks/useForm';
 import { useLayout } from '@/hooks/use-layout';
+import { useTheme } from '@/hooks/use-theme';
+import { toErrorInfo, type ErrorInfo } from '@/utils/errors';
+import { integerAtLeast, maxLength, minLength, positivePrice, required } from '@/utils/validation';
 import {
     getMyListings,
     createPackage,
     getPackageForEdit,
     updatePackage,
-    type MyListing,
 } from '@/services/providerCatalogService';
 
 type StepId = 'items' | 'details' | 'capacity' | 'photo' | 'price' | 'review';
@@ -31,23 +39,53 @@ const STEP_LABELS: Record<StepId, string> = {
     review: 'Revisión',
 };
 
+const EMPTY_TEXT = { title: '', description: '', capacity: '', dailyPrice: '' };
+
+const TEXT_RULES = {
+    title: [required('Ingresa un título para el paquete'), minLength(3, 'El título debe tener al menos 3 caracteres'), maxLength(100, 'El título admite hasta 100 caracteres')],
+    description: [maxLength(2000, 'La descripción admite hasta 2000 caracteres')],
+    capacity: [required('Ingresa para cuántas personas alcanza'), integerAtLeast(1, 'Ingresa un número de personas mayor a 0')],
+    dailyPrice: [required('Ingresa el precio por día'), positivePrice('Ingresa un precio mayor a 0')],
+};
+
+/** Campos de texto que se validan en cada paso. */
+const STEP_FIELDS: Partial<Record<StepId, (keyof typeof EMPTY_TEXT)[]>> = {
+    details: ['title', 'description'],
+    capacity: ['capacity'],
+    price: ['dailyPrice'],
+};
+
+/** Aviso de error de un paso que no es un campo de texto (equipos, foto). */
+function StepError({ message }: { message: string }) {
+    const colors = useTheme();
+    return (
+        <View accessibilityRole="alert" style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one }}>
+            <Ionicons name="alert-circle" size={16} color={colors.destructive} style={{ marginTop: Spacing.half }} />
+            <Text variant="caption" color="destructive" style={{ flex: 1, minWidth: 0 }}>
+                {message}
+            </Text>
+        </View>
+    );
+}
+
 export function CreatePackageScreen() {
   const { gutter } = useLayout();
     const { id: editPackageId } = useLocalSearchParams<{ id?: string }>();
     const isEdit = !!editPackageId;
     const router = useRouter();
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
+    const colors = useTheme();
 
     const [loadingExisting, setLoadingExisting] = useState(isEdit);
     const [step, setStep] = useState(0);
-    const [myListings, setMyListings] = useState<MyListing[]>([]);
-    const [loadingListings, setLoadingListings] = useState(true);
+    const listingsLoad = useAsyncData(async () => (await getMyListings()).filter((l) => l.is_published));
+    const myListings = listingsLoad.data ?? [];
+    const loadingListings = listingsLoad.status === 'loading';
     const [selected, setSelected] = useState<Record<string, number>>({});
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [capacity, setCapacity] = useState('');
-    const [dailyPrice, setDailyPrice] = useState('');
+    const text = useForm(EMPTY_TEXT, TEXT_RULES);
+    const { title, description, capacity, dailyPrice } = text.values;
+    const [stepError, setStepError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<ErrorInfo | null>(null);
+    const [reloadKey, setReloadKey] = useState(0);
     const [coverUri, setCoverUri] = useState<string | null>(null);
     const [coverMime, setCoverMime] = useState<string | null>(null);
     const [publishing, setPublishing] = useState(false);
@@ -55,30 +93,38 @@ export function CreatePackageScreen() {
     const [showPreview, setShowPreview] = useState(false);
 
     useEffect(() => {
-        getMyListings().then((all) => {
-            setMyListings(all.filter((l) => l.is_published));
-            setLoadingListings(false);
-        });
-    }, []);
-
-    useEffect(() => {
         if (!isEdit || !editPackageId) return;
-        getPackageForEdit(editPackageId).then((data) => {
-            if (data) {
-                setTitle(data.title);
-                setDescription(data.description);
-                setCapacity(String(data.capacityPeople));
-                setDailyPrice(String(data.dailyPriceDollars));
+        let cancelled = false;
+        setLoadingExisting(true);
+        setLoadError(null);
+        getPackageForEdit(editPackageId)
+            .then((data) => {
+                if (cancelled || !data) return;
+                text.reset({
+                    title: data.title,
+                    description: data.description,
+                    capacity: String(data.capacityPeople),
+                    dailyPrice: String(data.dailyPriceDollars),
+                });
                 setCoverUri(data.coverImageUrl);
                 const preselected: Record<string, number> = {};
                 data.items.forEach((item) => { preselected[item.listingId] = item.quantity; });
                 setSelected(preselected);
-            }
-            setLoadingExisting(false);
-        });
-    }, [isEdit, editPackageId]);
+            })
+            .catch((e) => {
+                if (!cancelled) setLoadError(toErrorInfo(e));
+            })
+            .finally(() => {
+                if (!cancelled) setLoadingExisting(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isEdit, editPackageId, reloadKey]);
 
     function toggleItem(listingId: string) {
+        setStepError(null);
         setSelected((prev) => {
             const next = { ...prev };
             if (next[listingId]) {
@@ -106,22 +152,28 @@ export function CreatePackageScreen() {
         if (!result.canceled && result.assets[0]) {
             setCoverUri(result.assets[0].uri);
             setCoverMime(result.assets[0].mimeType ?? 'image/jpeg');
+            setStepError(null);
         }
     }
 
     const currentStepId = STEPS[step];
     const selectedCount = Object.keys(selected).length;
 
-    const canContinue = (() => {
-        switch (currentStepId) {
-            case 'items': return selectedCount > 0;
-            case 'details': return title.trim().length >= 3;
-            case 'capacity': return parseInt(capacity, 10) > 0;
-            case 'photo': return !!coverUri;
-            case 'price': return parseFloat(dailyPrice) > 0;
-            default: return true;
+    /** Valida el paso actual: error junto al campo (o un aviso) y devuelve si se puede avanzar. */
+    function validateStep(): boolean {
+        setStepError(null);
+        const fields = STEP_FIELDS[currentStepId];
+        if (fields && !text.validateAll(fields)) return false;
+        if (currentStepId === 'items' && selectedCount === 0) {
+            setStepError('Elige al menos un equipo para armar el paquete.');
+            return false;
         }
-    })();
+        if (currentStepId === 'photo' && !coverUri) {
+            setStepError('Elige una foto para continuar.');
+            return false;
+        }
+        return true;
+    }
 
     function handleBack() {
         if (step === 0) {
@@ -130,9 +182,12 @@ export function CreatePackageScreen() {
         }
         setStep((s) => s - 1);
         setError(null);
+        setStepError(null);
     }
 
     async function handleContinue() {
+        if (publishing) return; // sin doble toque
+        if (!validateStep()) return;
         if (step < STEPS.length - 1) {
             setStep((s) => s + 1);
             return;
@@ -206,6 +261,14 @@ export function CreatePackageScreen() {
         );
     }
 
+    if (loadError) {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+                <ErrorState error={loadError} onRetry={() => setReloadKey((k) => k + 1)} />
+            </SafeAreaView>
+        );
+    }
+
     if (loadingExisting) {
         return (
             <ScreenSkeleton />
@@ -217,7 +280,7 @@ export function CreatePackageScreen() {
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
                 <View style={{ paddingHorizontal: gutter, paddingTop: Spacing.two }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, marginBottom: Spacing.three }}>
-                        <Pressable onPress={handleBack} hitSlop={8}>
+                        <Pressable onPress={handleBack} hitSlop={8} accessibilityRole="button" accessibilityLabel="Volver" style={{ minWidth: MinTouch, minHeight: MinTouch, justifyContent: 'center' }}>
                             <Ionicons name="chevron-back" size={24} color={colors.text} />
                         </Pressable>
                         <View style={{ flex: 1, flexDirection: 'row', gap: Spacing.one }}>
@@ -233,7 +296,7 @@ export function CreatePackageScreen() {
                                 />
                             ))}
                         </View>
-                        <Pressable onPress={() => setShowPreview(true)} hitSlop={8}>
+                        <Pressable onPress={() => setShowPreview(true)} hitSlop={8} accessibilityRole="button" accessibilityLabel="Vista previa" style={{ minWidth: MinTouch, minHeight: MinTouch, alignItems: 'flex-end', justifyContent: 'center' }}>
                             <Ionicons name="eye-outline" size={22} color={colors.text} />
                         </Pressable>
                     </View>
@@ -245,14 +308,21 @@ export function CreatePackageScreen() {
                     </ThemedText>
                 </View>
 
-                <ScrollView contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: Spacing.six }} keyboardShouldPersistTaps="handled">
+                <ScrollView ref={text.scrollRef} contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: Spacing.six }} keyboardShouldPersistTaps="handled">
                     {currentStepId === 'items' && (
                         <View>
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: Spacing.three }}>
                                 Elige los equipos que van a formar este paquete, y cuántas unidades de cada uno.
                             </ThemedText>
-                            {loadingListings ? (
-                                <ActivityIndicator color={colors.primary} />
+                            {stepError ? <View style={{ marginBottom: Spacing.three }}><StepError message={stepError} /></View> : null}
+                            {listingsLoad.status === 'error' ? (
+                                <ErrorState error={listingsLoad.error} onRetry={listingsLoad.reload} />
+                            ) : loadingListings ? (
+                                <View style={{ gap: Spacing.two }}>
+                                    {[0, 1, 2].map((i) => (
+                                        <Skeleton key={i} height={72} radius={Radius.lg} />
+                                    ))}
+                                </View>
                             ) : myListings.length === 0 ? (
                                 <EmptyState icon="cube-outline" title="Primero publica un equipo" description="Todavía no tienes equipos publicados — primero publica al menos un equipo individual para poder armar un paquete con ellos." />
                             ) : (
@@ -318,27 +388,9 @@ export function CreatePackageScreen() {
                     )}
 
                     {currentStepId === 'details' && (
-                        <View style={{ gap: Spacing.four }}>
-                            <FormField label="Título del paquete" required>
-                                <TextInput
-                                    value={title}
-                                    onChangeText={setTitle}
-                                    placeholder="Ej. Paquete Fiesta Completa"
-                                    placeholderTextColor={colors.textSecondary}
-                                    style={inputStyle(colors)}
-                                />
-                            </FormField>
-                            <FormField label="Descripción">
-                                <TextInput
-                                    value={description}
-                                    onChangeText={setDescription}
-                                    placeholder="Cuenta para qué tipo de evento es ideal este paquete..."
-                                    placeholderTextColor={colors.textSecondary}
-                                    multiline
-                                    numberOfLines={4}
-                                    style={[inputStyle(colors), { minHeight: 100, textAlignVertical: 'top', paddingTop: Spacing.snug }]}
-                                />
-                            </FormField>
+                        <View style={{ gap: Spacing.three }}>
+                            <FormField label="Título del paquete" placeholder="Ej. Paquete Fiesta Completa" maxLength={100} {...text.field('title')} />
+                            <FormField label="Descripción" placeholder="Cuenta para qué tipo de evento es ideal este paquete..." multiline maxLength={2000} {...text.field('description')} />
                         </View>
                     )}
 
@@ -347,17 +399,15 @@ export function CreatePackageScreen() {
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: Spacing.four }}>
                                 ¿Para cuántas personas alcanza este paquete?
                             </ThemedText>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                                <TextInput
-                                    value={capacity}
-                                    onChangeText={(v) => setCapacity(v.replace(/[^0-9]/g, ''))}
-                                    placeholder="0"
-                                    placeholderTextColor={colors.textSecondary}
-                                    keyboardType="number-pad"
-                                    style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text, flex: 1 }}
-                                />
-                                <ThemedText style={{ fontSize: 15, color: colors.textSecondary }}>personas</ThemedText>
-                            </View>
+                            <FormField
+                                label="Capacidad (personas)"
+                                leftIcon="people-outline"
+                                placeholder="0"
+                                keyboardType="number-pad"
+                                maxLength={5}
+                                {...text.field('capacity')}
+                                onChangeText={(v) => text.setValue('capacity', v.replace(/[^0-9]/g, ''))}
+                            />
                         </View>
                     )}
 
@@ -392,6 +442,7 @@ export function CreatePackageScreen() {
                                     </>
                                 )}
                             </Pressable>
+                            {stepError ? <View style={{ marginTop: Spacing.three }}><StepError message={stepError} /></View> : null}
                             {coverUri && (
                                 <Pressable onPress={pickImage} style={{ marginTop: Spacing.three, alignSelf: 'center' }}>
                                     <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.primary }}>
@@ -407,18 +458,16 @@ export function CreatePackageScreen() {
                             <ThemedText style={{ fontSize: 14, color: colors.textSecondary, marginBottom: Spacing.four }}>
                                 ¿Cuánto cobras por día por el paquete completo?
                             </ThemedText>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-                                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text }}>$</ThemedText>
-                                <TextInput
-                                    value={dailyPrice}
-                                    onChangeText={(v) => setDailyPrice(v.replace(/[^0-9.]/g, ''))}
-                                    placeholder="0"
-                                    placeholderTextColor={colors.textSecondary}
-                                    keyboardType="decimal-pad"
-                                    style={{ fontFamily: 'Inter_700Bold', fontSize: 32, color: colors.text, flex: 1 }}
-                                />
-                                <ThemedText style={{ fontSize: 15, color: colors.textSecondary }}>/día</ThemedText>
-                            </View>
+                            <FormField
+                                label="Precio por día (USD)"
+                                leftIcon="cash-outline"
+                                placeholder="0"
+                                keyboardType="decimal-pad"
+                                hint="Es lo que cobras por cada día de renta del paquete completo."
+                                maxLength={9}
+                                {...text.field('dailyPrice')}
+                                onChangeText={(v) => text.setValue('dailyPrice', v.replace(/[^0-9.]/g, ''))}
+                            />
                         </View>
                     )}
 
@@ -428,34 +477,21 @@ export function CreatePackageScreen() {
                                 {isEdit ? 'Así van a ver el paquete actualizado:' : 'Así lo van a ver tus clientes:'}
                             </ThemedText>
                             {renderPreviewCard()}
-                            {error && (
-                                <View style={{ marginTop: Spacing.four, backgroundColor: colors.destructiveSoft, borderRadius: Radius.lg, padding: Spacing.three }}>
-                                    <ThemedText style={{ color: colors.destructive, fontSize: 13.5 }}>{error}</ThemedText>
+                            {error ? (
+                                <View style={{ marginTop: Spacing.four }}>
+                                    <FormErrorBanner message={error} onRetry={handleContinue} retrying={publishing} />
                                 </View>
-                            )}
+                            ) : null}
                         </View>
                     )}
                 </ScrollView>
 
                 <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four, borderTopWidth: 1, borderColor: colors.border }}>
-                    <Pressable
+                    <Button
+                        label={step === STEPS.length - 1 ? (isEdit ? 'Guardar cambios' : 'Publicar paquete') : 'Continuar'}
                         onPress={handleContinue}
-                        disabled={!canContinue || publishing}
-                        style={{
-                            backgroundColor: canContinue ? colors.primary : colors.backgroundSelected,
-                            paddingVertical: Spacing.three,
-                            borderRadius: Radius.lg,
-                            alignItems: 'center',
-                        }}
-                    >
-                        {publishing ? (
-                            <ActivityIndicator color={colors.onPrimary} />
-                        ) : (
-                            <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: canContinue ? colors.onPrimary : colors.textSecondary }}>
-                                {step === STEPS.length - 1 ? (isEdit ? 'Guardar cambios' : 'Publicar paquete') : 'Continuar'}
-                            </ThemedText>
-                        )}
-                    </Pressable>
+                        loading={publishing}
+                    />
                 </View>
 
                 <ModalScreen visible={showPreview} title="Vista previa" onClose={() => setShowPreview(false)}>
@@ -469,30 +505,4 @@ export function CreatePackageScreen() {
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
-}
-
-function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-    const scheme = useColorScheme();
-    const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-    return (
-        <View>
-            <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: Spacing.two }}>
-                {label}{required && <ThemedText style={{ color: colors.destructive }}> *</ThemedText>}
-            </ThemedText>
-            {children}
-        </View>
-    );
-}
-
-function inputStyle(colors: any) {
-    return {
-        minHeight: FieldHeight,
-        backgroundColor: colors.backgroundElement,
-        borderRadius: Radius.lg,
-        paddingHorizontal: Spacing.three,
-        paddingVertical: Spacing.snug,
-        fontSize: 15,
-        fontFamily: 'Inter_400Regular',
-        color: colors.text,
-    };
 }

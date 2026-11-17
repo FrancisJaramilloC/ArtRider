@@ -136,15 +136,23 @@ export function useForm<K extends string>(initial: Values<K>, rules: { [P in K]?
     }
   }
 
-  /** Valida todo. Devuelve true si no hay errores; si los hay, los muestra y enfoca el primero. */
-  function validateAll(): boolean {
+  /**
+   * Valida todo (o solo `names`, p. ej. los campos del paso actual de un asistente). Devuelve true si no hay
+   * errores; si los hay, los muestra y enfoca el primero.
+   */
+  function validateAll(names?: K[]): boolean {
+    const scope = names ?? order;
     const next: Errors<K> = {};
-    for (const name of order) {
+    for (const name of scope) {
       const message = validateField(name, values);
       if (message) next[name] = message;
     }
-    setErrors(next);
-    const first = order.find((name) => next[name]);
+    setErrors((prev) => {
+      const kept: Errors<K> = names ? { ...prev } : {};
+      for (const name of scope) delete kept[name];
+      return { ...kept, ...next };
+    });
+    const first = scope.find((name) => next[name]);
     if (first) focusAndScroll(first);
     return first === undefined;
   }
@@ -172,9 +180,16 @@ export function useForm<K extends string>(initial: Values<K>, rules: { [P in K]?
     await run();
   }
 
+  /** Reemplaza todos los valores (p. ej. al cargar un registro para editarlo) y limpia los errores. */
+  const reset = useCallback((next: Values<K>) => {
+    setValues(next);
+    setErrors({});
+    setSubmitError(null);
+  }, []);
+
   const retry = useCallback(() => {
     lastSubmit.current?.();
   }, []);
 
-  return { values, errors, field, viewRefFor, setValue, validateAll, submit, retry, submitting, submitError, setSubmitError, scrollRef };
+  return { values, errors, field, viewRefFor, setValue, reset, validateAll, submit, retry, submitting, submitError, setSubmitError, scrollRef };
 }

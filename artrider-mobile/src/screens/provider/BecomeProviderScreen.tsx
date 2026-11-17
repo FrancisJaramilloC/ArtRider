@@ -1,14 +1,20 @@
-import { useEffect, useState } from 'react';
-import { View, TextInput, Pressable, ActivityIndicator, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { useState } from 'react';
+import { View, Pressable, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { FormErrorBanner, FormField } from '@/components/ui/FormField';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/navigation/BackButton';
 import { Colors, Spacing, Radius, StatusColors, type BookingStatusKey, MinTouch } from '@/constants/theme';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import { useForm } from '@/hooks/useForm';
+import { maxLength, minLength, required } from '@/utils/validation';
 import { useLayout } from '@/hooks/use-layout';
 import { getMyProviderProfile, becomeProvider, type ProviderProfile } from '@/services/providerService';
 
@@ -18,52 +24,46 @@ const STATUS_INFO: Record<ProviderProfile['status'], { label: string; tone: Book
   suspended: { label: 'Suspendido', tone: 'cancelled', icon: 'alert-circle-outline' },
 };
 
+const RULES = {
+  brandName: [
+    required('Ingresa el nombre de tu negocio'),
+    minLength(2, 'El nombre debe tener al menos 2 caracteres'),
+    maxLength(80, 'El nombre admite hasta 80 caracteres'),
+  ],
+  bio: [maxLength(500, 'La descripción admite hasta 500 caracteres')],
+};
+
 export function BecomeProviderScreen() {
   const { gutter } = useLayout();
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
 
-  const [profile, setProfile] = useState<ProviderProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Si falla la consulta del perfil se muestra un error con «Reintentar» (antes se mostraba el formulario como si no fuera proveedor).
+  const profileLoad = useAsyncData<ProviderProfile | null>(getMyProviderProfile);
+  const profile = profileLoad.data;
+  const loading = profileLoad.status === 'loading';
 
-  const [brandName, setBrandName] = useState('');
-  const [bio, setBio] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const form = useForm({ brandName: '', bio: '' }, RULES);
+  const brandName = form.values.brandName;
   const [justSubmitted, setJustSubmitted] = useState(false);
 
-  useEffect(() => {
-    getMyProviderProfile()
-      .then((p) => {
-        setProfile(p);
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }, []);
+  function handleSubmit() {
+    form.submit(async (values) => {
+      const result = await becomeProvider({ brandName: values.brandName.trim(), bio: values.bio.trim() });
+      if (result.error) return result.error;
+      setJustSubmitted(true);
+      return null;
+    });
+  }
 
-  const brandNameValid = brandName.trim().length >= 2 && brandName.trim().length <= 80;
-
-  async function handleSubmit() {
-    setError(null);
-
-    if (!brandNameValid) {
-      setError('El nombre del negocio debe tener entre 2 y 80 caracteres.');
-      return;
-    }
-
-    setSubmitting(true);
-    const result = await becomeProvider({ brandName: brandName.trim(), bio: bio.trim() });
-    setSubmitting(false);
-
-    if (result.error) {
-      setError(result.error);
-      return;
-    }
-
-    setJustSubmitted(true);
+  if (profileLoad.status === 'error') {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+        <BackButton style={{ position: 'absolute', top: Spacing.four, left: Spacing.four, zIndex: 1 }} />
+        <ErrorState error={profileLoad.error} onRetry={profileLoad.reload} />
+      </SafeAreaView>
+    );
   }
 
   if (loading) {
@@ -132,9 +132,9 @@ export function BecomeProviderScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={form.scrollRef} contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <View style={{ paddingHorizontal: gutter, paddingVertical: Spacing.four }}>
-            <Pressable onPress={() => router.back()} style={{ marginBottom: Spacing.four }}>
+            <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Volver" style={{ marginBottom: Spacing.four, minWidth: MinTouch, minHeight: MinTouch, justifyContent: 'center' }}>
               <Ionicons name="arrow-back" size={22} color={colors.text} />
             </Pressable>
 
@@ -161,78 +161,32 @@ export function BecomeProviderScreen() {
               </ThemedText>
             </View>
 
-            {error && (
-              <View
-                style={{
-                  backgroundColor: colors.destructiveSoft,
-                  borderRadius: Radius.lg,
-                  padding: Spacing.three,
-                  marginBottom: Spacing.three,
-                }}
-              >
-                <ThemedText style={{ color: colors.destructive, fontSize: 13.5 }}>{error}</ThemedText>
+            {form.submitError ? (
+              <View style={{ marginBottom: Spacing.three }}>
+                <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} />
               </View>
-            )}
+            ) : null}
 
-            {/* Nombre del negocio */}
-            <View style={{ marginBottom: Spacing.three }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: Spacing.two }}>
-                  Nombre de tu negocio / marca *
-                </ThemedText>
-                <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary }}>{brandName.length}/80</ThemedText>
-              </View>
-              <View style={{ backgroundColor: colors.backgroundElement, borderRadius: Radius.md, paddingHorizontal: Spacing.three }}>
-                <TextInput
-                  value={brandName}
-                  onChangeText={(t) => setBrandName(t.slice(0, 80))}
-                  placeholder="Ej: AudioPro Ecuador"
-                  placeholderTextColor={colors.textSecondary}
-                  style={{ minHeight: MinTouch, paddingVertical: Spacing.snug, fontSize: 14, fontFamily: 'Inter_400Regular', color: colors.text }}
-                />
-              </View>
-              <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary, marginTop: Spacing.one }}>
-                Este nombre será visible públicamente en tus equipos.
-              </ThemedText>
+            <View style={{ gap: Spacing.three, marginBottom: Spacing.four }}>
+              <FormField
+                label="Nombre de tu negocio / marca"
+                placeholder="Ej: AudioPro Ecuador"
+                hint={`Este nombre será visible públicamente en tus equipos. ${brandName.length}/80`}
+                maxLength={80}
+                returnKeyType="next"
+                {...form.field('brandName')}
+              />
+              <FormField
+                label="Descripción breve (opcional)"
+                placeholder="Cuéntanos sobre tu negocio, experiencia o especialidad..."
+                hint={`${form.values.bio.length}/500`}
+                multiline
+                maxLength={500}
+                {...form.field('bio')}
+              />
             </View>
 
-            {/* Descripción */}
-            <View style={{ marginBottom: Spacing.four }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <ThemedText style={{ fontFamily: 'Inter_600SemiBold', fontSize: 13, color: colors.text, marginBottom: Spacing.two }}>
-                  Descripción breve (opcional)
-                </ThemedText>
-                <ThemedText style={{ fontSize: 11.5, color: colors.textSecondary }}>{bio.length}/500</ThemedText>
-              </View>
-              <View style={{ backgroundColor: colors.backgroundElement, borderRadius: Radius.md, paddingHorizontal: Spacing.three }}>
-                <TextInput
-                  value={bio}
-                  onChangeText={(t) => setBio(t.slice(0, 500))}
-                  placeholder="Cuéntanos sobre tu negocio, experiencia o especialidad..."
-                  placeholderTextColor={colors.textSecondary}
-                  multiline
-                  numberOfLines={4}
-                  style={{ paddingVertical: Spacing.snug, fontSize: 14, fontFamily: 'Inter_400Regular', color: colors.text, minHeight: 90, textAlignVertical: 'top' }}
-                />
-              </View>
-            </View>
-
-            <Pressable
-              onPress={handleSubmit}
-              disabled={submitting || !brandNameValid}
-              style={{
-                backgroundColor: submitting || !brandNameValid ? colors.backgroundSelected : colors.primary,
-                paddingVertical: Spacing.three,
-                borderRadius: Radius.lg,
-                alignItems: 'center',
-              }}
-            >
-              {submitting ? (
-                <ActivityIndicator color={colors.onPrimary} />
-              ) : (
-                <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 14, color: colors.onPrimary }}>Enviar solicitud</ThemedText>
-              )}
-            </Pressable>
+            <Button label="Enviar solicitud" onPress={handleSubmit} loading={form.submitting} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
