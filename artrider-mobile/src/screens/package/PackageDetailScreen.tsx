@@ -24,12 +24,11 @@ import { formatPrice } from '@/utils/format';
 const BOTTOM_BAR_CLEARANCE = 112;
 
 export function PackageDetailScreen() {
-  const { gutter } = useLayout();
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const colors = useTheme();
     const { session } = useAuth();
-    const { insets } = useLayout();
+    const { gutter, insets } = useLayout();
 
     const [pkg, setPkg] = useState<PackageWithItems | null>(null);
     const [esFavorito, setEsFavorito] = useState(false);

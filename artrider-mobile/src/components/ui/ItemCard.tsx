@@ -104,7 +104,7 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
             <Text variant="bodyStrong" numberOfLines={TITLE_LINES} style={{ minHeight: Type.bodyStrong.lineHeight * TITLE_LINES }}>
               {item.title}
             </Text>
-            <View style={{ height: META_HEIGHT, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
+            <View style={{ minHeight: META_HEIGHT, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
               <View style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
                 {item.city ? (
                   <>
@@ -116,7 +116,7 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
                 ) : null}
               </View>
               {/* Espacio reservado: el rating siempre ocupa la misma posición, haya o no calificación. */}
-              <View style={{ width: RATING_SLOT, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.half }}>
+              <View style={{ minWidth: RATING_SLOT, flexShrink: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.half }}>
                 {hasRating ? (
                   <>
                     <Ionicons name="star" size={12} color={colors.text} />

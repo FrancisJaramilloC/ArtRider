@@ -25,12 +25,11 @@ import { formatPrice } from '@/utils/format';
 const BOTTOM_BAR_CLEARANCE = 112;
 
 export function ListingDetailScreen() {
-  const { gutter } = useLayout();
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
     const colors = useTheme();
     const { session } = useAuth();
-    const { insets } = useLayout();
+    const { gutter, insets } = useLayout();
 
     const [listing, setListing] = useState<ListingWithProvider | null>(null);
     const [rating, setRating] = useState<{ avg: number; count: number }>({ avg: 0, count: 0 });

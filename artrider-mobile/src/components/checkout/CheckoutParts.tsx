@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Thumb } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -28,7 +28,7 @@ export function CheckoutLoading() {
 }
 
 /** Fila de ítem del resumen: miniatura, título y subtítulo (fechas, cantidad). */
-export function SummaryItem({ title, subtitle, extra, imageUri, size = 64 }: { title: string; subtitle: string; extra?: string; imageUri?: string | null; size?: number }) {
+export function SummaryItem({ title, subtitle, extra, imageUri, size = Thumb.list }: { title: string; subtitle: string; extra?: string; imageUri?: string | null; size?: number }) {
   const colors = useTheme();
   return (
     <View style={{ flexDirection: 'row', gap: Spacing.three, alignItems: 'center' }}>

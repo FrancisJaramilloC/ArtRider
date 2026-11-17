@@ -48,7 +48,6 @@ export function Button({
     destructive: { bg: 'transparent', fg: colors.destructive, border: colors.destructive },
   }[variant];
 
-
   return (
     <Pressable
       onPress={onPress}

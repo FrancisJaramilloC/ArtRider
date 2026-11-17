@@ -319,7 +319,7 @@ export function RegisterScreen() {
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
                                 <ThemedText style={{ fontFamily: 'Inter_500Medium', fontSize: 15, color: colors.textSecondary }}>¿Ya tienes una cuenta?</ThemedText>
                                 <Link href="/login" asChild>
-                                    <Pressable accessibilityRole="link" style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
+                                    <Pressable accessibilityRole="link" style={{ minHeight: MinTouch, justifyContent: 'center', paddingHorizontal: Spacing.one }}>
                                         <ThemedText style={{ fontFamily: 'Inter_700Bold', fontSize: 15, color: colors.primary }}>Inicia sesión</ThemedText>
                                     </Pressable>
                                 </Link>

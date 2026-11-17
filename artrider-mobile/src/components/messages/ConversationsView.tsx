@@ -10,7 +10,7 @@ import { IconButton } from '@/components/ui/IconButton';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing, Thumb } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import type { ConversationSummary } from '@/services/messagesService';
@@ -36,7 +36,7 @@ function timeAgo(iso: string | null): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
-const THUMB = 56;
+const THUMB = Thumb.list;
 
 function ConversationRow({ item, onOpen, onLongPress }: { item: ConversationSummary; onOpen: () => void; onLongPress: () => void }) {
   const colors = useTheme();

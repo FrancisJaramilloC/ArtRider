@@ -17,8 +17,12 @@ const WEB_STUBS = {
 
 const defaultResolveRequest = config.resolver.resolveRequest;
 
+// Los stubs son SOLO para la vista previa de desarrollo: en un build de producción no se aplican
+// (la web no es un destino de producción; así no se guardaría la sesión sin cifrar en localStorage).
+const useWebStubs = process.env.NODE_ENV !== 'production';
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (platform === 'web' && Object.prototype.hasOwnProperty.call(WEB_STUBS, moduleName)) {
+  if (useWebStubs && platform === 'web' && Object.prototype.hasOwnProperty.call(WEB_STUBS, moduleName)) {
     return { type: 'sourceFile', filePath: WEB_STUBS[moduleName] };
   }
   // Cualquier otra plataforma (o módulo): resolución por defecto, sin cambios.

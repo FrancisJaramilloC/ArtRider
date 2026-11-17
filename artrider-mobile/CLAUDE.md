@@ -25,6 +25,12 @@ pnpm exec expo install <paquete>          # para librerías nativas (versión de
 - `metro.config.js` sustituye SOLO en web `react-native-maps`, `react-native-map-clustering` y `react-native-webview` por stubs de `src/dev/web-stubs/` (placeholder con borde discontinuo); iOS y Android no cambian.
 - El pago (WebView de Kushki) y los mapas no funcionan en web; no usar esta vista para probar flujos.
 
+## Auditoría de UI (solo desarrollo)
+
+- `node scripts/ui-audit/serve.mjs 8091` (reinicia mi servidor web propio) y `AUDIT_BASE=http://localhost:8091 node scripts/ui-audit/audit.mjs <etiqueta> <rutas> 360,390,430,768` miden márgenes, desbordes, ritmo, tarjetas y táctiles en Edge headless; capturas en `.ui-audit/` (ignorado).
+- Pantallas con sesión: `/dev-gallery?s=cards|lists|messages|states` (fixtures locales, solo `__DEV__`).
+- Espaciado: margen 16 (<600) / 24, ritmo `Rhythm` (32/12/24/12/12) y `Thumb` en `constants/theme.ts`; nunca números sueltos.
+
 ## Estructura (`src/`)
 
 - `app/` rutas expo-router (finas, montan una pantalla): `(auth)`, `(tabs)`, `(provider)`, `listing/`, `package/`, `checkout/`, `chat/`, `provider/`…
