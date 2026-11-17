@@ -26,6 +26,7 @@ export const Colors = {
     destructiveSoft: '#fef2f2', // fondo de avisos de error
     scrim: 'rgba(17, 17, 17, 0.5)',
     onImage: '#ffffff', // texto/íconos sobre fotos
+    imageBackdrop: '#f4f4f6', // fondo neutro claro bajo fotos de producto (también en oscuro)
     onImageSurface: 'rgba(17, 17, 17, 0.55)', // botón circular sobre foto
   },
   dark: {
@@ -45,6 +46,7 @@ export const Colors = {
     destructiveSoft: 'rgba(248, 113, 113, 0.15)',
     scrim: 'rgba(0, 0, 0, 0.6)',
     onImage: '#ffffff',
+    imageBackdrop: '#f4f4f6',
     onImageSurface: 'rgba(0, 0, 0, 0.55)',
   },
 } as const;

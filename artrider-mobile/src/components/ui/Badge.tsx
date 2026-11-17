@@ -6,7 +6,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { Text } from './Text';
 
-export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
+export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'solid';
 
 export type BadgeProps = {
   label: string;
@@ -24,6 +24,8 @@ export function Badge({ label, tone = 'neutral', icon, style }: BadgeProps) {
   const palette = {
     neutral: { bg: colors.backgroundSelected, fg: colors.textSecondary },
     accent: { bg: colors.primarySoft, fg: colors.primary },
+    // Sólido y de alto contraste (AA): para insignias que van encima de fotos.
+    solid: { bg: colors.primary, fg: colors.onPrimary },
     success: { bg: status.confirmed.bg, fg: status.confirmed.fg },
     warning: { bg: status.pending.bg, fg: status.pending.fg },
     danger: { bg: status.cancelled.bg, fg: status.cancelled.fg },

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CategoryStrip } from '@/components/home/CategoryStrip';
 import { CityCarousel } from '@/components/home/CityCarousel';
 import { CartIconButton } from '@/components/cart/CartIconButton';
+import { Button } from '@/components/ui/Button';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ItemCard } from '@/components/ui/ItemCard';
@@ -21,6 +22,9 @@ import { getExploreItems, type ExploreItem } from '@/services/exploreService';
 import { getUserFavIds } from '@/services/favoritosService';
 import { useAuth } from '@/hooks/useAuth';
 import { cityKey } from '@/utils/city';
+
+/** Alto del botón «Mapa» + 16 arriba y 16 abajo: la lista deja ese espacio para no quedar tapada. */
+const MAP_BUTTON_CLEARANCE = MinTouch + Spacing.three * 2;
 
 /** Cuántas tarjetas de esqueleto se muestran mientras carga (2 filas de la grilla). */
 const SKELETON_ROWS = 2;
@@ -163,8 +167,9 @@ export function HomeScreen() {
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        style={{ flexGrow: 0 }}
-                        contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, paddingBottom: Spacing.two, alignItems: 'center' }}
+                        // 12 de separación respecto a las chips de categoría y el mismo margen lateral.
+                        style={{ flexGrow: 0, marginTop: Rhythm.cardGap }}
+                        contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, alignItems: 'center' }}
                     >
                         {cities.map((c) => (
                             <Chip key={c} label={c} active={city !== null && cityKey(city) === cityKey(c)} onPress={() => setCity(city !== null && cityKey(city) === cityKey(c) ? null : c)} />
@@ -195,19 +200,14 @@ export function HomeScreen() {
                                 style={{ minWidth: 44, fontSize: 13, fontFamily: Fonts.sansSemiBold, color: colors.text, padding: 0 }}
                             />
                         </View>
-                        {hasActiveFilters && (
-                            <Pressable
-                                onPress={clearFilters}
-                                accessibilityRole="button"
-                                accessibilityLabel="Limpiar filtros"
-                                style={{ minHeight: MinTouch, justifyContent: 'center', paddingHorizontal: Spacing.two }}
-                            >
-                                <Text variant="captionStrong" color="destructive" style={{ textDecorationLine: 'underline' }}>
-                                    Limpiar filtros
-                                </Text>
-                            </Pressable>
-                        )}
                     </ScrollView>
+
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: gutter, paddingTop: Rhythm.cardGap }}>
+                        <Text variant="captionStrong" color="textSecondary" accessibilityRole="header">
+                            {filteredExploreItems.length} {filteredExploreItems.length === 1 ? 'resultado' : 'resultados'}
+                        </Text>
+                        {hasActiveFilters ? <Button label="Limpiar filtros" variant="ghost" size="sm" onPress={clearFilters} style={{ marginRight: -Spacing.three }} /> : <View style={{ height: MinTouch }} />}
+                    </View>
 
                     {filteredExploreItems.length === 0 ? (
                         <EmptyState
@@ -225,7 +225,7 @@ export function HomeScreen() {
                             keyExtractor={(item) => `${item.tipo}-${item.id}`}
                             numColumns={columns}
                             columnWrapperStyle={{ gap: Rhythm.cardGap, paddingHorizontal: gutter }}
-                            contentContainerStyle={{ gap: Spacing.four, paddingTop: Spacing.three, paddingBottom: bottomInset + MinTouch + Spacing.four }}
+                            contentContainerStyle={{ gap: Spacing.four, paddingTop: Spacing.two, paddingBottom: MAP_BUTTON_CLEARANCE + bottomInset }}
                             keyboardShouldPersistTaps="handled"
                             contentInsetAdjustmentBehavior="automatic"
                             renderItem={({ item }) => <ItemCard item={item} width={cardWidth()} isFavorito={favoriteIds.has(item.id)} />}
@@ -244,8 +244,9 @@ export function HomeScreen() {
                         style={[
                             {
                                 position: 'absolute',
-                                bottom: bottomInset,
+                                bottom: bottomInset + Spacing.three,
                                 alignSelf: 'center',
+                                zIndex: 3,
                                 minHeight: MinTouch,
                                 flexDirection: 'row',
                                 alignItems: 'center',

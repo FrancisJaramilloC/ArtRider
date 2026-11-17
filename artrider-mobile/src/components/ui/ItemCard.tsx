@@ -73,7 +73,7 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
             height: imageHeight,
             borderRadius: Radius.card,
             overflow: 'hidden',
-            backgroundColor: colors.backgroundElement,
+            backgroundColor: colors.imageBackdrop,
             borderWidth: 1,
             borderColor: colors.border,
           }}
@@ -90,7 +90,7 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
             />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="image-outline" size={32} color={colors.textMuted} />
+              <Ionicons name="image-outline" size={32} color={colors.textSecondary} />
             </View>
           )}
         </View>
@@ -133,9 +133,9 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
       </Pressable>
 
       {item.tipo === 'paquete' ? (
-        <Badge label="Paquete" tone="neutral" style={{ position: 'absolute', left: CORNER, top: CORNER }} />
+        <Badge label="Paquete" tone="neutral" style={{ position: 'absolute', left: CORNER, top: CORNER, zIndex: 2, elevation: 2 }} />
       ) : isNew ? (
-        <Badge label="Nuevo" tone="accent" style={{ position: 'absolute', left: CORNER, top: CORNER }} />
+        <Badge label="Nuevo" tone="solid" style={{ position: 'absolute', left: CORNER, top: CORNER, zIndex: 2, elevation: 2 }} />
       ) : null}
 
       {showFavorite ? (
@@ -144,7 +144,7 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
           accessibilityRole="button"
           accessibilityLabel={esFavorito ? 'Quitar de favoritos' : 'Guardar en favoritos'}
           accessibilityState={{ selected: esFavorito }}
-          style={{ position: 'absolute', right: heartInset, top: heartInset, width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center' }}
+          style={{ position: 'absolute', right: heartInset, top: heartInset, width: MinTouch, height: MinTouch, alignItems: 'center', justifyContent: 'center', zIndex: 2, elevation: 2 }}
         >
           <View
             style={{
