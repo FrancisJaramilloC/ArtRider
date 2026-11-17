@@ -4,7 +4,8 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { DetailBottomBar, DetailSection, ExpandableText, ItemCarousel, MetaItem, MetaRow, ProviderRow, ReviewList } from '@/components/detail/DetailParts';
+import { DetailSection, ExpandableText, ItemCarousel, MetaItem, MetaRow, ProviderRow, ReviewList } from '@/components/detail/DetailParts';
+import { DetailCartFooter } from '@/components/detail/DetailCartFooter';
 import { DetailMessage, DetailScaffold, DetailSkeleton } from '@/components/detail/DetailScaffold';
 import { Badge } from '@/components/ui/Badge';
 import { useAsyncData } from '@/hooks/useAsyncData';
@@ -16,7 +17,6 @@ import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
 import { loadRelatedListings } from '@/screens/listing/relatedListings';
 import { useAuth } from '@/hooks/useAuth';
-import { formatPrice } from '@/utils/format';
 
 type PackageBundle = { pkg: PackageWithItems | null; reviews: PackageReview[]; fav: boolean };
 
@@ -102,13 +102,7 @@ export function PackageDetailScreen() {
             images={images}
             esFavorito={esFavorito}
             onToggleFavorito={handleToggleFavorito}
-            footer={
-                <DetailBottomBar
-                    priceLabel={formatPrice(pkg.daily_price)}
-                    onAddToCart={() => router.push(`/checkout/package/${pkg.id}?mode=cart` as never)}
-                    onReserve={() => router.push(`/checkout/package/${pkg.id}` as never)}
-                />
-            }
+            footer={<DetailCartFooter kind="package" id={pkg.id} title={pkg.title} dailyPrice={pkg.daily_price} providerId={pkg.provider_id} />}
         >
             <View style={{ gap: Rhythm.titleToContent }}>
                 <Badge label="Paquete" tone="accent" />

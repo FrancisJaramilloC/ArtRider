@@ -12,3 +12,10 @@ export function hapticSelect(): void {
   if (Platform.OS === 'web') return;
   Haptics.selectionAsync().catch(() => {});
 }
+
+
+/** Háptica de éxito (p. ej. «Agregado al carrito»; solo iOS/Android). */
+export function hapticSuccess(): void {
+  if (Platform.OS === 'web') return;
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+}

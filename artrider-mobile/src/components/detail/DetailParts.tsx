@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
-import { IconButton } from '@/components/ui/IconButton';
 import { ItemCard, type ItemCardData } from '@/components/ui/ItemCard';
 import { StickyFooter } from '@/components/ui/StickyFooter';
 import { Text } from '@/components/ui/Text';
@@ -40,7 +39,7 @@ export function DetailSection({ title, children, divider = false }: { title?: st
       }}
     >
       {title ? (
-        <Text variant="headline" accessibilityRole="header">
+        <Text variant='headline' accessibilityRole='header'>
           {title}
         </Text>
       ) : null}
@@ -56,23 +55,23 @@ export function ProviderRow({ brandName, onPress }: { brandName: string | null |
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
+      accessibilityRole='button'
       accessibilityLabel={`Ofrecido por ${name}. Enviar mensaje`}
       style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56 }}
     >
       <Avatar name={name} size={48} />
       <View style={{ flex: 1, gap: Spacing.half }}>
-        <Text variant="bodyStrong" numberOfLines={1}>
+        <Text variant='bodyStrong' numberOfLines={1}>
           Ofrecido por {name}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
-          <Ionicons name="shield-checkmark" size={14} color={colors.primary} />
-          <Text variant="caption" color="textSecondary">
+          <Ionicons name='shield-checkmark' size={14} color={colors.primary} />
+          <Text variant='caption' color='textSecondary'>
             Proveedor verificado
           </Text>
         </View>
       </View>
-      <Ionicons name="chatbubble-ellipses-outline" size={22} color={colors.primary} />
+      <Ionicons name='chatbubble-ellipses-outline' size={22} color={colors.primary} />
     </Pressable>
   );
 }
@@ -111,14 +110,14 @@ export function ReviewList({ rating, reviews, emptyText }: { rating: number; rev
   return (
     <DetailSection divider>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-        {rating > 0 && <Ionicons name="star" size={18} color={colors.text} />}
-        <Text variant="headline" accessibilityRole="header">
+        {rating > 0 && <Ionicons name='star' size={18} color={colors.text} />}
+        <Text variant='headline' accessibilityRole='header'>
           {title}
         </Text>
       </View>
 
       {reviews.length === 0 ? (
-        <Text variant="body" color="textSecondary">
+        <Text variant='body' color='textSecondary'>
           {emptyText}
         </Text>
       ) : (
@@ -127,10 +126,10 @@ export function ReviewList({ rating, reviews, emptyText }: { rating: number; rev
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
               <Avatar name={review.author_name} size={36} />
               <View style={{ flex: 1 }}>
-                <Text variant="bodyStrong" numberOfLines={1}>
+                <Text variant='bodyStrong' numberOfLines={1}>
                   {review.author_name}
                 </Text>
-                <Text variant="caption" color="textMuted">
+                <Text variant='caption' color='textMuted'>
                   {formatRelativeTime(review.created_at)}
                 </Text>
               </View>
@@ -146,7 +145,7 @@ export function ReviewList({ rating, reviews, emptyText }: { rating: number; rev
               ))}
             </View>
             {review.comment ? (
-              <Text variant="body" color="textSecondary">
+              <Text variant='body' color='textSecondary'>
                 {review.comment}
               </Text>
             ) : null}
@@ -159,28 +158,61 @@ export function ReviewList({ rating, reviews, emptyText }: { rating: number; rev
 
 export type DetailBottomBarProps = {
   priceLabel: string;
-  onAddToCart: () => void;
+  /** Estado del carrito para este ítem: define el texto y la acción del botón principal. */
+  cartState: 'idle' | 'in-cart';
+  /** Muestra «Agregado al carrito» unos segundos tras agregar. */
+  justAdded?: boolean;
+  onCartPress: () => void;
   onReserve: () => void;
-  /** Texto del botón principal. */
-  reserveLabel?: string;
+  /** Si existe, no se puede reservar ni agregar (p. ej. es tu propio equipo): se explica en vez de mostrar botones. */
+  disabledReason?: string;
 };
 
-/** Barra inferior fija (StickyFooter, respeta safe area): precio por día a la izquierda, carrito y reservar a la derecha. */
-export function DetailBottomBar({ priceLabel, onAddToCart, onReserve, reserveLabel = 'Reservar' }: DetailBottomBarProps) {
-  const { isCompact } = useLayout();
+/**
+ * Barra inferior fija (StickyFooter, respeta safe area): precio por día a la izquierda y UN botón
+ * principal a la derecha («Agregar al carrito» / «Ver carrito»); «Reservar» queda como acción secundaria.
+ */
+export function DetailBottomBar({ priceLabel, cartState, justAdded = false, onCartPress, onReserve, disabledReason }: DetailBottomBarProps) {
+  const colors = useTheme();
+  const inCart = cartState === 'in-cart';
   return (
     <StickyFooter>
+      {justAdded ? (
+        <View accessibilityRole='alert' accessibilityLiveRegion='polite' style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.one }}>
+          <Ionicons name='checkmark-circle' size={18} color={colors.primary} />
+          <Text variant='captionStrong' color='primary'>
+            Agregado al carrito
+          </Text>
+        </View>
+      ) : null}
+      {disabledReason ? (
+        <Text variant='caption' color='textSecondary'>
+          {disabledReason}
+        </Text>
+      ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.two }}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text variant="headline" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+        <View style={{ flexShrink: 1, minWidth: 64 }}>
+          <Text variant='headline' numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
             {priceLabel}
           </Text>
-          <Text variant="caption" color="textSecondary">
+          <Text variant='caption' color='textSecondary'>
             por día
           </Text>
         </View>
-        <IconButton icon="cart-outline" label="Agregar al carrito" variant="outline" onPress={onAddToCart} />
-        <Button label={reserveLabel} onPress={onReserve} fullWidth={false} style={{ paddingHorizontal: isCompact ? Spacing.three : Spacing.four }} />
+        {disabledReason ? null : (
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.one }}>
+            <Button label='Reservar' variant='ghost' size='sm' onPress={onReserve} />
+            <Button
+              label={inCart ? 'En tu carrito · Ver carrito' : 'Agregar al carrito'}
+              variant='primary'
+              size='md'
+              fullWidth={false}
+              icon={inCart ? 'cart' : 'cart-outline'}
+              onPress={onCartPress}
+              style={{ flexShrink: 1 }}
+            />
+          </View>
+        )}
       </View>
     </StickyFooter>
   );
@@ -194,8 +226,8 @@ export function ExpandableText({ text, lines = 4 }: { text: string; lines?: numb
   return (
     <View style={{ gap: Spacing.one, alignItems: 'flex-start' }}>
       <Text
-        variant="body"
-        color="textSecondary"
+        variant='body'
+        color='textSecondary'
         numberOfLines={expanded || lineCount === null ? undefined : lines}
         onTextLayout={(e) => {
           if (lineCount === null) setLineCount(e.nativeEvent.lines.length);
@@ -206,12 +238,12 @@ export function ExpandableText({ text, lines = 4 }: { text: string; lines?: numb
       {overflow ? (
         <Pressable
           onPress={() => setExpanded((v) => !v)}
-          accessibilityRole="button"
+          accessibilityRole='button'
           accessibilityState={{ expanded }}
           accessibilityLabel={expanded ? 'Leer menos' : 'Leer más'}
           style={{ minHeight: MinTouch, justifyContent: 'center' }}
         >
-          <Text variant="bodyStrong" color="primary">
+          <Text variant='bodyStrong' color='primary'>
             {expanded ? 'Leer menos' : 'Leer más'}
           </Text>
         </Pressable>
@@ -236,10 +268,10 @@ export function SpecGrid({ items }: { items: SpecItem[] }) {
           key={item.label}
           style={{ width: item.value.length > SPEC_LONG_VALUE ? '100%' : half, backgroundColor: colors.backgroundElement, borderRadius: Radius.xl, padding: Rhythm.cardPadding + Spacing.one, gap: Spacing.half }}
         >
-          <Text variant="caption" color="textSecondary">
+          <Text variant='caption' color='textSecondary'>
             {item.label}
           </Text>
-          <Text variant="bodyStrong">{item.value}</Text>
+          <Text variant='bodyStrong'>{item.value}</Text>
         </View>
       ))}
     </View>

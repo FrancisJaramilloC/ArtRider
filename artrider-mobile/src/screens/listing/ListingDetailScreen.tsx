@@ -3,7 +3,8 @@ import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import MapView, { Marker } from 'react-native-maps';
 
-import { DetailBottomBar, DetailSection, ExpandableText, ItemCarousel, MetaItem, MetaRow, ProviderRow, ReviewList, SpecGrid, type SpecItem } from '@/components/detail/DetailParts';
+import { DetailSection, ExpandableText, ItemCarousel, MetaItem, MetaRow, ProviderRow, ReviewList, SpecGrid, type SpecItem } from '@/components/detail/DetailParts';
+import { DetailCartFooter } from '@/components/detail/DetailCartFooter';
 import { DetailMessage, DetailScaffold, DetailSkeleton } from '@/components/detail/DetailScaffold';
 import { Badge } from '@/components/ui/Badge';
 import { useAsyncData } from '@/hooks/useAsyncData';
@@ -15,7 +16,6 @@ import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
 import { getListingTotalUnits } from '@/services/availabilityService';
 import { useAuth } from '@/hooks/useAuth';
-import { formatPrice } from '@/utils/format';
 import { loadRelatedListings } from './relatedListings';
 
 type ListingBundle = { listing: ListingWithProvider | null; rating: number; totalUnits: number | null; reviews: ListingReview[]; fav: boolean; gallery: string[]; galleryFailed: boolean };
@@ -106,7 +106,6 @@ export function ListingDetailScreen() {
     if (!listing) return <DetailMessage kind="not-found" title="No encontramos este equipo" onBack={() => router.back()} />;
 
     const catLabel = CATEGORY_LABELS[listing.category ?? ''] ?? listing.category ?? 'Equipo';
-    const isOwnListing = session?.user?.id && listing.provider?.user_id === session.user.id;
     // Portada primero y luego la galería, sin duplicados (la portada suele repetirse como foto 1).
     const images = Array.from(new Set([listing.cover_image_url, ...(bundle?.gallery ?? [])].filter((x): x is string => Boolean(x))));
     const { latitude, longitude } = listing.address ?? {};
@@ -122,15 +121,7 @@ export function ListingDetailScreen() {
             esFavorito={esFavorito}
             onToggleFavorito={handleToggleFavorito}
             notice={bundle?.galleryFailed ? "No pudimos cargar todas las fotos. Mostramos la portada." : undefined}
-            footer={
-                isOwnListing ? null : (
-                    <DetailBottomBar
-                        priceLabel={formatPrice(listing.daily_price)}
-                        onAddToCart={() => router.push(`/checkout/${listing.id}?mode=cart` as never)}
-                        onReserve={() => router.push(`/checkout/${listing.id}` as never)}
-                    />
-                )
-            }
+            footer={<DetailCartFooter kind="listing" id={listing.id} title={listing.title ?? 'Equipo'} dailyPrice={listing.daily_price} providerId={listing.provider_id} />}
         >
             <View style={{ gap: Rhythm.titleToContent }}>
                 <Badge label={catLabel} tone="accent" />
