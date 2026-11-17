@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { cityKey } from '@/utils/city';
 import { View, ActivityIndicator, Pressable } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -13,6 +13,8 @@ import { Colors, Spacing, Radius } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { PricePin } from '@/components/map/PricePin';
 import { MapPreviewCard } from '@/components/map/MapPreviewCard';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { getListings, type Listing } from '@/services/catalogService';
 
 const DEFAULT_REGION = {
@@ -29,13 +31,10 @@ export function MapScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ category?: string; city?: string; query?: string; maxPrice?: string }>();
 
-  const [listings, setListings] = useState<Listing[]>([]);
+  const { data, status, error, reload } = useAsyncData<Listing[]>(getListings);
+  const listings = useMemo(() => data ?? [], [data]);
   const [selected, setSelected] = useState<Listing | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getListings().then(setListings).finally(() => setLoading(false));
-  }, []);
+  const loading = status === 'loading';
 
   const filtered = useMemo(() => {
     let list = listings;
@@ -58,6 +57,14 @@ export function MapScreen() {
   }, [listings, params]);
 
   const withCoords = filtered.filter((l) => l.address?.latitude != null && l.address?.longitude != null);
+
+  if (status === 'error') {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center' }}>
+        <ErrorState error={error} onRetry={reload} />
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (

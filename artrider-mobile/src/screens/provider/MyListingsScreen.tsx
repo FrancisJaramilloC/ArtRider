@@ -1,10 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { FlatList, RefreshControl, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useFocusEffect } from 'expo-router';
 
 import { ManagedRow } from '@/components/provider/ManagedRow';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { Rhythm, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
@@ -87,36 +88,29 @@ export function MyListingsScreen() {
     const colors = useTheme();
     const router = useRouter();
     const [tab, setTab] = useState<'equipos' | 'paquetes'>('equipos');
-    const [listings, setListings] = useState<MyListing[]>([]);
-    const [packages, setPackages] = useState<MyPackage[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
-
-    const load = useCallback(() => {
-        return Promise.all([getMyListings(), getMyPackages()])
-            .then(([l, p]) => {
-                setListings(l);
-                setPackages(p);
-            })
-            .finally(() => setLoading(false));
-    }, []);
-
-    useFocusEffect(
-        useCallback(() => {
-            load();
-        }, [load]),
+    const { data, status, error, refreshError, refreshing, reload, refresh } = useAsyncData<{ listings: MyListing[]; packages: MyPackage[] }>(
+        async () => {
+            const [listings, packages] = await Promise.all([getMyListings(), getMyPackages()]);
+            return { listings, packages };
+        },
+        { reloadOnFocus: true },
     );
+    const listings = data?.listings ?? [];
+    const packages = data?.packages ?? [];
+    const load = reload;
 
-    async function onRefresh() {
-        setRefreshing(true);
-        await load();
-        setRefreshing(false);
-    }
-
-    if (loading) {
+    if (status === 'loading') {
         return (
             <TabScreen title="Anuncios">
                 <ScreenSkeleton />
+            </TabScreen>
+        );
+    }
+
+    if (status === 'error') {
+        return (
+            <TabScreen title="Anuncios">
+                <ErrorState fill error={error} onRetry={reload} />
             </TabScreen>
         );
     }
@@ -151,7 +145,8 @@ export function MyListingsScreen() {
                     data={activeData}
                     keyExtractor={(item) => item.id}
                     contentInsetAdjustmentBehavior="automatic"
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+                    ListHeaderComponent={refreshError ? <RefreshErrorNotice error={refreshError} onRetry={reload} /> : undefined}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
                     contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: Spacing.three, paddingBottom: bottomInset + Spacing.four, gap: Rhythm.cardGap }}
                     renderItem={({ item }) =>
                         tab === 'equipos' ? <ListingRow item={item as MyListing} onChanged={load} /> : <PackageRow item={item as MyPackage} onChanged={load} />

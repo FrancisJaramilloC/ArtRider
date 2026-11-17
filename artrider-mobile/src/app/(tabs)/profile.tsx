@@ -14,7 +14,9 @@ export default function ProfileScreen() {
   const [isProvider, setIsProvider] = useState(false);
 
   useEffect(() => {
-    getMyProviderProfile().then((p) => setIsProvider(p?.status === 'active'));
+    getMyProviderProfile()
+      .then((p) => setIsProvider(p?.status === 'active'))
+      .catch(() => setIsProvider(false));
   }, []);
 
   return (

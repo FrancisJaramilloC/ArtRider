@@ -1,7 +1,6 @@
-import { useCallback, useState } from 'react';
 import { View, FlatList } from 'react-native';
 import { Image } from 'expo-image';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,6 +14,8 @@ import { Text } from '@/components/ui/Text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
+import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { getCartItems, removeFromCart, type CartItem } from '@/services/cartService';
 import { formatShortDate } from '@/utils/format';
 
@@ -31,19 +32,12 @@ export function CartScreen() {
     const router = useRouter();
     const { gutter, insets, contentWidth } = useLayout();
 
-    const [items, setItems] = useState<CartItem[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useFocusEffect(
-        useCallback(() => {
-            getCartItems()
-                .then(setItems)
-                .finally(() => setLoading(false));
-        }, [])
-    );
+    const { data, status, error, refreshError, reload, setData } = useAsyncData<CartItem[]>(getCartItems, { reloadOnFocus: true });
+    const items = data ?? [];
+    const loading = status === 'loading';
 
     async function handleRemove(id: string) {
-        setItems((prev) => prev.filter((i) => i.id !== id));
+        setData((prev) => (prev ?? []).filter((i) => i.id !== id));
         await removeFromCart(id);
     }
 
@@ -58,7 +52,9 @@ export function CartScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
             <ScreenHeader title="Carrito" />
 
-            {loading ? (
+            {status === 'error' ? (
+                <ErrorState fill error={error} onRetry={reload} />
+            ) : loading ? (
                 <View style={{ padding: gutter, gap: Spacing.three }}>
                     {[0, 1, 2].map((i) => (
                         <Skeleton key={i} height={96} radius={Radius.card} />
@@ -76,6 +72,7 @@ export function CartScreen() {
             ) : (
                 <>
                     <FlatList
+                        ListHeaderComponent={refreshError ? <RefreshErrorNotice error={refreshError} onRetry={reload} /> : undefined}
                         data={items}
                         keyExtractor={(item) => item.id}
                         contentContainerStyle={{ padding: gutter, gap: Spacing.three, width: '100%', maxWidth: contentWidth, alignSelf: 'center' }}

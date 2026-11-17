@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { toErrorInfo, type ErrorInfo } from '@/utils/errors';
 import { View, FlatList, TextInput, Pressable, Image, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -60,6 +62,8 @@ export function ChatScreen() {
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(!isDraft);
+    const [loadError, setLoadError] = useState<ErrorInfo | null>(null);
+    const [reloadKey, setReloadKey] = useState(0);
     const [text, setText] = useState('');
     const [otherTyping, setOtherTyping] = useState(false);
     const [otherOnline, setOtherOnline] = useState(false);
@@ -73,12 +77,25 @@ export function ChatScreen() {
     // Carga inicial + marcar leído (solo si ya existe conversación real)
     useEffect(() => {
         if (isDraft || !conversationId) return;
-        getMessages(conversationId).then((msgs) => {
-            setMessages(msgs);
-            setLoading(false);
-        });
+        let cancelled = false;
+        // Un fallo de red ya no se ve como «conversación vacía»: muestra error con «Reintentar».
+        getMessages(conversationId)
+            .then((msgs) => {
+                if (cancelled) return;
+                setMessages(msgs);
+                setLoadError(null);
+            })
+            .catch((e) => {
+                if (!cancelled) setLoadError(toErrorInfo(e));
+            })
+            .finally(() => {
+                if (!cancelled) setLoading(false);
+            });
         markMessagesRead(conversationId);
-    }, [conversationId, isDraft]);
+        return () => {
+            cancelled = true;
+        };
+    }, [conversationId, isDraft, reloadKey]);
 
     // Chip del listing/paquete: si es borrador, lo resolvemos directo desde
     // los params (todavía no hay fila de conversación de la cual leerlo).
@@ -185,6 +202,25 @@ export function ChatScreen() {
             setSending(false);
         }
     }, [text, sending, isDraft, providerId, listingId, packageId, conversationId, otherName, myUserId, router]);
+
+    if (loadError && messages.length === 0) {
+        return (
+            <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: gutter, paddingVertical: Spacing.two }}>
+                    <BackButton />
+                </View>
+                <ErrorState
+                    fill
+                    error={loadError}
+                    onRetry={() => {
+                        setLoadError(null);
+                        setLoading(true);
+                        setReloadKey((k) => k + 1);
+                    }}
+                />
+            </SafeAreaView>
+        );
+    }
 
     if (loading) {
         return (

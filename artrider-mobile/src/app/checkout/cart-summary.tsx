@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,6 +13,8 @@ import { StickyFooter } from '@/components/ui/StickyFooter';
 import { Text } from '@/components/ui/Text';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import { getCartItems, chargeAndCreateCartOrder, type CartItem } from '@/services/cartService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
 import { formatShortDate } from '@/utils/format';
@@ -30,17 +32,12 @@ export default function CartSummaryScreen() {
     const router = useRouter();
     const colors = useTheme();
 
-    const [items, setItems] = useState<CartItem[]>([]);
-    const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    useFocusEffect(
-        useCallback(() => {
-            getCartItems().then(setItems).finally(() => setLoading(false));
-        }, [])
-    );
+    const { data, status, error: loadError, reload } = useAsyncData<CartItem[]>(getCartItems, { reloadOnFocus: true });
+    const items = data ?? [];
 
     const subtotal = items.reduce((sum, item) => {
         if (!item.daily_price) return sum;
@@ -49,7 +46,8 @@ export default function CartSummaryScreen() {
     const serviceFee = Math.ceil(subtotal * SERVICE_FEE_RATE);
     const total = subtotal + serviceFee;
 
-    if (loading) return <CheckoutLoading />;
+    if (status === 'error') return <CheckoutShell title="Resumen del carrito"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;
+    if (status === 'loading') return <CheckoutLoading />;
 
     if (success) {
         return (
