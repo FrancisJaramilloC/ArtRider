@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
+import { ItemPickerSheet, type PickerItem } from '@/components/provider/ItemPickerSheet';
 import { ImageGallery } from '@/components/listing/ImageGallery';
 import { ImageViewer } from '@/components/listing/ImageViewer';
 import { OrderGroupCard } from '@/components/bookings/OrderGroupCard';
@@ -198,10 +199,56 @@ function Photos() {
   );
 }
 
+const PICKER_BRANDS = ['RCF', 'JBL', 'Yamaha', 'Shure', 'Chauvet', 'Martin', 'Pioneer', 'Behringer'];
+const PICKER_KINDS = ['Parlante', 'Micrófono', 'Cabeza móvil', 'Consola', 'Luz LED', 'Máquina de humo', 'Subwoofer', 'Proyector'];
+const PICKER_CATEGORIES = ['audio', 'lighting', 'video', 'effects'];
+
+/** 1.500 equipos de ejemplo para probar rendimiento del selector (sin red). */
+function makePickerItems(count: number): PickerItem[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `fx-${i}`,
+    title: `${PICKER_KINDS[i % PICKER_KINDS.length]} ${PICKER_BRANDS[(i * 3) % PICKER_BRANDS.length]} ${100 + (i % 900)}`,
+    brand: PICKER_BRANDS[(i * 3) % PICKER_BRANDS.length],
+    model: `M-${i}`,
+    category: PICKER_CATEGORIES[i % PICKER_CATEGORIES.length],
+    cover_image_url: null,
+    daily_price: 1500 + (i % 40) * 500,
+    is_published: i % 7 !== 0,
+    upcoming: i % 11 === 0 ? (i % 4) + 1 : 0,
+  }));
+}
+
+/** Selector de equipos con 1.500 elementos, siempre abierto (para medir y revisar). */
+function PickerFixture() {
+  const [items] = useState(() => makePickerItems(1500));
+  const [selected, setSelected] = useState<Record<string, number>>({ 'fx-3': 2, 'fx-10': 1 });
+  return (
+    <ItemPickerSheet
+      visible
+      mode="multi"
+      title="Elige equipos"
+      items={items}
+      selected={selected}
+      recentsScope="dev-picker"
+      onClose={() => undefined}
+      onPick={(id) =>
+        setSelected((prev) => {
+          const next = { ...prev };
+          if (next[id]) delete next[id];
+          else next[id] = 1;
+          return next;
+        })
+      }
+      onChangeQuantity={(id, q) => setSelected((prev) => ({ ...prev, [id]: q }))}
+    />
+  );
+}
+
 export default function Gallery() {
   const { s = 'cards' } = useLocalSearchParams<{ s?: string }>();
   if (s === 'messages') return <Messages />;
   if (s === 'photos') return <Photos />;
+  if (s === 'picker') return <PickerFixture />;
   return (
     <Screen scroll padded={s !== 'cards'}>
       <View style={{ paddingTop: Rhythm.chipsToSection }}>

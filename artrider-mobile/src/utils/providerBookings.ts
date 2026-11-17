@@ -58,3 +58,42 @@ export function formatDateRange(start: string, end: string): string {
 export function rentalDays(start: string, end: string): number {
   return Math.max(1, Math.round((parseDay(end).getTime() - parseDay(start).getTime()) / DAY_MS) + 1);
 }
+
+
+/** Reservas vigentes (no canceladas ni archivadas) que ocupan cada día del rango [inicio, fin]. */
+export function bookingsByDay(bookings: ProviderBooking[]): Map<string, ProviderBooking[]> {
+  const map = new Map<string, ProviderBooking[]>();
+  for (const b of bookings) {
+    if (b.status === 'CANCELLED' || b.status === 'ARCHIVED') continue;
+    const start = parseDay(b.start_date).getTime();
+    const end = parseDay(b.end_date).getTime();
+    for (let t = start; t <= end; t += DAY_MS) {
+      const key = new Date(t).toISOString().slice(0, 10);
+      const list = map.get(key);
+      if (list) list.push(b);
+      else map.set(key, [b]);
+    }
+  }
+  return map;
+}
+
+/** Reservas próximas o en curso (aún no terminadas) por equipo: para la insignia «N reservas próximas». */
+export function upcomingCountByListing(bookings: ProviderBooking[], now: Date = new Date()): Record<string, number> {
+  const today = todayKey(now);
+  const counts: Record<string, number> = {};
+  for (const b of bookings) {
+    if (!b.listing_id) continue;
+    if (b.status === 'CANCELLED' || b.status === 'ARCHIVED' || b.status === 'COMPLETED' || b.status === 'DISPUTE') continue;
+    if (b.end_date.slice(0, 10) < today) continue;
+    counts[b.listing_id] = (counts[b.listing_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/** Próximas reservas (vigentes, aún no terminadas) ordenadas por fecha de inicio. */
+export function upcomingBookings(bookings: ProviderBooking[], now: Date = new Date()): ProviderBooking[] {
+  const today = todayKey(now);
+  return bookings
+    .filter((b) => b.status !== 'CANCELLED' && b.status !== 'ARCHIVED' && b.status !== 'COMPLETED' && b.status !== 'DISPUTE' && b.end_date.slice(0, 10) >= today)
+    .sort((x, y) => x.start_date.localeCompare(y.start_date));
+}

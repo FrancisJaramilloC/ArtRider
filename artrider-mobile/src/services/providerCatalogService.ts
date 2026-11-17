@@ -149,28 +149,48 @@ export async function createListing(params: CreateListingParams): Promise<Create
 export type MyListing = {
     id: string;
     title: string | null;
+    brand: string | null;
+    model: string | null;
     cover_image_url: string | null;
     daily_price: number;
     category: string | null;
     is_published: boolean;
 };
 
-/** Todos los anuncios del proveedor autenticado, publicados o no (para su propia gestión). */
+/** Tamaño de página al leer el catálogo del Partner (PostgREST corta en 1000 filas por consulta). */
+const CATALOG_PAGE_SIZE = 1000;
+
+type PageResult<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
+
+/** Lee todas las páginas de una consulta de solo lectura; un fallo en cualquier página se propaga. */
+async function readAllPages<T>(fetchPage: (from: number, to: number) => PageResult<T>, context: string): Promise<T[]> {
+    const all: T[] = [];
+    for (let from = 0; ; from += CATALOG_PAGE_SIZE) {
+        const { data, error } = await fetchPage(from, from + CATALOG_PAGE_SIZE - 1);
+        if (error) throw serviceError(context, error);
+        const rows = data ?? [];
+        all.push(...rows);
+        if (rows.length < CATALOG_PAGE_SIZE) return all;
+    }
+}
+
+/** Todos los anuncios del proveedor autenticado, publicados o no (para su propia gestión). Paginado: aguanta miles. */
 export async function getMyListings(): Promise<MyListing[]> {
     const provider = await getMyProviderProfile();
     if (!provider) return [];
 
-    const { data, error } = await supabase
-        .from('listings')
-        .select('id, title, cover_image_url, daily_price, category, is_published')
-        .eq('provider_id', provider.id)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        throw serviceError('[providerCatalogService] getMyListings', error);
-    }
-    return (data ?? []) as MyListing[];
+    return readAllPages<MyListing>(
+        (from, to) =>
+            supabase
+                .from('listings')
+                .select('id, title, brand, model, cover_image_url, daily_price, category, is_published')
+                .eq('provider_id', provider.id)
+                .is('deleted_at', null)
+                .order('created_at', { ascending: false })
+                .order('id')
+                .range(from, to) as unknown as PageResult<MyListing>,
+        '[providerCatalogService] getMyListings',
+    );
 }
 
 export async function toggleListingPublished(listingId: string, isPublished: boolean): Promise<{ error?: string }> {
@@ -424,17 +444,18 @@ export async function getMyPackages(): Promise<MyPackage[]> {
     const provider = await getMyProviderProfile();
     if (!provider) return [];
 
-    const { data, error } = await supabase
-        .from('packages')
-        .select('id, title, cover_image_url, daily_price, is_published')
-        .eq('provider_id', provider.id)
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        throw serviceError('[providerCatalogService] getMyPackages', error);
-    }
-    return (data ?? []) as MyPackage[];
+    return readAllPages<MyPackage>(
+        (from, to) =>
+            supabase
+                .from('packages')
+                .select('id, title, cover_image_url, daily_price, is_published')
+                .eq('provider_id', provider.id)
+                .is('deleted_at', null)
+                .order('created_at', { ascending: false })
+                .order('id')
+                .range(from, to) as unknown as PageResult<MyPackage>,
+        '[providerCatalogService] getMyPackages',
+    );
 }
 
 export async function togglePackagePublished(packageId: string, isPublished: boolean): Promise<{ error?: string }> {
