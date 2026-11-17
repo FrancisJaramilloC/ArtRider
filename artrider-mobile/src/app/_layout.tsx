@@ -5,6 +5,7 @@ import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_7
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ColorSchemeProvider } from '@/contexts/ColorSchemeContext';
+import { ToastProvider } from '@/contexts/ToastContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 SplashScreen.preventAutoHideAsync();
 function RootNavigator() {
@@ -30,6 +31,7 @@ function RootNavigator() {
       <Stack.Screen name="(provider)" />
       <Stack.Screen name="chat/[id]" />
       <Stack.Screen name="reset-password" />
+      <Stack.Screen name="auth/confirm" />
       <Stack.Protected guard={!session}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
@@ -40,7 +42,9 @@ export default function RootLayout() {
   return (
     <ColorSchemeProvider>
       <AuthProvider>
-        <RootNavigator />
+        <ToastProvider>
+          <RootNavigator />
+        </ToastProvider>
       </AuthProvider>
     </ColorSchemeProvider>
   );

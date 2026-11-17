@@ -1,28 +1,17 @@
-import { useState } from 'react';
 import { View, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter, Link } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
+import { BirthDateField } from '@/components/ui/BirthDateField';
 import { Button } from '@/components/ui/Button';
 import { FormErrorBanner, FormField } from '@/components/ui/FormField';
 import { Text } from '@/components/ui/Text';
-import { MinTouch, Radius, Spacing, FieldHeight } from '@/constants/theme';
+import { MinTouch, Spacing } from '@/constants/theme';
 import { useForm } from '@/hooks/useForm';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
-import { dateKey } from '@/utils/calendar';
 import { adult, email, maxLength, minLength, phone, required, sameAs } from '@/utils/validation';
-
-function formatDateForInput(date: Date): string {
-    return dateKey(date.getFullYear(), date.getMonth(), date.getDate()); // YYYY-MM-DD local
-}
-
-function formatDateForDisplay(date: Date): string {
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' });
-}
 
 const RULES = {
     firstName: [required('Ingresa tu nombre'), minLength(2, 'El nombre debe tener al menos 2 caracteres'), maxLength(50, 'El nombre admite hasta 50 caracteres')],
@@ -41,10 +30,7 @@ export function RegisterScreen() {
     const router = useRouter();
 
     const form = useForm({ firstName: '', lastName: '', email: '', phone: '', birthDate: '', password: '', confirmPassword: '' }, RULES);
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [success, setSuccess] = useState(false);
 
-    const birthDate = form.values.birthDate ? new Date(`${form.values.birthDate}T00:00:00`) : null;
     const birthField = form.field('birthDate');
 
     function handleSubmit() {
@@ -60,10 +46,11 @@ export function RegisterScreen() {
             });
             if (result.error) return result.error;
 
-            // register() ya cerró la sesión automáticamente (decisión del item 004).
-            // Mostramos confirmación y mandamos a login manual, igual que la web.
-            setSuccess(true);
-            setTimeout(() => router.replace('/login'), 1500);
+            // Con «Confirm email» activo no hay sesión: se pide verificar el correo. Con sesión,
+            // el guard del layout raíz lleva a Home.
+            if (result.needsVerification) {
+                router.replace({ pathname: '/verify-email', params: { email: values.email.trim() } });
+            }
             return null;
         });
     }
@@ -81,14 +68,6 @@ export function RegisterScreen() {
                                 Únete a la comunidad de ArtRider hoy.
                             </Text>
                         </View>
-
-                        {success ? (
-                            <View accessibilityRole="alert" style={{ backgroundColor: colors.primarySoft, borderRadius: Radius.lg, padding: Spacing.three }}>
-                                <Text variant="bodyStrong" color="primary">
-                                    ¡Cuenta creada! Redirigiendo a inicio de sesión...
-                                </Text>
-                            </View>
-                        ) : null}
 
                         {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} /> : null}
 
@@ -135,56 +114,13 @@ export function RegisterScreen() {
                             {...form.field('phone')}
                         />
 
-                        {/* Fecha de nacimiento: selector (no es un campo de texto) con el mismo estilo de error. */}
-                        <View ref={form.viewRefFor('birthDate')} style={{ gap: Spacing.two }}>
-                            <Text variant="bodyStrong">Fecha de nacimiento</Text>
-                            <Pressable
-                                onPress={() => setShowDatePicker(true)}
-                                accessibilityRole="button"
-                                accessibilityLabel="Fecha de nacimiento"
-                                accessibilityValue={{ text: birthDate ? formatDateForDisplay(birthDate) : 'Sin seleccionar' }}
-                                accessibilityHint={birthField.error ?? 'Abre el selector de fecha'}
-                                style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    gap: Spacing.two,
-                                    minHeight: FieldHeight,
-                                    backgroundColor: colors.backgroundElement,
-                                    borderRadius: Radius.xl,
-                                    borderWidth: 1.5,
-                                    borderColor: birthField.error ? colors.destructive : 'transparent',
-                                    paddingHorizontal: Spacing.three,
-                                }}
-                            >
-                                <Ionicons name="calendar-outline" size={18} color={birthField.error ? colors.destructive : colors.textSecondary} />
-                                <Text variant="body" color={birthDate ? 'text' : 'textSecondary'} style={{ flex: 1 }}>
-                                    {birthDate ? formatDateForDisplay(birthDate) : 'Selecciona una fecha'}
-                                </Text>
-                            </Pressable>
-                            {birthField.error ? (
-                                <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one }}>
-                                    <Ionicons name="alert-circle" size={16} color={colors.destructive} style={{ marginTop: Spacing.half }} />
-                                    <Text variant="caption" color="destructive" style={{ flex: 1, minWidth: 0 }}>
-                                        {birthField.error}
-                                    </Text>
-                                </View>
-                            ) : null}
-                            {showDatePicker && (
-                                <DateTimePicker
-                                    value={birthDate ?? new Date(2000, 0, 1)}
-                                    mode="date"
-                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                                    maximumDate={new Date()}
-                                    onChange={(_event, selectedDate) => {
-                                        setShowDatePicker(Platform.OS === 'ios'); // iOS: el spinner queda abierto hasta confirmar
-                                        if (selectedDate) {
-                                            birthField.onChangeText(formatDateForInput(selectedDate));
-                                            if (Platform.OS !== 'ios') birthField.onBlur();
-                                        }
-                                    }}
-                                />
-                            )}
-                        </View>
+                        <BirthDateField
+                            value={birthField.value}
+                            onChange={birthField.onChangeText}
+                            onBlur={birthField.onBlur}
+                            error={birthField.error}
+                            viewRef={form.viewRefFor('birthDate')}
+                        />
 
                         <FormField
                             label="Contraseña"
@@ -212,7 +148,7 @@ export function RegisterScreen() {
                             {...form.field('confirmPassword')}
                         />
 
-                        <Button label="Crear cuenta" onPress={handleSubmit} loading={form.submitting} disabled={success} style={{ marginTop: Spacing.two }} />
+                        <Button label="Crear cuenta" onPress={handleSubmit} loading={form.submitting} style={{ marginTop: Spacing.two }} />
 
                         <View style={{ marginTop: Spacing.four, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
                             <Text variant="body" color="textSecondary">

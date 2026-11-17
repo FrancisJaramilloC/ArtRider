@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,6 +11,8 @@ import { useForm } from '@/hooks/useForm';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
+import { useCooldown } from '@/hooks/useCooldown';
+import { RESEND_COOLDOWN_SECONDS, resendSignupEmail, type AuthErrorCode } from '@/services/authService';
 import { email, required } from '@/utils/validation';
 
 const RULES = {

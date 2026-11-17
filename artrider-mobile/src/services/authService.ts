@@ -1,3 +1,5 @@
+import * as Linking from 'expo-linking';
+
 import { supabase } from './supabase';
 
 export interface SignUpParams {
@@ -10,9 +12,23 @@ export interface SignUpParams {
     birthDate: string; // formato YYYY-MM-DD
 }
 
+export type AuthErrorCode = 'invalid_credentials' | 'email_not_confirmed' | 'unexpected';
+
 export interface AuthResult {
     error?: string;
+    /** Distingue errores esperados (credenciales, correo sin confirmar) de los inesperados. */
+    code?: AuthErrorCode;
+    /** signUp: la cuenta se creó pero falta confirmar el correo (no hay sesión). */
+    needsVerification?: boolean;
 }
+
+/** URL a la que Supabase redirige tras confirmar el correo (esquema de la app, o exp:// en Expo Go). */
+export function emailConfirmRedirectUrl(): string {
+    return Linking.createURL('auth/confirm');
+}
+
+/** Intervalo mínimo entre reenvíos del correo de confirmación. */
+export const RESEND_COOLDOWN_SECONDS = 60;
 
 function calculateAge(birthDate: Date): number {
     const today = new Date();
@@ -62,6 +78,7 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
             email,
             password,
             options: {
+                emailRedirectTo: emailConfirmRedirectUrl(),
                 data: {
                     full_name: `${firstName} ${lastName}`.trim(),
                     phone,
@@ -81,11 +98,10 @@ export async function signUp(params: SignUpParams): Promise<AuthResult> {
             return { error: 'Ya existe una cuenta con este correo electrónico.' };
         }
 
-        // Igual que la web: aunque signUp() ya haya creado sesión (si el
-        // proyecto tiene "Confirm email" desactivado), forzamos logout para
-        // que el usuario pase por login manual, no quede logueado automático.
-        if (data.session) {
-            await supabase.auth.signOut();
+        // Con «Confirm email» activo Supabase no devuelve sesión hasta que el usuario abre el enlace.
+        // Si sí hay sesión (confirmación desactivada), el guard del layout raíz lo lleva a Home.
+        if (!data.session) {
+            return { needsVerification: true };
         }
 
         return {};
@@ -111,16 +127,44 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
+            // Errores esperados: no son fallos de la app, así que no se registran con console.error.
+            if (error.code === 'email_not_confirmed' || /email not confirmed/i.test(error.message)) {
+                return { error: 'Aún no confirmas tu correo. Revisa tu bandeja de entrada o reenvía el enlace.', code: 'email_not_confirmed' };
+            }
+            if (error.code === 'invalid_credentials' || /invalid login credentials/i.test(error.message)) {
+                return { error: 'El correo electrónico o la contraseña son incorrectos. Por favor intenta de nuevo.', code: 'invalid_credentials' };
+            }
             console.error('Error de inicio de sesión:', error.message);
-            return { error: 'El correo electrónico o la contraseña son incorrectos. Por favor intenta de nuevo.' };
+            return { error: 'No pudimos iniciar sesión. Por favor intenta de nuevo.', code: 'unexpected' };
         }
 
         return {};
     } catch (error: any) {
         console.error('Error técnico durante el inicio de sesión:', error.message || error);
-        return { error: 'Un error inesperado ocurrió durante el inicio de sesión. Por favor intenta de nuevo.' };
+        return { error: 'Un error inesperado ocurrió durante el inicio de sesión. Por favor intenta de nuevo.', code: 'unexpected' };
     }
 }
+
+/** Reenvía el correo de confirmación de registro. */
+export async function resendSignupEmail(email: string): Promise<AuthResult> {
+    try {
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: { emailRedirectTo: emailConfirmRedirectUrl() },
+        });
+        if (error) {
+            if (error.status === 429 || /rate limit|seconds/i.test(error.message)) {
+                return { error: 'Espera un momento antes de volver a pedir el correo.' };
+            }
+            return { error: 'No pudimos reenviar el correo. Intenta de nuevo.' };
+        }
+        return {};
+    } catch {
+        return { error: 'No pudimos reenviar el correo. Revisa tu conexión e intenta de nuevo.' };
+    }
+}
+
 
 export async function signOut(): Promise<void> {
     try {
