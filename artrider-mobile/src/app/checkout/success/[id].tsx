@@ -1,6 +1,6 @@
 import { COPY } from '@/constants/copy';
 import { View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -30,6 +30,8 @@ export default function CheckoutSuccessScreen() {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+            {/* Compra ya pagada: la única salida es "Ver mis reservas". */}
+            <Stack.Screen options={{ gestureEnabled: false, headerBackVisible: false }} />
             <View
                 style={{
                     flex: 1,

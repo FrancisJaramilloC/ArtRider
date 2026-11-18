@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -54,6 +54,8 @@ export default function CartSummaryScreen() {
     if (success) {
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+                {/* Compra ya pagada: la única salida es "Ver mis reservas". */}
+                <Stack.Screen options={{ gestureEnabled: false, headerBackVisible: false }} />
                 <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.five, gap: Spacing.three }}>
                     <View style={{ width: 80, height: 80, borderRadius: Radius.full, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
                         <Ionicons name="checkmark" size={40} color={colors.primary} />
