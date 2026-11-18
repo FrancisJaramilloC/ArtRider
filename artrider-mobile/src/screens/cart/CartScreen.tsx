@@ -66,7 +66,8 @@ export function CartScreen() {
                     title="Tu carrito está vacío"
                     description="Tu carrito está vacío. Agrega equipos o paquetes desde su página de detalle."
                     actionLabel="Explorar equipos"
-                    onAction={() => router.back()}
+                    // Siempre al Home (pestaña principal): back() volvía al último equipo visto.
+                    onAction={() => router.replace('/(tabs)')}
                     style={{ flex: 1 }}
                 />
             ) : (

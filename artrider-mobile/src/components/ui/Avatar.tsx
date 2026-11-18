@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View } from 'react-native';
 import { Image } from 'expo-image';
 
@@ -23,6 +24,8 @@ function initialsOf(name?: string | null): string {
 export function Avatar({ uri, name, size = 40 }: AvatarProps) {
   const colors = useTheme();
   const radius = size / 2;
+  // Se recuerda la URL que falló (no un booleano): si cambia la foto, se vuelve a intentar.
+  const [failedUri, setFailedUri] = useState<string | null>(null);
 
   return (
     <View
@@ -39,8 +42,16 @@ export function Avatar({ uri, name, size = 40 }: AvatarProps) {
         justifyContent: 'center',
       }}
     >
-      {uri ? (
-        <Image source={{ uri }} style={{ width: size, height: size }} contentFit="cover" transition={150} cachePolicy="memory-disk" />
+      {uri && uri !== failedUri ? (
+        <Image
+          source={{ uri }}
+          style={{ width: size, height: size }}
+          contentFit="cover"
+          transition={150}
+          cachePolicy="memory-disk"
+          // Si la foto no carga (URL rota, bucket privado, sin red) se muestran las iniciales.
+          onError={() => setFailedUri(uri)}
+        />
       ) : (
         <Text
           variant="captionStrong"

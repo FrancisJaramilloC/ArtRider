@@ -112,3 +112,33 @@ export async function updateProfile(params: UpdateProfileParams): Promise<Update
         return { error: 'Ocurrió un error inesperado al conectar con el servidor.' };
     }
 }
+
+/** El campo `avatar_url` guarda la URL pública completa; si llegara solo la ruta en el bucket `avatars`, se construye. */
+function resolveAvatarUrl(value: string | null | undefined): string | null {
+    if (!value) return null;
+    if (/^https?:\/\//i.test(value)) return value;
+    return supabase.storage.from('avatars').getPublicUrl(value).data.publicUrl;
+}
+
+/**
+ * Foto del Partner para el detalle de un equipo (best-effort: nunca lanza; devuelve null si no hay foto o no se puede leer).
+ * 1) RPC `get_provider_public_profile` (SECURITY DEFINER; ver docs/PROPUESTA_PERFIL_PUBLICO_PARTNER.sql).
+ * 2) Lectura directa de `profiles`: la RLS actual solo permite leer el perfil propio, así que para otros usuarios no devuelve filas.
+ */
+export async function getProviderAvatarUrl(userId: string): Promise<string | null> {
+    try {
+        const { data, error } = await supabase.rpc('get_provider_public_profile', { p_user_id: userId });
+        if (!error) {
+            const row = Array.isArray(data) ? data[0] : data;
+            return resolveAvatarUrl(row?.avatar_url);
+        }
+    } catch {
+        // Sin la función en la base: se prueba la lectura directa.
+    }
+    try {
+        const { data } = await supabase.from('profiles').select('avatar_url').eq('id', userId).maybeSingle();
+        return resolveAvatarUrl(data?.avatar_url);
+    } catch {
+        return null;
+    }
+}

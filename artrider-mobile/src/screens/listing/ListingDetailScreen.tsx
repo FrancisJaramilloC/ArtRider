@@ -15,6 +15,7 @@ import { CATEGORY_LABELS } from '@/constants/categories';
 import { getListingByIdWithProvider, getListingGallery, getListingRatings, getListingReviews, type ListingWithProvider, type ListingReview } from '@/services/catalogService';
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
+import { getProviderAvatarUrl } from '@/services/profileService';
 import { getListingTotalUnits } from '@/services/availabilityService';
 import { emitFavoriteChange, onFavoriteChange } from '@/utils/favoritesSync';
 import { useAuth } from '@/hooks/useAuth';
@@ -62,6 +63,13 @@ export function ListingDetailScreen() {
     const { data: related } = useAsyncData(
         () => (listing ? loadRelatedListings(listing.provider_id, listing.id, listing.category).catch(() => null) : Promise.resolve(null)),
         { enabled: !!listing, deps: [listing?.id] },
+    );
+
+    // Foto del Partner: secundaria y no bloqueante (sin foto o sin permiso de lectura → iniciales).
+    const providerUserId = listing?.provider?.user_id ?? null;
+    const { data: providerAvatar } = useAsyncData(
+        () => (providerUserId ? getProviderAvatarUrl(providerUserId) : Promise.resolve(null)),
+        { enabled: !!providerUserId, deps: [providerUserId] },
     );
 
     useEffect(() => {
@@ -155,7 +163,7 @@ export function ListingDetailScreen() {
             </View>
 
             <DetailSection divider>
-                <ProviderRow brandName={listing.provider?.brand_name} city={cityOrNull(listing.address?.city)} onPress={handleContactarProveedor} />
+                <ProviderRow brandName={listing.provider?.brand_name} avatarUri={providerAvatar} city={cityOrNull(listing.address?.city)} onPress={handleContactarProveedor} />
             </DetailSection>
 
             {listing.category ? (

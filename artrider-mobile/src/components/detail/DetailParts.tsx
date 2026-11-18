@@ -50,7 +50,18 @@ export function DetailSection({ title, children, divider = false }: { title?: st
 }
 
 /** Ficha del Partner (avatar, nombre, insignia y ciudad). Aún no existe perfil público: toca para escribirle. */
-export function ProviderRow({ brandName, city, onPress }: { brandName: string | null | undefined; city?: string | null; onPress: () => void }) {
+export function ProviderRow({
+  brandName,
+  city,
+  avatarUri,
+  onPress,
+}: {
+  brandName: string | null | undefined;
+  city?: string | null;
+  /** Foto del Partner; sin ella (o si falla la carga) el avatar muestra sus iniciales. */
+  avatarUri?: string | null;
+  onPress: () => void;
+}) {
   const colors = useTheme();
   const name = brandName ?? COPY.providerFallbackName;
   return (
@@ -60,7 +71,7 @@ export function ProviderRow({ brandName, city, onPress }: { brandName: string | 
       accessibilityLabel={`${COPY.providerLabel(name)}. ${COPY.providerVerified}${city ? `, ${city}` : ''}. Enviar mensaje`}
       style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56 }}
     >
-      <Avatar name={name} size={48} />
+      <Avatar uri={avatarUri} name={name} size={48} />
       <View style={{ flex: 1, gap: Spacing.half }}>
         <Text variant='bodyStrong' numberOfLines={1}>
           {COPY.providerLabel(name)}
