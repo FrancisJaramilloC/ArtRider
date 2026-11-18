@@ -18,6 +18,7 @@ import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { getCartItems, removeFromCart, type CartItem } from '@/services/cartService';
 import { formatShortDate } from '@/utils/format';
+import { computeServiceFee } from '@/utils/pricing';
 
 function formatDateRange(start: string, end: string): string {
     return `${formatShortDate(start)} – ${formatShortDate(end)}`;
@@ -45,7 +46,7 @@ export function CartScreen() {
         if (!item.daily_price) return sum;
         return sum + item.daily_price * item.quantity * daysBetween(item.start_date, item.end_date);
     }, 0);
-    const serviceFee = Math.ceil(subtotal * 0.05);
+    const serviceFee = computeServiceFee(subtotal);
     const total = subtotal + serviceFee;
 
     return (

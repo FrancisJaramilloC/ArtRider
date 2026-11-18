@@ -17,7 +17,8 @@ import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getMyProviderProfile, getProviderBookings, type ProviderProfile, type ProviderBooking } from '@/services/providerService';
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
-import { formatShortDate } from '@/utils/format';
+import { currentMonthKey, summarize, toEarningRows } from '@/utils/earnings';
+import { formatPrice, formatShortDate } from '@/utils/format';
 
 type HomeBundle = { profile: ProviderProfile | null; bookings: ProviderBooking[]; listings: MyListing[] };
 
@@ -34,14 +35,18 @@ const STATUS_TONE: Record<BookingStatusKey, BadgeTone> = {
   completed: 'neutral',
 };
 
-/** Tarjeta de métrica: ícono, número grande y etiqueta; ancho y alto iguales en la cuadrícula. */
-function KpiCard({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) {
+/** Tarjeta de métrica: ícono, número grande y etiqueta; ancho y alto iguales en la cuadrícula. Con `onPress` es un botón. */
+function KpiCard({ icon, label, value, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; onPress?: () => void }) {
   const colors = useTheme();
   return (
-    <View
+    <Pressable
+      disabled={!onPress}
+      onPress={onPress}
       accessible
+      accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={`${label}: ${value}`}
-      style={{ flex: 1, minWidth: 0, backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding + Spacing.one, gap: Spacing.two }}
+      accessibilityHint={onPress ? 'Abre el detalle' : undefined}
+      style={({ pressed }) => ({ flex: 1, minWidth: 0, backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding + Spacing.one, gap: Spacing.two, opacity: pressed && onPress ? 0.85 : 1 })}
     >
       <Ionicons name={icon} size={20} color={colors.primary} />
       <Text variant="title" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
@@ -50,7 +55,7 @@ function KpiCard({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap;
       <Text variant="caption" color="textSecondary" numberOfLines={2}>
         {label}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -121,17 +126,8 @@ export function ProviderTodayScreen() {
   const activeCount = bookings.filter((b) => b.status === 'ACTIVE' || b.status === 'PAID').length;
   const publishedCount = listings.filter((l) => l.is_published).length;
 
-  const now = new Date();
-  const thisMonthRevenue = bookings
-    .filter((b) => {
-      const d = new Date(b.created_at);
-      return (
-        (b.status === 'ACTIVE' || b.status === 'PAID' || b.status === 'COMPLETED') &&
-        d.getMonth() === now.getMonth() &&
-        d.getFullYear() === now.getFullYear()
-      );
-    })
-    .reduce((sum, b) => sum + b.total_price, 0);
+  // Mismo cálculo que la pantalla «Ganancias» (neto del mes de reservas completadas, sin la comisión de servicio).
+  const thisMonthNet = summarize(toEarningRows(bookings), currentMonthKey()).monthNet;
 
   const recentBookings = bookings.slice(0, 5);
 
@@ -162,7 +158,7 @@ export function ProviderTodayScreen() {
           </View>
           <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
             <KpiCard icon="cube-outline" label="Equipos publicados" value={`${publishedCount}/${listings.length}`} />
-            <KpiCard icon="cash-outline" label="Ingresos este mes" value={`$${(thisMonthRevenue / 100).toFixed(0)}`} />
+            <KpiCard icon="cash-outline" label="Ganado este mes" value={formatPrice(thisMonthNet)} onPress={() => router.push('/provider/earnings' as never)} />
           </View>
         </View>
 

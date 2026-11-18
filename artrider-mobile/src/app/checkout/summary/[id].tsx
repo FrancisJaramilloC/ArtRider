@@ -11,8 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { getListingById, type Listing } from '@/services/catalogService';
 import { chargeAndCreateBooking } from '@/services/bookingsService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
-
-const SERVICE_FEE_RATE = 0.05;
+import { computeServiceFee } from '@/utils/pricing';
 
 export default function CheckoutSummaryScreen() {
     const { id, from, to, quantity: quantityParam } = useLocalSearchParams<{ id: string; from: string; to: string; quantity?: string }>();
@@ -29,7 +28,7 @@ export default function CheckoutSummaryScreen() {
 
     const days = Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86400000) + 1;
     const subtotal = listing.daily_price * days * quantity;
-    const serviceFee = Math.ceil(subtotal * SERVICE_FEE_RATE);
+    const serviceFee = computeServiceFee(subtotal);
     const total = subtotal + serviceFee;
 
     return (

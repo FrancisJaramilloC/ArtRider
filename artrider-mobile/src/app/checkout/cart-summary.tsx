@@ -18,8 +18,7 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 import { getCartItems, chargeAndCreateCartOrder, type CartItem } from '@/services/cartService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
 import { formatShortDate } from '@/utils/format';
-
-const SERVICE_FEE_RATE = 0.05;
+import { computeServiceFee } from '@/utils/pricing';
 
 function formatDateRange(start: string, end: string): string {
     return `${formatShortDate(start)} – ${formatShortDate(end)}`;
@@ -43,7 +42,7 @@ export default function CartSummaryScreen() {
         if (!item.daily_price) return sum;
         return sum + item.daily_price * item.quantity * daysBetween(item.start_date, item.end_date);
     }, 0);
-    const serviceFee = Math.ceil(subtotal * SERVICE_FEE_RATE);
+    const serviceFee = computeServiceFee(subtotal);
     const total = subtotal + serviceFee;
 
     if (status === 'error') return <CheckoutShell title="Resumen del carrito"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;

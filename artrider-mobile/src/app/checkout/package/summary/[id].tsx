@@ -11,8 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { getPackageById, type PackageWithItems } from '@/services/packagesService';
 import { chargeAndCreatePackageBooking } from '@/services/bookingsService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
-
-const SERVICE_FEE_RATE = 0.05;
+import { computeServiceFee } from '@/utils/pricing';
 
 export default function PackageCheckoutSummaryScreen() {
     const { id, from, to } = useLocalSearchParams<{ id: string; from: string; to: string }>();
@@ -28,7 +27,7 @@ export default function PackageCheckoutSummaryScreen() {
 
     const days = Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86400000) + 1;
     const subtotal = pkg.daily_price * days;
-    const serviceFee = Math.ceil(subtotal * SERVICE_FEE_RATE);
+    const serviceFee = computeServiceFee(subtotal);
     const total = subtotal + serviceFee;
 
     return (
