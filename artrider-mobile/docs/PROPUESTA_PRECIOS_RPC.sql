@@ -16,7 +16,11 @@
 -- En un carrito, cada línea es UNA reserva (como hoy): la tarifa del pedido se reparte entre las reservas en proporción a su subtotal y la
 -- última absorbe el resto; Σ total_price de las reservas = total del pedido, y cada reserva cumple total_price = rider_subtotal + service_fee.
 --
--- ORDEN DE EJECUCIÓN DE ESTE ARCHIVO: se puede ejecutar de arriba a abajo en una sola transacción (BEGIN; … COMMIT;).
+-- ORDEN DE EJECUCIÓN DE ESTE ARCHIVO: de arriba a abajo, en UNA sola transacción (BEGIN; … COMMIT;): o se aplica todo o nada.
+-- Si cualquier sentencia falla, la transacción queda abortada: ejecutar ROLLBACK; (el SQL editor de Supabase lo hace solo al terminar con error).
+-- Todo lo que contiene (DROP/CREATE FUNCTION, REVOKE, GRANT) es transaccional; no hay COMMIT/ROLLBACK intermedios.
+
+BEGIN;
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- 0) Quitar las firmas antiguas (CREATE OR REPLACE con otros parámetros/retorno crearía sobrecargas nuevas o fallaría)
@@ -539,3 +543,5 @@ GRANT EXECUTE ON FUNCTION public.get_provider_bookings() TO authenticated, servi
 --     -- Equipo de $80 (8000): subtotal 9200, service_fee 499, total 9699.
 --   SELECT * FROM get_cart_quote();   -- con items en el carrito
 -- ─────────────────────────────────────────────────────────────────────────
+
+COMMIT;
