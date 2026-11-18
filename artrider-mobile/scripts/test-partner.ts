@@ -1,6 +1,7 @@
 // Pruebas de las reservas del Partner (segmentos por fecha en Ecuador). Ejecutar: pnpm test:partner
 import assert from 'node:assert/strict';
 
+import { earningsLabel, rowsOfMonth, summarize, toEarningRows } from '../src/utils/earnings.ts';
 import { ecuadorTodayKey, nextAcceptedBooking, segmentOf, upcomingBookings } from '../src/utils/providerBookings.ts';
 
 let checks = 0;
@@ -33,6 +34,32 @@ eq(segmentOf(booking('DISPUTE', '2026-11-18', '2026-11-18'), noon), 'history', '
 // El cambio de día usa Ecuador: 23:30 del 17 en Ecuador (04:30Z del 18) todavía no es «hoy = 18».
 const lateNight = new Date('2026-11-18T04:30:00Z');
 eq(segmentOf(booking('ACTIVE', '2026-11-18', '2026-11-18'), lateNight), 'upcoming', 'a las 23:30 del 17 la reserva del 18 aún es próxima');
+
+// Dinero del Partner: todo en partner_amount, con respaldo «aprox.» para reservas antiguas (partner_amount NULL)
+const money = (status: B['status'], partnerAmount: number | null, total: number, id: string, start = '2026-11-20'): B =>
+  ({ ...booking(status, start, start, id), partner_amount: partnerAmount, total_price: total }) as B;
+const dinero = [
+  money('AWAITING_SIGNATURES', 8000, 9699, 'a'),
+  money('ACTIVE', 16000, 19399, 'u1'),
+  money('PAID', 8000, 9699, 'u2'),
+  money('COMPLETED', 8000, 9699, 'c1', '2026-10-05'),
+  money('COMPLETED', null, 8400, 'c2-antigua', '2026-11-02'),
+  money('CANCELLED', 8000, 9699, 'x'),
+  money('DISPUTE', 8000, 9699, 'd'),
+];
+const rows = toEarningRows(dinero);
+eq(rows.map((r) => r.id), ['a', 'u1', 'u2', 'c1', 'c2-antigua'], 'canceladas y disputas no suman');
+eq(summarize(rows), { awaitingNet: 8000, upcomingNet: 24000, toCollectNet: 16000 }, 'pendiente / próximos ingresos / por cobrar (la antigua cuenta 8400 ÷ 1.05 = 8000)');
+eq(rows.find((r) => r.id === 'c2-antigua')?.estimated, true, 'reserva antigua marcada aprox.');
+eq(rows.find((r) => r.id === 'c1')?.estimated, false, 'reserva nueva exacta');
+eq(rowsOfMonth(rows, '2026-11', 'toCollect').map((r) => r.id), ['c2-antigua'], 'filtro Por cobrar del mes');
+eq(rowsOfMonth(rows, '2026-11', 'upcoming').map((r) => r.id), ['u1', 'u2'], 'filtro Próximos ingresos del mes');
+eq(earningsLabel(money('ACTIVE', 8000, 9699, 'l')), 'Ganarás $80', 'etiqueta futura');
+eq(earningsLabel(money('COMPLETED', 8000, 9699, 'l')), 'Ganaste $80', 'etiqueta completada');
+eq(earningsLabel(money('COMPLETED', null, 8400, 'l')), 'Ganaste $80 (aprox.)', 'etiqueta aproximada');
+eq(earningsLabel(money('CANCELLED', 8000, 9699, 'l')), null, 'cancelada no muestra monto');
+assert.ok(!JSON.stringify(rows).includes('9699'), 'el total del Rider nunca llega a las filas del Partner');
+checks += 1;
 
 // Próxima reserva aceptada
 const list = [

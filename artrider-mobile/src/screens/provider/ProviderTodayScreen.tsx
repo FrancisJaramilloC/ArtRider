@@ -17,7 +17,7 @@ import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getMyProviderProfile, getProviderBookings, type ProviderProfile, type ProviderBooking } from '@/services/providerService';
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
-import { currentMonthKey, summarize, toEarningRows } from '@/utils/earnings';
+import { summarize, toEarningRows } from '@/utils/earnings';
 import { formatPrice, formatShortDate } from '@/utils/format';
 
 type HomeBundle = { profile: ProviderProfile | null; bookings: ProviderBooking[]; listings: MyListing[] };
@@ -127,7 +127,7 @@ export function ProviderTodayScreen() {
   const publishedCount = listings.filter((l) => l.is_published).length;
 
   // Mismo cálculo que la pantalla «Ganancias»: todo en lo que gana el Partner (partner_amount).
-  const earnings = summarize(toEarningRows(bookings), currentMonthKey());
+  const earnings = summarize(toEarningRows(bookings));
 
   const recentBookings = bookings.slice(0, 5);
 
@@ -158,10 +158,10 @@ export function ProviderTodayScreen() {
           </View>
           <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
             <KpiCard icon="cube-outline" label="Equipos publicados" value={`${publishedCount}/${listings.length}`} />
-            <KpiCard icon="cash-outline" label="Ganado este mes" value={formatPrice(earnings.monthNet)} onPress={() => router.push('/provider/earnings' as never)} />
+            <KpiCard icon="wallet-outline" label="Por cobrar" value={formatPrice(earnings.toCollectNet)} onPress={() => router.push('/provider/earnings' as never)} />
           </View>
           <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
-            <KpiCard icon="wallet-outline" label="Por cobrar" value={formatPrice(earnings.toCollectNet)} onPress={() => router.push('/provider/earnings' as never)} />
+            <KpiCard icon="trending-up-outline" label="Próximos ingresos" value={formatPrice(earnings.upcomingNet)} onPress={() => router.push('/provider/earnings' as never)} />
             <KpiCard icon="time-outline" label="Pendiente de tu respuesta" value={formatPrice(earnings.awaitingNet)} onPress={() => router.push('/provider/earnings' as never)} />
           </View>
         </View>

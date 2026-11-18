@@ -1,13 +1,13 @@
 import type { ProviderBooking } from '@/services/providerService';
-import { MONTHS_ES_LONG } from './calendar';
-import { formatPrice } from './format';
-import { resolvePartnerAmount } from './pricing';
+import { MONTHS_ES_LONG } from './calendar.ts';
+import { formatPrice } from './format.ts';
+import { resolvePartnerAmount } from './pricing.ts';
 
 /**
  * Solo lectura: lo que ve el Partner de sus reservas, SIEMPRE en lo que él gana (partner_amount). Nunca el total del
  * Rider, la comisión ni la tarifa de servicio. No mueve dinero ni toca la base de datos.
  */
-export type EarningStatus = 'earned' | 'toCollect' | 'awaiting';
+export type EarningStatus = 'awaiting' | 'upcoming' | 'toCollect';
 export type EarningFilter = 'all' | EarningStatus;
 
 export type EarningRow = {
@@ -25,19 +25,20 @@ export type EarningRow = {
 };
 
 /**
- * Estado de la ganancia según el estado de la reserva:
- * - earned: COMPLETED (servicio terminado);
- * - toCollect: ACTIVE o PAID (aceptada, aún no se completa);
- * - awaiting: AWAITING_SIGNATURES (pendiente de tu respuesta).
+ * Flujo del dinero del Partner según el estado de la reserva (todo en partner_amount):
+ * - awaiting («Pendiente de tu respuesta»): AWAITING_SIGNATURES, aún no la aceptas ni rechazas.
+ * - upcoming («Próximos ingresos»): aceptada (ACTIVE/PAID) y todavía no completada.
+ * - toCollect («Por cobrar»): COMPLETED. ArtRider retiene el dinero hasta pagarle al Partner.
+ * «Cobrado» NO existe aún: no hay registro de pagos al Partner (etapa 2), así que no se calcula ni se muestra.
  * CANCELLED, DISPUTE y ARCHIVED no suman.
  */
 export function earningStatusOf(bookingStatus: ProviderBooking['status']): EarningStatus | null {
   switch (bookingStatus) {
     case 'COMPLETED':
-      return 'earned';
+      return 'toCollect';
     case 'ACTIVE':
     case 'PAID':
-      return 'toCollect';
+      return 'upcoming';
     case 'AWAITING_SIGNATURES':
       return 'awaiting';
     default:
@@ -90,30 +91,24 @@ export function monthKeyLabel(key: string): string {
 }
 
 export type EarningsSummary = {
-  /** Ganado: reservas COMPLETED cuyo evento cae en el mes elegido. */
-  monthNet: number;
-  /** Por cobrar: reservas aceptadas (ACTIVE/PAID), sin importar el mes. */
-  toCollectNet: number;
-  /** Pendiente de tu respuesta (AWAITING_SIGNATURES), sin importar el mes. */
+  /** Pendiente de tu respuesta (AWAITING_SIGNATURES). */
   awaitingNet: number;
-  /** Ganado histórico (todas las COMPLETED). */
-  totalNet: number;
+  /** Próximos ingresos: aceptadas (ACTIVE/PAID) aún no completadas. */
+  upcomingNet: number;
+  /** Por cobrar: completadas (COMPLETED); ArtRider las retiene hasta pagar al Partner. Sin importar el mes. */
+  toCollectNet: number;
 };
 
-export function summarize(rows: EarningRow[], monthKey: string): EarningsSummary {
-  let monthNet = 0;
-  let toCollectNet = 0;
+export function summarize(rows: EarningRow[]): EarningsSummary {
   let awaitingNet = 0;
-  let totalNet = 0;
+  let upcomingNet = 0;
+  let toCollectNet = 0;
   for (const row of rows) {
     if (row.status === 'awaiting') awaitingNet += row.net;
-    else if (row.status === 'toCollect') toCollectNet += row.net;
-    else {
-      totalNet += row.net;
-      if (monthKeyOf(row.startDate) === monthKey) monthNet += row.net;
-    }
+    else if (row.status === 'upcoming') upcomingNet += row.net;
+    else toCollectNet += row.net;
   }
-  return { monthNet, toCollectNet, awaitingNet, totalNet };
+  return { awaitingNet, upcomingNet, toCollectNet };
 }
 
 /** Reservas del mes (por fecha del evento), filtradas, la más reciente primero. */
@@ -131,5 +126,5 @@ export function earningsLabel(booking: ProviderBooking): string | null {
   const status = earningStatusOf(booking.status);
   if (!status) return null;
   const { amount, estimated } = resolvePartnerAmount(booking.partner_amount, booking.total_price);
-  return `${status === 'earned' ? 'Ganaste' : 'Ganarás'} ${formatPrice(amount)}${estimated ? ' (aprox.)' : ''}`;
+  return `${booking.status === 'COMPLETED' ? 'Ganaste' : 'Ganarás'} ${formatPrice(amount)}${estimated ? ' (aprox.)' : ''}`;
 }
