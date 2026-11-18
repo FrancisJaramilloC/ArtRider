@@ -18,6 +18,7 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 import { getCartItems, chargeAndCreateCartOrder, type CartItem } from '@/services/cartService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
 import { formatShortDate } from '@/utils/format';
+import { goToReservationsAfterPayment } from '@/utils/navigation';
 import { usePricing } from '@/contexts/PricingContext';
 import { usePriceChange } from '@/hooks/usePriceChange';
 
@@ -65,7 +66,7 @@ export default function CartSummaryScreen() {
                     </Text>
                 </View>
                 <StickyFooter>
-                    <Button label="Ver mis reservas" onPress={() => router.replace('/(tabs)/reservations' as never)} />
+                    <Button label="Ver mis reservas" onPress={() => goToReservationsAfterPayment(router)} />
                 </StickyFooter>
             </SafeAreaView>
         );

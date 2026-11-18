@@ -12,6 +12,7 @@ import { Radius, StatusColors, Spacing } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
+import { goToReservationsAfterPayment } from '@/utils/navigation';
 
 export default function CheckoutSuccessScreen() {
     const { id, listingTitle, from, to, total } = useLocalSearchParams<{
@@ -69,7 +70,7 @@ export default function CheckoutSuccessScreen() {
             </View>
 
             <StickyFooter>
-                <Button label="Ver mis reservas" onPress={() => router.replace('/(tabs)/reservations')} />
+                <Button label="Ver mis reservas" onPress={() => goToReservationsAfterPayment(router)} />
             </StickyFooter>
         </SafeAreaView>
     );
