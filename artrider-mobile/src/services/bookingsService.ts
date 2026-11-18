@@ -1,5 +1,6 @@
 import { supabase, SUPABASE_URL } from './supabase';
 import { serviceError } from '@/utils/errors';
+import { chargeWithKushki, type ChargeQuote } from './chargeService';
 
 export type CreateBookingResult = {
   bookingId?: string;
@@ -8,6 +9,9 @@ export type CreateBookingResult = {
   total?: number;
   days?: number;
   error?: string;
+  /** `PRICE_CHANGED`: los precios cambiaron y no se cobró nada (ver chargeService). */
+  code?: string;
+  quote?: ChargeQuote;
 };
 
 /**
@@ -114,27 +118,13 @@ export async function chargeAndCreateBooking(
   listingId: string,
   startDate: string,
   endDate: string,
-  quantity: number = 1
+  quantity: number = 1,
+  /** Total (centavos) que el Rider tiene en pantalla: el servidor lo compara con el oficial. */
+  expectedTotal: number,
 ): Promise<CreateBookingResult> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { error: 'No autenticado' };
-
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/kushki-charge`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ token: kushkiToken, listingId, startDate, endDate, quantity }),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok || data.error) {
-    return { error: data.error ?? 'No se pudo procesar el pago' };
-  }
-
-  return { bookingId: data.bookingId };
+  const result = await chargeWithKushki(kushkiToken, { kind: 'listing', listingId, startDate, endDate, quantity }, expectedTotal);
+  if (result.error) return { error: result.error, code: result.code, quote: result.quote };
+  return { bookingId: result.bookingId, total: result.total };
 }
 /**
  * Crea una reserva de PAQUETE (booking + N booking_units, uno por cada
@@ -187,27 +177,12 @@ export async function chargeAndCreatePackageBooking(
   kushkiToken: string,
   packageId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  expectedTotal: number,
 ): Promise<CreateBookingResult> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { error: 'No autenticado' };
-
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/kushki-charge`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ token: kushkiToken, packageId, startDate, endDate }),
-  });
-
-  const data = await res.json();
-
-  if (!res.ok || data.error) {
-    return { error: data.error ?? 'No se pudo procesar el pago' };
-  }
-
-  return { bookingId: data.bookingId };
+  const result = await chargeWithKushki(kushkiToken, { kind: 'package', packageId, startDate, endDate }, expectedTotal);
+  if (result.error) return { error: result.error, code: result.code, quote: result.quote };
+  return { bookingId: result.bookingId, total: result.total };
 }
 export async function submitReview(bookingId: string, rating: number, comment: string): Promise<{ error?: string }> {
   const { error } = await supabase.rpc('submit_review', {

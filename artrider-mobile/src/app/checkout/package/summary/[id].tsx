@@ -12,6 +12,7 @@ import { getPackageById, type PackageWithItems } from '@/services/packagesServic
 import { chargeAndCreatePackageBooking } from '@/services/bookingsService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
 import { usePricing } from '@/contexts/PricingContext';
+import { usePriceChange } from '@/hooks/usePriceChange';
 
 export default function PackageCheckoutSummaryScreen() {
     const { id, from, to } = useLocalSearchParams<{ id: string; from: string; to: string }>();
@@ -22,13 +23,14 @@ export default function PackageCheckoutSummaryScreen() {
 
     const { status, data: pkg, error: loadError, reload } = useAsyncData<PackageWithItems | null>(() => getPackageById(id), { enabled: !!id, deps: [id] });
     const { riderPrice, cartTotals } = usePricing();
+    const priceChange = usePriceChange();
 
     if (status === 'error') return <CheckoutShell title="Confirmar reserva"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;
     if (status === 'loading' || !pkg) return <CheckoutLoading />;
 
     const days = Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86400000) + 1;
     const riderDaily = riderPrice(pkg.daily_price);
-    const { subtotal, serviceFee, total } = cartTotals(riderDaily * days);
+    const { subtotal, serviceFee, total } = priceChange.quote ?? cartTotals(riderDaily * days);
 
     return (
         <CheckoutShell title="Confirmar reserva">
@@ -56,17 +58,17 @@ export default function PackageCheckoutSummaryScreen() {
                     onSuccess={async (kushkiToken) => {
                         setError(null);
                         setConfirming(true);
-                        const result = await chargeAndCreatePackageBooking(kushkiToken, id, from, to);
+                        const result = await chargeAndCreatePackageBooking(kushkiToken, id, from, to, total);
                         setConfirming(false);
 
                         if (result.error) {
-                            setError(result.error);
+                            setError(priceChange.handle(result) ?? result.error);
                             return;
                         }
 
                         router.replace({
                             pathname: '/checkout/success/[id]',
-                            params: { id: result.bookingId!, listingTitle: pkg.title, from, to, total: String(total) },
+                            params: { id: result.bookingId!, listingTitle: pkg.title, from, to, total: String(result.total ?? total) },
                         } as never);
                     }}
                 />

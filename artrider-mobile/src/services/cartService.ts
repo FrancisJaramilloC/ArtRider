@@ -1,5 +1,6 @@
 import { supabase, SUPABASE_URL } from './supabase';
 import { serviceError } from '@/utils/errors';
+import { chargeWithKushki, type ChargeQuote } from './chargeService';
 
 export type CartItem = {
     id: string;
@@ -122,19 +123,13 @@ export async function createCartOrder(kushkiTicket?: string): Promise<CreateCart
 
     return { orderId: row.order_id, total: row.total };
 }
-/** Cobra en Kushki y crea todas las reservas del carrito de forma atómica. */
-export async function chargeAndCreateCartOrder(kushkiToken: string): Promise<{ orderId?: string; error?: string }> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { error: 'No autenticado' };
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/kushki-charge`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ token: kushkiToken, cart: true }),
-    });
-
-    const data = await res.json();
-    if (!res.ok || data.error) {
-        return { error: data.error ?? 'No se pudo procesar el pago' };
-    }
-    return { orderId: data.orderId };
+/** Cobra en Kushki y crea todas las reservas del carrito de forma atómica. El total oficial lo calcula el servidor. */
+export async function chargeAndCreateCartOrder(
+    kushkiToken: string,
+    /** Total (centavos) que el Rider tiene en pantalla: el servidor lo compara con el oficial. */
+    expectedTotal: number,
+): Promise<{ orderId?: string; total?: number; error?: string; code?: string; quote?: ChargeQuote }> {
+    const result = await chargeWithKushki(kushkiToken, { kind: 'cart' }, expectedTotal);
+    if (result.error) return { error: result.error, code: result.code, quote: result.quote };
+    return { orderId: result.orderId, total: result.total };
 }

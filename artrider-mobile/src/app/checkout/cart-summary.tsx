@@ -19,6 +19,7 @@ import { getCartItems, chargeAndCreateCartOrder, type CartItem } from '@/service
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
 import { formatShortDate } from '@/utils/format';
 import { usePricing } from '@/contexts/PricingContext';
+import { usePriceChange } from '@/hooks/usePriceChange';
 
 function formatDateRange(start: string, end: string): string {
     return `${formatShortDate(start)} – ${formatShortDate(end)}`;
@@ -37,13 +38,14 @@ export default function CartSummaryScreen() {
 
     const { data, status, error: loadError, reload } = useAsyncData<CartItem[]>(getCartItems, { reloadOnFocus: true });
     const { riderPrice, cartTotals } = usePricing();
+    const priceChange = usePriceChange();
     const items = data ?? [];
 
     const subtotalCents = items.reduce((sum, item) => {
         if (!item.daily_price) return sum;
         return sum + riderPrice(item.daily_price) * item.quantity * daysBetween(item.start_date, item.end_date);
     }, 0);
-    const { subtotal, serviceFee, total } = cartTotals(subtotalCents);
+    const { subtotal, serviceFee, total } = priceChange.quote ?? cartTotals(subtotalCents);
 
     if (status === 'error') return <CheckoutShell title="Resumen del carrito"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;
     if (status === 'loading') return <CheckoutLoading />;
@@ -111,11 +113,11 @@ export default function CartSummaryScreen() {
                     onSuccess={async (kushkiToken) => {
                         setError(null);
                         setConfirming(true);
-                        const result = await chargeAndCreateCartOrder(kushkiToken);
+                        const result = await chargeAndCreateCartOrder(kushkiToken, total);
                         setConfirming(false);
 
                         if (result.error) {
-                            setError(result.error);
+                            setError(priceChange.handle(result) ?? result.error);
                             return;
                         }
                         setSuccess(true);

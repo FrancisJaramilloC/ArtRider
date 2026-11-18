@@ -5,15 +5,18 @@ import { computeCartTotals, DEFAULT_PRICING_RATES, riderDailyPrice, type CartTot
 
 type PricingContextValue = {
   rates: PricingRates;
+  /** Vuelve a leer las tasas (p. ej. si el servidor avisa que los precios cambiaron). */
+  refreshRates: () => void;
   /** Precio por día que ve el Rider a partir del precio del Partner (centavos). */
   riderPrice: (partnerDailyCents: number) => number;
   /** Subtotal (ya en precios del Rider) → subtotal, tarifa de servicio y total con redondeo .99. */
   cartTotals: (subtotalCents: number) => CartTotals;
 };
 
-function buildValue(rates: PricingRates): PricingContextValue {
+function buildValue(rates: PricingRates, refreshRates: () => void = () => {}): PricingContextValue {
   return {
     rates,
+    refreshRates,
     riderPrice: (partnerDailyCents) => riderDailyPrice(partnerDailyCents, rates),
     cartTotals: (subtotalCents) => computeCartTotals(subtotalCents, rates),
   };
@@ -32,7 +35,7 @@ export function PricingProvider({ children }: { children: ReactNode }) {
 
   useEffect(load, [load]);
 
-  const value = useMemo(() => buildValue(rates), [rates]);
+  const value = useMemo(() => buildValue(rates, load), [rates, load]);
   return <PricingContext.Provider value={value}>{children}</PricingContext.Provider>;
 }
 
