@@ -106,23 +106,47 @@ ALTER TABLE public.bookings
 ALTER TABLE public.bookings
   ADD COLUMN IF NOT EXISTS platform_revenue INTEGER GENERATED ALWAYS AS (total_price - partner_amount) STORED;
 
-ALTER TABLE public.checkout_orders
-  ADD COLUMN IF NOT EXISTS partner_amount INTEGER CHECK (partner_amount >= 0),
+-- Pedidos del carrito de la APP MÓVIL: la tabla real es `orders` (create_cart_order inserta en orders(client_id, total_price, kushki_ticket)).
+-- Se guardan sus montos finales (el pedido nace con ellos; ningún RPC los actualiza después).
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS subtotal INTEGER CHECK (subtotal >= 0),                         -- Σ precio del Rider × días × cantidad
+  ADD COLUMN IF NOT EXISTS service_fee INTEGER CHECK (service_fee >= 0),                   -- total − subtotal
+  ADD COLUMN IF NOT EXISTS partner_amount INTEGER CHECK (partner_amount >= 0),             -- Σ lo que ganan los Partners
   ADD COLUMN IF NOT EXISTS partner_commission_rate NUMERIC(6, 5),
   ADD COLUMN IF NOT EXISTS service_fee_rate NUMERIC(6, 5);
--- (checkout_orders.subtotal = subtotal con precios del Rider; service_fee = total − subtotal; total_price = total final.
---  La restricción existente subtotal + service_fee = total_price sigue cumpliéndose.)
+
+-- `checkout_orders` (flujo multi-Partner de la WEB, migración 20260804) solo se toca si existe en la base real.
+DO $$
+BEGIN
+  IF to_regclass('public.checkout_orders') IS NOT NULL THEN
+    ALTER TABLE public.checkout_orders
+      ADD COLUMN IF NOT EXISTS partner_amount INTEGER CHECK (partner_amount >= 0),
+      ADD COLUMN IF NOT EXISTS partner_commission_rate NUMERIC(6, 5),
+      ADD COLUMN IF NOT EXISTS service_fee_rate NUMERIC(6, 5);
+  END IF;
+END $$;
 
 -- Los montos guardados no se pueden cambiar después (ni siquiera por el propio Partner/Rider):
 -- cambiar los porcentajes no debe alterar reservas ni ganancias pasadas.
+-- Seguridad frente a los RPC reales (revisados en docs/Supabase Snippet Untitled query.csv):
+--   * create_cart_order hacía `update bookings set order_id = …`: solo cambia order_id → el trigger lo deja pasar. (Además la versión nueva
+--     ya inserta order_id en el INSERT y no hace ningún UPDATE.)
+--   * provider_set_booking_status solo cambia status → pasa.
+--   * Ningún RPC revisado actualiza total_price ni service_fee tras insertar.
+-- Para no romper herramientas que no conozco (paneles de administración, reembolsos, scripts), el bloqueo se aplica SOLO a reservas
+-- creadas con el modelo nuevo (partner_amount NOT NULL); las anteriores (NULL) conservan el comportamiento actual. El rol
+-- service_role puede ajustar montos si hiciera falta (soporte): se deja pasar.
 CREATE OR REPLACE FUNCTION public.prevent_booking_pricing_mutation()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
-  IF (OLD.partner_amount IS NOT NULL AND NEW.partner_amount IS DISTINCT FROM OLD.partner_amount)
-     OR (OLD.rider_subtotal IS NOT NULL AND NEW.rider_subtotal IS DISTINCT FROM OLD.rider_subtotal)
-     OR (OLD.service_fee IS NOT NULL AND NEW.service_fee IS DISTINCT FROM OLD.service_fee)
-     OR (OLD.partner_commission_rate IS NOT NULL AND NEW.partner_commission_rate IS DISTINCT FROM OLD.partner_commission_rate)
-     OR (OLD.service_fee_rate IS NOT NULL AND NEW.service_fee_rate IS DISTINCT FROM OLD.service_fee_rate)
+  IF OLD.partner_amount IS NULL OR auth.role() = 'service_role' THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.partner_amount IS DISTINCT FROM OLD.partner_amount
+     OR NEW.rider_subtotal IS DISTINCT FROM OLD.rider_subtotal
+     OR NEW.service_fee IS DISTINCT FROM OLD.service_fee
+     OR NEW.partner_commission_rate IS DISTINCT FROM OLD.partner_commission_rate
+     OR NEW.service_fee_rate IS DISTINCT FROM OLD.service_fee_rate
      OR NEW.total_price IS DISTINCT FROM OLD.total_price THEN
     RAISE EXCEPTION 'Los montos de una reserva no se pueden modificar.';
   END IF;
