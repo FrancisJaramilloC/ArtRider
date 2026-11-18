@@ -8,6 +8,35 @@
 -- Importes en centavos. Esta propuesta no modifica filas existentes (las columnas nuevas son NULL en reservas anteriores).
 
 -- ─────────────────────────────────────────────────────────────────────────
+-- 0) Comprobación previa: ninguna columna nueva debe existir ya con otro significado.
+--    Ni el repo ni los RPC reales (CSV) escriben ni leen bookings.service_fee: los RPC solo DEVUELVEN `service_fee` como columna calculada.
+--    Si la base real ya tuviera esas columnas (creadas a mano), ADD COLUMN IF NOT EXISTS las saltaría sin validar tipo ni CHECK.
+--    Este bloque aborta en ese caso para revisarlo antes (no modifica nada).
+--    OJO: es solo para la PRIMERA aplicación; si el archivo se vuelve a ejecutar tras aplicarlo, este bloque fallará: omitirlo (el resto es idempotente).
+-- ─────────────────────────────────────────────────────────────────────────
+DO $$
+DECLARE
+  v_row record;
+BEGIN
+  FOR v_row IN
+    SELECT table_name, column_name, data_type
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND (
+        (table_name = 'bookings' AND column_name IN ('partner_amount', 'rider_subtotal', 'service_fee', 'partner_commission_rate', 'service_fee_rate', 'platform_revenue'))
+        OR (table_name = 'orders' AND column_name IN ('subtotal', 'service_fee', 'partner_amount', 'partner_commission_rate', 'service_fee_rate'))
+      )
+  LOOP
+    RAISE EXCEPTION 'Ya existe public.%.% (tipo %): revisar su uso y datos antes de aplicar esta propuesta.',
+      v_row.table_name, v_row.column_name, v_row.data_type;
+  END LOOP;
+END $$;
+-- Consulta de verificación equivalente (solo lectura), útil para ejecutarla antes:
+--   SELECT table_name, column_name, data_type FROM information_schema.columns
+--   WHERE table_schema = 'public' AND table_name IN ('bookings', 'orders', 'cart_items') ORDER BY table_name, ordinal_position;
+--   SELECT COUNT(*) FROM bookings WHERE service_fee IS NOT NULL;   -- solo si la columna existe
+
+-- ─────────────────────────────────────────────────────────────────────────
 -- 1) Tabla de configuración: UNA sola fila, lectura pública, escritura solo service_role/admin
 -- ─────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.pricing_settings (

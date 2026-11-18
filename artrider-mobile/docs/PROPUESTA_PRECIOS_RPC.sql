@@ -46,10 +46,13 @@ BEGIN
 END;
 $$;
 
--- Líneas del carrito del cliente con precios del Partner y del Rider. Packs: cantidad siempre 1 (se reserva una vez, como en create_package_booking).
+-- Líneas del carrito del cliente con precios del Partner y del Rider. Packs: cantidad siempre 1 (se reserva una vez, como en create_package_booking;
+-- verificado: packages no tiene columna quantity, y el create_cart_order real llama a create_package_booking SIN cantidad).
+-- Columnas de cart_items confirmadas por el create_cart_order real: client_id, item_type, listing_id, package_id, start_date, end_date, quantity.
+-- `id` no aparece en ningún RPC exportado (solo lo usa la app: select id / delete .eq('id')); por eso se devuelve como texto.
 CREATE OR REPLACE FUNCTION public._cart_lines(p_client uuid)
 RETURNS TABLE (
-  cart_item_id uuid, item_type text, listing_id uuid, package_id uuid, provider_id uuid, title text,
+  cart_item_id text, item_type text, listing_id uuid, package_id uuid, provider_id uuid, title text,
   start_date date, end_date date, quantity integer, days integer,
   partner_daily integer, rider_daily integer, partner_amount integer, rider_subtotal integer
 )
@@ -62,7 +65,7 @@ BEGIN
 
   RETURN QUERY
   SELECT
-    ci.id,
+    ci.id::text,   -- cart_items no está definida en el repo: se tipa como texto para no depender de si id es uuid o bigint
     ci.item_type::text,
     ci.listing_id,
     ci.package_id,
