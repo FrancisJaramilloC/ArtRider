@@ -77,7 +77,7 @@ function ReservationsContent() {
   const router = useRouter();
   const { gutter, bottomInset } = useLayout();
 
-  const { data, status, error, refreshError, refreshing, reload, refresh } = useAsyncData<ClientBooking[]>(getClientBookings);
+  const { data, status, error, refreshError, refreshing, reload, refresh } = useAsyncData<ClientBooking[]>(getClientBookings, { reloadOnFocus: true });
   const bookings = data ?? [];
   const [activeFilter, setActiveFilter] = useState<FilterId>('all');
 
