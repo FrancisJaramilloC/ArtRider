@@ -12,7 +12,8 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 import { Text } from '@/components/ui/Text';
 import { Radius, Rhythm, Spacing } from '@/constants/theme';
 import { CATEGORY_LABELS } from '@/constants/categories';
-import { getListingByIdWithProvider, getListingGallery, getListingRatings, getListingReviews, type ListingWithProvider, type ListingReview } from '@/services/catalogService';
+import { specDisplayItems } from '@/constants/listingSpecs';
+import { getListingByIdWithProvider, getListingGallery, getListingSpecs, getListingRatings, getListingReviews, type ListingWithProvider, type ListingReview } from '@/services/catalogService';
 import { toggleFavorito, getUserFavIds } from '@/services/favoritosService';
 import { findExistingConversation } from '@/services/messagesService';
 import { getProviderAvatarUrl } from '@/services/profileService';
@@ -22,7 +23,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { cityOrNull } from '@/utils/city';
 import { loadRelatedListings } from './relatedListings';
 
-type ListingBundle = { listing: ListingWithProvider | null; rating: number; totalUnits: number | null; reviews: ListingReview[]; fav: boolean; gallery: string[]; galleryFailed: boolean };
+type ListingBundle = { listing: ListingWithProvider | null; rating: number; totalUnits: number | null; reviews: ListingReview[]; fav: boolean; gallery: string[]; galleryFailed: boolean; specs: Record<string, unknown> | null };
 
 export function ListingDetailScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,8 +37,9 @@ export function ListingDetailScreen() {
     const { status, data: bundle, error, reload } = useAsyncData<ListingBundle>(
         async () => {
             const listing = await getListingByIdWithProvider(id);
-            if (!listing) return { listing: null, rating: 0, totalUnits: null, reviews: [], fav: false, gallery: [], galleryFailed: false };
+            if (!listing) return { listing: null, rating: 0, totalUnits: null, reviews: [], fav: false, gallery: [], galleryFailed: false, specs: null };
             let galleryFailed = false;
+            const specsPromise = getListingSpecs(listing.id);
             const [ratingsMap, totalUnits, reviews, favIds, gallery] = await Promise.all([
                 getListingRatings([listing.id]).catch(() => ({}) as Record<string, number>),
                 getListingTotalUnits(listing.id).catch(() => null),
@@ -50,7 +52,7 @@ export function ListingDetailScreen() {
                     return [] as string[];
                 }),
             ]);
-            return { listing, rating: ratingsMap[listing.id] ?? 0, totalUnits, reviews, fav: favIds?.equipoIds.includes(id) ?? false, gallery, galleryFailed };
+            return { listing, rating: ratingsMap[listing.id] ?? 0, totalUnits, reviews, fav: favIds?.equipoIds.includes(id) ?? false, gallery, galleryFailed, specs: await specsPromise };
         },
         { enabled: !!id, deps: [id, session] },
     );
@@ -132,9 +134,11 @@ export function ListingDetailScreen() {
     // Portada primero y luego la galería, sin duplicados (la portada suele repetirse como foto 1).
     const images = Array.from(new Set([listing.cover_image_url, ...(bundle?.gallery ?? [])].filter((x): x is string => Boolean(x))));
     const { latitude, longitude } = listing.address ?? {};
+    // Marca, modelo y especificaciones con dato: nunca se muestra un campo vacío.
     const specs: SpecItem[] = [
-        listing.brand ? { label: 'Marca', value: listing.brand } : null,
-        listing.model ? { label: 'Modelo', value: listing.model } : null,
+        listing.brand?.trim() ? { label: 'Marca', value: listing.brand.trim() } : null,
+        listing.model?.trim() ? { label: 'Modelo', value: listing.model.trim() } : null,
+        ...specDisplayItems(listing.category, bundle?.specs),
     ].filter((x): x is SpecItem => x !== null);
 
     return (

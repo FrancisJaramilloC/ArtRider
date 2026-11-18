@@ -6,8 +6,10 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ListingSpecsFields } from '@/components/provider/ListingSpecsFields';
 import { BigPriceInput, FieldError, PhotoStep, ReviewSections, WizardPreviewCard, pickCoverImage, priceFromInput, riderPriceFromInput, PriceHint, useTwoColumnWidth, type ReviewItem } from '@/components/provider/WizardParts';
 import { Button } from '@/components/ui/Button';
+import { Chip } from '@/components/ui/Chip';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { FormErrorBanner, FormField } from '@/components/ui/FormField';
 import { QuantityStepper } from '@/components/ui/QuantityStepper';
@@ -20,9 +22,11 @@ import { COPY } from '@/constants/copy';
 import { Radius, Rhythm, Spacing } from '@/constants/theme';
 import { useForm } from '@/hooks/useForm';
 import { useTheme } from '@/hooks/use-theme';
-import { createListing, getListingForEdit, updateListing } from '@/services/providerCatalogService';
+import { buildSpecs, specQuality, specsToForm, specFieldsFor, typeLabelFor, type ListingSpecs, type SpecForm } from '@/constants/listingSpecs';
+import { createListing, getKnownBrands, getListingForEdit, updateListing } from '@/services/providerCatalogService';
+import { BRAND_MAX, MODEL_MAX, TITLE_MAX, collapseSpaces, normalizeBrand, suggestBrands, suggestTitle, validateBrand, validateModel, validateTitle } from '@/utils/listingData';
 import { toErrorInfo, type ErrorInfo } from '@/utils/errors';
-import { maxLength, minLength, positivePrice, required } from '@/utils/validation';
+import { maxLength, positivePrice, required } from '@/utils/validation';
 import { usePricing } from '@/contexts/PricingContext';
 
 const DEFAULT_REGION = { latitude: -3.9931, longitude: -79.2042, latitudeDelta: 0.05, longitudeDelta: 0.05 }; // Loja, Ecuador
@@ -31,11 +35,12 @@ const CATEGORY_TILE_HEIGHT = 112;
 const MAX_QUANTITY = 50;
 const DESCRIPTION_MAX = 2000;
 
-type StepId = 'category' | 'details' | 'photo' | 'price' | 'location' | 'quantity' | 'review';
+type StepId = 'category' | 'details' | 'specs' | 'photo' | 'price' | 'location' | 'quantity' | 'review';
 
 const STEP_COPY: Record<StepId, { title: string; subtitle: string }> = {
     category: { title: '¿Qué tipo de equipo es?', subtitle: 'Elige la categoría que mejor lo describe.' },
-    details: { title: 'Cuéntanos sobre tu equipo', subtitle: 'Un buen título y una descripción clara ayudan a que lo encuentren.' },
+    details: { title: 'Cuéntanos sobre tu equipo', subtitle: 'La marca y el modelo ayudan a que lo encuentren. El título lo armamos por ti.' },
+    specs: { title: 'Datos técnicos', subtitle: 'Opcional, pero ayuda a que los Riders elijan tu equipo.' },
     photo: { title: 'Añade una foto', subtitle: COPY.photoFirstThing },
     price: { title: 'Fija tu precio', subtitle: '¿Cuánto cobras por día de renta?' },
     location: { title: '¿Dónde está tu equipo?', subtitle: COPY.originVisibility },
@@ -53,6 +58,12 @@ type ExtraState = {
     coverMime: string | null;
     photoChanged: boolean;
     quantity: number;
+    /** Especificaciones como texto de formulario (ver constants/listingSpecs.ts). */
+    specs: SpecForm;
+    /** Lo que ya había guardado: se conserva lo que este formulario no conoce (p. ej. claves de la web). */
+    existingSpecs: ListingSpecs | null;
+    /** true cuando el Partner escribió el título a mano: deja de actualizarse solo. */
+    titleEdited: boolean;
 };
 
 const EMPTY_EXTRA: ExtraState = {
@@ -64,14 +75,18 @@ const EMPTY_EXTRA: ExtraState = {
     coverMime: null,
     photoChanged: false,
     quantity: 1,
+    specs: {},
+    existingSpecs: null,
+    titleEdited: false,
 };
 
 const EMPTY_TEXT = { title: '', brand: '', model: '', description: '', dailyPrice: '', addressLine1: '', city: '', state: '', postalCode: '' };
 
 const TEXT_RULES = {
-    title: [required('Ingresa un título para tu anuncio'), minLength(3, 'El título debe tener al menos 3 caracteres'), maxLength(100, 'El título admite hasta 100 caracteres')],
-    brand: [maxLength(60, 'La marca admite hasta 60 caracteres')],
-    model: [maxLength(60, 'El modelo admite hasta 60 caracteres')],
+    // El orden importa: al enviar con errores se enfoca el primero (marca → modelo → título).
+    brand: [(value: string, values: typeof EMPTY_TEXT) => validateBrand(value, values.title)],
+    model: [(value: string) => validateModel(value)],
+    title: [(value: string, values: typeof EMPTY_TEXT) => validateTitle(value, values.model)],
     description: [maxLength(DESCRIPTION_MAX, 'La descripción admite hasta 2000 caracteres')],
     dailyPrice: [required('Ingresa el precio por día'), positivePrice('Ingresa un precio mayor a 0')],
     addressLine1: [required('Ingresa la dirección')],
@@ -82,7 +97,7 @@ const TEXT_RULES = {
 
 /** Campos de texto que se validan en cada paso del asistente. */
 const STEP_FIELDS: Partial<Record<StepId, (keyof typeof EMPTY_TEXT)[]>> = {
-    details: ['title', 'brand', 'model', 'description'],
+    details: ['brand', 'model', 'title', 'description'],
     price: ['dailyPrice'],
     location: ['addressLine1', 'city', 'state', 'postalCode'],
 };
@@ -96,8 +111,8 @@ export function CreateListingScreen() {
     const tileWidth = useTwoColumnWidth();
 
     const steps: StepId[] = isEdit
-        ? ['category', 'details', 'photo', 'price', 'location', 'review']
-        : ['category', 'details', 'photo', 'price', 'location', 'quantity', 'review'];
+        ? ['category', 'details', 'specs', 'photo', 'price', 'location', 'review']
+        : ['category', 'details', 'specs', 'photo', 'price', 'location', 'quantity', 'review'];
     const reviewIndex = steps.length - 1;
 
     const [loadingExisting, setLoadingExisting] = useState(isEdit);
@@ -115,6 +130,18 @@ export function CreateListingScreen() {
     const [error, setError] = useState<string | null>(null);
     const [geocoding, setGeocoding] = useState(false);
     const [geocodeError, setGeocodeError] = useState<string | null>(null);
+    const [knownBrands, setKnownBrands] = useState<string[]>([]);
+
+    // Marcas ya usadas, para autocompletar y unificar («Sonic», «SONIC» y «sonic» son una sola).
+    useEffect(() => {
+        let cancelled = false;
+        getKnownBrands().then((brands) => {
+            if (!cancelled) setKnownBrands(brands);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     // Hay cambios sin guardar si el estado difiere del inicial (vacío al crear, lo cargado al editar).
     const snapshot = JSON.stringify([text.values, extra]);
@@ -153,6 +180,9 @@ export function CreateListingScreen() {
                     coverMime: null,
                     photoChanged: false,
                     quantity: 1,
+                    specs: specsToForm(data.category, data.specs),
+                    existingSpecs: data.specs,
+                    titleEdited: true, // al editar se respeta el título que ya tenía
                 });
             })
             .catch((e) => {
@@ -171,6 +201,29 @@ export function CreateListingScreen() {
         setExtra((prev) => ({ ...prev, [key]: value }));
         setStepError(null);
     }
+
+    function chooseCategory(category: string) {
+        setExtra((prev) => {
+            if (prev.category === category) return prev;
+            // Los datos técnicos de otra categoría no aplican: se conservan solo los que existen también en la nueva.
+            const allowed = new Set(specFieldsFor(category).map((f) => f.key));
+            const kept = Object.fromEntries(Object.entries(prev.specs).filter(([key]) => allowed.has(key)));
+            return { ...prev, category, specs: kept };
+        });
+        setStepError(null);
+    }
+
+    function setSpec(key: string, value: string) {
+        setExtra((prev) => ({ ...prev, specs: { ...prev.specs, [key]: value } }));
+    }
+
+    // Título sugerido «Marca Modelo · tipo»: se actualiza solo mientras el Partner no lo haya escrito a mano.
+    const typeLabel = typeLabelFor(extra.category, extra.specs);
+    const suggestedTitle = suggestTitle(normalizeBrand(text.values.brand, knownBrands), text.values.model, typeLabel);
+    useEffect(() => {
+        if (!extra.titleEdited && suggestedTitle !== text.values.title) text.setValue('title', suggestedTitle);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [suggestedTitle, extra.titleEdited]);
 
     async function pickImage() {
         const picked = await pickCoverImage();
@@ -219,6 +272,15 @@ export function CreateListingScreen() {
     /** Valida el paso actual: muestra el error junto al campo (o un aviso) y devuelve si se puede avanzar. */
     function validateStep(): boolean {
         setStepError(null);
+        if (currentStepId === 'details') {
+            // Se dejan limpios los textos que el Partner ve en pantalla antes de validar.
+            const brand = normalizeBrand(text.values.brand, knownBrands);
+            if (brand !== text.values.brand) text.setValue('brand', brand);
+            const model = collapseSpaces(text.values.model);
+            if (model !== text.values.model) text.setValue('model', model);
+            const title = collapseSpaces(text.values.title);
+            if (title !== text.values.title) text.setValue('title', title);
+        }
         const fields = STEP_FIELDS[currentStepId];
         if (fields && !text.validateAll(fields)) return false;
         if (currentStepId === 'category' && !form.category) {
@@ -286,6 +348,7 @@ export function CreateListingScreen() {
                 longitude: form.longitude!,
                 newCoverImageUri: form.photoChanged ? form.coverUri : null,
                 newCoverImageMimeType: form.photoChanged ? form.coverMime : null,
+                specs: buildSpecs(form.category, form.specs, form.existingSpecs),
             });
             setPublishing(false);
             if (result.error) {
@@ -310,6 +373,7 @@ export function CreateListingScreen() {
                 coverImageUri: form.coverUri!,
                 coverImageMimeType: form.coverMime!,
                 quantity: form.quantity,
+                specs: buildSpecs(form.category, form.specs, form.existingSpecs),
             });
             setPublishing(false);
             if (result.error) {
@@ -333,6 +397,7 @@ export function CreateListingScreen() {
     const reviewItems: ReviewItem[] = [
         { key: 'category', label: 'Categoría', value: CATEGORY_LABELS[form.category] ?? 'Sin elegir', onEdit: () => editSection('category') },
         { key: 'details', label: 'Detalles', value: [form.title, [form.brand, form.model].filter(Boolean).join(' · ')].filter(Boolean).join('\n') || 'Sin título', onEdit: () => editSection('details') },
+        { key: 'specs', label: 'Datos técnicos', value: `${specQuality(form.category, form.specs).percent}% de calidad de tu publicación`, onEdit: () => editSection('specs') },
         { key: 'photo', label: 'Foto', value: form.coverUri ? 'Foto añadida' : 'Sin foto', onEdit: () => editSection('photo') },
         { key: 'price', label: 'Precio', value: `Tu precio ${priceFromInput(form.dailyPrice)} · Los Riders verán ${riderPriceFromInput(form.dailyPrice, riderPrice)} por día`, onEdit: () => editSection('price') },
         { key: 'location', label: 'Ubicación', value: [form.addressLine1, [form.city, form.state].filter(Boolean).join(', ')].filter(Boolean).join('\n') || 'Sin ubicación', onEdit: () => editSection('location') },
@@ -382,7 +447,7 @@ export function CreateListingScreen() {
                             return (
                                 <Pressable
                                     key={id}
-                                    onPress={() => update('category', id)}
+                                    onPress={() => chooseCategory(id)}
                                     accessibilityRole="radio"
                                     accessibilityState={{ selected: active }}
                                     accessibilityLabel={label}
@@ -414,14 +479,32 @@ export function CreateListingScreen() {
 
             {currentStepId === 'details' && (
                 <View style={{ gap: Rhythm.titleToContent + Spacing.one }}>
-                    <FormField label="Título del anuncio" placeholder="Ej. Bocina JBL PartyBox 300" maxLength={100} returnKeyType="next" {...text.field('title')} />
-                    <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
-                        <View style={{ flex: 1 }}>
-                            <FormField label="Marca" placeholder="JBL" maxLength={60} {...text.field('brand')} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                            <FormField label="Modelo" placeholder="PartyBox 300" maxLength={60} {...text.field('model')} />
-                        </View>
+                    <View style={{ gap: Spacing.two }}>
+                        <FormField label="Marca" placeholder="Ej. Sonic" maxLength={BRAND_MAX} autoCapitalize="words" returnKeyType="next" {...text.field('brand')} />
+                        {suggestBrands(form.brand, knownBrands).length > 0 ? (
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }}>
+                                {suggestBrands(form.brand, knownBrands).map((brand) => (
+                                    <Chip key={brand} label={brand} onPress={() => text.setValue('brand', brand)} />
+                                ))}
+                            </View>
+                        ) : null}
+                    </View>
+                    <FormField label="Modelo" placeholder="Ej. U-IP-P180/4" maxLength={MODEL_MAX} autoCapitalize="none" autoCorrect={false} returnKeyType="next" {...text.field('model')} />
+                    <View style={{ gap: Spacing.two }}>
+                        <FormField
+                            label="Título del anuncio"
+                            placeholder="Ej. Sonic U-IP-P180/4 · Reflector LED"
+                            maxLength={TITLE_MAX}
+                            hint={`${collapseSpaces(form.title).length}/${TITLE_MAX} caracteres · Se arma con marca, modelo y tipo; puedes editarlo`}
+                            {...text.field('title')}
+                            onChangeText={(value) => {
+                                update('titleEdited', true);
+                                text.setValue('title', value);
+                            }}
+                        />
+                        {extra.titleEdited && suggestedTitle && suggestedTitle !== form.title ? (
+                            <Button label="Usar título sugerido" variant="ghost" size="sm" fullWidth={false} onPress={() => { update('titleEdited', false); text.setValue('title', suggestedTitle); }} />
+                        ) : null}
                     </View>
                     <FormField
                         label="Descripción"
@@ -433,6 +516,8 @@ export function CreateListingScreen() {
                     />
                 </View>
             )}
+
+            {currentStepId === 'specs' && <ListingSpecsFields category={form.category} specs={extra.specs} onChange={setSpec} />}
 
             {currentStepId === 'photo' && (
                 <PhotoStep

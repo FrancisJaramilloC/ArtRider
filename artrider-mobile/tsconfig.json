@@ -16,7 +16,8 @@
   "exclude": [
     "node_modules",
     "scripts/test-pricing.ts",
-    "scripts/test-partner.ts"
+    "scripts/test-partner.ts",
+    "scripts/test-listing.ts"
   ],
   "include": [
     "**/*.ts",

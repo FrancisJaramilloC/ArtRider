@@ -2,6 +2,40 @@ import { COPY } from '@/constants/copy';
 import { supabase, SUPABASE_URL } from './supabase';
 import { serviceError } from '@/utils/errors';
 import { getMyProviderProfile } from './providerService';
+import { SPEC_SCHEMA_VERSION, type ListingSpecs } from '@/constants/listingSpecs';
+import { canonicalBrands, collapseSpaces, normalizeBrand } from '@/utils/listingData';
+
+const BRANDS_CACHE_MS = 5 * 60 * 1000;
+let brandsCache: { at: number; brands: string[] } | null = null;
+
+/**
+ * Marcas que ya existen en los equipos (distintas sin importar mayúsculas ni espacios, con la escritura más usada).
+ * Sirve para autocompletar y para que «Sonic», «SONIC» y «sonic» sean una sola marca. Si falla, devuelve lo último que tenía o [].
+ */
+export async function getKnownBrands(): Promise<string[]> {
+    if (brandsCache && Date.now() - brandsCache.at < BRANDS_CACHE_MS) return brandsCache.brands;
+    const { data, error } = await supabase.from('listings').select('brand').is('deleted_at', null).not('brand', 'is', null).limit(2000);
+    if (error) {
+        console.warn('[providerCatalogService] getKnownBrands:', error.message);
+        return brandsCache?.brands ?? [];
+    }
+    const brands = canonicalBrands((data ?? []).map((row) => row.brand as string | null));
+    brandsCache = { at: Date.now(), brands };
+    return brands;
+}
+
+/** Marca lista para guardar: sin espacios de más, con capitalización consistente y igual a la ya existente si la hay. */
+async function resolveBrand(raw: string): Promise<string | null> {
+    const known = await getKnownBrands();
+    return normalizeBrand(raw, known) || null;
+}
+
+/** Sin datos útiles (solo schema_version) no se guarda nada: NULL. Así «tiene specs» significa que de verdad hay datos. */
+function specsForSave(specs: ListingSpecs | null | undefined): ListingSpecs | null {
+    if (!specs) return null;
+    const hasData = Object.keys(specs).some((key) => key !== 'schema_version');
+    return hasData ? { ...specs, schema_version: specs.schema_version ?? SPEC_SCHEMA_VERSION } : null;
+}
 
 export type CreateListingParams = {
     category: string;
@@ -20,6 +54,8 @@ export type CreateListingParams = {
     coverImageUri: string;
     coverImageMimeType: string;
     quantity: number;
+    /** Especificaciones (ver constants/listingSpecs.ts). Opcional: nunca bloquea publicar. */
+    specs?: ListingSpecs | null;
 };
 
 export type CreateListingResult = { listingId?: string; error?: string };
@@ -105,11 +141,12 @@ export async function createListing(params: CreateListingParams): Promise<Create
             .from('listings')
             .insert({
                 provider_id: provider.id,
-                title: params.title.trim(),
-                brand: params.brand.trim() || null,
-                model: params.model.trim() || null,
+                title: collapseSpaces(params.title),
+                brand: await resolveBrand(params.brand),
+                model: collapseSpaces(params.model) || null,
                 category: params.category,
                 description: params.description.trim() || null,
+                specs: specsForSave(params.specs),
                 daily_price: Math.round(params.dailyPriceDollars * 100),
                 address_id: address.id,
                 cover_image_url: coverImageUrl,
@@ -221,18 +258,22 @@ export type EditableListing = {
     country: string;
     latitude: number | null;
     longitude: number | null;
+    /** Especificaciones guardadas (incluye claves que la app no conoce: se conservan al guardar). */
+    specs: ListingSpecs | null;
 };
 
 /** Trae un anuncio propio con todos sus datos, para prellenar el wizard en modo edición. */
 export async function getListingForEdit(listingId: string): Promise<EditableListing | null> {
-    const { data, error } = await supabase
-        .from('listings')
-        .select(`
-            id, category, title, brand, model, description, daily_price, cover_image_url, address_id,
-            address:addresses(line1, city, state, postal_code, country, latitude, longitude)
-        `)
-        .eq('id', listingId)
-        .single();
+    // Columnas como texto (no literal) para poder pedir o no `specs`; el resultado se lee con un tipo propio.
+    const columnsWith = (withSpecs: boolean): string =>
+        `id, category, title, brand, model, description, daily_price, cover_image_url, address_id,${withSpecs ? " specs," : ""} address:addresses(line1, city, state, postal_code, country, latitude, longitude)`;
+    const fetchRow = async (withSpecs: boolean) => {
+        const res = await supabase.from("listings").select(columnsWith(withSpecs)).eq("id", listingId).single();
+        return { data: res.data as any, error: res.error };
+    };
+    let { data, error } = await fetchRow(true);
+    // Si la columna specs aún no existiera en la base, se edita igual (sin specs) en vez de romper la pantalla.
+    if (error && error.message.includes("specs")) ({ data, error } = await fetchRow(false));
 
     if (error) throw serviceError('[providerCatalogService] getListingForEdit', error);
     if (!data) return null;
@@ -255,6 +296,7 @@ export async function getListingForEdit(listingId: string): Promise<EditableList
         country: address?.country ?? 'Ecuador',
         latitude: address?.latitude ?? null,
         longitude: address?.longitude ?? null,
+        specs: ((data as any).specs as ListingSpecs | null | undefined) ?? null,
     };
 }
 
@@ -276,6 +318,8 @@ export type UpdateListingParams = {
     /** URI local si el proveedor eligió una foto nueva; null si dejó la que ya tenía. */
     newCoverImageUri: string | null;
     newCoverImageMimeType: string | null;
+    /** Especificaciones ya combinadas con las existentes (ver buildSpecs). undefined = no tocarlas. */
+    specs?: ListingSpecs | null;
 };
 
 export async function updateListing(params: UpdateListingParams): Promise<{ error?: string }> {
@@ -332,13 +376,14 @@ export async function updateListing(params: UpdateListingParams): Promise<{ erro
         if (addressError) return { error: 'No se pudo actualizar la ubicación.' };
 
         const updatePayload: Record<string, any> = {
-            title: params.title.trim(),
-            brand: params.brand.trim() || null,
-            model: params.model.trim() || null,
+            title: collapseSpaces(params.title),
+            brand: await resolveBrand(params.brand),
+            model: collapseSpaces(params.model) || null,
             category: params.category,
             description: params.description.trim() || null,
             daily_price: Math.round(params.dailyPriceDollars * 100),
         };
+        if (params.specs !== undefined) updatePayload.specs = specsForSave(params.specs);
         if (coverImageUrl) updatePayload.cover_image_url = coverImageUrl;
 
         const { error: listingError } = await supabase

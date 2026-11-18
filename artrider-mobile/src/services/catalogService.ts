@@ -92,6 +92,14 @@ export async function getListingById(id: string): Promise<Listing | null> {
     return normalizeListingAddress(data);
 }
 
+/** Especificaciones del equipo. Secundario: si la columna no existe o falla, devuelve null y la ficha sigue sin ellas. */
+export async function getListingSpecs(id: string): Promise<Record<string, unknown> | null> {
+    const { data, error } = await supabase.from('listings').select('specs').eq('id', id).maybeSingle();
+    if (error) return null;
+    const specs = (data as { specs?: unknown } | null)?.specs;
+    return specs && typeof specs === 'object' && !Array.isArray(specs) ? (specs as Record<string, unknown>) : null;
+}
+
 /** Un listing con datos del proveedor — usado en pantalla de detalle. */
 export async function getListingByIdWithProvider(id: string): Promise<ListingWithProvider | null> {
     const { data, error } = await supabase

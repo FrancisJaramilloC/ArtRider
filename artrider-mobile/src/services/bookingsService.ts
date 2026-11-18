@@ -231,6 +231,8 @@ export type ClientBookingDetail = {
   brand: string | null;
   model: string | null;
   category: string | null;
+  /** Especificaciones del equipo (esquema en constants/listingSpecs.ts); null si no hay. */
+  specs: Record<string, unknown> | null;
   /** Solo la ciudad: la dirección exacta se comparte al confirmar. */
   city: string | null;
   quantity: number;

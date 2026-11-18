@@ -17,7 +17,8 @@
 --   * rider_subtotal y service_fee de la reserva (CONFIG.sql del nuevo modelo de precios) se leen con to_jsonb(b)->>'columna':
 --     si aún no existen o son NULL (reservas anteriores) devuelven NULL y la app calcula el desglose del modelo anterior. Así esta
 --     función se puede aplicar ANTES o DESPUÉS de PROPUESTA_PRECIOS_CONFIG.sql.
---   * listings.specs no está definido en el repo: la app solo muestra marca, modelo y categoría.
+--   * listings.specs existe en la base (la web lo usa) aunque no esté en las migraciones del repo; se lee con to_jsonb(...)->'specs' para no fallar si no
+--     existiera. La app muestra marca, modelo, categoría y las especificaciones que tengan dato (ver PROPUESTA_DATOS_EQUIPOS.sql).
 
 BEGIN;
 
@@ -40,6 +41,7 @@ RETURNS TABLE (
   brand text,
   model text,
   category text,
+  specs jsonb,                   -- especificaciones (esquema en src/constants/listingSpecs.ts); NULL si no hay
   city text,                     -- solo la ciudad; nunca la dirección exacta
   quantity integer,
   provider_id uuid,              -- providers.id, para abrir/crear el chat
@@ -71,6 +73,7 @@ DECLARE
   v_brand text;
   v_model text;
   v_category text;
+  v_specs jsonb;
   v_address uuid;
   v_city text;
   v_quantity integer;
@@ -93,8 +96,8 @@ BEGIN
   IF v_snap ->> 'type' = 'package' THEN
     v_type := 'package';
     v_item := NULLIF(v_snap ->> 'id', '')::uuid;
-    SELECT pkg.title, pkg.description, pkg.cover_image_url, pkg.address_id, (pkg.is_published AND pkg.deleted_at IS NULL)
-      INTO v_title, v_description, v_cover, v_address, v_available
+    SELECT pkg.title, pkg.description, pkg.cover_image_url, pkg.address_id, (pkg.is_published AND pkg.deleted_at IS NULL), to_jsonb(pkg) -> 'specs'
+      INTO v_title, v_description, v_cover, v_address, v_available, v_specs
     FROM packages pkg WHERE pkg.id = v_item;
   ELSE
     v_type := 'listing';
@@ -104,8 +107,9 @@ BEGIN
       (SELECT eu.listing_id FROM booking_units bu JOIN equipment_units eu ON eu.id = bu.equipment_unit_id
         WHERE bu.booking_id = v_b.id ORDER BY bu.id LIMIT 1)
     );
-    SELECT l.title, l.description, l.cover_image_url, l.brand, l.model, l.category, l.address_id, (l.is_published AND l.deleted_at IS NULL)
-      INTO v_title, v_description, v_cover, v_brand, v_model, v_category, v_address, v_available
+    -- to_jsonb(l) -> 'specs': si la columna no existiera devolvería NULL en vez de fallar.
+    SELECT l.title, l.description, l.cover_image_url, l.brand, l.model, l.category, l.address_id, (l.is_published AND l.deleted_at IS NULL), to_jsonb(l) -> 'specs'
+      INTO v_title, v_description, v_cover, v_brand, v_model, v_category, v_address, v_available, v_specs
     FROM listings l WHERE l.id = v_item;
   END IF;
 
@@ -140,6 +144,7 @@ BEGIN
     v_brand,
     v_model,
     v_category,
+    NULLIF(v_specs, 'null'::jsonb),
     v_city,
     v_quantity,
     v_b.provider_id,

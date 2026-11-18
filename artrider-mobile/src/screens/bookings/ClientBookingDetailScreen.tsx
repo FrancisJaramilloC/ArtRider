@@ -29,6 +29,7 @@ import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { cancelBooking, getClientBookingDetail, submitReview, type ClientBookingDetail } from '@/services/bookingsService';
 import { findExistingConversation } from '@/services/messagesService';
+import { specDisplayItems } from '@/constants/listingSpecs';
 import { formatPrice } from '@/utils/format';
 import { riderBreakdownOf } from '@/utils/pricing';
 import { formatDateRange, rentalDays } from '@/utils/providerBookings';
@@ -54,9 +55,11 @@ function Detail({ booking, onChanged }: { booking: ClientBookingDetail; onChange
   // Reservas anteriores al nuevo modelo no traen el desglose guardado: se calcula el del modelo anterior. Nunca montos del Partner.
   const { subtotal, serviceFee } = riderBreakdownOf({ riderSubtotal: booking.rider_subtotal, serviceFee: booking.service_fee }, booking.total_price);
 
+  // Marca, modelo y especificaciones con dato: nunca se muestra un campo vacío.
   const specs: SpecItem[] = [
-    booking.brand ? { label: 'Marca', value: booking.brand } : null,
-    booking.model ? { label: 'Modelo', value: booking.model } : null,
+    booking.brand?.trim() ? { label: 'Marca', value: booking.brand.trim() } : null,
+    booking.model?.trim() ? { label: 'Modelo', value: booking.model.trim() } : null,
+    ...specDisplayItems(booking.category, booking.specs),
   ].filter((x): x is SpecItem => x !== null);
 
   const canCancel = booking.status === 'AWAITING_SIGNATURES';
