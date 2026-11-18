@@ -29,22 +29,22 @@ type EmptyCopy = {
 const EMPTY: Record<BookingSegment, EmptyCopy> = {
   pending: {
     icon: 'hourglass-outline',
-    title: 'Sin solicitudes pendientes',
-    description: 'Cuando alguien reserve uno de tus equipos, la solicitud aparecerá aquí para que la aceptes.',
+    title: 'Nada por responder',
+    description: 'Cuando alguien reserve uno de tus equipos, la solicitud aparecerá aquí para que la aceptes o la rechaces.',
     actionLabel: 'Ver próximas',
     target: 'upcoming',
   },
   upcoming: {
     icon: 'calendar-outline',
     title: 'No tienes reservas próximas',
-    description: 'Las reservas aceptadas que aún no empiezan se muestran aquí.',
+    description: 'Las reservas aceptadas que empiezan en una fecha futura se muestran aquí.',
     actionLabel: 'Ver calendario',
     target: '/(provider)/calendar',
   },
   inProgress: {
     icon: 'play-circle-outline',
     title: 'Nada en curso ahora',
-    description: 'Aquí verás los equipos que están rentados en este momento.',
+    description: 'Aquí verás las reservas aceptadas cuyas fechas incluyen hoy.',
     actionLabel: 'Ver próximas',
     target: 'upcoming',
   },

@@ -36,7 +36,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
               backgroundColor: active ? colors.primary : 'transparent',
             }}
           >
-            <Text variant="captionStrong" style={{ color: active ? colors.onPrimary : colors.textSecondary }}>
+            <Text variant="captionStrong" style={{ textAlign: 'center', color: active ? colors.onPrimary : colors.textSecondary }}>
               {opt.label}
             </Text>
           </Pressable>

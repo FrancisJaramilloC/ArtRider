@@ -153,7 +153,7 @@ export function ProviderTodayScreen() {
         {/* Cuadrícula simétrica: 2 columnas de igual ancho y alto. */}
         <View style={{ gap: Rhythm.cardGap }}>
           <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
-            <KpiCard icon="hourglass-outline" label="Pendientes" value={String(pendingCount)} />
+            <KpiCard icon="hourglass-outline" label="Por responder" value={String(pendingCount)} />
             <KpiCard icon="checkmark-done-outline" label="Reservas activas" value={String(activeCount)} />
           </View>
           <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
@@ -174,7 +174,7 @@ export function ProviderTodayScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two }}>
               <Ionicons name="alert-circle" size={20} color={colors.primary} />
               <Text variant="bodyStrong" style={{ flex: 1, minWidth: 0 }}>
-                Tienes {pendingCount} {pendingCount === 1 ? 'reserva pendiente' : 'reservas pendientes'} de tu respuesta
+                Tienes {pendingCount} {pendingCount === 1 ? 'reserva por responder' : 'reservas por responder'}
               </Text>
             </View>
             <Button label="Revisar reservas" size="sm" fullWidth onPress={() => router.push({ pathname: '/provider/bookings', params: { segment: 'pending' } } as never)} />
