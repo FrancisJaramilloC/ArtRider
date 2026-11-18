@@ -1,3 +1,6 @@
+-- NOTA: con el nuevo modelo de precios esta propuesta queda sustituida por get_provider_bookings (docs/PROPUESTA_PRECIOS_RPC.sql), que ya devuelve
+-- partner_amount y rider_subtotal por reserva. Además la app móvil guarda los pedidos en `orders`, no en `checkout_orders`.
+
 -- PROPUESTA — NO APLICADA. Revisar y ejecutar manualmente en Supabase (SQL editor) si se aprueba.
 --
 -- Contexto: la pantalla «Ganancias» (solo lectura) hoy parte de la RPC get_provider_bookings, que devuelve

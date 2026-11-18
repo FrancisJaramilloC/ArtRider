@@ -1,3 +1,5 @@
+> **Actualización:** este documento es el borrador inicial. Con las definiciones reales de los RPC se reemplaza por **docs/PROPUESTA_PRECIOS_PLAN.md** (orden de aplicación, pruebas, reversa), **docs/PROPUESTA_PRECIOS_RPC.sql** y el cambio en `supabase/functions/kushki-charge/index.ts`. En particular: la app móvil guarda los pedidos en `orders` (no `checkout_orders`) y cada línea del carrito es una reserva.
+
 # Propuesta: cobro con el nuevo modelo de precios (servidor)
 
 > **No aplicada.** Es lo que haría falta en Supabase / Edge Functions. Complementa `docs/PROPUESTA_PRECIOS_CONFIG.sql`.
