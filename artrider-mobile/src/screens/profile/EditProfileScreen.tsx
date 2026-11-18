@@ -33,6 +33,7 @@ export function EditProfileScreen() {
     const [avatarMime, setAvatarMime] = useState<string | null>(null);
     const [avatarChanged, setAvatarChanged] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [permissionDenied, setPermissionDenied] = useState(false);
 
     async function pickImage() {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -59,6 +60,7 @@ export function EditProfileScreen() {
                 avatarUri: avatarChanged && avatarUri ? avatarUri : undefined,
                 avatarMimeType: avatarChanged ? (avatarMime ?? undefined) : undefined,
             });
+            setPermissionDenied(result.code === 'permission');
             if (result.error) return result.error;
             await refreshProfile();
             setSuccess(true);
@@ -113,7 +115,8 @@ export function EditProfileScreen() {
                         </View>
                     </Pressable>
 
-                    {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={form.retry} retrying={form.submitting} /> : null}
+                    {/* Un error de permisos no se arregla reintentando: sin «Reintentar». */}
+                    {form.submitError ? <FormErrorBanner message={form.submitError} onRetry={permissionDenied ? undefined : form.retry} retrying={form.submitting} /> : null}
 
                     <FormField
                         label="Nombre completo"
