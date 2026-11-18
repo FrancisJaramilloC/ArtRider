@@ -3,3 +3,10 @@
 .env.*
 !.env.example
 !.env.template
+
+# Config local de Claude Code (hooks por máquina, no se versiona)
+.claude/settings.local.json
+**/.claude/settings.local.json
+
+# Salida de graphify (grafo generado)
+graphify-out/
