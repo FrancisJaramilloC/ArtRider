@@ -30,6 +30,8 @@ export type WizardScaffoldProps = {
   /** Texto del botón principal («Siguiente», «Publicar anuncio», «Guardar cambios»…). */
   nextLabel: string;
   nextLoading?: boolean;
+  /** Deshabilita «Siguiente» (p. ej. mientras el paso no es válido). */
+  nextDisabled?: boolean;
   onNext: () => void;
   /** Sin esta función no se muestra «Atrás» (primer paso). */
   onBack?: () => void;
@@ -59,6 +61,7 @@ export function WizardScaffold({
   hasData,
   nextLabel,
   nextLoading = false,
+  nextDisabled = false,
   onNext,
   onBack,
   preview,
@@ -161,6 +164,7 @@ export function WizardScaffold({
               label={nextLabel}
               fullWidth={false}
               loading={nextLoading}
+              disabled={nextDisabled}
               onPress={() => {
                 if (nextLoading) return; // sin doble toque
                 hapticTap();

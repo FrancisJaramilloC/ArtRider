@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ItemPickerSheet, type PickerItem } from '@/components/provider/ItemPickerSheet';
-import { BigPriceInput, FieldError, PhotoStep, ReviewSections, WizardPreviewCard, pickCoverImage, priceFromInput, type ReviewItem } from '@/components/provider/WizardParts';
+import { BigPriceInput, CAPACITY_MAX, CAPACITY_MIN, FieldError, NumberStepper, isValidCapacity, PhotoStep, ReviewSections, WizardPreviewCard, pickCoverImage, priceFromInput, type ReviewItem } from '@/components/provider/WizardParts';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -46,7 +46,11 @@ const EMPTY_TEXT = { title: '', description: '', capacity: '', dailyPrice: '' };
 const TEXT_RULES = {
     title: [required('Ingresa un título para el paquete'), minLength(3, 'El título debe tener al menos 3 caracteres'), maxLength(100, 'El título admite hasta 100 caracteres')],
     description: [maxLength(DESCRIPTION_MAX, 'La descripción admite hasta 2000 caracteres')],
-    capacity: [required('Ingresa para cuántas personas alcanza'), integerAtLeast(1, 'Ingresa un número de personas mayor a 0')],
+    capacity: [
+        required('Elige para cuántas personas alcanza (mínimo 1)'),
+        integerAtLeast(CAPACITY_MIN, 'La capacidad debe ser de al menos 1 persona'),
+        (value: string) => (parseInt(value, 10) > CAPACITY_MAX ? `La capacidad máxima es ${CAPACITY_MAX} personas` : null),
+    ],
     dailyPrice: [required('Ingresa el precio por día'), positivePrice('Ingresa un precio mayor a 0')],
 };
 
@@ -293,6 +297,8 @@ export function CreatePackageScreen() {
             exitMessage={isEdit ? 'Si sales ahora, perderás los cambios que hiciste.' : 'Si sales ahora, perderás lo que escribiste.'}
             nextLabel={nextLabel}
             nextLoading={publishing}
+            // «Siguiente» queda deshabilitado hasta que la capacidad sea válida (1 a 500).
+            nextDisabled={currentStepId === 'capacity' && !isValidCapacity(capacity)}
             onNext={handleContinue}
             onBack={canGoBack ? handleBack : undefined}
             preview={isReview ? undefined : preview}
@@ -374,14 +380,12 @@ export function CreatePackageScreen() {
             )}
 
             {currentStepId === 'capacity' && (
-                <FormField
+                <NumberStepper
                     label="Capacidad (personas)"
-                    leftIcon="people-outline"
-                    placeholder="0"
-                    keyboardType="number-pad"
-                    maxLength={5}
-                    {...text.field('capacity')}
-                    onChangeText={(v) => text.setValue('capacity', v.replace(/[^0-9]/g, ''))}
+                    binding={text.field('capacity')}
+                    onChangeText={(v) => text.setValue('capacity', v)}
+                    unitSingular="persona"
+                    unitPlural="personas"
                 />
             )}
 

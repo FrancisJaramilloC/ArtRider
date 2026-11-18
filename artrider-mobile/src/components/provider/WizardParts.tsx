@@ -11,6 +11,7 @@ import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import type { FieldBinding } from '@/hooks/useForm';
 import { formatPrice } from '@/utils/format';
+import { hapticSelect } from '@/utils/haptics';
 
 /** Aviso de error de un paso que no es un campo de texto (categoría, foto, ubicación, equipos). */
 export function FieldError({ message }: { message: string }) {
@@ -89,8 +90,9 @@ export function BigPriceInput({ binding, onChangeText, children }: { binding: Fi
   const colors = useTheme();
   return (
     <View style={{ gap: Rhythm.titleToContent, alignItems: 'center' }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: Spacing.one }}>
-        <Text variant="display" color="textSecondary" style={WizardType.bigNumber}>
+      {/* Centrado vertical (no baseline: el baseline de TextInput no es fiable en iOS y descuadraba «$» y el número). */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
+        <Text variant="display" color="textSecondary" style={[WizardType.bigNumber, { includeFontPadding: false }]}>
           $
         </Text>
         <TextInput
@@ -105,7 +107,7 @@ export function BigPriceInput({ binding, onChangeText, children }: { binding: Fi
           accessibilityLabel="Precio por día en dólares"
           accessibilityHint={binding.error ?? undefined}
           aria-invalid={!!binding.error}
-          style={[{ minWidth: 72, textAlign: 'center', color: colors.text, fontFamily: 'Inter_700Bold', paddingVertical: Spacing.one }, WizardType.bigNumber]}
+          style={[{ minWidth: 72, textAlign: 'center', textAlignVertical: 'center', color: colors.text, fontFamily: 'Inter_700Bold', padding: 0, includeFontPadding: false }, WizardType.bigNumber]}
         />
         <Text variant="subtitle" color="textSecondary">
           /día
@@ -194,4 +196,118 @@ export function priceFromInput(raw: string): string {
 export function useTwoColumnWidth(): number {
   const { contentWidth, gutter } = useLayout();
   return Math.floor((contentWidth - gutter * 2 - Rhythm.cardGap) / 2);
+}
+
+/** Rango de la capacidad de un paquete (personas). */
+export const CAPACITY_MIN = 1;
+export const CAPACITY_MAX = 500;
+
+/** ¿Es una capacidad válida? (entero entre CAPACITY_MIN y CAPACITY_MAX). */
+export function isValidCapacity(value: string): boolean {
+  if (!/^\d+$/.test(value)) return false;
+  const n = parseInt(value, 10);
+  return n >= CAPACITY_MIN && n <= CAPACITY_MAX;
+}
+
+const STEPPER_BUTTON = 56;
+
+/**
+ * Control numérico con botones − y +, número grande centrado y escritura directa (teclado numérico, solo
+ * dígitos). Todo va en una fila con `alignItems: 'center'`: botones y número comparten el mismo eje vertical.
+ * Mínimo y máximo se respetan al pulsar y al escribir (un valor mayor al máximo se ajusta al máximo).
+ */
+export function NumberStepper({
+  binding,
+  onChangeText,
+  unitSingular,
+  unitPlural,
+  label,
+  min = CAPACITY_MIN,
+  max = CAPACITY_MAX,
+}: {
+  binding: FieldBinding;
+  onChangeText: (next: string) => void;
+  unitSingular: string;
+  unitPlural: string;
+  label: string;
+  min?: number;
+  max?: number;
+}) {
+  const colors = useTheme();
+  const current = /^\d+$/.test(binding.value) ? parseInt(binding.value, 10) : null;
+  const canDecrease = current !== null && current > min;
+  const canIncrease = current === null || current < max;
+
+  function change(next: number) {
+    hapticSelect();
+    onChangeText(String(Math.min(max, Math.max(min, next))));
+  }
+
+  const buttonStyle = (enabled: boolean) => ({
+    width: STEPPER_BUTTON,
+    height: STEPPER_BUTTON,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: enabled ? colors.text : colors.border,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  });
+
+  return (
+    <View style={{ gap: Rhythm.titleToContent, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.three }}>
+        <Pressable
+          onPress={() => canDecrease && change((current ?? min) - 1)}
+          disabled={!canDecrease}
+          accessibilityRole="button"
+          accessibilityLabel={`Disminuir ${label}`}
+          accessibilityState={{ disabled: !canDecrease }}
+          style={({ pressed }) => [buttonStyle(canDecrease), { opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Ionicons name="remove" size={24} color={canDecrease ? colors.text : colors.textMuted} />
+        </Pressable>
+
+        <TextInput
+          ref={binding.inputRef as RefObject<TextInputInstance | null>}
+          value={binding.value}
+          onChangeText={(raw) => {
+            const digits = raw.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+            if (digits === '') return onChangeText('');
+            onChangeText(String(Math.min(max, parseInt(digits, 10))));
+          }}
+          onBlur={binding.onBlur}
+          placeholder={String(min)}
+          placeholderTextColor={colors.textMuted}
+          keyboardType="number-pad"
+          maxLength={String(max).length + 1}
+          selectTextOnFocus
+          accessibilityLabel={label}
+          accessibilityHint={binding.error ?? `Entre ${min} y ${max}`}
+          aria-invalid={!!binding.error}
+          style={[{ minWidth: 96, textAlign: 'center', textAlignVertical: 'center', color: colors.text, fontFamily: 'Inter_700Bold', padding: 0, includeFontPadding: false }, WizardType.bigNumber]}
+        />
+
+        <Pressable
+          onPress={() => canIncrease && change((current ?? min - 1) + 1)}
+          disabled={!canIncrease}
+          accessibilityRole="button"
+          accessibilityLabel={`Aumentar ${label}`}
+          accessibilityState={{ disabled: !canIncrease }}
+          style={({ pressed }) => [buttonStyle(canIncrease), { opacity: pressed ? 0.7 : 1 }]}
+        >
+          <Ionicons name="add" size={24} color={canIncrease ? colors.text : colors.textMuted} />
+        </Pressable>
+      </View>
+
+      <Text variant="body" color="textSecondary">
+        {current === 1 ? unitSingular : unitPlural}
+      </Text>
+      {current === null && !binding.error ? (
+        <Text variant="caption" color="textSecondary">
+          Elige al menos {min} {unitSingular} para continuar.
+        </Text>
+      ) : null}
+      {binding.error ? <FieldError message={binding.error} /> : null}
+    </View>
+  );
 }
