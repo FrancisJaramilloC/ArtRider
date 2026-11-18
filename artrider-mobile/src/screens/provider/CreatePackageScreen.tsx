@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ItemPickerSheet, type PickerItem } from '@/components/provider/ItemPickerSheet';
-import { BigPriceInput, CAPACITY_MAX, CAPACITY_MIN, FieldError, NumberStepper, isValidCapacity, PhotoStep, ReviewSections, WizardPreviewCard, pickCoverImage, priceFromInput, type ReviewItem } from '@/components/provider/WizardParts';
+import { BigPriceInput, CAPACITY_MAX, CAPACITY_MIN, FieldError, NumberStepper, isValidCapacity, PhotoStep, ReviewSections, WizardPreviewCard, pickCoverImage, priceFromInput, riderPriceFromInput, PriceHint, type ReviewItem } from '@/components/provider/WizardParts';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -25,6 +25,7 @@ import { createPackage, getMyListings, getPackageForEdit, updatePackage } from '
 import { toErrorInfo, type ErrorInfo } from '@/utils/errors';
 import { formatPrice } from '@/utils/format';
 import { integerAtLeast, maxLength, minLength, positivePrice, required } from '@/utils/validation';
+import { usePricing } from '@/contexts/PricingContext';
 
 const DESCRIPTION_MAX = 2000;
 
@@ -62,6 +63,7 @@ const STEP_FIELDS: Partial<Record<StepId, (keyof typeof EMPTY_TEXT)[]>> = {
 };
 
 export function CreatePackageScreen() {
+    const { riderPrice } = usePricing();
     const { id: editPackageId } = useLocalSearchParams<{ id?: string }>();
     const isEdit = !!editPackageId;
     const router = useRouter();
@@ -255,7 +257,7 @@ export function CreatePackageScreen() {
             uri={coverUri}
             title={title}
             lines={[`Hasta ${capacity || '0'} personas`, `${equiposLabel} ${selectedCount === 1 ? 'incluido' : 'incluidos'}`]}
-            price={priceFromInput(dailyPrice)}
+            price={riderPriceFromInput(dailyPrice, riderPrice)}
         />
     );
 
@@ -265,7 +267,7 @@ export function CreatePackageScreen() {
         { key: 'details', label: 'Detalles', value: title || 'Sin título', onEdit: () => editSection('details') },
         { key: 'capacity', label: 'Capacidad', value: `Hasta ${capacity || '0'} personas`, onEdit: () => editSection('capacity') },
         { key: 'photo', label: 'Foto', value: coverUri ? 'Foto añadida' : 'Sin foto', onEdit: () => editSection('photo') },
-        { key: 'price', label: 'Precio', value: `${priceFromInput(dailyPrice)} por día`, onEdit: () => editSection('price') },
+        { key: 'price', label: 'Precio', value: `Tu precio ${priceFromInput(dailyPrice)} · El Rider verá ${riderPriceFromInput(dailyPrice, riderPrice)} por día`, onEdit: () => editSection('price') },
     ];
 
     if (loadError) {
@@ -404,6 +406,7 @@ export function CreatePackageScreen() {
 
             {currentStepId === 'price' && (
                 <BigPriceInput binding={text.field('dailyPrice')} onChangeText={(v) => text.setValue('dailyPrice', v.replace(/[^0-9.]/g, ''))}>
+                    <PriceHint raw={dailyPrice} />
                     {separateTotalCents > 0 ? (
                         <Text variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
                             Los equipos por separado suman {formatPrice(separateTotalCents)}/día

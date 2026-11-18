@@ -11,6 +11,7 @@ import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import type { FieldBinding } from '@/hooks/useForm';
 import { formatPrice } from '@/utils/format';
+import { usePricing } from '@/contexts/PricingContext';
 import { hapticSelect } from '@/utils/haptics';
 
 /** Aviso de error de un paso que no es un campo de texto (categoría, foto, ubicación, equipos). */
@@ -190,6 +191,24 @@ export function ReviewSections({ items }: { items: ReviewItem[] }) {
 export function priceFromInput(raw: string): string {
   const n = Number(raw.replace(',', '.'));
   return Number.isFinite(n) && n > 0 ? formatPrice(Math.round(n * 100)) : '$0';
+}
+
+/** Precio por día que verá el Rider a partir de lo que escribe el Partner («80» → «$92»). */
+export function riderPriceFromInput(raw: string, riderPrice: (partnerCents: number) => number): string {
+  const n = Number(raw.replace(',', '.'));
+  return Number.isFinite(n) && n > 0 ? formatPrice(riderPrice(Math.round(n * 100))) : '$0';
+}
+
+/** «Tu precio $80 · El Rider verá $92»: debajo del precio que escribe el Partner. */
+export function PriceHint({ raw }: { raw: string }) {
+  const { riderPrice } = usePricing();
+  const n = Number(raw.replace(',', '.'));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return (
+    <Text variant="bodyStrong" color="primary" style={{ textAlign: 'center' }} accessibilityLiveRegion="polite">
+      Tu precio {priceFromInput(raw)} · El Rider verá {formatPrice(riderPrice(Math.round(n * 100)))}
+    </Text>
+  );
 }
 
 /** Compat: ancho útil para tarjetas de categoría en 2 columnas. */

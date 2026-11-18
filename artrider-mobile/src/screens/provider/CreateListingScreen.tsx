@@ -6,7 +6,7 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BigPriceInput, FieldError, PhotoStep, ReviewSections, WizardPreviewCard, pickCoverImage, priceFromInput, useTwoColumnWidth, type ReviewItem } from '@/components/provider/WizardParts';
+import { BigPriceInput, FieldError, PhotoStep, ReviewSections, WizardPreviewCard, pickCoverImage, priceFromInput, riderPriceFromInput, PriceHint, useTwoColumnWidth, type ReviewItem } from '@/components/provider/WizardParts';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { FormErrorBanner, FormField } from '@/components/ui/FormField';
@@ -23,6 +23,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { createListing, getListingForEdit, updateListing } from '@/services/providerCatalogService';
 import { toErrorInfo, type ErrorInfo } from '@/utils/errors';
 import { maxLength, minLength, positivePrice, required } from '@/utils/validation';
+import { usePricing } from '@/contexts/PricingContext';
 
 const DEFAULT_REGION = { latitude: -3.9931, longitude: -79.2042, latitudeDelta: 0.05, longitudeDelta: 0.05 }; // Loja, Ecuador
 const MAP_HEIGHT = 260;
@@ -87,6 +88,7 @@ const STEP_FIELDS: Partial<Record<StepId, (keyof typeof EMPTY_TEXT)[]>> = {
 };
 
 export function CreateListingScreen() {
+    const { riderPrice } = usePricing();
     const { id: editListingId } = useLocalSearchParams<{ id?: string }>();
     const isEdit = !!editListingId;
     const router = useRouter();
@@ -326,13 +328,13 @@ export function CreateListingScreen() {
             : DEFAULT_REGION;
 
     const previewLines = [[form.brand, form.model].filter(Boolean).join(' · '), [form.city, form.state].filter(Boolean).join(', '), isEdit ? '' : `${form.quantity} ${form.quantity === 1 ? 'unidad disponible' : 'unidades disponibles'}`].filter(Boolean);
-    const preview = <WizardPreviewCard uri={form.coverUri} title={form.title} lines={previewLines} price={priceFromInput(form.dailyPrice)} />;
+    const preview = <WizardPreviewCard uri={form.coverUri} title={form.title} lines={previewLines} price={riderPriceFromInput(form.dailyPrice, riderPrice)} />;
 
     const reviewItems: ReviewItem[] = [
         { key: 'category', label: 'Categoría', value: CATEGORY_LABELS[form.category] ?? 'Sin elegir', onEdit: () => editSection('category') },
         { key: 'details', label: 'Detalles', value: [form.title, [form.brand, form.model].filter(Boolean).join(' · ')].filter(Boolean).join('\n') || 'Sin título', onEdit: () => editSection('details') },
         { key: 'photo', label: 'Foto', value: form.coverUri ? 'Foto añadida' : 'Sin foto', onEdit: () => editSection('photo') },
-        { key: 'price', label: 'Precio', value: `${priceFromInput(form.dailyPrice)} por día`, onEdit: () => editSection('price') },
+        { key: 'price', label: 'Precio', value: `Tu precio ${priceFromInput(form.dailyPrice)} · El Rider verá ${riderPriceFromInput(form.dailyPrice, riderPrice)} por día`, onEdit: () => editSection('price') },
         { key: 'location', label: 'Ubicación', value: [form.addressLine1, [form.city, form.state].filter(Boolean).join(', ')].filter(Boolean).join('\n') || 'Sin ubicación', onEdit: () => editSection('location') },
         ...(isEdit ? [] : [{ key: 'quantity', label: 'Cantidad', value: `${form.quantity} ${form.quantity === 1 ? 'unidad' : 'unidades'}`, onEdit: () => editSection('quantity') }]),
     ];
@@ -444,8 +446,9 @@ export function CreateListingScreen() {
 
             {currentStepId === 'price' && (
                 <BigPriceInput binding={text.field('dailyPrice')} onChangeText={(v) => text.setValue('dailyPrice', v.replace(/[^0-9.]/g, ''))}>
+                    <PriceHint raw={form.dailyPrice} />
                     <Text variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
-                        Es lo que cobras por cada día de renta.
+                        Es lo que ganas por cada día de renta. ArtRider suma su comisión al precio que ve el Rider.
                     </Text>
                 </BigPriceInput>
             )}
