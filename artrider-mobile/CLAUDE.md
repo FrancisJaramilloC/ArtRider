@@ -14,6 +14,9 @@ App móvil de ArtRider (renta de equipos de audio, luces, video y efectos en Ecu
 pnpm install
 pnpm start
 pnpm exec tsc --noEmit
+pnpm test:pricing      # modelo de precios
+pnpm test:partner      # reservas y dinero del Partner
+pnpm test:listing      # calidad de datos de equipos
 pnpm dlx expo-doctor
 pnpm exec expo export --platform ios      # y android; borrar dist/ después
 pnpm exec expo install <paquete>          # para librerías nativas (versión del SDK)
@@ -64,6 +67,15 @@ pnpm exec expo install <paquete>          # para librerías nativas (versión de
 - No versionar `.env`, `dist/` ni `.expo/` (ya ignorados).
 - Sin push, merge ni force push salvo petición explícita.
 - Los cambios de base de datos se proponen, no se aplican.
+
+## Precios, dinero y datos (reglas de dominio)
+
+- Precios: solo `utils/pricing.ts` (tasas de `pricing_settings` vía `usePricing()`). El Partner nunca ve montos del Rider; el Rider nunca ve `partner_amount` ni la comisión.
+- Dinero del Partner (`utils/earnings.ts`): Pendiente de tu respuesta / Próximos ingresos / Por cobrar. «Cobrado» no existe hasta tener registro de pagos.
+- Reservas del Partner: «Próximas» y «En curso» se calculan por fecha con «hoy» en Ecuador (UTC−5).
+- Equipos: marca, modelo y categoría obligatorios, marca normalizada, título validado, `specs` con `schema_version` (`constants/listingSpecs.ts`).
+- Cancelación del Rider: siempre por la edge `client-cancel-booking` (reembolsa y luego cancela); nunca un `UPDATE` directo de `bookings`.
+- Cambios de base de datos y funciones sin desplegar: `docs/PROPUESTA_*.sql` y `docs/BASE_DE_DATOS.md` §8. No aplicar ni desplegar desde aquí.
 
 ## Futuro
 

@@ -8,6 +8,9 @@ App móvil de ArtRider (renta de equipos de audio, luces, video y efectos en Ecu
 pnpm install                       # el único lockfile es pnpm-lock.yaml
 pnpm start                         # servidor Expo (escanear QR con Expo Go SDK 58)
 pnpm exec tsc --noEmit             # tipos
+pnpm test:pricing                  # modelo de precios (utils/pricing.ts)
+pnpm test:partner                  # reservas del Partner: segmentos por fecha (Ecuador) y flujo del dinero
+pnpm test:listing                  # calidad de datos de equipos: marca, modelo, título, especificaciones
 pnpm dlx expo-doctor               # salud del proyecto
 pnpm exec expo export --platform ios   # y android: valida el bundle (borrar dist después)
 ```
@@ -24,7 +27,8 @@ src/
     (tabs)/         Home, Reservas, Mensajes, Perfil  (NativeTabs, barra flotante iOS 26)
     (provider)/     Hoy, Calendario, Anuncios, Mensajes, Menú  (NativeTabs del Partner)
     listing/[id], package/[id], cart, map, chat/[id], profile/edit, become-provider,
-    checkout/…, provider/{create-*,edit-*,reviews,settings}, reset-password
+    booking/[id] (detalle de reserva del Rider),
+    checkout/…, provider/{create-*,edit-*,bookings,booking/[id],earnings,reviews,settings}, reset-password
   screens/        Pantallas completas por dominio (auth, home, explore, listing, package,
                   cart, chat, map, profile, provider)
   components/     Componentes por dominio: home, explore, bookings, listing, map, payment,
@@ -64,10 +68,11 @@ Alias `@/*` → `src/*`.
 | `packagesService` | Paquetes publicados y detalle |
 | `availabilityService` | Fechas no disponibles y unidades libres (RPC) |
 | `cartService` | Carrito y creación de orden multi-Partner (edge `kushki-charge`) |
-| `bookingsService` | Reservas del Rider, `create_booking`, pago Kushki, reseñas |
+| `chargeService`, `pricingConfigService` | Llamada a `kushki-charge` con `expectedTotal` (maneja `409 PRICE_CHANGED`) y lectura de las tasas (`pricing_settings`) |
+| `bookingsService` | Reservas del Rider, pago Kushki, reseñas, **detalle** (`get_client_booking_detail`) y **cancelación con reembolso** (edge `client-cancel-booking`) |
 | `messagesService` | Conversaciones, mensajes, Realtime (mensajes, «escribiendo», presencia) |
 | `favoritosService`, `notificationsService`, `profileService` | Favoritos, notificaciones, perfil y avatar |
-| `providerService`, `providerCatalogService`, `getMyProviderId` | Modo Partner: perfil, reservas, calendario, CRUD de anuncios y paquetes |
+| `providerService`, `providerCatalogService`, `getMyProviderId` | Modo Partner: perfil, reservas, calendario, CRUD de anuncios y paquetes (marca normalizada, `specs`) |
 
 ## Librerías clave
 
@@ -79,10 +84,17 @@ expo-router (rutas), react-native-reanimated + worklets (animaciones; `scheduleO
 2. **Exploración**: Home con buscador en píldora, chips de categoría, carruseles por ciudad y paquetes; al enfocar el buscador se muestra la grilla con filtros de ciudad y precio. Mapa con pines de precio.
 3. **Detalle y reserva directa**: detalle con galería, reseñas, calendario de disponibilidad → `checkout/[id]` (rango de fechas + cantidad) → resumen → **pago con Kushki** (WebView invisible tokeniza la tarjeta; edge `kushki-charge` cobra y crea la reserva) → éxito.
 4. **Carrito**: agregar equipos/paquetes con fechas, resumen multi-Partner y un único pago (`create_cart_order`).
-5. **Reservas del Rider**: lista agrupada, estado, cancelación, reseña tras completar.
+5. **Reservas del Rider**: lista agrupada → **detalle** (`booking/[id]`: estado, fechas, equipo, Partner con chat, desglose del Rider, referencia de pago, política de cancelación). Cancelar (solo pendiente) **reembolsa** por la edge `client-cancel-booking` y solo entonces marca la reserva cancelada; reseña tras completar. La lista y el detalle se refrescan al recuperar el foco (`reloadOnFocus`). Al pagar, `goToReservationsAfterPayment` vacía la pila y abre Reservas.
 6. **Chat**: lista de conversaciones (carga única + pull-to-refresh) y chat con Realtime, «escribiendo…» y presencia.
 7. **Perfil**: datos, avatar (Storage `avatars`), tema claro/oscuro, ser Partner.
 8. **Modo Partner**: «Hoy» (reservas pendientes: aceptar/rechazar con reembolso, finalizar), calendario por anuncio (bloquear fechas), anuncios y paquetes (crear/editar/publicar/borrar, portada vía edge `upload-listing-cover`), mensajes, reseñas, ajustes.
+
+## Precios y datos de equipos
+
+- **Precios**: única implementación en `utils/pricing.ts` (tasas en `pricing_settings`, leídas con `usePricing()`). El Partner fija su precio; el Rider ve `ceil(precio × 1,15)` y un total redondeado a .99 una sola vez por carrito. El Partner NUNCA ve montos del Rider (solo `partner_amount`, con respaldo «aprox.» en reservas antiguas). `kushki-charge` cobra el total oficial del servidor y responde `409 PRICE_CHANGED` si el cliente tenía otro. Pruebas: `pnpm test:pricing`.
+- **Partner**: segmentos de reservas por fecha con «hoy» en Ecuador (UTC−5), no por estado; flujo del dinero «Pendiente de tu respuesta / Próximos ingresos / Por cobrar» (`utils/earnings.ts`). Pruebas: `pnpm test:partner`.
+- **Equipos**: marca, modelo y categoría obligatorios; marca normalizada; título sugerido y validado (`utils/listingData.ts`); especificaciones por categoría en `listings.specs` con `schema_version` (`constants/listingSpecs.ts`), compatibles con las claves del panel admin de la web. Pruebas: `pnpm test:listing`.
+- **Cambios de base de datos y funciones**: se *proponen* en `docs/PROPUESTA_*.sql` y se aplican a mano; mira el estado en `BASE_DE_DATOS.md` §8.
 
 ## Sistema de diseño
 

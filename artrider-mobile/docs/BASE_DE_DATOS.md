@@ -27,7 +27,7 @@
 | `providers` | `id`, `user_id` (único), `brand_name`, `bio`, `status`, `created_at` | Trigger impide que el usuario cambie su propio `status`. |
 | `addresses` | `id`, `user_id`, `line1`, `line2`, `city`, `state`, `postal_code`, `country`, `latitude`, `longitude`, `deleted_at` | Dirección del anuncio. |
 | `product_catalog` | `name`, `description`, `brand`, `model`, `category` | Catálogo maestro. |
-| `listings` | `id`, `provider_id`, `catalog_item_id`, `address_id`, `title`, `brand`, `model`, `category`, `cover_image_url`, `gallery_images TEXT[]`, `daily_price`, `description`, `is_published`, `deleted_at` | Soft delete. La web además usa `specs` (**no definido en el repo**). |
+| `listings` | `id`, `provider_id`, `catalog_item_id`, `address_id`, `title`, `brand`, `model`, `category`, `cover_image_url`, `gallery_images TEXT[]`, `daily_price`, `description`, `is_published`, `deleted_at` | Soft delete. La web y la app usan `specs jsonb` (**existe en la base pero no en las migraciones del repo**; esquema de la app en `src/constants/listingSpecs.ts`, ver `PROPUESTA_DATOS_EQUIPOS.sql`). |
 | `equipment_units` | `listing_id`, `serial_number`, `condition`, `internal_status` | Unidades físicas; la cantidad de un anuncio = nº de unidades. |
 | `packages` | `id`, `owner_id`, `provider_id`, `title`, `description`, `daily_price`, `cover_image_url`, `gallery_images`, `address_id`, `is_published`, `deleted_at` | Combos de equipos. |
 | `package_items` | `package_id`, `listing_id`, `quantity` | |
@@ -79,7 +79,8 @@ Storage: buckets `avatars` (subida directa desde el móvil, `profileService.ts`)
 
 | Función | JWT | Qué hace | Toca |
 |---|---|---|---|
-| `kushki-charge` | `verify_jwt = false` (solo comprueba que exista el header `Authorization`) | Calcula el total en servidor, cobra en Kushki (UAT) y llama a `create_booking`/`create_package_booking`/`create_cart_order`; si la RPC falla anula el cobro. | RPC anteriores, `get_cart_total`, `packages`, `listings` |
+| `kushki-charge` | `verify_jwt = false` (valida al usuario con `auth.getUser()`) | **Versión nueva en el repo (sin desplegar)**: cobra el total oficial del servidor (`get_*_quote`), acepta `expectedTotal` y responde `409 PRICE_CHANGED` con el desglose nuevo; pasa `p_expected_total` a los RPC; si la RPC falla anula el cobro. Requiere aplicar antes `PROPUESTA_PRECIOS_CONFIG.sql` y `_RPC.sql` (ver `PROPUESTA_PRECIOS_PLAN.md` §3). | RPC de reserva y cotización, `packages`, `listings` |
+| `client-cancel-booking` | `verify_jwt = false` (valida con `auth.getUser()`) | **Nueva (sin desplegar)**. El Rider cancela una reserva pendiente: reembolsa en Kushki el total de ESA reserva y solo si sale bien marca `CANCELLED` (con `service_role`). Idempotente: ya cancelada = éxito sin reembolsar otra vez. | `bookings`, Kushki UAT |
 | `provider-respond-booking` | por defecto (verifica JWT) | Acepta o rechaza una reserva; si rechaza con cobro, reembolsa en Kushki. | RPC `get_booking_for_provider_action`, `provider_set_booking_status` |
 | `upload-listing-cover` | `verify_jwt = false` (valida con `auth.getUser()`) | Sube la portada con service role al bucket `listing-covers` (máx. 5 MB, solo proveedores). | `providers`, Storage |
 
@@ -94,7 +95,7 @@ Storage: buckets `avatars` (subida directa desde el móvil, `profileService.ts`)
 | `cart`, `checkout/cart-summary` | `cartService` | `cart_items`, RPC `create_cart_order`, edge `kushki-charge` |
 | `checkout/[id]`, `checkout/summary/[id]`, `checkout/package/*` | `bookingsService`, `availabilityService` | RPC `get_available_units_count`, `create_booking`, `create_package_booking`, edge `kushki-charge` |
 | `checkout/success/[id]` | `bookingsService` | `bookings` |
-| `(tabs)/reservations` | `bookingsService` | RPC `get_client_bookings`, `submit_review` |
+| `(tabs)/reservations` | `bookingsService` | RPC `get_client_bookings`, `submit_review`, edge `client-cancel-booking` (cancelar) |
 | `booking/[id]` (detalle de reserva del Rider) | `bookingsService` | RPC `get_client_booking_detail` (**propuesta sin aplicar**: `docs/PROPUESTA_DETALLE_RESERVA_RIDER.sql`), `submit_review`, `bookings` (cancelar) |
 | `(tabs)/messages`, `chat/[id]` | `messagesService` | RPC `get_my_conversations`, `mark_messages_read`, `get_or_create_conversation`; `messages`, `conversations`, `conversation_archived/deleted`; canales Realtime |
 | `(tabs)/profile`, `profile/edit` | `profileService`, `AuthContext` | `profiles`, Storage `avatars` |
@@ -113,4 +114,22 @@ Storage: buckets `avatars` (subida directa desde el móvil, `profileService.ts`)
 5. `providers` y `availability_calendar` demasiado abiertas (§4).
 6. `packages_read` sin filtro `deleted_at`.
 7. `art-rider/types/database.types.ts` es un placeholder vacío (`Database = {}`): el móvil no tiene tipos generados y usa casts (`as`/`any`).
-8. Tablas sin uso en el móvil: `payments`, `digital_contracts`, `identity_verifications`, `checkout_orders`, `product_catalog`.
+8. **`bookings_update` (RLS) deja a cualquier cliente cambiar el `status` de su reserva** (los triggers solo protegen `client_id`, `provider_id` y `total_price`); y a los usuarios autenticados llamar `create_booking`/`create_cart_order` sin pagar. Propuesta: `PROPUESTA_BOOKINGS_SOLO_SERVIDOR.sql` (no aplicar antes de migrar los tres `UPDATE` directos de la web).
+9. Tablas sin uso en el móvil: `payments`, `digital_contracts`, `identity_verifications`, `checkout_orders`, `product_catalog`.
+
+## 8. Propuestas sin aplicar y funciones sin desplegar
+
+Nada de esto está aplicado ni desplegado: se prepara en el repo y se aplica a mano (con revisión). Orden de los precios en `PROPUESTA_PRECIOS_PLAN.md` §3: copia de seguridad → CONFIG → RPC → desplegar `kushki-charge` de inmediato → verificar con las cotizaciones → publicar la app.
+
+| Archivo / función | Qué hace | Depende de |
+|---|---|---|
+| `PROPUESTA_PRECIOS_CONFIG.sql` | Tabla `pricing_settings`, funciones de cálculo, columnas de montos y tasas por reserva/pedido | — |
+| `PROPUESTA_PRECIOS_RPC.sql` | `create_booking`, `create_package_booking`, `create_cart_order` con `p_expected_total`; `get_cart_quote`, `get_booking_quote`, `get_package_quote`; `get_provider_bookings` con `partner_amount` | CONFIG |
+| Edge `kushki-charge` (versión nueva) | Cobra el total oficial del servidor y responde `409 PRICE_CHANGED` | CONFIG + RPC aplicados |
+| `PROPUESTA_DETALLE_RESERVA_RIDER.sql` | RPC `get_client_booking_detail` (detalle de reserva del Rider) | — (lee el desglose con `to_jsonb`, funciona antes o después de CONFIG) |
+| Edge `client-cancel-booking` | Cancelación del Rider con reembolso | — |
+| `PROPUESTA_BOOKINGS_SOLO_SERVIDOR.sql` | Quita el `UPDATE` directo de `bookings` a los usuarios | Migrar antes los tres `UPDATE` de la web |
+| `PROPUESTA_DATOS_EQUIPOS.sql` | `listings.specs` con CHECK, `brand_normalized`, consultas de equipos a corregir | Aplicar **antes** de publicar la versión de la app que guarda `specs` |
+| `PROPUESTA_GANANCIAS_PARTNER.sql`, `PROPUESTA_PERFIL_PUBLICO_PARTNER.sql`, `PROPUESTA_POLITICAS_STORAGE_AVATARES.sql`, `PROPUESTA_SOLICITUD_PARTNER_UNICA.sql`, `PROPUESTA_MIGRACION_REGISTRO_CORTO.sql` | Propuestas anteriores | Ver cada archivo |
+
+La web (`art-rider`) sigue con el modelo de precios anterior.
