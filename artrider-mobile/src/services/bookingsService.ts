@@ -200,3 +200,49 @@ export async function submitReview(bookingId: string, rating: number, comment: s
   }
   return {};
 }
+/** Detalle de una reserva del Rider (RPC get_client_booking_detail, ver docs/PROPUESTA_DETALLE_RESERVA_RIDER.sql). Nunca trae montos del Partner. */
+export type ClientBookingDetail = {
+  booking_id: string;
+  status: BookingStatus;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+  order_id: string | null;
+  item_type: 'listing' | 'package';
+  /** Equipo o paquete reservado, para «Reservar de nuevo». */
+  item_id: string | null;
+  /** Publicado y no eliminado hoy: si es false no se ofrece «Reservar de nuevo». */
+  item_available: boolean;
+  title: string | null;
+  description: string | null;
+  cover_image_url: string | null;
+  brand: string | null;
+  model: string | null;
+  category: string | null;
+  /** Solo la ciudad: la dirección exacta se comparte al confirmar. */
+  city: string | null;
+  quantity: number;
+  /** providers.id, para abrir el chat con el Partner. */
+  provider_id: string | null;
+  provider_name: string | null;
+  provider_avatar_url: string | null;
+  /** Solo con la reserva activa, pagada o completada. */
+  provider_phone: string | null;
+  /** NULL en reservas anteriores al nuevo modelo de precios (la app calcula el desglose antiguo). */
+  rider_subtotal: number | null;
+  service_fee: number | null;
+  total_price: number;
+  kushki_ticket: string | null;
+  already_reviewed: boolean;
+};
+
+/** Detalle de una reserva propia; null si no existe o no es del usuario. */
+export async function getClientBookingDetail(bookingId: string): Promise<ClientBookingDetail | null> {
+  const { data, error } = await supabase.rpc('get_client_booking_detail', { p_booking_id: bookingId });
+  if (error) {
+    if (error.message.includes('Reserva no encontrada')) return null;
+    throw serviceError('[bookingsService] getClientBookingDetail', error);
+  }
+  const row = (data as ClientBookingDetail[] | null)?.[0];
+  return row ?? null;
+}

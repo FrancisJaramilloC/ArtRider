@@ -1,5 +1,5 @@
 import { COPY, ROLE_CLIENT } from '@/constants/copy';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { InfoCard as Card } from '@/components/ui/InfoCard';
 import { PriceSummary } from '@/components/ui/PriceSummary';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -38,18 +39,6 @@ const STATUS_LINE: Record<ProviderBooking['status'], string> = {
   CANCELLED: 'Reserva cancelada.',
   ARCHIVED: 'Reserva archivada.',
 };
-
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  const colors = useTheme();
-  return (
-    <View style={{ backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding + Spacing.one, gap: Rhythm.cardPadding }}>
-      <Text variant="overline" color="textSecondary" accessibilityRole="header">
-        {title}
-      </Text>
-      {children}
-    </View>
-  );
-}
 
 function Detail({ booking, onChanged }: { booking: ProviderBooking; onChanged: () => void }) {
   const colors = useTheme();

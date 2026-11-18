@@ -2,6 +2,7 @@ import { ROLE_PROVIDER } from '@/constants/copy';
 import { useState } from 'react';
 import { View, Pressable, Linking } from 'react-native';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
@@ -22,6 +23,7 @@ const STATUS_TONE: Record<BookingStatusKey, BadgeTone> = {
 
 export function BookingListCard({ booking, onCancelled }: { booking: ClientBooking; onCancelled: () => void }) {
     const colors = useTheme();
+    const router = useRouter();
     const [showConfirm, setShowConfirm] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [showReview, setShowReview] = useState(false);
@@ -45,14 +47,19 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
     }
 
     return (
-        <View
-            style={{
+        <Pressable
+            onPress={() => router.push({ pathname: '/booking/[id]', params: { id: booking.booking_id } } as never)}
+            accessibilityRole="button"
+            accessibilityLabel={`${booking.listing_title ?? 'Equipo reservado'}, ${statusLabel}`}
+            accessibilityHint="Abre el detalle de la reserva"
+            style={({ pressed }) => ({
                 flexDirection: 'row',
                 gap: Spacing.three,
                 padding: Spacing.three,
                 backgroundColor: colors.backgroundElement,
                 borderRadius: Radius.card,
-            }}
+                opacity: pressed ? 0.9 : 1,
+            })}
         >
             <View style={{ width: 72, height: 72, borderRadius: Radius.xl, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
                 {booking.listing_cover_image_url ? (
@@ -140,6 +147,6 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
                 onCancel={() => setShowReview(false)}
                 onSubmit={handleSubmitReview}
             />
-        </View>
+        </Pressable>
     );
 }

@@ -1,7 +1,7 @@
 // Pruebas del modelo de precios. Ejecutar: pnpm test:pricing
 import assert from 'node:assert/strict';
 
-import { breakdownOf, computeCartTotals, DEFAULT_PRICING_RATES, estimateLegacyPartnerAmount, partnerDailyOf, resolvePartnerAmount, riderDailyPrice, riderLineTotal, roundTo99, sanitizeRates } from '../src/utils/pricing.ts';
+import { breakdownOf, computeCartTotals, DEFAULT_PRICING_RATES, estimateLegacyPartnerAmount, legacyRiderBreakdown, partnerDailyOf, riderBreakdownOf, resolvePartnerAmount, riderDailyPrice, riderLineTotal, roundTo99, sanitizeRates } from '../src/utils/pricing.ts';
 
 const rates = DEFAULT_PRICING_RATES;
 let checks = 0;
@@ -72,6 +72,15 @@ eq(resolvePartnerAmount(undefined, 8400), { amount: 8000, estimated: true }, 'au
 eq(partnerDailyOf(24000, 3), 8000, '3 días × $80');
 eq(partnerDailyOf(16000, 3), null, 'no divide exacto → null');
 eq(partnerDailyOf(8000, 0), null, '0 días → null');
+
+// Desglose para el Rider en el detalle de reserva: guardado (nuevo modelo) o del modelo anterior
+eq(riderBreakdownOf({ riderSubtotal: 9200, serviceFee: 499 }, 9699), { subtotal: 9200, serviceFee: 499 }, 'reserva nueva: se usa lo guardado');
+eq(riderBreakdownOf({ riderSubtotal: null, serviceFee: null }, 8400), { subtotal: 8000, serviceFee: 400 }, 'reserva antigua $80 + 5 %');
+eq(riderBreakdownOf({ riderSubtotal: 9200, serviceFee: null }, 8400), { subtotal: 8000, serviceFee: 400 }, 'a medias (solo uno guardado) → modelo anterior');
+for (const total of [100, 1296, 8400, 12345, 99999]) {
+  const b = legacyRiderBreakdown(total);
+  eq(b.subtotal + b.serviceFee, total, 'el desglose antiguo siempre cuadra al centavo: ' + total);
+}
 
 // Tasas configurables
 const custom = { partnerCommissionRate: 0.2, serviceFeeRate: 0 };

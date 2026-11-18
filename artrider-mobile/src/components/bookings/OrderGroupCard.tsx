@@ -2,6 +2,7 @@ import { COPY } from '@/constants/copy';
 import { useState } from 'react';
 import { View, Pressable, Linking } from 'react-native';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Badge, type BadgeTone } from '@/components/ui/Badge';
@@ -22,6 +23,7 @@ const STATUS_TONE: Record<BookingStatusKey, BadgeTone> = {
 
 function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCancelled: () => void }) {
     const colors = useTheme();
+    const router = useRouter();
     const [showConfirm, setShowConfirm] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [showReview, setShowReview] = useState(false);
@@ -46,7 +48,13 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
 
     return (
         <View style={{ gap: Spacing.two }}>
-            <View style={{ flexDirection: 'row', gap: Spacing.three, alignItems: 'center' }}>
+            <Pressable
+                onPress={() => router.push({ pathname: '/booking/[id]', params: { id: booking.booking_id } } as never)}
+                accessibilityRole="button"
+                accessibilityLabel={`${booking.listing_title ?? 'Item reservado'}, ${statusLabel}`}
+                accessibilityHint="Abre el detalle de la reserva"
+                style={({ pressed }) => ({ flexDirection: 'row', gap: Spacing.three, alignItems: 'center', opacity: pressed ? 0.85 : 1 })}
+            >
                 <View style={{ width: 48, height: 48, borderRadius: Radius.lg, overflow: 'hidden', backgroundColor: colors.backgroundSelected }}>
                     {booking.listing_cover_image_url ? (
                         <Image
@@ -71,7 +79,7 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
                     </Text>
                 </View>
                 <Badge label={statusLabel} tone={STATUS_TONE[toStatusKey(booking.status)]} />
-            </View>
+            </Pressable>
 
             {(booking.provider_phone || canCancel || canReview) && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

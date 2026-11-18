@@ -124,3 +124,23 @@ export function resolvePartnerAmount(
 export function partnerDailyOf(amountCents: number, days: number): number | null {
   return days > 0 && amountCents % days === 0 ? amountCents / days : null;
 }
+
+/**
+ * Desglose que vio el Rider en una reserva ANTERIOR al nuevo modelo (sin rider_subtotal ni service_fee guardados): el total era
+ * el precio + 5 %, así que subtotal = total ÷ 1.05 y la tarifa es lo que falta para llegar al total (siempre cuadra al centavo).
+ */
+export function legacyRiderBreakdown(totalCents: number): { subtotal: number; serviceFee: number } {
+  const subtotal = estimateLegacyPartnerAmount(totalCents);
+  return { subtotal, serviceFee: totalCents - subtotal };
+}
+
+/** Desglose de una reserva para mostrar al Rider: el guardado si lo hay (nuevo modelo) o el del modelo anterior. */
+export function riderBreakdownOf(
+  stored: { riderSubtotal: number | null; serviceFee: number | null },
+  totalCents: number,
+): { subtotal: number; serviceFee: number } {
+  if (typeof stored.riderSubtotal === 'number' && typeof stored.serviceFee === 'number') {
+    return { subtotal: stored.riderSubtotal, serviceFee: stored.serviceFee };
+  }
+  return legacyRiderBreakdown(totalCents);
+}

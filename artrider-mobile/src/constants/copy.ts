@@ -75,4 +75,24 @@ export const COPY = {
   providerSuspendedBody: `Tu cuenta de ${ROLE_PROVIDER} está suspendida. Contacta a soporte.`,
   providerStatusUnavailable: `No se pudo cargar tu estado de ${ROLE_PROVIDER}`,
   ownItemNotice: (kind: 'equipo' | 'paquete') => `Este ${kind} es tuyo: no puedes reservarlo ni agregarlo al carrito.`,
+
+  // Detalle de reserva del Rider
+  bookingDetailTitle: 'Tu reserva',
+  bookingStatusLine: {
+    AWAITING_SIGNATURES: `Esperando la respuesta del ${ROLE_PROVIDER}. Puedes cancelar mientras tanto.`,
+    PAID: `Reserva confirmada. El ${ROLE_PROVIDER} aceptó tu solicitud.`,
+    ACTIVE: `Reserva confirmada. El ${ROLE_PROVIDER} aceptó tu solicitud.`,
+    COMPLETED: 'Reserva finalizada. ¡Gracias por rentar con ArtRider!',
+    CANCELLED: 'Esta reserva fue cancelada.',
+    DISPUTE: 'Esta reserva tiene una disputa abierta.',
+    ARCHIVED: 'Esta reserva fue archivada.',
+  } as Record<string, string>,
+  bookingAddressNotice: 'La dirección exacta se comparte al confirmar.',
+  bookingRefundRequested: 'Reembolso solicitado',
+  bookingPaymentReference: 'Referencia de pago',
+  bookingCancellationTitle: 'Política de cancelación',
+  bookingCancellationPolicy: `Puedes cancelar tu reserva mientras el ${ROLE_PROVIDER} no haya respondido. Si el ${ROLE_PROVIDER} rechaza tu solicitud, el pago se reembolsa automáticamente. Una vez confirmada, escríbele al ${ROLE_PROVIDER} para coordinar cualquier cambio.`,
+  bookingNotFoundTitle: 'No encontramos esta reserva',
+  bookingNotFoundBody: 'Puede que ya no exista o que no sea tuya.',
+  bookingCancelConfirm: 'Esto cancelará tu reserva y no se puede deshacer.',
 } as const;
