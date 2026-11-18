@@ -17,8 +17,9 @@ import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getMyProviderProfile, getProviderBookings, type ProviderProfile, type ProviderBooking } from '@/services/providerService';
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
-import { summarize, toEarningRows } from '@/utils/earnings';
+import { earningsLabel, summarize, toEarningRows } from '@/utils/earnings';
 import { formatPrice, formatShortDate } from '@/utils/format';
+import { formatDateRange, nextAcceptedBooking } from '@/utils/providerBookings';
 
 type HomeBundle = { profile: ProviderProfile | null; bookings: ProviderBooking[]; listings: MyListing[] };
 
@@ -130,6 +131,8 @@ export function ProviderTodayScreen() {
   const earnings = summarize(toEarningRows(bookings));
 
   const recentBookings = bookings.slice(0, 5);
+  // La aceptada más cercana (hoy medido en Ecuador). Solo datos reales de la reserva y lo que GANA el Partner.
+  const nextBooking = nextAcceptedBooking(bookings);
 
   return (
     <TabScreen title="Home">
@@ -234,6 +237,41 @@ export function ProviderTodayScreen() {
               ))}
             </View>
           )}
+        </View>
+
+        <View style={{ gap: Rhythm.titleToContent }}>
+          <Text variant="headline" accessibilityRole="header">
+            Próxima reserva
+          </Text>
+          {nextBooking ? (
+            <Pressable
+              onPress={() => router.push({ pathname: '/provider/booking/[id]', params: { id: nextBooking.booking_id } } as never)}
+              accessibilityRole="button"
+              accessibilityLabel={`${nextBooking.listing_title ?? 'Reserva'}, ${formatDateRange(nextBooking.start_date, nextBooking.end_date)}`}
+              accessibilityHint="Abre el detalle de la reserva"
+              style={({ pressed }) => ({ gap: Spacing.one, backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Rhythm.cardPadding + Spacing.one, opacity: pressed ? 0.85 : 1 })}
+            >
+              <Text variant="bodyStrong" numberOfLines={2}>
+                {nextBooking.listing_title ?? 'Item reservado'}
+              </Text>
+              <Text variant="caption" color="textSecondary" numberOfLines={1}>
+                {nextBooking.client_name ?? ROLE_CLIENT} · {formatDateRange(nextBooking.start_date, nextBooking.end_date)}
+              </Text>
+              {earningsLabel(nextBooking) ? (
+                <Text variant="bodyStrong" color="primary">
+                  {earningsLabel(nextBooking)}
+                </Text>
+              ) : null}
+            </Pressable>
+          ) : (
+            <Text variant="body" color="textSecondary">
+              No tienes reservas aceptadas por venir.
+            </Text>
+          )}
+          <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+            <Button label="Ver calendario" icon="calendar-outline" variant="tonal" fullWidth onPress={() => router.push('/(provider)/calendar' as never)} style={{ flex: 1 }} />
+            <Button label="Publicar equipo" icon="add-circle-outline" fullWidth onPress={() => router.push('/provider/new-listing' as never)} style={{ flex: 1 }} />
+          </View>
         </View>
       </ScrollView>
     </TabScreen>
