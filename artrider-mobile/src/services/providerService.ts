@@ -1,6 +1,6 @@
 import { COPY } from '@/constants/copy';
 import { supabase, SUPABASE_URL } from './supabase';
-import { serviceError } from '@/utils/errors';
+import { isNetworkError, serviceError } from '@/utils/errors';
 
 export type ProviderProfile = {
     id: string;
@@ -13,24 +13,28 @@ export type ProviderProfile = {
 
 /**
  * Retorna el perfil del proveedor para el usuario autenticado.
- * Retorna null si el usuario no está registrado como proveedor.
+ * - `null` SOLO si la consulta respondió y no hay fila (aún no es Partner) o no hay sesión.
+ * - Cualquier error (red, permisos, servidor) se LANZA: nunca se confunde «sin conexión» con «no es Partner».
+ *   El id sale de la sesión local (`getSession`): `getUser()` hace una llamada de red y sin conexión devolvía
+ *   user = null, que se leía como «no es Partner» y mostraba el formulario.
  */
 export async function getMyProviderProfile(): Promise<ProviderProfile | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw serviceError('[providerService] getMyProviderProfile', sessionError);
+    if (!session) return null;
 
     const { data, error } = await supabase
         .from('providers')
         .select('*')
-        .eq('user_id', user.id)
-        .single();
+        .eq('user_id', session.user.id)
+        .maybeSingle();
 
     if (error) {
-        if (error.code === 'PGRST116') return null; // no es proveedor todavía
-        throw new Error(`[providerService] getMyProviderProfile failed: ${error.message}`);
+        if (error.code === 'PGRST116') return null; // sin fila: no es proveedor todavía
+        throw serviceError('[providerService] getMyProviderProfile failed', error);
     }
 
-    return data as ProviderProfile;
+    return (data as ProviderProfile | null) ?? null;
 }
 
 export interface BecomeProviderParams {
@@ -41,6 +45,18 @@ export interface BecomeProviderParams {
 export interface BecomeProviderResult {
     error?: string;
     success?: boolean;
+    /** Ya existía una solicitud/perfil: no se creó otra; la pantalla debe mostrar su estado. */
+    existingStatus?: ProviderProfile['status'];
+    /** «network»: sin conexión (se puede reintentar). */
+    code?: 'network';
+}
+
+const NETWORK_ERROR_MESSAGE = 'Sin conexión. Revisa tu internet e inténtalo de nuevo.';
+
+function existingMessage(status: ProviderProfile['status']): string {
+    if (status === 'pending') return COPY.alreadyProviderPending;
+    if (status === 'suspended') return COPY.providerSuspendedBody;
+    return COPY.alreadyProvider;
 }
 
 /** En desarrollo muestra el código y el mensaje reales de Supabase; en producción, el mensaje amable. */
@@ -56,8 +72,10 @@ export async function becomeProvider(params: BecomeProviderParams): Promise<Beco
     const { brandName, bio = '' } = params;
 
     try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError || !user) {
+        // Sesión local: sin conexión `getUser()` fallaba y se mostraba «inicia sesión» por error.
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
+        if (!user) {
             return { error: COPY.mustLoginToBecomeProvider };
         }
 
@@ -74,17 +92,23 @@ export async function becomeProvider(params: BecomeProviderParams): Promise<Beco
 
         const { data: existing, error: existingError } = await supabase
             .from('providers')
-            .select('id')
+            .select('id, status')
             .eq('user_id', user.id)
             .maybeSingle();
 
         if (existingError) {
+            if (isNetworkError(existingError.message)) {
+                console.warn('[providerService] becomeProvider sin conexión (comprobación):', existingError.message);
+                return { error: NETWORK_ERROR_MESSAGE, code: 'network' };
+            }
             console.error('[providerService] becomeProvider existence check error:', existingError);
             return { error: friendlyOrDebug(existingError) };
         }
 
+        // Una solicitud por usuario: si ya existe (pendiente, activa o suspendida) no se crea otra.
         if (existing) {
-            return { error: COPY.alreadyProvider };
+            const status = existing.status as ProviderProfile['status'];
+            return { error: existingMessage(status), existingStatus: status };
         }
 
         const { error: insertError } = await supabase.from('providers').insert({
@@ -95,12 +119,24 @@ export async function becomeProvider(params: BecomeProviderParams): Promise<Beco
         });
 
         if (insertError) {
+            // 23505: otra solicitud del mismo usuario se coló entre la comprobación y el insert (user_id es UNIQUE).
+            if (insertError.code === '23505') {
+                return { error: COPY.alreadyProviderPending, existingStatus: 'pending' };
+            }
+            if (isNetworkError(insertError.message)) {
+                console.warn('[providerService] becomeProvider sin conexión (insert):', insertError.message);
+                return { error: NETWORK_ERROR_MESSAGE, code: 'network' };
+            }
             console.error('[providerService] becomeProvider insert error:', insertError);
             return { error: friendlyOrDebug(insertError) };
         }
 
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
+        if (isNetworkError(error)) {
+            console.warn('[providerService] becomeProvider sin conexión:', error instanceof Error ? error.message : error);
+            return { error: NETWORK_ERROR_MESSAGE, code: 'network' };
+        }
         console.error('[providerService] becomeProvider unexpected error:', error);
         return { error: 'Ocurrió un error inesperado. Por favor intenta más tarde.' };
     }

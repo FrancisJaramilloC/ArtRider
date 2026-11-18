@@ -71,5 +71,8 @@ export const COPY = {
   providerNotActiveYet: `Tu cuenta de ${ROLE_PROVIDER} todavía no está activa.`,
   mustLoginToBecomeProvider: `Debes iniciar sesión para registrarte como ${ROLE_PROVIDER}.`,
   alreadyProvider: `Ya tienes un perfil de ${ROLE_PROVIDER} registrado.`,
+  alreadyProviderPending: 'Ya enviaste tu solicitud: está en revisión.',
+  providerSuspendedBody: `Tu cuenta de ${ROLE_PROVIDER} está suspendida. Contacta a soporte.`,
+  providerStatusUnavailable: `No se pudo cargar tu estado de ${ROLE_PROVIDER}`,
   ownItemNotice: (kind: 'equipo' | 'paquete') => `Este ${kind} es tuyo: no puedes reservarlo ni agregarlo al carrito.`,
 } as const;

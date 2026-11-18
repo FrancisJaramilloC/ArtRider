@@ -259,7 +259,7 @@ function DatesFixture() {
   );
 }
 
-/** «Ser Partner»: los estados sin solicitud / pendiente / activo / suspendido con fixtures locales (?s=partner&st=none|pending|sent|active|suspended). */
+/** «Ser Partner»: los estados sin solicitud / pendiente / activo / suspendido con fixtures locales (?s=partner&st=none|pending|sent|active|suspended|unavailable). */
 function PartnerFixture() {
   const { st = 'none' } = useLocalSearchParams<{ st?: string }>();
   const status: PartnerRowStatus = st === 'none' ? null : st === 'sent' ? 'pending' : (st as PartnerRowStatus);
@@ -268,7 +268,7 @@ function PartnerFixture() {
       <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
         <PartnerRow status={status} onPress={() => {}} />
       </View>
-      {status ? <ProviderStatusView status={status} brandName="AudioPro Ecuador" justSubmitted={st === 'sent'} onBack={() => {}} /> : null}
+      {status && status !== 'unavailable' ? <ProviderStatusView status={status} brandName="AudioPro Ecuador" justSubmitted={st === 'sent'} onBack={() => {}} /> : null}
     </View>
   );
 }

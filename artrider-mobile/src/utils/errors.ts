@@ -22,6 +22,12 @@ const NETWORK_PATTERN = /network request failed|failed to fetch|fetch failed|net
 /** Permisos / RLS: reintentar no lo arregla. */
 const PERMISSION_PATTERN = /row-level security|permission denied|not authorized|unauthorized|forbidden|42501|jwt expired/i;
 
+/** ¿Es un fallo de red / sin conexión (esperado: console.warn, no console.error)? */
+export function isNetworkError(error: unknown): boolean {
+  const raw = error instanceof Error ? error.message : typeof error === 'string' ? error : JSON.stringify(error);
+  return NETWORK_PATTERN.test(raw ?? '');
+}
+
 export function toErrorInfo(error: unknown): ErrorInfo {
   const raw = error instanceof Error ? error.message : typeof error === 'string' ? error : JSON.stringify(error);
   if (error instanceof LoadTimeoutError) {

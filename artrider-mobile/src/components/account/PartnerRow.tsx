@@ -2,10 +2,12 @@ import { ListRow } from '@/components/ui/ListRow';
 import { COPY } from '@/constants/copy';
 import type { ProviderProfile } from '@/services/providerService';
 
-export type PartnerRowStatus = ProviderProfile['status'] | null;
+/** `null` = confirmado que no es Partner; `unavailable` = no se pudo leer el estado (sin conexión) y no hay valor previo. */
+export type PartnerRowStatus = ProviderProfile['status'] | null | 'unavailable';
 
 /** Etiqueta de la fila de Negocio según el estado: solo «Cambiar a modo Partner» cuando está activo. */
 export function partnerRowLabel(status: PartnerRowStatus): string {
+  if (status === 'unavailable') return COPY.providerStatusUnavailable;
   if (status === 'active') return COPY.switchToProviderMode;
   if (status === 'pending') return COPY.providerRequestInReview;
   if (status === 'suspended') return COPY.providerSuspendedRow;

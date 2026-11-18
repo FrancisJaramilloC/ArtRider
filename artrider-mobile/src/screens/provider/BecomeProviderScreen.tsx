@@ -47,6 +47,11 @@ export function BecomeProviderScreen() {
   function handleSubmit() {
     form.submit(async (values) => {
       const result = await becomeProvider({ brandName: values.brandName.trim(), bio: values.bio.trim() });
+      if (result.existingStatus) {
+        // Ya había una solicitud: no se creó otra; se recarga para mostrar su estado real.
+        await profileLoad.reload();
+        return null;
+      }
       if (result.error) return result.error;
       setJustSubmitted(true);
       return null;
