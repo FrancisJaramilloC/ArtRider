@@ -27,8 +27,8 @@ export function ErrorState({ error, message, onRetry, fill = false, style }: Err
   const colors = useTheme();
   const { bottomInset } = useLayout();
   const kind = error?.kind ?? 'unknown';
-  const icon = kind === 'offline' ? 'cloud-offline-outline' : kind === 'timeout' ? 'time-outline' : 'alert-circle-outline';
-  const title = kind === 'offline' ? 'Sin conexión' : kind === 'timeout' ? 'La carga está tardando' : 'No pudimos cargar';
+  const icon = kind === 'offline' ? 'cloud-offline-outline' : kind === 'timeout' ? 'time-outline' : kind === 'permission' ? 'lock-closed-outline' : 'alert-circle-outline';
+  const title = kind === 'offline' ? 'Sin conexión' : kind === 'timeout' ? 'La carga está tardando' : kind === 'permission' ? 'Sin permiso' : 'No pudimos cargar';
 
   return (
     <View
@@ -56,7 +56,8 @@ export function ErrorState({ error, message, onRetry, fill = false, style }: Err
           </Text>
         ) : null}
       </View>
-      <Button label="Reintentar" icon="refresh" onPress={onRetry} variant="tonal" size="sm" style={{ alignSelf: 'center' }} />
+      {/* Un error de permisos no se arregla reintentando: sin botón. */}
+      {kind === 'permission' ? null : <Button label="Reintentar" icon="refresh" onPress={onRetry} variant="tonal" size="sm" style={{ alignSelf: 'center' }} />}
     </View>
   );
 }

@@ -42,6 +42,8 @@ const DEFAULT_TIMEOUT_MS = 15000;
  * - Cancela al desmontar y descarta respuestas de cargas antiguas.
  * - `finally` siempre baja el loading y hay un timeout (15 s): nunca se queda cargando infinito.
  * - Si ya hay datos y un refresco falla, conserva los datos y expone `refreshError`.
+ * - Una carga que TERMINA con `null` (p. ej. «este usuario aún no es Partner») es éxito, no «cargando»: se distingue
+ *   con `settled` (antes `data === null` se confundía con «todavía no llegó» y el skeleton no terminaba nunca).
  */
 export function useAsyncData<T>(fetcher: () => Promise<T>, options: UseAsyncDataOptions<T> = {}): UseAsyncData<T> {
   const { isEmpty, timeoutMs = DEFAULT_TIMEOUT_MS, reloadOnFocus = false, enabled = true, deps = [] } = options;
@@ -50,6 +52,8 @@ export function useAsyncData<T>(fetcher: () => Promise<T>, options: UseAsyncData
   const [error, setError] = useState<ErrorInfo | null>(null);
   const [refreshError, setRefreshError] = useState<ErrorInfo | null>(null);
   const [loading, setLoading] = useState(enabled);
+  /** true cuando la última carga inicial terminó bien (aunque el resultado sea null). */
+  const [settled, setSettled] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetcherRef = useRef(fetcher);
@@ -71,6 +75,7 @@ export function useAsyncData<T>(fetcher: () => Promise<T>, options: UseAsyncData
       const id = ++seq.current;
       if (mode === 'initial') {
         setLoading(true);
+        setSettled(false);
         setError(null);
       } else {
         setRefreshing(true);
@@ -84,6 +89,7 @@ export function useAsyncData<T>(fetcher: () => Promise<T>, options: UseAsyncData
         if (!mounted.current || id !== seq.current) return;
         dataRef.current = result;
         setDataState(result);
+        setSettled(true);
         setError(null);
         setRefreshError(null);
       } catch (e) {
@@ -136,10 +142,10 @@ export function useAsyncData<T>(fetcher: () => Promise<T>, options: UseAsyncData
   }, []);
 
   let status: AsyncStatus;
-  if (loading && data === null) status = 'loading';
-  else if (error && data === null) status = 'error';
-  else if (data !== null && isEmpty?.(data)) status = 'empty';
-  else status = data === null ? 'loading' : 'success';
+  if (loading && !settled) status = 'loading';
+  else if (error && !settled) status = 'error';
+  else if (settled) status = isEmpty?.(data as T) ? 'empty' : 'success';
+  else status = 'loading';
 
   return { status, data, error, refreshError, loading, refreshing, reload, refresh, setData };
 }

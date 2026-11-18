@@ -1,5 +1,5 @@
 /** Error de carga normalizado para la UI (mensaje corto en español + detalle técnico solo para desarrollo). */
-export type ErrorKind = 'offline' | 'timeout' | 'unknown';
+export type ErrorKind = 'offline' | 'timeout' | 'permission' | 'unknown';
 
 export type ErrorInfo = {
   kind: ErrorKind;
@@ -19,6 +19,9 @@ export class LoadTimeoutError extends Error {
 
 const NETWORK_PATTERN = /network request failed|failed to fetch|fetch failed|networkerror|network error|timeout|offline/i;
 
+/** Permisos / RLS: reintentar no lo arregla. */
+const PERMISSION_PATTERN = /row-level security|permission denied|not authorized|unauthorized|forbidden|42501|jwt expired/i;
+
 export function toErrorInfo(error: unknown): ErrorInfo {
   const raw = error instanceof Error ? error.message : typeof error === 'string' ? error : JSON.stringify(error);
   if (error instanceof LoadTimeoutError) {
@@ -26,6 +29,9 @@ export function toErrorInfo(error: unknown): ErrorInfo {
   }
   if (NETWORK_PATTERN.test(raw ?? '')) {
     return { kind: 'offline', message: 'No hay conexión con el servidor. Revisa tu internet e inténtalo de nuevo.', detail: raw };
+  }
+  if (PERMISSION_PATTERN.test(raw ?? '')) {
+    return { kind: 'permission', message: 'No tienes permiso para ver esta información. Cierra sesión, vuelve a entrar e inténtalo de nuevo.', detail: raw };
   }
   return { kind: 'unknown', message: 'No pudimos cargar esta información. Inténtalo de nuevo.', detail: raw };
 }
