@@ -91,6 +91,9 @@ export function BigPriceInput({ binding, onChangeText, children }: { binding: Fi
   const colors = useTheme();
   return (
     <View style={{ gap: Rhythm.titleToContent, alignItems: 'center' }}>
+      <Text variant="bodyStrong" color="textSecondary" style={{ textAlign: 'center' }}>
+        Tu precio por día (lo que recibes)
+      </Text>
       {/* Centrado vertical (no baseline: el baseline de TextInput no es fiable en iOS y descuadraba «$» y el número). */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one }}>
         <Text variant="display" color="textSecondary" style={[WizardType.bigNumber, { includeFontPadding: false }]}>
@@ -105,7 +108,7 @@ export function BigPriceInput({ binding, onChangeText, children }: { binding: Fi
           placeholderTextColor={colors.textMuted}
           keyboardType="decimal-pad"
           maxLength={9}
-          accessibilityLabel="Precio por día en dólares"
+          accessibilityLabel="Tu precio por día en dólares (lo que recibes)"
           accessibilityHint={binding.error ?? undefined}
           aria-invalid={!!binding.error}
           style={[{ minWidth: 72, textAlign: 'center', textAlignVertical: 'center', color: colors.text, fontFamily: 'Inter_700Bold', padding: 0, includeFontPadding: false }, WizardType.bigNumber]}
@@ -193,20 +196,20 @@ export function priceFromInput(raw: string): string {
   return Number.isFinite(n) && n > 0 ? formatPrice(Math.round(n * 100)) : '$0';
 }
 
-/** Precio por día que verá el Rider a partir de lo que escribe el Partner («80» → «$92»). */
+/** Precio por día que verán los Riders a partir de lo que escribe el Partner («80» → «$92»). */
 export function riderPriceFromInput(raw: string, riderPrice: (partnerCents: number) => number): string {
   const n = Number(raw.replace(',', '.'));
   return Number.isFinite(n) && n > 0 ? formatPrice(riderPrice(Math.round(n * 100))) : '$0';
 }
 
-/** «Tu precio $80 · El Rider verá $92»: debajo del precio que escribe el Partner. */
+/** «Los Riders verán $92 por día»: ayuda en vivo bajo el precio que escribe el Partner (usa riderPrice de usePricing, sin duplicar la fórmula). */
 export function PriceHint({ raw }: { raw: string }) {
   const { riderPrice } = usePricing();
   const n = Number(raw.replace(',', '.'));
   if (!Number.isFinite(n) || n <= 0) return null;
   return (
     <Text variant="bodyStrong" color="primary" style={{ textAlign: 'center' }} accessibilityLiveRegion="polite">
-      Tu precio {priceFromInput(raw)} · El Rider verá {formatPrice(riderPrice(Math.round(n * 100)))}
+      Los Riders verán {formatPrice(riderPrice(Math.round(n * 100)))} por día
     </Text>
   );
 }

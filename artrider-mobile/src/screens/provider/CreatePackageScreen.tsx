@@ -267,7 +267,7 @@ export function CreatePackageScreen() {
         { key: 'details', label: 'Detalles', value: title || 'Sin título', onEdit: () => editSection('details') },
         { key: 'capacity', label: 'Capacidad', value: `Hasta ${capacity || '0'} personas`, onEdit: () => editSection('capacity') },
         { key: 'photo', label: 'Foto', value: coverUri ? 'Foto añadida' : 'Sin foto', onEdit: () => editSection('photo') },
-        { key: 'price', label: 'Precio', value: `Tu precio ${priceFromInput(dailyPrice)} · El Rider verá ${riderPriceFromInput(dailyPrice, riderPrice)} por día`, onEdit: () => editSection('price') },
+        { key: 'price', label: 'Precio', value: `Tu precio ${priceFromInput(dailyPrice)} · Los Riders verán ${riderPriceFromInput(dailyPrice, riderPrice)} por día`, onEdit: () => editSection('price') },
     ];
 
     if (loadError) {

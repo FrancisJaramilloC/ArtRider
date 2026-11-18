@@ -10,7 +10,7 @@ import { Text } from '@/components/ui/Text';
 import { BOOKING_STATUS_LABELS, Radius, Rhythm, Spacing, Thumb, toStatusKey, type BookingStatusKey } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ProviderBooking } from '@/services/providerService';
-import { formatPrice } from '@/utils/format';
+import { earningsLabel } from '@/utils/earnings';
 import { formatDateRange } from '@/utils/providerBookings';
 import { useBookingActions } from './BookingActions';
 
@@ -27,13 +27,14 @@ type Props = {
   onChanged: () => void;
 };
 
-/** Tarjeta de reserva (estilo anfitrión): miniatura, equipo, cliente, fechas, total y estado. Pendientes: Aceptar/Rechazar. */
+/** Tarjeta de reserva (estilo anfitrión): miniatura, equipo, cliente, fechas, lo que ganas y estado. Pendientes: Aceptar/Rechazar. */
 export function ProviderBookingCard({ booking, onOpen, onChanged }: Props) {
   const colors = useTheme();
   const actions = useBookingActions(booking, onChanged);
   const statusLabel = BOOKING_STATUS_LABELS[booking.status] ?? booking.status;
   const dates = formatDateRange(booking.start_date, booking.end_date);
-  const total = formatPrice(booking.total_price);
+  // El Partner ve lo que GANA (partner_amount), nunca el total que pagó el Rider. Null si la reserva ya no cuenta (cancelada).
+  const earnings = earningsLabel(booking);
   const isPending = booking.status === 'AWAITING_SIGNATURES';
 
   return (
@@ -41,7 +42,7 @@ export function ProviderBookingCard({ booking, onOpen, onChanged }: Props) {
       <Pressable
         onPress={onOpen}
         accessibilityRole="button"
-        accessibilityLabel={`${booking.listing_title ?? 'Equipo'}, ${booking.client_name ?? ROLE_CLIENT}, ${dates}, ${total}, ${statusLabel}`}
+        accessibilityLabel={`${booking.listing_title ?? 'Equipo'}, ${booking.client_name ?? ROLE_CLIENT}, ${dates}, ${earnings ? `${earnings}, ` : ''}${statusLabel}`}
         accessibilityHint="Abre el detalle de la reserva"
         style={({ pressed }) => ({ flexDirection: 'row', gap: Rhythm.cardPadding, opacity: pressed ? 0.85 : 1 })}
       >
@@ -71,7 +72,9 @@ export function ProviderBookingCard({ booking, onOpen, onChanged }: Props) {
             {dates}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, paddingTop: Spacing.one }}>
-            <Text variant="bodyStrong">{total}</Text>
+            <Text variant="bodyStrong" numberOfLines={1} style={{ flexShrink: 1 }}>
+              {earnings ?? ''}
+            </Text>
             <Badge label={statusLabel} tone={BOOKING_TONE[toStatusKey(booking.status)]} />
           </View>
         </View>

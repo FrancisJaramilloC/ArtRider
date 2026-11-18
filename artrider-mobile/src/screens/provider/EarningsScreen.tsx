@@ -12,7 +12,6 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { Radius, Rhythm, Spacing } from '@/constants/theme';
-import { usePricing } from '@/contexts/PricingContext';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
@@ -26,14 +25,22 @@ import {
   toEarningRows,
   type EarningFilter,
   type EarningRow,
+  type EarningStatus,
 } from '@/utils/earnings';
 import { formatPrice, formatShortDate } from '@/utils/format';
 
 const FILTER_OPTIONS: { value: EarningFilter; label: string }[] = [
   { value: 'all', label: 'Todas' },
-  { value: 'pending', label: 'Pendiente' },
-  { value: 'paid', label: 'Pagada' },
+  { value: 'earned', label: 'Ganadas' },
+  { value: 'toCollect', label: 'Por cobrar' },
+  { value: 'awaiting', label: 'Pendientes' },
 ];
+
+const STATUS_BADGE: Record<EarningStatus, { label: string; tone: 'success' | 'neutral' | 'warning' }> = {
+  earned: { label: 'Ganada', tone: 'success' },
+  toCollect: { label: 'Por cobrar', tone: 'neutral' },
+  awaiting: { label: 'Pendiente de tu respuesta', tone: 'warning' },
+};
 
 function SummaryCard({ label, value, hint, emphasized = false }: { label: string; value: string; hint?: string; emphasized?: boolean }) {
   const colors = useTheme();
@@ -78,12 +85,15 @@ function Amount({ label, value, strong = false }: { label: string; value: string
   );
 }
 
+/** Una reserva: solo lo que gana el Partner. Nunca el total del Rider, la comisión ni la tarifa de servicio. */
 function EarningCard({ row }: { row: EarningRow }) {
   const colors = useTheme();
+  const badge = STATUS_BADGE[row.status];
+  const amountLabel = row.status === 'earned' ? 'Ganaste' : 'Ganarás';
   return (
     <View
       accessible
-      accessibilityLabel={`${row.title}, ${formatShortDate(row.startDate)}. Bruto ${formatPrice(row.gross)}, comisión ${formatPrice(row.fee)}, neto ${formatPrice(row.net)}. ${row.status === 'paid' ? 'Pagada' : 'Pendiente'}`}
+      accessibilityLabel={`${row.title}, ${formatShortDate(row.startDate)}. ${amountLabel} ${formatPrice(row.net)}${row.estimated ? ' aproximadamente' : ''}. ${badge.label}`}
       style={{ gap: Rhythm.cardPadding, padding: Rhythm.cardPadding + Spacing.one, borderRadius: Radius.card, backgroundColor: colors.backgroundElement }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two }}>
@@ -97,20 +107,12 @@ function EarningCard({ row }: { row: EarningRow }) {
           </Text>
         </View>
         <View style={{ flexShrink: 0 }}>
-          <Badge label={row.status === 'paid' ? 'Pagada' : 'Pendiente'} tone={row.status === 'paid' ? 'success' : 'warning'} />
+          <Badge label={badge.label} tone={badge.tone} />
         </View>
       </View>
       <View style={{ flexDirection: 'row', gap: Spacing.three }}>
-        <Amount label="Pagó el Rider" value={formatPrice(row.gross)} />
-        <Amount label="ArtRider" value={`−${formatPrice(row.fee)}`} />
-        <Amount label={row.estimated ? 'Tu neto (aprox.)' : 'Tu neto'} value={formatPrice(row.net)} strong />
+        <Amount label={row.estimated ? `${amountLabel} (aprox.)` : amountLabel} value={formatPrice(row.net)} strong />
       </View>
-      {row.commission !== null && row.serviceFee !== null ? (
-        <Text variant="caption" color="textSecondary">
-          ArtRider = comisión {formatPrice(row.commission)} + tarifa de servicio {formatPrice(row.serviceFee)}
-          {row.fee - row.commission - row.serviceFee !== 0 ? ' + redondeo' : ''}
-        </Text>
-      ) : null}
     </View>
   );
 }
@@ -134,17 +136,15 @@ function PayoutNotice() {
   );
 }
 
-/** Ganancias del Partner (solo lectura): resumen del mes, pendiente, total histórico y lista de reservas. */
+/** Ganancias del Partner (solo lectura, siempre en lo que él gana): ganado del mes, por cobrar, pendiente de respuesta y total histórico. */
 export function EarningsScreen() {
   const colors = useTheme();
   const { gutter, insets, contentWidth } = useLayout();
   const [monthKey, setMonthKey] = useState(currentMonthKey());
   const [filter, setFilter] = useState<EarningFilter>('all');
-  const { rates } = usePricing();
-
   const { data, status, error, refreshError, refreshing, reload, refresh } = useAsyncData<ProviderBooking[]>(getProviderBookings, { reloadOnFocus: true });
 
-  const allRows = useMemo(() => toEarningRows(data ?? [], rates), [data, rates]);
+  const allRows = useMemo(() => toEarningRows(data ?? []), [data]);
   const summary = useMemo(() => summarize(allRows, monthKey), [allRows, monthKey]);
   const rows = useMemo(() => rowsOfMonth(allRows, monthKey, filter), [allRows, monthKey, filter]);
 
@@ -165,10 +165,13 @@ export function EarningsScreen() {
         <IconButton icon="chevron-forward" label="Mes siguiente" onPress={() => setMonthKey((key) => shiftMonthKey(key, 1))} disabled={isCurrentMonth} />
       </View>
 
-      <SummaryCard emphasized label={isCurrentMonth ? 'Ganado este mes (neto)' : `Ganado en ${monthLabel} (neto)`} value={formatPrice(summary.monthNet)} hint="Recibes siempre tu precio. Reservas completadas con evento en este mes." />
+      <SummaryCard emphasized label={isCurrentMonth ? 'Ganado este mes' : `Ganado en ${monthLabel}`} value={formatPrice(summary.monthNet)} hint="Recibes siempre tu precio. Solo reservas completadas con evento en este mes." />
       <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
-        <SummaryCard label="Pendiente de cobro" value={formatPrice(summary.pendingNet)} />
-        <SummaryCard label="Total histórico" value={formatPrice(summary.totalNet)} />
+        <SummaryCard label="Por cobrar" value={formatPrice(summary.toCollectNet)} hint="Reservas aceptadas" />
+        <SummaryCard label="Pendiente de tu respuesta" value={formatPrice(summary.awaitingNet)} hint="Por aceptar o rechazar" />
+      </View>
+      <View style={{ flexDirection: 'row' }}>
+        <SummaryCard label="Total ganado (histórico)" value={formatPrice(summary.totalNet)} />
       </View>
 
       <View style={{ marginTop: Spacing.two, gap: Rhythm.titleToContent }}>
@@ -201,8 +204,8 @@ export function EarningsScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="cash-outline"
-              title={filter === 'all' ? `Sin ganancias en ${monthLabel}` : filter === 'paid' ? 'Sin reservas pagadas este mes' : 'Sin reservas pendientes este mes'}
-              description="Cuando completes reservas con evento en este mes, aparecerán aquí con su comisión y neto."
+              title={filter === 'all' ? `Sin ganancias en ${monthLabel}` : filter === 'earned' ? 'Sin reservas ganadas este mes' : filter === 'toCollect' ? 'Sin reservas por cobrar este mes' : 'Sin reservas pendientes este mes'}
+              description="Las reservas con evento en este mes aparecerán aquí con lo que ganas."
             />
           }
           ListFooterComponent={<PayoutNotice />}

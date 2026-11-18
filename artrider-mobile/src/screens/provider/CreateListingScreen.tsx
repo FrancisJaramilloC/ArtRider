@@ -334,7 +334,7 @@ export function CreateListingScreen() {
         { key: 'category', label: 'Categoría', value: CATEGORY_LABELS[form.category] ?? 'Sin elegir', onEdit: () => editSection('category') },
         { key: 'details', label: 'Detalles', value: [form.title, [form.brand, form.model].filter(Boolean).join(' · ')].filter(Boolean).join('\n') || 'Sin título', onEdit: () => editSection('details') },
         { key: 'photo', label: 'Foto', value: form.coverUri ? 'Foto añadida' : 'Sin foto', onEdit: () => editSection('photo') },
-        { key: 'price', label: 'Precio', value: `Tu precio ${priceFromInput(form.dailyPrice)} · El Rider verá ${riderPriceFromInput(form.dailyPrice, riderPrice)} por día`, onEdit: () => editSection('price') },
+        { key: 'price', label: 'Precio', value: `Tu precio ${priceFromInput(form.dailyPrice)} · Los Riders verán ${riderPriceFromInput(form.dailyPrice, riderPrice)} por día`, onEdit: () => editSection('price') },
         { key: 'location', label: 'Ubicación', value: [form.addressLine1, [form.city, form.state].filter(Boolean).join(', ')].filter(Boolean).join('\n') || 'Sin ubicación', onEdit: () => editSection('location') },
         ...(isEdit ? [] : [{ key: 'quantity', label: 'Cantidad', value: `${form.quantity} ${form.quantity === 1 ? 'unidad' : 'unidades'}`, onEdit: () => editSection('quantity') }]),
     ];
@@ -448,7 +448,7 @@ export function CreateListingScreen() {
                 <BigPriceInput binding={text.field('dailyPrice')} onChangeText={(v) => text.setValue('dailyPrice', v.replace(/[^0-9.]/g, ''))}>
                     <PriceHint raw={form.dailyPrice} />
                     <Text variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>
-                        Es lo que ganas por cada día de renta. ArtRider suma su comisión al precio que ve el Rider.
+                        Es lo que ganas por cada día de renta. ArtRider añade su comisión al precio que ven los Riders.
                     </Text>
                 </BigPriceInput>
             )}

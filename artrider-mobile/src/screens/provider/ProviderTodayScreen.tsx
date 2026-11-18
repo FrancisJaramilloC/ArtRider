@@ -13,7 +13,6 @@ import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { TabScreen } from '@/components/ui/TabScreen';
 import { Text } from '@/components/ui/Text';
 import { BOOKING_STATUS_LABELS, Radius, Rhythm, Spacing, Thumb, toStatusKey, type BookingStatusKey } from '@/constants/theme';
-import { usePricing } from '@/contexts/PricingContext';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getMyProviderProfile, getProviderBookings, type ProviderProfile, type ProviderBooking } from '@/services/providerService';
@@ -64,7 +63,6 @@ export function ProviderTodayScreen() {
   const { gutter, bottomInset } = useLayout();
   const colors = useTheme();
   const router = useRouter();
-  const { rates } = usePricing();
 
   const { status, data: bundle, error, refreshError, refreshing, reload, refresh } = useAsyncData<HomeBundle>(
     async () => {
@@ -128,8 +126,8 @@ export function ProviderTodayScreen() {
   const activeCount = bookings.filter((b) => b.status === 'ACTIVE' || b.status === 'PAID').length;
   const publishedCount = listings.filter((l) => l.is_published).length;
 
-  // Mismo cálculo que la pantalla «Ganancias» (neto del mes de reservas completadas, sin la comisión de servicio).
-  const thisMonthNet = summarize(toEarningRows(bookings, rates), currentMonthKey()).monthNet;
+  // Mismo cálculo que la pantalla «Ganancias»: todo en lo que gana el Partner (partner_amount).
+  const earnings = summarize(toEarningRows(bookings), currentMonthKey());
 
   const recentBookings = bookings.slice(0, 5);
 
@@ -160,7 +158,11 @@ export function ProviderTodayScreen() {
           </View>
           <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
             <KpiCard icon="cube-outline" label="Equipos publicados" value={`${publishedCount}/${listings.length}`} />
-            <KpiCard icon="cash-outline" label="Ganado este mes" value={formatPrice(thisMonthNet)} onPress={() => router.push('/provider/earnings' as never)} />
+            <KpiCard icon="cash-outline" label="Ganado este mes" value={formatPrice(earnings.monthNet)} onPress={() => router.push('/provider/earnings' as never)} />
+          </View>
+          <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
+            <KpiCard icon="wallet-outline" label="Por cobrar" value={formatPrice(earnings.toCollectNet)} onPress={() => router.push('/provider/earnings' as never)} />
+            <KpiCard icon="time-outline" label="Pendiente de tu respuesta" value={formatPrice(earnings.awaitingNet)} onPress={() => router.push('/provider/earnings' as never)} />
           </View>
         </View>
 

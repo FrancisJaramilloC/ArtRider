@@ -1,7 +1,7 @@
 // Pruebas del modelo de precios. Ejecutar: pnpm test:pricing
 import assert from 'node:assert/strict';
 
-import { breakdownOf, computeCartTotals, DEFAULT_PRICING_RATES, estimatePartnerAmount, riderDailyPrice, riderLineTotal, roundTo99, sanitizeRates } from '../src/utils/pricing.ts';
+import { breakdownOf, computeCartTotals, DEFAULT_PRICING_RATES, estimateLegacyPartnerAmount, partnerDailyOf, resolvePartnerAmount, riderDailyPrice, riderLineTotal, roundTo99, sanitizeRates } from '../src/utils/pricing.ts';
 
 const rates = DEFAULT_PRICING_RATES;
 let checks = 0;
@@ -61,8 +61,17 @@ for (let partner = 100; partner <= 200000; partner += 37) {
 // El Partner recibe su precio exacto; ArtRider absorbe el redondeo
 const partnerAmount = 8000 * 1 * 1;
 eq(breakdownOf(partnerAmount, example.total), { partnerAmount: 8000, total: 9699, platformRevenue: 1699 }, 'ingreso de ArtRider = total − precio del Partner');
-assert.ok(Math.abs(estimatePartnerAmount(9699, rates) - 8000) <= 50, 'estimación del monto del Partner (reservas sin desglose): ±$0.50');
-checks += 1;
+// Reservas anteriores al modelo (partner_amount NULL): el Partner ganaba total ÷ 1.05
+eq(estimateLegacyPartnerAmount(8400), 8000, 'reserva antigua $80 + 5 % = $84 → $80');
+eq(estimateLegacyPartnerAmount(1296), 1234, 'reserva antigua con tarifa redondeada hacia arriba (12.34 + 0.62)');
+eq(estimateLegacyPartnerAmount(0), 0, 'total 0 → 0');
+eq(resolvePartnerAmount(8000, 9699), { amount: 8000, estimated: false }, 'monto exacto guardado: se usa tal cual');
+eq(resolvePartnerAmount(0, 9699), { amount: 0, estimated: false }, 'monto exacto 0 no se confunde con NULL');
+eq(resolvePartnerAmount(null, 8400), { amount: 8000, estimated: true }, 'NULL → estimación marcada');
+eq(resolvePartnerAmount(undefined, 8400), { amount: 8000, estimated: true }, 'ausente → estimación marcada');
+eq(partnerDailyOf(24000, 3), 8000, '3 días × $80');
+eq(partnerDailyOf(16000, 3), null, 'no divide exacto → null');
+eq(partnerDailyOf(8000, 0), null, '0 días → null');
 
 // Tasas configurables
 const custom = { partnerCommissionRate: 0.2, serviceFeeRate: 0 };

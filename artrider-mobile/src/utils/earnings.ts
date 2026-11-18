@@ -1,22 +1,19 @@
 import type { ProviderBooking } from '@/services/providerService';
 import { MONTHS_ES_LONG } from './calendar';
-import { breakdownOf, estimatePartnerAmount, type PricingRates } from './pricing';
+import { formatPrice } from './format';
+import { resolvePartnerAmount } from './pricing';
 
-/** Solo lectura: lo que ve el Partner de sus reservas. No mueve dinero ni toca la base de datos. */
-export type EarningStatus = 'pending' | 'paid';
+/**
+ * Solo lectura: lo que ve el Partner de sus reservas, SIEMPRE en lo que él gana (partner_amount). Nunca el total del
+ * Rider, la comisión ni la tarifa de servicio. No mueve dinero ni toca la base de datos.
+ */
+export type EarningStatus = 'earned' | 'toCollect' | 'awaiting';
 export type EarningFilter = 'all' | EarningStatus;
 
 export type EarningRow = {
-  /** Lo que pagó el Rider (total de la reserva). */
-  gross: number;
-  /** Lo que se queda ArtRider: comisión + tarifa de servicio + redondeo (bruto − neto). */
-  fee: number;
   /** Lo que gana el Partner: SIEMPRE su precio. */
   net: number;
-  /** Comisión de ArtRider sobre el precio del Partner y tarifa de servicio al Rider, cuando la reserva trae el desglose exacto. */
-  commission: number | null;
-  serviceFee: number | null;
-  /** true si el neto es una estimación (la reserva no trae el desglose guardado). */
+  /** true si el neto es una estimación (reserva anterior al nuevo modelo, sin monto guardado). */
   estimated: boolean;
   id: string;
   title: string;
@@ -28,31 +25,36 @@ export type EarningRow = {
 };
 
 /**
- * Estados de reserva que cuentan como ganancia (supuesto: no hay un estado de «cobrado» en los datos de la reserva):
- * - pendiente: aún no se completa el servicio (por aceptar, pagada o en curso);
- * - pagada: servicio completado (o archivado, que se archiva tras completarse).
- * CANCELLED y DISPUTE no suman.
+ * Estado de la ganancia según el estado de la reserva:
+ * - earned: COMPLETED (servicio terminado);
+ * - toCollect: ACTIVE o PAID (aceptada, aún no se completa);
+ * - awaiting: AWAITING_SIGNATURES (pendiente de tu respuesta).
+ * CANCELLED, DISPUTE y ARCHIVED no suman.
  */
-const PENDING_STATUSES = new Set(['AWAITING_SIGNATURES', 'PAID', 'ACTIVE']);
-const PAID_STATUSES = new Set(['COMPLETED', 'ARCHIVED']);
+export function earningStatusOf(bookingStatus: ProviderBooking['status']): EarningStatus | null {
+  switch (bookingStatus) {
+    case 'COMPLETED':
+      return 'earned';
+    case 'ACTIVE':
+    case 'PAID':
+      return 'toCollect';
+    case 'AWAITING_SIGNATURES':
+      return 'awaiting';
+    default:
+      return null;
+  }
+}
 
-export function toEarningRows(bookings: ProviderBooking[], rates: PricingRates): EarningRow[] {
+export function toEarningRows(bookings: ProviderBooking[]): EarningRow[] {
   const rows: EarningRow[] = [];
   for (const b of bookings) {
-    const status: EarningStatus | null = PAID_STATUSES.has(b.status) ? 'paid' : PENDING_STATUSES.has(b.status) ? 'pending' : null;
+    const status = earningStatusOf(b.status);
     if (!status) continue;
-    // Monto exacto guardado en la reserva si existe; si no (reservas anteriores), estimación con las tasas actuales.
-    const exact = typeof b.partner_amount === 'number';
-    const partnerAmount = exact ? (b.partner_amount as number) : estimatePartnerAmount(b.total_price, rates);
-    const breakdown = breakdownOf(partnerAmount, b.total_price);
-    const riderSubtotal = typeof b.rider_subtotal === 'number' ? b.rider_subtotal : null;
+    // Monto exacto guardado en la reserva; si es NULL (reservas del modelo anterior) se estima total ÷ 1.05 y se marca «aprox.».
+    const { amount, estimated } = resolvePartnerAmount(b.partner_amount, b.total_price);
     rows.push({
-      gross: breakdown.total,
-      fee: breakdown.platformRevenue,
-      net: breakdown.partnerAmount,
-      commission: exact && riderSubtotal !== null ? riderSubtotal - partnerAmount : null,
-      serviceFee: exact && riderSubtotal !== null ? b.total_price - riderSubtotal : null,
-      estimated: !exact,
+      net: amount,
+      estimated,
       id: b.booking_id,
       title: b.listing_title ?? 'Item reservado',
       client: b.client_name,
@@ -88,26 +90,30 @@ export function monthKeyLabel(key: string): string {
 }
 
 export type EarningsSummary = {
-  /** Neto de las reservas pagadas cuyo evento cae en el mes elegido. */
+  /** Ganado: reservas COMPLETED cuyo evento cae en el mes elegido. */
   monthNet: number;
-  /** Neto de todo lo pendiente (sin importar el mes). */
-  pendingNet: number;
-  /** Neto de todo lo pagado, histórico. */
+  /** Por cobrar: reservas aceptadas (ACTIVE/PAID), sin importar el mes. */
+  toCollectNet: number;
+  /** Pendiente de tu respuesta (AWAITING_SIGNATURES), sin importar el mes. */
+  awaitingNet: number;
+  /** Ganado histórico (todas las COMPLETED). */
   totalNet: number;
 };
 
 export function summarize(rows: EarningRow[], monthKey: string): EarningsSummary {
   let monthNet = 0;
-  let pendingNet = 0;
+  let toCollectNet = 0;
+  let awaitingNet = 0;
   let totalNet = 0;
   for (const row of rows) {
-    if (row.status === 'pending') pendingNet += row.net;
+    if (row.status === 'awaiting') awaitingNet += row.net;
+    else if (row.status === 'toCollect') toCollectNet += row.net;
     else {
       totalNet += row.net;
       if (monthKeyOf(row.startDate) === monthKey) monthNet += row.net;
     }
   }
-  return { monthNet, pendingNet, totalNet };
+  return { monthNet, toCollectNet, awaitingNet, totalNet };
 }
 
 /** Reservas del mes (por fecha del evento), filtradas, la más reciente primero. */
@@ -115,4 +121,15 @@ export function rowsOfMonth(rows: EarningRow[], monthKey: string, filter: Earnin
   return rows
     .filter((row) => monthKeyOf(row.startDate) === monthKey && (filter === 'all' || row.status === filter))
     .sort((a, b) => b.startDate.localeCompare(a.startDate));
+}
+
+/**
+ * Lo que gana el Partner en una reserva, para tarjetas y detalle: «Ganarás $X», «Ganaste $X» (completada) o null si la
+ * reserva ya no cuenta (cancelada/disputa). Con monto estimado (reserva anterior al nuevo modelo) añade «(aprox.)».
+ */
+export function earningsLabel(booking: ProviderBooking): string | null {
+  const status = earningStatusOf(booking.status);
+  if (!status) return null;
+  const { amount, estimated } = resolvePartnerAmount(booking.partner_amount, booking.total_price);
+  return `${status === 'earned' ? 'Ganaste' : 'Ganarás'} ${formatPrice(amount)}${estimated ? ' (aprox.)' : ''}`;
 }

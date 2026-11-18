@@ -24,7 +24,9 @@ import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getConversations } from '@/services/messagesService';
 import { getProviderBookings, type ProviderBooking } from '@/services/providerService';
+import { earningStatusOf } from '@/utils/earnings';
 import { formatPrice } from '@/utils/format';
+import { partnerDailyOf, resolvePartnerAmount } from '@/utils/pricing';
 import { formatDateRange, rentalDays } from '@/utils/providerBookings';
 
 const STATUS_LINE: Record<ProviderBooking['status'], string> = {
@@ -58,6 +60,9 @@ function Detail({ booking, onChanged }: { booking: ProviderBooking; onChanged: (
 
   const days = rentalDays(booking.start_date, booking.end_date);
   const statusLabel = BOOKING_STATUS_LABELS[booking.status] ?? booking.status;
+  // null si la reserva ya no cuenta (cancelada / disputa): no se muestra ningún monto.
+  const earning = earningStatusOf(booking.status) ? resolvePartnerAmount(booking.partner_amount, booking.total_price) : null;
+  const dailyPartner = earning ? partnerDailyOf(earning.amount, days) : null;
 
   /** Abre el chat existente con este cliente (por reserva, o por equipo + nombre). No crea conversaciones. */
   async function openChat() {
@@ -155,13 +160,21 @@ function Detail({ booking, onChanged }: { booking: ProviderBooking; onChanged: (
           ) : null}
         </Card>
 
-        <Card title="Desglose del precio">
-          <PriceSummary
-            lines={[{ label: `${days} ${days === 1 ? 'día' : 'días'} de alquiler`, value: formatPrice(booking.total_price) }]}
-            totalLabel="Total de la reserva"
-            total={formatPrice(booking.total_price)}
-          />
-        </Card>
+        {/* El Partner ve lo que GANA (su precio × días), nunca el total del Rider, la comisión ni la tarifa de servicio. */}
+        {earning ? (
+          <Card title="Lo que ganarás">
+            <PriceSummary
+              lines={[{ label: dailyPartner !== null ? `${days} ${days === 1 ? 'día' : 'días'} × ${formatPrice(dailyPartner)}` : `${days} ${days === 1 ? 'día' : 'días'} de alquiler`, value: formatPrice(earning.amount) }]}
+              totalLabel={booking.status === 'COMPLETED' ? 'Ganaste' : 'Ganarás'}
+              total={`${formatPrice(earning.amount)}${earning.estimated ? ' (aprox.)' : ''}`}
+            />
+            {earning.estimated ? (
+              <Text variant="caption" color="textSecondary">
+                Monto aproximado: esta reserva es anterior al nuevo modelo de precios.
+              </Text>
+            ) : null}
+          </Card>
+        ) : null}
       </ScrollView>
 
       {footer ? <StickyFooter>{footer}</StickyFooter> : null}

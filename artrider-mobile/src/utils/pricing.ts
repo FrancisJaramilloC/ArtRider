@@ -98,12 +98,29 @@ export function breakdownOf(partnerAmount: number, total: number): BookingBreakd
   return { partnerAmount, total, platformRevenue: total - partnerAmount };
 }
 
+/** Tarifa de servicio del modelo anterior (fija, 5 %): el Rider pagaba el precio del Partner + 5 %. */
+const LEGACY_SERVICE_FEE_RATE = 0.05;
+
 /**
- * Estimación del monto del Partner cuando una reserva no trae el desglose guardado (reservas anteriores al nuevo
- * modelo): total ÷ ((1 + comisión) × (1 + tarifa)). Es aproximado (±$0.50 por el redondeo .99); las reservas nuevas
- * guardan el monto exacto y no usan esta función.
+ * Monto del Partner de una reserva ANTERIOR al nuevo modelo (partner_amount NULL). En el modelo viejo el Rider pagaba
+ * el precio del Partner + 5 %, así que el Partner ganaba total ÷ 1.05 (±1 centavo por el redondeo hacia arriba de la tarifa).
+ * Las reservas nuevas guardan el monto exacto y no usan esta función.
  */
-export function estimatePartnerAmount(totalCents: number, rates: PricingRates): number {
-  const factor = (RATE_SCALE + Math.round(rates.partnerCommissionRate * RATE_SCALE)) * (RATE_SCALE + Math.round(rates.serviceFeeRate * RATE_SCALE));
-  return Math.max(0, Math.round((totalCents * RATE_SCALE * RATE_SCALE) / factor));
+export function estimateLegacyPartnerAmount(totalCents: number): number {
+  const factor = RATE_SCALE + Math.round(LEGACY_SERVICE_FEE_RATE * RATE_SCALE);
+  return Math.max(0, Math.round((totalCents * RATE_SCALE) / factor));
+}
+
+/** Lo que gana el Partner de una reserva: el monto exacto guardado, o (reservas antiguas sin él) una estimación marcada como tal. */
+export function resolvePartnerAmount(
+  partnerAmount: number | null | undefined,
+  totalPrice: number,
+): { amount: number; estimated: boolean } {
+  if (typeof partnerAmount === 'number') return { amount: partnerAmount, estimated: false };
+  return { amount: estimateLegacyPartnerAmount(totalPrice), estimated: true };
+}
+
+/** Precio del Partner por día (por la cantidad) si el monto se divide exacto entre los días; si no, null. */
+export function partnerDailyOf(amountCents: number, days: number): number | null {
+  return days > 0 && amountCents % days === 0 ? amountCents / days : null;
 }

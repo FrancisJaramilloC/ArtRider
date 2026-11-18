@@ -188,11 +188,11 @@ export type ProviderBooking = {
     already_reviewed: boolean;
     listing_id: string | null;
     /**
-     * Desglose EXACTO guardado al comprar (ver docs/PROPUESTA_PRECIOS_CONFIG.sql). Aún no lo devuelve get_provider_bookings:
-     * mientras falte, Ganancias estima el monto del Partner a partir de total_price.
+     * Lo que gana el Partner en esta reserva (su precio × días × cantidad), guardado al comprar. NULL en reservas anteriores
+     * al nuevo modelo de precios: ahí la app lo estima (ver resolvePartnerAmount). Es el ÚNICO monto que se muestra al Partner.
      */
     partner_amount?: number | null;
-    /** Σ precio del Rider × días × cantidad de esta reserva (antes de la tarifa de servicio). */
+    /** Solo lo devuelve el servidor; la UI del Partner NO lo muestra (es precio del Rider). */
     rider_subtotal?: number | null;
 };
 

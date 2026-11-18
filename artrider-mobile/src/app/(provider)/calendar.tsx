@@ -24,7 +24,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { getMyListings, type MyListing } from '@/services/providerCatalogService';
 import { getListingCalendar, getProviderBookings, toggleBlockDate, type CalendarMark, type ProviderBooking } from '@/services/providerService';
 import { formatDayLong } from '@/utils/calendar';
-import { formatPrice } from '@/utils/format';
+import { earningsLabel } from '@/utils/earnings';
 import { bookingsByDay, formatDateRange, upcomingBookings, upcomingCountByListing } from '@/utils/providerBookings';
 import { loadSetting, saveSetting } from '@/utils/recentPicks';
 
@@ -371,7 +371,8 @@ export default function ProviderCalendarScreen() {
                       {sheetBooking.client_name ?? ROLE_CLIENT} · {formatDateRange(sheetBooking.start_date, sheetBooking.end_date)}
                     </Text>
                     <Text variant="caption" color="textSecondary">
-                      {BOOKING_STATUS_LABELS[sheetBooking.status] ?? sheetBooking.status} · {formatPrice(sheetBooking.total_price)}
+                      {BOOKING_STATUS_LABELS[sheetBooking.status] ?? sheetBooking.status}
+                      {earningsLabel(sheetBooking) ? ` · ${earningsLabel(sheetBooking)}` : ''}
                     </Text>
                   </View>
                 ) : (
