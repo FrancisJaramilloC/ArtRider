@@ -9,6 +9,7 @@ import { Badge, type BadgeTone } from '@/components/ui/Badge';
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet';
 import { Text } from '@/components/ui/Text';
 import { BOOKING_STATUS_LABELS, MinTouch, Radius, Spacing, toStatusKey, type BookingStatusKey } from '@/constants/theme';
+import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/hooks/use-theme';
 import { cancelBooking, submitReview, type ClientBooking } from '@/services/bookingsService';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
@@ -24,6 +25,7 @@ const STATUS_TONE: Record<BookingStatusKey, BadgeTone> = {
 export function BookingListCard({ booking, onCancelled }: { booking: ClientBooking; onCancelled: () => void }) {
     const colors = useTheme();
     const router = useRouter();
+    const { showToast } = useToast();
     const [showConfirm, setShowConfirm] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [showReview, setShowReview] = useState(false);
@@ -37,7 +39,8 @@ export function BookingListCard({ booking, onCancelled }: { booking: ClientBooki
         const result = await cancelBooking(booking.booking_id);
         setCancelling(false);
         setShowConfirm(false);
-        if (!result.error) onCancelled();
+        if (result.error) showToast(result.error);
+        else onCancelled();
     }
 
     async function handleSubmitReview(rating: number, comment: string) {

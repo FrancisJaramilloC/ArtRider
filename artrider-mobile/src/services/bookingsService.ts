@@ -92,20 +92,32 @@ export async function getClientBookings(): Promise<ClientBooking[]> {
   return (data ?? []) as ClientBooking[];
 }
 
-/** Cliente cancela su propia reserva — solo válida si está AWAITING_SIGNATURES. */
+export const CANCEL_FAILED_MESSAGE = 'No pudimos cancelar y reembolsar. Inténtalo de nuevo';
+
+/**
+ * El Rider cancela su reserva mientras el Partner no responde (AWAITING_SIGNATURES). La función del servidor
+ * (client-cancel-booking) reembolsa el total de esa reserva en Kushki y SOLO si el reembolso sale bien la marca como
+ * cancelada: si algo falla, la reserva queda como estaba y se puede reintentar.
+ */
 export async function cancelBooking(bookingId: string): Promise<{ error?: string }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: 'No autenticado' };
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { error: 'No autenticado' };
 
-  const { error } = await supabase
-    .from('bookings')
-    .update({ status: 'CANCELLED' })
-    .eq('id', bookingId)
-    .eq('client_id', user.id)
-    .eq('status', 'AWAITING_SIGNATURES'); // doble candado: solo cancela si sigue pendiente
-
-  if (error) return { error: 'No se pudo cancelar la reserva' };
-  return {};
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/client-cancel-booking`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ bookingId }),
+    });
+    const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string; code?: string };
+    if (res.ok && data.success) return {};
+    if (data.code === 'NOT_CANCELLABLE') return { error: 'Esta reserva ya no se puede cancelar.' };
+    console.error('[bookingsService] cancelBooking:', res.status, data.code ?? '', data.error ?? '');
+    return { error: CANCEL_FAILED_MESSAGE };
+  } catch (e) {
+    console.error('[bookingsService] cancelBooking:', e instanceof Error ? e.message : e);
+    return { error: CANCEL_FAILED_MESSAGE };
+  }
 }
 
 

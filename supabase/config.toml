@@ -424,6 +424,12 @@ entrypoint = "./functions/kushki-charge/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/kushki-charge/*.html" ]
 
+[functions.client-cancel-booking]
+enabled = true
+# Igual que kushki-charge: el usuario se valida dentro con auth.getUser().
+verify_jwt = false
+entrypoint = "./functions/client-cancel-booking/index.ts"
+
 [functions.upload-listing-cover]
 enabled = true
 verify_jwt = false
