@@ -18,7 +18,7 @@ import { ErrorState, RefreshErrorNotice } from '@/components/ui/ErrorState';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { getCartItems, removeFromCart, type CartItem } from '@/services/cartService';
 import { formatShortDate } from '@/utils/format';
-import { computeServiceFee } from '@/utils/pricing';
+import { usePricing } from '@/contexts/PricingContext';
 
 function formatDateRange(start: string, end: string): string {
     return `${formatShortDate(start)} – ${formatShortDate(end)}`;
@@ -34,6 +34,7 @@ export function CartScreen() {
     const { gutter, insets, contentWidth } = useLayout();
 
     const { data, status, error, refreshError, reload, setData } = useAsyncData<CartItem[]>(getCartItems, { reloadOnFocus: true });
+    const { riderPrice, cartTotals } = usePricing();
     const items = data ?? [];
     const loading = status === 'loading';
 
@@ -42,12 +43,12 @@ export function CartScreen() {
         await removeFromCart(id);
     }
 
-    const subtotal = items.reduce((sum, item) => {
+    // `daily_price` es el precio del Partner: se muestra el precio del Rider y el redondeo .99 se aplica una sola vez al total.
+    const subtotalCents = items.reduce((sum, item) => {
         if (!item.daily_price) return sum;
-        return sum + item.daily_price * item.quantity * daysBetween(item.start_date, item.end_date);
+        return sum + riderPrice(item.daily_price) * item.quantity * daysBetween(item.start_date, item.end_date);
     }, 0);
-    const serviceFee = computeServiceFee(subtotal);
-    const total = subtotal + serviceFee;
+    const { subtotal, serviceFee, total } = cartTotals(subtotalCents);
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
@@ -80,7 +81,7 @@ export function CartScreen() {
                         contentContainerStyle={{ padding: gutter, gap: Spacing.three, width: '100%', maxWidth: contentWidth, alignSelf: 'center' }}
                         renderItem={({ item }) => {
                             const days = daysBetween(item.start_date, item.end_date);
-                            const itemTotal = item.daily_price ? (item.daily_price * item.quantity * days) / 100 : 0;
+                            const itemTotal = item.daily_price ? (riderPrice(item.daily_price) * item.quantity * days) / 100 : 0;
                             return (
                                 <View
                                     style={{
@@ -137,7 +138,7 @@ export function CartScreen() {
                         <PriceSummary
                             lines={[
                                 { label: 'Subtotal', value: `$${(subtotal / 100).toFixed(2)}` },
-                                { label: 'Comisión de servicio (5%)', value: `$${(serviceFee / 100).toFixed(2)}` },
+                                { label: 'Tarifa de servicio', value: `$${(serviceFee / 100).toFixed(2)}` },
                             ]}
                             total={`$${(total / 100).toFixed(2)}`}
                         />

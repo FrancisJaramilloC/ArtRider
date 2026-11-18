@@ -19,6 +19,7 @@ import { TabScreen } from '@/components/ui/TabScreen';
 import { ItemCardSkeleton, Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { MinTouch, Radius, Rhythm, Shadows, Spacing } from '@/constants/theme';
+import { usePricing } from '@/contexts/PricingContext';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getHomeData, type HomeData } from '@/services/homeService';
@@ -43,6 +44,7 @@ export function HomeScreen() {
     const router = useRouter();
     const { isAuthenticated } = useAuth();
     const { gutter, columns, cardWidth, bottomInset } = useLayout();
+    const { riderPrice } = usePricing();
 
     const [activeCategory, setActiveCategory] = useState('all');
 
@@ -100,9 +102,10 @@ export function HomeScreen() {
             list = list.filter((item) => item.title.toLowerCase().includes(q) || (item.city ?? '').toLowerCase().includes(q));
         }
         const max = parseFloat(maxPrice);
-        if (!isNaN(max) && max > 0) list = list.filter((item) => item.daily_price <= max * 100);
+        // «Hasta $X» se compara con el precio por día que ve el Rider (precio del Partner + comisión).
+        if (!isNaN(max) && max > 0) list = list.filter((item) => riderPrice(item.daily_price) <= max * 100);
         return list;
-    }, [exploreItems, activeCategory, city, query, maxPrice]);
+    }, [exploreItems, activeCategory, city, query, maxPrice, riderPrice]);
 
     const filteredCityGroups = useMemo(() => {
         if (!data) return [];

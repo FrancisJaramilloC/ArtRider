@@ -187,6 +187,13 @@ export type ProviderBooking = {
     order_id: string | null;
     already_reviewed: boolean;
     listing_id: string | null;
+    /**
+     * Desglose EXACTO guardado al comprar (ver docs/PROPUESTA_PRECIOS_CONFIG.sql). Aún no lo devuelve get_provider_bookings:
+     * mientras falte, Ganancias estima el monto del Partner a partir de total_price.
+     */
+    partner_amount?: number | null;
+    /** Σ precio del Rider × días × cantidad de esta reserva (antes de la tarifa de servicio). */
+    rider_subtotal?: number | null;
 };
 
 /** Reservas recibidas por el proveedor autenticado. */

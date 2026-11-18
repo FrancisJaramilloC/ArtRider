@@ -2,10 +2,12 @@ import { View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { Shadows, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { formatPrice } from '@/utils/format';
 
 export function PricePin({ price, isSelected }: { price: number; isSelected: boolean }) {
   const colors = useTheme();
-  const label = `$${(price / 100).toFixed(0)}`;
+  // `price` ya es el precio del Rider (centavos). formatPrice muestra decimales solo si hacen falta.
+  const label = formatPrice(price);
 
   return (
     <View

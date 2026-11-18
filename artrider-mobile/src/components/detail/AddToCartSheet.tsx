@@ -119,7 +119,7 @@ export function AddToCartSheet({ visible, onClose, kind, id, title, dailyPrice, 
   const label = adding ? 'Agregando…' : complete && !stockError ? `Agregar · ${formatPrice(subtotal)}` : 'Agregar al carrito';
   const summary =
     complete && !stockError
-      ? `${formatPrice(dailyPrice)} × ${days} ${days === 1 ? 'día' : 'días'}${units > 1 ? ` × ${units}` : ''} · Total estimado`
+      ? `${formatPrice(dailyPrice)} × ${days} ${days === 1 ? 'día' : 'días'}${units > 1 ? ` × ${units}` : ''} · Subtotal`
       : COPY.cartTotalPending;
 
   const footer = (

@@ -7,6 +7,7 @@ import { DetailBottomBar } from '@/components/detail/DetailParts';
 import { useAuth } from '@/hooks/useAuth';
 import { useCartMembership } from '@/hooks/useCartMembership';
 import { useIsOwnProvider } from '@/hooks/useIsOwnProvider';
+import { usePricing } from '@/contexts/PricingContext';
 import { formatPrice } from '@/utils/format';
 
 /** Cuánto se muestra «Agregado al carrito» tras agregar. */
@@ -27,6 +28,9 @@ export type DetailCartFooterProps = {
  */
 export function DetailCartFooter({ kind, id, title, dailyPrice, providerId }: DetailCartFooterProps) {
   const router = useRouter();
+  // `dailyPrice` es el precio del Partner: la barra y la hoja muestran el precio del Rider.
+  const { riderPrice } = usePricing();
+  const riderDaily = riderPrice(dailyPrice);
   const { session } = useAuth();
   const loggedIn = !!session?.user;
   const { inCart, markInCart } = useCartMembership(kind, id, loggedIn);
@@ -58,7 +62,7 @@ export function DetailCartFooter({ kind, id, title, dailyPrice, providerId }: De
   return (
     <>
       <DetailBottomBar
-        priceLabel={formatPrice(dailyPrice)}
+        priceLabel={formatPrice(riderDaily)}
         cartState={inCart ? 'in-cart' : 'idle'}
         justAdded={justAdded}
         onCartPress={handleCartPress}
@@ -71,7 +75,7 @@ export function DetailCartFooter({ kind, id, title, dailyPrice, providerId }: De
         kind={kind}
         id={id}
         title={title}
-        dailyPrice={dailyPrice}
+        dailyPrice={riderDaily}
         onAdded={() => {
           markInCart();
           setJustAdded(true);

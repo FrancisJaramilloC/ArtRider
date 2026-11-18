@@ -12,6 +12,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Text } from '@/components/ui/Text';
 import { Radius, Rhythm, Spacing } from '@/constants/theme';
+import { usePricing } from '@/contexts/PricingContext';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
@@ -100,10 +101,16 @@ function EarningCard({ row }: { row: EarningRow }) {
         </View>
       </View>
       <View style={{ flexDirection: 'row', gap: Spacing.three }}>
-        <Amount label="Monto bruto" value={formatPrice(row.gross)} />
-        <Amount label="Comisión" value={`−${formatPrice(row.fee)}`} />
-        <Amount label="Neto" value={formatPrice(row.net)} strong />
+        <Amount label="Pagó el Rider" value={formatPrice(row.gross)} />
+        <Amount label="ArtRider" value={`−${formatPrice(row.fee)}`} />
+        <Amount label={row.estimated ? 'Tu neto (aprox.)' : 'Tu neto'} value={formatPrice(row.net)} strong />
       </View>
+      {row.commission !== null && row.serviceFee !== null ? (
+        <Text variant="caption" color="textSecondary">
+          ArtRider = comisión {formatPrice(row.commission)} + tarifa de servicio {formatPrice(row.serviceFee)}
+          {row.fee - row.commission - row.serviceFee !== 0 ? ' + redondeo' : ''}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -133,10 +140,11 @@ export function EarningsScreen() {
   const { gutter, insets, contentWidth } = useLayout();
   const [monthKey, setMonthKey] = useState(currentMonthKey());
   const [filter, setFilter] = useState<EarningFilter>('all');
+  const { rates } = usePricing();
 
   const { data, status, error, refreshError, refreshing, reload, refresh } = useAsyncData<ProviderBooking[]>(getProviderBookings, { reloadOnFocus: true });
 
-  const allRows = useMemo(() => toEarningRows(data ?? []), [data]);
+  const allRows = useMemo(() => toEarningRows(data ?? [], rates), [data, rates]);
   const summary = useMemo(() => summarize(allRows, monthKey), [allRows, monthKey]);
   const rows = useMemo(() => rowsOfMonth(allRows, monthKey, filter), [allRows, monthKey, filter]);
 
@@ -157,7 +165,7 @@ export function EarningsScreen() {
         <IconButton icon="chevron-forward" label="Mes siguiente" onPress={() => setMonthKey((key) => shiftMonthKey(key, 1))} disabled={isCurrentMonth} />
       </View>
 
-      <SummaryCard emphasized label={isCurrentMonth ? 'Ganado este mes (neto)' : `Ganado en ${monthLabel} (neto)`} value={formatPrice(summary.monthNet)} hint="Reservas completadas con evento en este mes" />
+      <SummaryCard emphasized label={isCurrentMonth ? 'Ganado este mes (neto)' : `Ganado en ${monthLabel} (neto)`} value={formatPrice(summary.monthNet)} hint="Recibes siempre tu precio. Reservas completadas con evento en este mes." />
       <View style={{ flexDirection: 'row', gap: Rhythm.cardGap }}>
         <SummaryCard label="Pendiente de cobro" value={formatPrice(summary.pendingNet)} />
         <SummaryCard label="Total histórico" value={formatPrice(summary.totalNet)} />

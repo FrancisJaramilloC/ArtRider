@@ -11,7 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { getPackageById, type PackageWithItems } from '@/services/packagesService';
 import { chargeAndCreatePackageBooking } from '@/services/bookingsService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
-import { computeServiceFee } from '@/utils/pricing';
+import { usePricing } from '@/contexts/PricingContext';
 
 export default function PackageCheckoutSummaryScreen() {
     const { id, from, to } = useLocalSearchParams<{ id: string; from: string; to: string }>();
@@ -21,14 +21,14 @@ export default function PackageCheckoutSummaryScreen() {
     const [error, setError] = useState<string | null>(null);
 
     const { status, data: pkg, error: loadError, reload } = useAsyncData<PackageWithItems | null>(() => getPackageById(id), { enabled: !!id, deps: [id] });
+    const { riderPrice, cartTotals } = usePricing();
 
     if (status === 'error') return <CheckoutShell title="Confirmar reserva"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;
     if (status === 'loading' || !pkg) return <CheckoutLoading />;
 
     const days = Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86400000) + 1;
-    const subtotal = pkg.daily_price * days;
-    const serviceFee = computeServiceFee(subtotal);
-    const total = subtotal + serviceFee;
+    const riderDaily = riderPrice(pkg.daily_price);
+    const { subtotal, serviceFee, total } = cartTotals(riderDaily * days);
 
     return (
         <CheckoutShell title="Confirmar reserva">
@@ -38,10 +38,10 @@ export default function PackageCheckoutSummaryScreen() {
                 <PriceSummary
                     lines={[
                         {
-                            label: `$${(pkg.daily_price / 100).toFixed(2)} x ${days} ${days === 1 ? 'día' : 'días'}`,
+                            label: `$${(riderDaily / 100).toFixed(2)} x ${days} ${days === 1 ? 'día' : 'días'}`,
                             value: `$${(subtotal / 100).toFixed(2)}`,
                         },
-                        { label: 'Comisión de servicio (5%)', value: `$${(serviceFee / 100).toFixed(2)}` },
+                        { label: 'Tarifa de servicio', value: `$${(serviceFee / 100).toFixed(2)}` },
                     ]}
                     total={`$${(total / 100).toFixed(2)}`}
                 />

@@ -18,7 +18,7 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 import { getCartItems, chargeAndCreateCartOrder, type CartItem } from '@/services/cartService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
 import { formatShortDate } from '@/utils/format';
-import { computeServiceFee } from '@/utils/pricing';
+import { usePricing } from '@/contexts/PricingContext';
 
 function formatDateRange(start: string, end: string): string {
     return `${formatShortDate(start)} – ${formatShortDate(end)}`;
@@ -36,14 +36,14 @@ export default function CartSummaryScreen() {
     const [success, setSuccess] = useState(false);
 
     const { data, status, error: loadError, reload } = useAsyncData<CartItem[]>(getCartItems, { reloadOnFocus: true });
+    const { riderPrice, cartTotals } = usePricing();
     const items = data ?? [];
 
-    const subtotal = items.reduce((sum, item) => {
+    const subtotalCents = items.reduce((sum, item) => {
         if (!item.daily_price) return sum;
-        return sum + item.daily_price * item.quantity * daysBetween(item.start_date, item.end_date);
+        return sum + riderPrice(item.daily_price) * item.quantity * daysBetween(item.start_date, item.end_date);
     }, 0);
-    const serviceFee = computeServiceFee(subtotal);
-    const total = subtotal + serviceFee;
+    const { subtotal, serviceFee, total } = cartTotals(subtotalCents);
 
     if (status === 'error') return <CheckoutShell title="Resumen del carrito"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;
     if (status === 'loading') return <CheckoutLoading />;
@@ -96,7 +96,7 @@ export default function CartSummaryScreen() {
                 <PriceSummary
                     lines={[
                         { label: 'Subtotal', value: `$${(subtotal / 100).toFixed(2)}` },
-                        { label: 'Comisión de servicio (5%)', value: `$${(serviceFee / 100).toFixed(2)}` },
+                        { label: 'Tarifa de servicio', value: `$${(serviceFee / 100).toFixed(2)}` },
                     ]}
                     total={`$${(total / 100).toFixed(2)}`}
                 />

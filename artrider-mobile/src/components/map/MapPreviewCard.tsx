@@ -6,15 +6,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing, Radius, Shadows } from '@/constants/theme';
 import { CATEGORY_LABELS } from '@/constants/categories';
+import { usePricing } from '@/contexts/PricingContext';
 import type { Listing } from '@/services/catalogService';
+import { formatPrice } from '@/utils/format';
 
 export function MapPreviewCard({ listing, onClose }: { listing: Listing; onClose: () => void }) {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
+  const { riderPrice } = usePricing();
 
   const catLabel = CATEGORY_LABELS[listing.category ?? ''] ?? listing.category ?? 'Equipo';
-  const price = `$${(listing.daily_price / 100).toFixed(0)}`;
+  const price = formatPrice(riderPrice(listing.daily_price));
 
   return (
     <View

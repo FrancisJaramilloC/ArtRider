@@ -11,7 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { getListingById, type Listing } from '@/services/catalogService';
 import { chargeAndCreateBooking } from '@/services/bookingsService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
-import { computeServiceFee } from '@/utils/pricing';
+import { usePricing } from '@/contexts/PricingContext';
 
 export default function CheckoutSummaryScreen() {
     const { id, from, to, quantity: quantityParam } = useLocalSearchParams<{ id: string; from: string; to: string; quantity?: string }>();
@@ -22,14 +22,14 @@ export default function CheckoutSummaryScreen() {
     const [error, setError] = useState<string | null>(null);
 
     const { status, data: listing, error: loadError, reload } = useAsyncData<Listing | null>(() => getListingById(id), { enabled: !!id, deps: [id] });
+    const { riderPrice, cartTotals } = usePricing();
 
     if (status === 'error') return <CheckoutShell title="Confirmar reserva"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;
     if (status === 'loading' || !listing) return <CheckoutLoading />;
 
     const days = Math.round((new Date(to).getTime() - new Date(from).getTime()) / 86400000) + 1;
-    const subtotal = listing.daily_price * days * quantity;
-    const serviceFee = computeServiceFee(subtotal);
-    const total = subtotal + serviceFee;
+    const riderDaily = riderPrice(listing.daily_price);
+    const { subtotal, serviceFee, total } = cartTotals(riderDaily * days * quantity);
 
     return (
         <CheckoutShell title="Confirmar reserva">
@@ -45,10 +45,10 @@ export default function CheckoutSummaryScreen() {
                 <PriceSummary
                     lines={[
                         {
-                            label: `$${(listing.daily_price / 100).toFixed(2)} x ${days} ${days === 1 ? 'día' : 'días'}${quantity > 1 ? ` x ${quantity}` : ''}`,
+                            label: `$${(riderDaily / 100).toFixed(2)} x ${days} ${days === 1 ? 'día' : 'días'}${quantity > 1 ? ` x ${quantity}` : ''}`,
                             value: `$${(subtotal / 100).toFixed(2)}`,
                         },
-                        { label: 'Comisión de servicio (5%)', value: `$${(serviceFee / 100).toFixed(2)}` },
+                        { label: 'Tarifa de servicio', value: `$${(serviceFee / 100).toFixed(2)}` },
                     ]}
                     total={`$${(total / 100).toFixed(2)}`}
                 />

@@ -6,8 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { CATEGORY_LABELS } from '@/constants/categories';
 import { Aspect, FavoriteAccent, MinTouch, Radius, Spacing, Type } from '@/constants/theme';
+import { usePricing } from '@/contexts/PricingContext';
 import { useFavorito } from '@/hooks/useFavorito';
 import { useTheme } from '@/hooks/use-theme';
+import { formatPrice } from '@/utils/format';
 import { Badge } from './Badge';
 import { Text } from './Text';
 
@@ -50,9 +52,11 @@ function ItemCardBase({ item, width, isFavorito = false, showFavorite = true, im
   const colors = useTheme();
   const router = useRouter();
   const { esFavorito, toggleFavorito } = useFavorito(item.id, item.tipo, isFavorito);
+  const { riderPrice } = usePricing();
 
   const catLabel = item.tipo === 'paquete' ? 'Paquete' : (CATEGORY_LABELS[item.category ?? ''] ?? item.category ?? 'Equipo');
-  const price = `$${(item.daily_price / 100).toFixed(0)}`;
+  // `daily_price` es el precio del Partner; el Rider ve el precio con la comisión de ArtRider.
+  const price = formatPrice(riderPrice(item.daily_price));
   const hasRating = (item.rating ?? 0) > 0;
   const isNew = item.tipo === 'equipo' && !hasRating;
   const imageHeight = Math.round(width / Aspect.card);

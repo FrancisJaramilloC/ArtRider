@@ -1,12 +1,23 @@
 import type { ProviderBooking } from '@/services/providerService';
 import { MONTHS_ES_LONG } from './calendar';
-import { splitBookingTotal, type BookingAmounts } from './pricing';
+import { breakdownOf, estimatePartnerAmount, type PricingRates } from './pricing';
 
 /** Solo lectura: lo que ve el Partner de sus reservas. No mueve dinero ni toca la base de datos. */
 export type EarningStatus = 'pending' | 'paid';
 export type EarningFilter = 'all' | EarningStatus;
 
-export type EarningRow = BookingAmounts & {
+export type EarningRow = {
+  /** Lo que pagó el Rider (total de la reserva). */
+  gross: number;
+  /** Lo que se queda ArtRider: comisión + tarifa de servicio + redondeo (bruto − neto). */
+  fee: number;
+  /** Lo que gana el Partner: SIEMPRE su precio. */
+  net: number;
+  /** Comisión de ArtRider sobre el precio del Partner y tarifa de servicio al Rider, cuando la reserva trae el desglose exacto. */
+  commission: number | null;
+  serviceFee: number | null;
+  /** true si el neto es una estimación (la reserva no trae el desglose guardado). */
+  estimated: boolean;
   id: string;
   title: string;
   client: string | null;
@@ -25,13 +36,23 @@ export type EarningRow = BookingAmounts & {
 const PENDING_STATUSES = new Set(['AWAITING_SIGNATURES', 'PAID', 'ACTIVE']);
 const PAID_STATUSES = new Set(['COMPLETED', 'ARCHIVED']);
 
-export function toEarningRows(bookings: ProviderBooking[]): EarningRow[] {
+export function toEarningRows(bookings: ProviderBooking[], rates: PricingRates): EarningRow[] {
   const rows: EarningRow[] = [];
   for (const b of bookings) {
     const status: EarningStatus | null = PAID_STATUSES.has(b.status) ? 'paid' : PENDING_STATUSES.has(b.status) ? 'pending' : null;
     if (!status) continue;
+    // Monto exacto guardado en la reserva si existe; si no (reservas anteriores), estimación con las tasas actuales.
+    const exact = typeof b.partner_amount === 'number';
+    const partnerAmount = exact ? (b.partner_amount as number) : estimatePartnerAmount(b.total_price, rates);
+    const breakdown = breakdownOf(partnerAmount, b.total_price);
+    const riderSubtotal = typeof b.rider_subtotal === 'number' ? b.rider_subtotal : null;
     rows.push({
-      ...splitBookingTotal(b.total_price),
+      gross: breakdown.total,
+      fee: breakdown.platformRevenue,
+      net: breakdown.partnerAmount,
+      commission: exact && riderSubtotal !== null ? riderSubtotal - partnerAmount : null,
+      serviceFee: exact && riderSubtotal !== null ? b.total_price - riderSubtotal : null,
+      estimated: !exact,
       id: b.booking_id,
       title: b.listing_title ?? 'Item reservado',
       client: b.client_name,

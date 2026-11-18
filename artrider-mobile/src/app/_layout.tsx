@@ -5,6 +5,7 @@ import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_7
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ColorSchemeProvider } from '@/contexts/ColorSchemeContext';
+import { PricingProvider } from '@/contexts/PricingContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 SplashScreen.preventAutoHideAsync();
@@ -42,9 +43,11 @@ export default function RootLayout() {
   return (
     <ColorSchemeProvider>
       <AuthProvider>
-        <ToastProvider>
-          <RootNavigator />
-        </ToastProvider>
+        <PricingProvider>
+          <ToastProvider>
+            <RootNavigator />
+          </ToastProvider>
+        </PricingProvider>
       </AuthProvider>
     </ColorSchemeProvider>
   );

@@ -13,6 +13,7 @@ import { ScreenSkeleton } from '@/components/ui/Skeleton';
 import { TabScreen } from '@/components/ui/TabScreen';
 import { Text } from '@/components/ui/Text';
 import { BOOKING_STATUS_LABELS, Radius, Rhythm, Spacing, Thumb, toStatusKey, type BookingStatusKey } from '@/constants/theme';
+import { usePricing } from '@/contexts/PricingContext';
 import { useLayout } from '@/hooks/use-layout';
 import { useTheme } from '@/hooks/use-theme';
 import { getMyProviderProfile, getProviderBookings, type ProviderProfile, type ProviderBooking } from '@/services/providerService';
@@ -63,6 +64,7 @@ export function ProviderTodayScreen() {
   const { gutter, bottomInset } = useLayout();
   const colors = useTheme();
   const router = useRouter();
+  const { rates } = usePricing();
 
   const { status, data: bundle, error, refreshError, refreshing, reload, refresh } = useAsyncData<HomeBundle>(
     async () => {
@@ -127,7 +129,7 @@ export function ProviderTodayScreen() {
   const publishedCount = listings.filter((l) => l.is_published).length;
 
   // Mismo cálculo que la pantalla «Ganancias» (neto del mes de reservas completadas, sin la comisión de servicio).
-  const thisMonthNet = summarize(toEarningRows(bookings), currentMonthKey()).monthNet;
+  const thisMonthNet = summarize(toEarningRows(bookings, rates), currentMonthKey()).monthNet;
 
   const recentBookings = bookings.slice(0, 5);
 

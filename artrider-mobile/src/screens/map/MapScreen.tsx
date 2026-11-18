@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
+import { usePricing } from '@/contexts/PricingContext';
 import { useLayout } from '@/hooks/use-layout';
 import { PricePin } from '@/components/map/PricePin';
 import { MapPreviewCard } from '@/components/map/MapPreviewCard';
@@ -52,6 +53,7 @@ export function MapScreen() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const router = useRouter();
+  const { riderPrice } = usePricing();
   const params = useLocalSearchParams<{ category?: string; city?: string; query?: string; maxPrice?: string }>();
 
   const { data, status, error, reload } = useAsyncData<Listing[]>(getListings);
@@ -74,10 +76,11 @@ export function MapScreen() {
     }
     if (params.maxPrice) {
       const max = parseFloat(params.maxPrice);
-      if (!isNaN(max)) list = list.filter((l) => l.daily_price <= max * 100);
+      // «Hasta $X» se compara con el precio por día que ve el Rider.
+      if (!isNaN(max)) list = list.filter((l) => riderPrice(l.daily_price) <= max * 100);
     }
     return list;
-  }, [listings, params]);
+  }, [listings, params, riderPrice]);
 
   const withCoords = useMemo(() => filtered.filter((l) => l.address?.latitude != null && l.address?.longitude != null), [filtered]);
   const coordinates = useMemo<LatLng[]>(() => withCoords.map((l) => ({ latitude: l.address!.latitude, longitude: l.address!.longitude })), [withCoords]);
@@ -132,7 +135,7 @@ export function MapScreen() {
             onPress={() => setSelected(listing)}
             tracksViewChanges={selected?.id === listing.id}
           >
-            <PricePin price={listing.daily_price} isSelected={selected?.id === listing.id} />
+            <PricePin price={riderPrice(listing.daily_price)} isSelected={selected?.id === listing.id} />
           </Marker>
         ))}
       </ClusteredMapView>
