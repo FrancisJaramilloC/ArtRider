@@ -118,7 +118,7 @@ function ReservationsContent() {
             item.kind === 'single' ? (
               <BookingListCard booking={item.booking} onCancelled={reload} />
             ) : (
-              <OrderGroupCard bookings={item.bookings} onCancelled={reload} />
+              <OrderGroupCard orderId={item.key} bookings={item.bookings} onCancelled={reload} />
             )
           }
         />

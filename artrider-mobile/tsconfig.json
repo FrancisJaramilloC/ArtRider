@@ -17,7 +17,8 @@
     "node_modules",
     "scripts/test-pricing.ts",
     "scripts/test-partner.ts",
-    "scripts/test-listing.ts"
+    "scripts/test-listing.ts",
+    "scripts/test-orders.ts"
   ],
   "include": [
     "**/*.ts",
