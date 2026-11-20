@@ -7,6 +7,7 @@
 // El UPDATE del estado usa service_role: el cliente no debe poder cambiar bookings por su cuenta (ver docs/PROPUESTA_BOOKINGS_SOLO_SERVIDOR.sql).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getPublishableKey, getServiceKey } from '../_shared/keys.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,7 +66,7 @@ Deno.serve(async (req: Request) => {
 
     const url = Deno.env.get('SUPABASE_URL')!;
     // Cliente con el JWT del usuario: identifica al usuario y lee SU reserva (RLS).
-    const userClient = createClient(url, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
+    const userClient = createClient(url, getPublishableKey(), { global: { headers: { Authorization: authHeader } } });
     const { data: userData, error: userError } = await userClient.auth.getUser();
     if (userError || !userData?.user) return fail('UNAUTHENTICATED', 'No autenticado', 401);
     const userId = userData.user.id;
@@ -96,7 +97,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Reembolso OK (o no hubo cobro): ahora sí se marca CANCELLED. Condicional al estado para no pisar una respuesta del Partner.
-    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const admin = createClient(url, getServiceKey());
     const { data: updated, error: updateError } = await admin
       .from('bookings')
       .update({ status: 'CANCELLED' })
