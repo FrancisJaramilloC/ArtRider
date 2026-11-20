@@ -96,6 +96,7 @@ Storage: buckets `avatars` (subida directa desde el móvil, `profileService.ts`)
 | `checkout/[id]`, `checkout/summary/[id]`, `checkout/package/*` | `bookingsService`, `availabilityService` | RPC `get_available_units_count`, `create_booking`, `create_package_booking`, edge `kushki-charge` |
 | `checkout/success/[id]` | `bookingsService` | `bookings` |
 | `(tabs)/reservations` | `bookingsService` | RPC `get_client_bookings`, `submit_review`, edge `client-cancel-booking` (cancelar) |
+| `order/[id]` (detalle del pedido del carrito del Rider) | `bookingsService` | RPC `get_client_order_detail` (aplicada; `docs/PROPUESTA_DETALLE_PEDIDO_RIDER.sql`) |
 | `booking/[id]` (detalle de reserva del Rider) | `bookingsService` | RPC `get_client_booking_detail` (**propuesta sin aplicar**: `docs/PROPUESTA_DETALLE_RESERVA_RIDER.sql`), `submit_review`, `bookings` (cancelar) |
 | `(tabs)/messages`, `chat/[id]` | `messagesService` | RPC `get_my_conversations`, `mark_messages_read`, `get_or_create_conversation`; `messages`, `conversations`, `conversation_archived/deleted`; canales Realtime |
 | `(tabs)/profile`, `profile/edit` | `profileService`, `AuthContext` | `profiles`, Storage `avatars` |

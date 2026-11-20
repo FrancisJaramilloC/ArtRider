@@ -13,7 +13,8 @@ import { useToast } from '@/contexts/ToastContext';
 import { useTheme } from '@/hooks/use-theme';
 import { cancelBooking, submitReview, type ClientBooking } from '@/services/bookingsService';
 import { ReviewModal } from '@/components/reviews/ReviewModal';
-import { formatShortDate } from '@/utils/format';
+import { formatPrice, formatShortDate } from '@/utils/format';
+import { orderGroupStatus, orderListSummary, type OrderGroupStatus } from '@/utils/orders';
 
 const STATUS_TONE: Record<BookingStatusKey, BadgeTone> = {
     pending: 'warning',
@@ -150,19 +151,48 @@ function GroupItemRow({ booking, onCancelled }: { booking: ClientBooking; onCanc
     );
 }
 
-/** Tarjeta para un grupo de reservas que vinieron de una misma compra del carrito. */
-export function OrderGroupCard({ bookings, onCancelled }: { bookings: ClientBooking[]; onCancelled: () => void }) {
+const GROUP_TONE: Record<OrderGroupStatus, BadgeTone> = {
+    cancelled: 'danger',
+    pending: 'warning',
+    confirmed: 'success',
+    completed: 'neutral',
+    dispute: 'danger',
+    other: 'neutral',
+};
+
+/** Tarjeta para un grupo de reservas que vinieron de una misma compra del carrito. Abre la pantalla del pedido. */
+export function OrderGroupCard({ orderId, bookings, onCancelled }: { orderId: string; bookings: ClientBooking[]; onCancelled: () => void }) {
     const colors = useTheme();
-    const total = bookings.reduce((sum, b) => sum + b.total_price, 0);
+    const router = useRouter();
+    // Neto: sin las reservas canceladas, para no contradecir la pantalla del pedido.
+    const { net, cancelledCount, count } = orderListSummary(bookings);
+    const groupStatus = orderGroupStatus(bookings.map((b) => b.status));
 
     return (
         <View style={{ backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Spacing.three, gap: Spacing.three }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two }}>
-                <Text variant="captionStrong" color="textSecondary" style={{ flexShrink: 1 }}>
-                    Compra de {bookings.length} {bookings.length === 1 ? 'item' : 'items'}
-                </Text>
-                <Text variant="bodyStrong">${(total / 100).toFixed(2)}</Text>
-            </View>
+            <Pressable
+                onPress={() => router.push({ pathname: '/order/[id]', params: { id: orderId } } as never)}
+                accessibilityRole="button"
+                accessibilityLabel={`${COPY.orderPurchaseOf(count)}, ${COPY.orderGroupLabel[groupStatus]}, ${formatPrice(net)}. ${COPY.orderViewAction}`}
+                style={({ pressed }) => ({ gap: Spacing.one, opacity: pressed ? 0.85 : 1 })}
+            >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two }}>
+                    <Text variant="captionStrong" color="textSecondary" style={{ flexShrink: 1 }}>
+                        {COPY.orderPurchaseOf(count)}
+                        {cancelledCount > 0 ? ` · ${COPY.orderCancelledCount(cancelledCount)}` : ''}
+                    </Text>
+                    <Text variant="bodyStrong">{formatPrice(net)}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two }}>
+                    <Badge label={COPY.orderGroupLabel[groupStatus]} tone={GROUP_TONE[groupStatus]} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.half }}>
+                        <Text variant="captionStrong" color="primary">
+                            {COPY.orderViewAction}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                    </View>
+                </View>
+            </Pressable>
 
             <View style={{ gap: Spacing.three }}>
                 {bookings.map((booking) => (

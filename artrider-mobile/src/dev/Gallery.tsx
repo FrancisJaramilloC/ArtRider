@@ -128,7 +128,7 @@ function Lists() {
           {BOOKINGS.map((b) => (
             <BookingListCard key={b.booking_id} booking={b} onCancelled={() => {}} />
           ))}
-          <OrderGroupCard bookings={BOOKINGS.slice(0, 3).map((b, i) => ({ ...b, booking_id: `g${i}`, order_id: 'o1' }))} onCancelled={() => {}} />
+          <OrderGroupCard orderId="o1" bookings={BOOKINGS.slice(0, 3).map((b, i) => ({ ...b, booking_id: `g${i}`, order_id: 'o1' }))} onCancelled={() => {}} />
         </View>
       </Section>
     </View>

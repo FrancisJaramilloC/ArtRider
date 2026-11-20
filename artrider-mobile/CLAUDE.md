@@ -17,6 +17,7 @@ pnpm exec tsc --noEmit
 pnpm test:pricing      # modelo de precios
 pnpm test:partner      # reservas y dinero del Partner
 pnpm test:listing      # calidad de datos de equipos
+pnpm test:orders       # pedidos del Rider: estado del grupo, reembolso y neto
 pnpm dlx expo-doctor
 pnpm exec expo export --platform ios      # y android; borrar dist/ después
 pnpm exec expo install <paquete>          # para librerías nativas (versión del SDK)

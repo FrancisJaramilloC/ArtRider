@@ -260,3 +260,46 @@ export async function getClientBookingDetail(bookingId: string): Promise<ClientB
   const row = (data as ClientBookingDetail[] | null)?.[0];
   return row ?? null;
 }
+
+/** Una reserva dentro del pedido. Nunca trae montos del Partner. */
+export type ClientOrderLine = {
+  booking_id: string;
+  status: BookingStatus;
+  start_date: string;
+  end_date: string;
+  item_type: 'listing' | 'package';
+  title: string | null;
+  quantity: number;
+  cover_image_url: string | null;
+  provider_name: string | null;
+  /** NULL en reservas anteriores al nuevo modelo de precios. */
+  rider_subtotal: number | null;
+  service_fee: number | null;
+  total_price: number;
+  already_reviewed: boolean;
+};
+
+/** Pedido del carrito del Rider (RPC get_client_order_detail, ver docs/PROPUESTA_DETALLE_PEDIDO_RIDER.sql). */
+export type ClientOrderDetail = {
+  order: {
+    order_id: string;
+    status: string | null;
+    created_at: string | null;
+    total_price: number;
+    /** NULL en pedidos anteriores al nuevo modelo de precios y sin desglose en sus líneas. */
+    subtotal: number | null;
+    service_fee: number | null;
+    kushki_ticket: string | null;
+  };
+  lines: ClientOrderLine[];
+};
+
+/** Detalle de un pedido propio; null si no existe o no es del usuario. */
+export async function getClientOrderDetail(orderId: string): Promise<ClientOrderDetail | null> {
+  const { data, error } = await supabase.rpc('get_client_order_detail', { p_order_id: orderId });
+  if (error) {
+    if (error.message.includes('Pedido no encontrado')) return null;
+    throw serviceError('[bookingsService] getClientOrderDetail', error);
+  }
+  return (data as ClientOrderDetail | null) ?? null;
+}

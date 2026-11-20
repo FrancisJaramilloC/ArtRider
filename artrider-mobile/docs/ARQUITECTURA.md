@@ -27,7 +27,7 @@ src/
     (tabs)/         Home, Reservas, Mensajes, Perfil  (NativeTabs, barra flotante iOS 26)
     (provider)/     Hoy, Calendario, Anuncios, Mensajes, Menú  (NativeTabs del Partner)
     listing/[id], package/[id], cart, map, chat/[id], profile/edit, become-provider,
-    booking/[id] (detalle de reserva del Rider),
+    booking/[id] (detalle de reserva del Rider), order/[id] (detalle del pedido del carrito),
     checkout/…, provider/{create-*,edit-*,bookings,booking/[id],earnings,reviews,settings}, reset-password
   screens/        Pantallas completas por dominio (auth, home, explore, listing, package,
                   cart, chat, map, profile, provider)
@@ -69,7 +69,7 @@ Alias `@/*` → `src/*`.
 | `availabilityService` | Fechas no disponibles y unidades libres (RPC) |
 | `cartService` | Carrito y creación de orden multi-Partner (edge `kushki-charge`) |
 | `chargeService`, `pricingConfigService` | Llamada a `kushki-charge` con `expectedTotal` (maneja `409 PRICE_CHANGED`) y lectura de las tasas (`pricing_settings`) |
-| `bookingsService` | Reservas del Rider, pago Kushki, reseñas, **detalle** (`get_client_booking_detail`) y **cancelación con reembolso** (edge `client-cancel-booking`) |
+| `bookingsService` | Reservas del Rider, pago Kushki, reseñas, **detalle** (`get_client_booking_detail`), **detalle del pedido** (`get_client_order_detail`) y **cancelación con reembolso** (edge `client-cancel-booking`) |
 | `messagesService` | Conversaciones, mensajes, Realtime (mensajes, «escribiendo», presencia) |
 | `favoritosService`, `notificationsService`, `profileService` | Favoritos, notificaciones, perfil y avatar |
 | `providerService`, `providerCatalogService`, `getMyProviderId` | Modo Partner: perfil, reservas, calendario, CRUD de anuncios y paquetes (marca normalizada, `specs`) |
