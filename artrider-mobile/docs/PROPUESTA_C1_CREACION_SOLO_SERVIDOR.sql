@@ -1,5 +1,5 @@
--- APLICADO en producción el 2026-11-20.
--- PROPUESTA — NO APLICADA. Arregla C1 de docs/AUDITORIA_SEGURIDAD.md.
+-- APLICADO en producción el 2026-11-20 (PASO 1 y PASO 2 aplicados y verificados).
+-- Arregla C1 de docs/AUDITORIA_SEGURIDAD.md.
 --
 -- Problema: create_booking / create_package_booking / create_cart_order las puede llamar cualquier usuario autenticado
 -- (POST /rest/v1/rpc/...) con un p_kushki_ticket inventado, y crean reservas sin cobro.

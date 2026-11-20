@@ -1,5 +1,5 @@
--- APLICADO en producción el 2026-11-20.
--- PROPUESTA — NO APLICADA. PASO 2 de C1 (docs/AUDITORIA_SEGURIDAD.md).
+-- APLICADO en producción el 2026-11-20 (PASO 1 y PASO 2 aplicados y verificados).
+-- PASO 2 de C1 (docs/AUDITORIA_SEGURIDAD.md).
 --
 -- APLICAR SOLO DESPUÉS de:
 --   1. haber aplicado docs/PROPUESTA_C1_CREACION_SOLO_SERVIDOR.sql,
