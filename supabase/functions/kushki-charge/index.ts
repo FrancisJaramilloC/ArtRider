@@ -14,6 +14,7 @@
 //     cobro y la reserva, el RPC aborta y el cobro se anula.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getPublishableKey } from '../_shared/keys.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -130,7 +131,7 @@ Deno.serve(async (req: Request) => {
       return json(401, { error: 'No autenticado' });
     }
 
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, getPublishableKey(), {
       global: { headers: { Authorization: authHeader } },
     });
 
