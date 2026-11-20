@@ -11,6 +11,7 @@ import { PriceSummary } from '@/components/ui/PriceSummary';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { StickyFooter } from '@/components/ui/StickyFooter';
 import { Text } from '@/components/ui/Text';
+import { COPY } from '@/constants/copy';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -35,7 +36,7 @@ export default function CartSummaryScreen() {
 
     const [confirming, setConfirming] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
+    const [paid, setPaid] = useState<{ items: CartItem[]; total: number } | null>(null);
 
     const { data, status, error: loadError, reload } = useAsyncData<CartItem[]>(getCartItems, { reloadOnFocus: true });
     const { riderPrice, cartTotals } = usePricing();
@@ -48,10 +49,11 @@ export default function CartSummaryScreen() {
     }, 0);
     const { subtotal, serviceFee, total } = priceChange.quote ?? cartTotals(subtotalCents);
 
-    if (status === 'error') return <CheckoutShell title="Resumen del carrito"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;
-    if (status === 'loading') return <CheckoutLoading />;
+    if (!paid && status === 'error') return <CheckoutShell title="Resumen del carrito"><ErrorState error={loadError} onRetry={reload} /></CheckoutShell>;
+    if (!paid && status === 'loading') return <CheckoutLoading />;
 
-    if (success) {
+    if (paid) {
+        const count = paid.items.length;
         return (
             <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
                 {/* Compra ya pagada: la única salida es "Ver mis reservas". */}
@@ -60,12 +62,26 @@ export default function CartSummaryScreen() {
                     <View style={{ width: 80, height: 80, borderRadius: Radius.full, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
                         <Ionicons name="checkmark" size={40} color={colors.primary} />
                     </View>
-                    <Text variant="title" style={{ textAlign: 'center' }}>
-                        ¡Reservas confirmadas!
+                    <Text variant="title" style={{ textAlign: 'center' }} accessibilityRole="header">
+                        {COPY.cartSuccessTitle(count)}
                     </Text>
                     <Text variant="body" color="textSecondary" style={{ textAlign: 'center' }}>
-                        Tus {items.length} {items.length === 1 ? 'reserva fue creada' : 'reservas fueron creadas'} correctamente.
+                        {COPY.cartSuccessNote(count)}
                     </Text>
+                    <View style={{ alignSelf: 'stretch', backgroundColor: colors.backgroundElement, borderRadius: Radius.card, padding: Spacing.four, gap: Spacing.three, marginTop: Spacing.two }}>
+                        {paid.items.map((item) => (
+                            <View key={item.id} style={{ gap: Spacing.one }}>
+                                <Text variant="subtitle" numberOfLines={2}>
+                                    {item.title ?? 'Item'}
+                                </Text>
+                                <Text variant="caption" color="textSecondary">
+                                    {formatDateRange(item.start_date, item.end_date)}
+                                    {item.quantity > 1 ? ` · x${item.quantity}` : ''}
+                                </Text>
+                            </View>
+                        ))}
+                        <PriceSummary lines={[]} totalLabel="Total pagado" total={`$${(paid.total / 100).toFixed(2)}`} />
+                    </View>
                 </View>
                 <StickyFooter>
                     <Button label="Ver mis reservas" onPress={() => goToReservationsAfterPayment(router)} />
@@ -123,7 +139,8 @@ export default function CartSummaryScreen() {
                             setError(priceChange.handle(result) ?? result.error);
                             return;
                         }
-                        setSuccess(true);
+                        // Copia de los ítems antes de que el carrito se vacíe; el total es el que cobró el servidor.
+                        setPaid({ items: [...items], total: result.total ?? total });
                     }}
                 />
                 {confirming && (

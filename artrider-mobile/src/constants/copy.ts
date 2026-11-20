@@ -50,6 +50,11 @@ export const COPY = {
   thisClient: `este ${ROLE_CLIENT}`,
   pendingBookingsEmpty: `Aquí aparecen las reservas que esperan la respuesta del ${ROLE_PROVIDER}.`,
   checkoutSuccessNote: `El ${ROLE_PROVIDER} revisará tu solicitud y la confirmará pronto.`,
+  cartSuccessTitle: (count: number) => (count === 1 ? '¡Solicitud enviada!' : '¡Solicitudes enviadas!'),
+  cartSuccessNote: (count: number) =>
+    count === 1
+      ? `El ${ROLE_PROVIDER} revisará tu solicitud y la confirmará pronto.`
+      : `Los ${ROLE_PROVIDER_PLURAL} revisarán tus solicitudes y las confirmarán pronto.`,
   refundNote: `Esto reembolsará automáticamente al ${ROLE_CLIENT} si ya se cobró. Esta acción no se puede deshacer.`,
   reviewsEmpty: `Aquí verás las reseñas que dejan tus ${ROLE_CLIENT_PLURAL}.`,
 
