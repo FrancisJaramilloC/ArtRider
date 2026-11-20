@@ -20,7 +20,7 @@
 //     cobro y la reserva, el RPC aborta y el cobro se anula.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getPublishableKey } from '../_shared/keys.ts';
+import { getPublishableKey, getServiceKey } from '../_shared/keys.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -210,7 +210,7 @@ Deno.serve(async (req: Request) => {
 
     // ── Paso 2: crear la(s) reserva(s) con el ticket y el MISMO total cobrado ─────
     // Cliente service_role: las funciones *_for no son ejecutables por el usuario. `clientId` es el id validado por auth.getUser().
-    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, getServiceKey(), {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
