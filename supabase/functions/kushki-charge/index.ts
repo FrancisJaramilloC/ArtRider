@@ -1,7 +1,13 @@
 // Supabase Edge Function: kushki-charge
 // Cobra una tarjeta ya tokenizada vía Kushki (key privada, solo puede vivir aquí, nunca en el bundle de mobile) y, si el pago
-// es aprobado, crea la reserva llamando a create_booking(), create_package_booking() o create_cart_order()
+// es aprobado, crea la reserva llamando a create_booking_for(), create_package_booking_for() o create_cart_order_for()
 // según venga listingId, packageId o cart:true.
+//
+// CREACIÓN SOLO DESDE EL SERVIDOR (C1 de docs/AUDITORIA_SEGURIDAD.md; requiere aplicar docs/PROPUESTA_C1_CREACION_SOLO_SERVIDOR.sql):
+//   * Las funciones *_for solo las puede ejecutar service_role y reciben el id del Rider. Ese id sale SIEMPRE de auth.getUser()
+//     (el JWT validado), nunca del cuerpo de la petición. Así nadie puede crear reservas llamando al RPC sin haber pagado.
+//   * El ticket que se guarda es el que devolvió Kushki en ESTE cobro; la base de datos rechaza un ticket ya usado.
+//   * Las cotizaciones (get_*_quote) siguen usando el cliente con el JWT del usuario: dependen de auth.uid().
 //
 // NUEVO MODELO DE PRECIOS (ver docs/PROPUESTA_PRECIOS_PLAN.md — requiere aplicar antes docs/PROPUESTA_PRECIOS_CONFIG.sql y
 // docs/PROPUESTA_PRECIOS_RPC.sql):
@@ -66,6 +72,9 @@ function mapRpcError(message: string): ApiError {
   if (m.includes('Rango de fechas inválido')) return new ApiError(400, 'El rango de fechas no es válido.', 'INVALID_DATES');
   if (m.includes('Cantidad inválida')) return new ApiError(400, 'La cantidad no es válida.', 'INVALID_QUANTITY');
   if (m.includes('Falta la configuración de precios')) return new ApiError(500, 'No pudimos calcular el precio en este momento. Inténtalo más tarde.', 'PRICING_UNAVAILABLE');
+  if (m.includes('TICKET_YA_USADO')) return new ApiError(409, 'Este pago ya está asociado a otra reserva.', 'TICKET_ALREADY_USED');
+  if (m.includes('TICKET_REQUERIDO')) return new ApiError(500, 'No se pudo completar la reserva. Inténtalo de nuevo.', 'RPC_ERROR');
+  if (m.includes('Cliente no encontrado')) return new ApiError(401, 'Tu sesión expiró. Inicia sesión de nuevo.', 'UNAUTHENTICATED');
   if (m.includes('No hay') && (m.includes('unidades') || m.includes('stock'))) {
     return new ApiError(409, 'Ya no hay disponibilidad para esas fechas. Cambia las fechas o la cantidad.', 'NO_AVAILABILITY');
   }
@@ -140,6 +149,8 @@ Deno.serve(async (req: Request) => {
     if (userError || !userData?.user) {
       return json(401, { error: 'Tu sesión expiró. Inicia sesión de nuevo.', code: 'UNAUTHENTICATED' });
     }
+    // Único origen del id del Rider para crear reservas: el usuario validado, nunca el cuerpo de la petición.
+    const clientId: string = userData.user.id;
 
     // ── Paso 0: total OFICIAL calculado por la base de datos ─────────────────────
     const quote = await getQuote(supabase, { listingId, packageId, cart: cart === true, startDate, endDate, qty });
@@ -198,32 +209,44 @@ Deno.serve(async (req: Request) => {
     const ticket: string = kushkiData.ticketNumber;
 
     // ── Paso 2: crear la(s) reserva(s) con el ticket y el MISMO total cobrado ─────
+    // Cliente service_role: las funciones *_for no son ejecutables por el usuario. `clientId` es el id validado por auth.getUser().
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
     let bookingId: string | undefined;
     let orderId: string | undefined;
     let rpcError: { message?: string } | null = null;
 
     if (cart === true) {
-      const { data, error } = await supabase.rpc('create_cart_order', { p_kushki_ticket: ticket, p_expected_total: quote.total });
+      const { data, error } = await admin.rpc('create_cart_order_for', {
+        p_client_id: clientId, p_kushki_ticket: ticket, p_expected_total: quote.total,
+      });
       rpcError = error;
       orderId = data?.[0]?.order_id;
     } else if (packageId) {
-      const { data, error } = await supabase.rpc('create_package_booking', {
-        p_package_id: packageId, p_start_date: startDate, p_end_date: endDate, p_kushki_ticket: ticket, p_expected_total: quote.total,
+      const { data, error } = await admin.rpc('create_package_booking_for', {
+        p_client_id: clientId, p_package_id: packageId, p_start_date: startDate, p_end_date: endDate,
+        p_kushki_ticket: ticket, p_expected_total: quote.total,
       });
       rpcError = error;
       bookingId = data?.[0]?.booking_id;
     } else {
-      const { data, error } = await supabase.rpc('create_booking', {
-        p_listing_id: listingId, p_start_date: startDate, p_end_date: endDate, p_kushki_ticket: ticket, p_quantity: qty, p_expected_total: quote.total,
+      const { data, error } = await admin.rpc('create_booking_for', {
+        p_client_id: clientId, p_listing_id: listingId, p_start_date: startDate, p_end_date: endDate,
+        p_kushki_ticket: ticket, p_quantity: qty, p_expected_total: quote.total,
       });
       rpcError = error;
       bookingId = data?.[0]?.booking_id;
     }
 
     if (rpcError || (!bookingId && !orderId)) {
-      // El pago ya se cobró pero la reserva falló: se anula el cobro.
-      const voided = await voidCharge(privateKey, ticket, chargedAmount);
       const message = rpcError?.message ?? '';
+      // Si la BD dice que el ticket ya pertenece a otra reserva, NO se anula: anularía el cobro de esa otra reserva.
+      // (No debería ocurrir: el ticket lo acaba de generar Kushki en este cobro.)
+      const ticketAlreadyUsed = message.includes('TICKET_YA_USADO');
+      // El pago ya se cobró pero la reserva falló: se anula el cobro.
+      const voided = ticketAlreadyUsed ? false : await voidCharge(privateKey, ticket, chargedAmount);
       console.error('[kushki-charge] Reserva fallida tras el cobro:', message, '· cobro anulado:', voided);
 
       const mapped = message.includes('PRECIO_CAMBIO')
@@ -238,7 +261,7 @@ Deno.serve(async (req: Request) => {
           extra.quote = { subtotal: fresh.subtotal, serviceFee: fresh.serviceFee, total: fresh.total, days: fresh.days };
         } catch { /* sin desglose: la app recargará los precios */ }
       }
-      if (!voided) {
+      if (!voided && !ticketAlreadyUsed) {
         // Caso grave: hay un cobro sin reserva y no se pudo anular. Se avisa con el ticket para soporte.
         return json(500, {
           error: 'Tu pago se realizó pero no pudimos crear la reserva ni anular el cobro. Contacta a soporte con este código: ' + ticket,

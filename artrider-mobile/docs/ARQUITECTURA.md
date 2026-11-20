@@ -83,7 +83,7 @@ expo-router (rutas), react-native-reanimated + worklets (animaciones; `scheduleO
 1. **Autenticación**: login/registro/olvidé contraseña/reset por deep link (`reset-password`). Registro crea `profiles` por trigger.
 2. **Exploración**: Home con buscador en píldora, chips de categoría, carruseles por ciudad y paquetes; al enfocar el buscador se muestra la grilla con filtros de ciudad y precio. Mapa con pines de precio.
 3. **Detalle y reserva directa**: detalle con galería, reseñas, calendario de disponibilidad → `checkout/[id]` (rango de fechas + cantidad) → resumen → **pago con Kushki** (WebView invisible tokeniza la tarjeta; edge `kushki-charge` cobra y crea la reserva) → éxito.
-4. **Carrito**: agregar equipos/paquetes con fechas, resumen multi-Partner y un único pago (`create_cart_order`).
+4. **Carrito**: agregar equipos/paquetes con fechas, resumen multi-Partner y un único pago (edge `kushki-charge`, que crea las reservas con `create_cart_order_for` usando `service_role`).
 5. **Reservas del Rider**: lista agrupada → **detalle** (`booking/[id]`: estado, fechas, equipo, Partner con chat, desglose del Rider, referencia de pago, política de cancelación). Cancelar (solo pendiente) **reembolsa** por la edge `client-cancel-booking` y solo entonces marca la reserva cancelada; reseña tras completar. La lista y el detalle se refrescan al recuperar el foco (`reloadOnFocus`). Al pagar, `goToReservationsAfterPayment` vacía la pila y abre Reservas.
 6. **Chat**: lista de conversaciones (carga única + pull-to-refresh) y chat con Realtime, «escribiendo…» y presencia.
 7. **Perfil**: datos, avatar (Storage `avatars`), tema claro/oscuro, ser Partner.

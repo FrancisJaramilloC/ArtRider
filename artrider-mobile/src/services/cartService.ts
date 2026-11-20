@@ -95,34 +95,6 @@ export async function removeFromCart(cartItemId: string): Promise<void> {
     if (error) console.error('[cartService] removeFromCart:', error.message);
 }
 
-export type CreateCartOrderResult = {
-    orderId?: string;
-    total?: number;
-    error?: string;
-};
-
-/** Checkout atómico de todo el carrito — ver create_cart_order() en Postgres. */
-export async function createCartOrder(kushkiTicket?: string): Promise<CreateCartOrderResult> {
-    const { data, error } = await supabase.rpc('create_cart_order', {
-        p_kushki_ticket: kushkiTicket ?? null,
-    });
-
-    if (error) {
-        console.error('[cartService] createCartOrder:', error.message);
-        if (error.message.includes('carrito está vacío')) {
-            return { error: 'Tu carrito está vacío.' };
-        }
-        if (error.message.includes('No hay') || error.message.includes('stock')) {
-            return { error: 'Uno de los items de tu carrito ya no tiene disponibilidad para esas fechas.' };
-        }
-        return { error: 'No se pudo completar la compra. Intenta de nuevo.' };
-    }
-
-    const row = data?.[0];
-    if (!row) return { error: 'No se pudo completar la compra.' };
-
-    return { orderId: row.order_id, total: row.total };
-}
 /** Cobra en Kushki y crea todas las reservas del carrito de forma atómica. El total oficial lo calcula el servidor. */
 export async function chargeAndCreateCartOrder(
     kushkiToken: string,

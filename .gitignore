@@ -10,3 +10,6 @@
 
 # Salida de graphify (grafo generado)
 graphify-out/
+
+# Estado local del plugin Oh My ClaudeCode (ya desinstalado)
+.omc/
