@@ -1,3 +1,4 @@
+-- APLICADO en producción el 2026-11-20.
 -- PROPUESTA — NO APLICADA. PASO 2 de C1 (docs/AUDITORIA_SEGURIDAD.md).
 --
 -- APLICAR SOLO DESPUÉS de:

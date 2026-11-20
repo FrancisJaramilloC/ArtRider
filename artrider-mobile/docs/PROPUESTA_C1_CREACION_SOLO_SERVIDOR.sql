@@ -1,3 +1,4 @@
+-- APLICADO en producción el 2026-11-20.
 -- PROPUESTA — NO APLICADA. Arregla C1 de docs/AUDITORIA_SEGURIDAD.md.
 --
 -- Problema: create_booking / create_package_booking / create_cart_order las puede llamar cualquier usuario autenticado

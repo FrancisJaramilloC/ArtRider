@@ -50,7 +50,7 @@
 **Definidas en el repo:** `is_my_provider(uuid)`, `create_multi_provider_checkout(...)` (web), `handle_new_auth_user()`, y triggers `prevent_booking_identity_mutation`, `prevent_contract_cross_signature`, `prevent_provider_status_self_change`, `populate_booking_snapshots`, `populate_booking_listing_snapshot`, `prevent_snapshot_mutation`.
 
 **Usadas por la app móvil y NO definidas en el repo (19):**
-`create_booking`, `create_package_booking`, `create_cart_order`, `get_cart_total`*, `get_client_bookings`, `get_provider_bookings`, `provider_finalize_booking`, `provider_set_booking_status`*, `get_booking_for_provider_action`*, `get_provider_listing_calendar`, `provider_toggle_block_date`, `get_unavailable_dates`, `get_package_unavailable_dates`, `get_listing_total_units`, `get_available_units_count`, `submit_review`, `get_listing_ratings`, `get_listing_reviews`, `get_package_reviews`, `get_my_conversations`, `mark_messages_read`, `get_or_create_conversation`.
+`create_booking`, `create_package_booking`, `create_cart_order` (ya NO ejecutables por usuarios; las usa solo `service_role`) y `create_booking_for`, `create_package_booking_for`, `create_cart_order_for` (solo `service_role`, llamadas por `kushki-charge`), `get_cart_total`*, `get_client_bookings`, `get_provider_bookings`, `provider_finalize_booking`, `provider_set_booking_status`*, `get_booking_for_provider_action`*, `get_provider_listing_calendar`, `provider_toggle_block_date`, `get_unavailable_dates`, `get_package_unavailable_dates`, `get_listing_total_units`, `get_available_units_count`, `submit_review`, `get_listing_ratings`, `get_listing_reviews`, `get_package_reviews`, `get_my_conversations`, `mark_messages_read`, `get_or_create_conversation`.
 (*) solo desde edge functions. Toda la lógica de reservas/pagos vive en funciones que solo existen en la base real: **no auditables desde el repo** (¿`SECURITY DEFINER`? ¿validan `auth.uid()`?).
 
 ## 4. Políticas RLS (estado final según migraciones)
@@ -92,8 +92,8 @@ Storage: buckets `avatars` (subida directa desde el móvil, `profileService.ts`)
 | Búsqueda / `map` | `catalogService`, `exploreService` | `listings`, `catalog_items` |
 | `listing/[id]` | `catalogService`, `availabilityService` | `listings`(+`providers`,`addresses`), RPC `get_listing_reviews`, `get_unavailable_dates`, `get_listing_total_units` |
 | `package/[id]` | `packagesService`, `availabilityService` | `packages`+`package_items`+`listings`, RPC `get_package_reviews`, `get_package_unavailable_dates` |
-| `cart`, `checkout/cart-summary` | `cartService` | `cart_items`, RPC `create_cart_order`, edge `kushki-charge` |
-| `checkout/[id]`, `checkout/summary/[id]`, `checkout/package/*` | `bookingsService`, `availabilityService` | RPC `get_available_units_count`, `create_booking`, `create_package_booking`, edge `kushki-charge` |
+| `cart`, `checkout/cart-summary` | `cartService` | `cart_items`, edge `kushki-charge` (crea el pedido con `create_cart_order_for`, solo `service_role`) |
+| `checkout/[id]`, `checkout/summary/[id]`, `checkout/package/*` | `bookingsService`, `availabilityService` | RPC `get_available_units_count`, edge `kushki-charge` (crea la reserva con `create_booking_for` / `create_package_booking_for`, solo `service_role`) |
 | `checkout/success/[id]` | `bookingsService` | `bookings` |
 | `(tabs)/reservations` | `bookingsService` | RPC `get_client_bookings`, `submit_review`, edge `client-cancel-booking` (cancelar) |
 | `booking/[id]` (detalle de reserva del Rider) | `bookingsService` | RPC `get_client_booking_detail` (**propuesta sin aplicar**: `docs/PROPUESTA_DETALLE_RESERVA_RIDER.sql`), `submit_review`, `bookings` (cancelar) |
@@ -114,7 +114,7 @@ Storage: buckets `avatars` (subida directa desde el móvil, `profileService.ts`)
 5. `providers` y `availability_calendar` demasiado abiertas (§4).
 6. `packages_read` sin filtro `deleted_at`.
 7. `art-rider/types/database.types.ts` es un placeholder vacío (`Database = {}`): el móvil no tiene tipos generados y usa casts (`as`/`any`).
-8. **`bookings_update` (RLS) deja a cualquier cliente cambiar el `status` de su reserva** (los triggers solo protegen `client_id`, `provider_id` y `total_price`); y a los usuarios autenticados llamar `create_booking`/`create_cart_order` sin pagar. Propuesta: `PROPUESTA_BOOKINGS_SOLO_SERVIDOR.sql` (no aplicar antes de migrar los tres `UPDATE` directos de la web).
+8. **`bookings_update` (RLS) deja a cualquier cliente cambiar el `status` de su reserva** (los triggers solo protegen `client_id`, `provider_id` y `total_price`); (el hueco de que los usuarios autenticados llamaran `create_booking`/`create_cart_order` sin pagar quedó cerrado con C1: la app ya no las llama, el pago pasa por `kushki-charge` con `create_*_for` y las viejas ya no son ejecutables por usuarios; ver `PROPUESTA_C1_*.sql`). Propuesta: `PROPUESTA_BOOKINGS_SOLO_SERVIDOR.sql` (no aplicar antes de migrar los tres `UPDATE` directos de la web).
 9. Tablas sin uso en el móvil: `payments`, `digital_contracts`, `identity_verifications`, `checkout_orders`, `product_catalog`.
 
 ## 8. Propuestas sin aplicar y funciones sin desplegar

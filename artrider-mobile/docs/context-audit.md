@@ -171,7 +171,7 @@ src
 - `checkAvailability(listingId: string, startDateStr: string, endDateStr: string): Promise<boolean>` — recorre el rango día a día contra `getUnavailableDates`.
 
 ### `bookingsService.ts`
-- `createBooking(listingId: string, startDate: string, endDate: string, kushkiTicket?: string): Promise<CreateBookingResult>` — RPC `create_booking`.
+- (`createBooking` se eliminó: el pago pasa por `chargeAndCreateBooking` → edge `kushki-charge` → `create_booking_for` con `service_role`; las RPC `create_booking*` ya no son ejecutables por usuarios.)
 - `getClientBookings(): Promise<ClientBooking[]>` — RPC `get_client_bookings`.
 - `cancelBooking(bookingId: string): Promise<{ error?: string }>` — `UPDATE` directo sobre tabla `bookings` (`status = 'CANCELLED'`), con `.eq('client_id', user.id).eq('status', 'AWAITING_SIGNATURES')`.
 - `chargeAndCreateBooking(kushkiToken: string, listingId: string, startDate: string, endDate: string): Promise<CreateBookingResult>` — `fetch` a la Edge Function `kushki-charge`.
