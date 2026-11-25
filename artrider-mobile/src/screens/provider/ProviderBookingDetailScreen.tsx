@@ -26,9 +26,9 @@ import { useTheme } from '@/hooks/use-theme';
 import { getConversations } from '@/services/messagesService';
 import { getProviderBookings, type ProviderBooking } from '@/services/providerService';
 import { earningStatusOf } from '@/utils/earnings';
-import { formatPrice } from '@/utils/format';
+import { formatPrice, formatShortDate } from '@/utils/format';
 import { partnerDailyOf, resolvePartnerAmount } from '@/utils/pricing';
-import { formatDateRange, rentalDays } from '@/utils/providerBookings';
+import { ecuadorTodayKey, formatDateRange, rentalDays } from '@/utils/providerBookings';
 
 const STATUS_LINE: Record<ProviderBooking['status'], string> = {
   AWAITING_SIGNATURES: 'Esperando tu respuesta. Acepta o rechaza esta solicitud.',
@@ -49,6 +49,8 @@ function Detail({ booking, onChanged }: { booking: ProviderBooking; onChanged: (
 
   const days = rentalDays(booking.start_date, booking.end_date);
   const statusLabel = BOOKING_STATUS_LABELS[booking.status] ?? booking.status;
+  // El servidor solo deja finalizar desde el día del end_date (hoy en Ecuador); aquí solo se evita ofrecer el botón antes.
+  const canFinalize = booking.end_date.slice(0, 10) <= ecuadorTodayKey();
   // null si la reserva ya no cuenta (cancelada / disputa): no se muestra ningún monto.
   const earning = earningStatusOf(booking.status) ? resolvePartnerAmount(booking.partner_amount, booking.total_price) : null;
   const dailyPartner = earning ? partnerDailyOf(earning.amount, days) : null;
@@ -78,9 +80,16 @@ function Detail({ booking, onChanged }: { booking: ProviderBooking; onChanged: (
         <Button label="Aceptar" loading={actions.busy} onPress={actions.accept} style={{ flex: 1 }} />
       </View>
     ) : booking.status === 'ACTIVE' ? (
-      <View style={{ flexDirection: 'row', gap: Spacing.two }}>
-        <Button label="Cancelar" variant="destructive" disabled={actions.busy} onPress={actions.askReject} style={{ flex: 1 }} />
-        <Button label="Finalizar" disabled={actions.busy} onPress={actions.askFinalize} style={{ flex: 1 }} />
+      <View style={{ gap: Spacing.two }}>
+        <View style={{ flexDirection: 'row', gap: Spacing.two }}>
+          <Button label="Cancelar" variant="destructive" disabled={actions.busy} onPress={actions.askReject} style={{ flex: 1 }} />
+          <Button label="Finalizar" disabled={actions.busy || !canFinalize} onPress={actions.askFinalize} style={{ flex: 1 }} />
+        </View>
+        {!canFinalize ? (
+          <Text variant="caption" color="textSecondary">
+            Podrás finalizarla desde el {formatShortDate(booking.end_date)}
+          </Text>
+        ) : null}
       </View>
     ) : null;
 

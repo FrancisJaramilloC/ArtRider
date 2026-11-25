@@ -24,6 +24,7 @@ export function useBookingActions(booking: ProviderBooking, onChanged: () => voi
       Alert.alert('No se pudo completar', result.error);
       return;
     }
+    if (result.notice) Alert.alert('Reserva rechazada', result.notice);
     onChanged();
   }
 
