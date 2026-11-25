@@ -90,6 +90,9 @@ export const COPY = {
   bookingAddressNotice: 'La dirección exacta se comparte al confirmar.',
   bookingRefundRequested: 'Reembolso solicitado',
   bookingPaymentReference: 'Referencia de pago',
+  /** Cobro incierto (timeout, sin conexión, respuesta ilegible): el servidor pudo haber cobrado. */
+  paymentUncertain: 'No pudimos confirmar tu pago. No pagues de nuevo: revisa tus reservas en unos minutos o escríbenos.',
+  paymentSeeReservations: 'Ver mis reservas',
   bookingCancellationTitle: 'Política de cancelación',
   bookingCancellationPolicy: `Puedes cancelar tu reserva mientras el ${ROLE_PROVIDER} no haya respondido. Si el ${ROLE_PROVIDER} rechaza tu solicitud, el pago se reembolsa automáticamente. Una vez confirmada, escríbele al ${ROLE_PROVIDER} para coordinar cualquier cambio.`,
   bookingNotFoundTitle: 'No encontramos esta reserva',

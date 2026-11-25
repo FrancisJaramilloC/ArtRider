@@ -45,9 +45,11 @@ type Props = {
     amount: number; // en centavos
     onSuccess: (token: string) => void;
     onError: (error: string) => void;
+    /** Bloquea el formulario (campos y botón "Pagar") mientras el servidor procesa el cobro: evita el doble toque. */
+    disabled?: boolean;
 };
 
-export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
+export function KushkiPaymentForm({ amount, onSuccess, onError, disabled = false }: Props) {
     const scheme = useColorScheme();
     const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
     const webviewRef = useRef<WebView<object>>(null);
@@ -158,6 +160,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
                 <View style={fieldWrapperStyle}>
                     <TextInput
                         value={name}
+                        editable={!disabled}
                         onChangeText={setName}
                         placeholder="Ej: Juan Pérez"
                         placeholderTextColor={colors.textMuted}
@@ -173,6 +176,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
                 <View style={fieldWrapperStyle}>
                     <TextInput
                         value={cardNumber}
+                        editable={!disabled}
                         onChangeText={handleCardNumberChange}
                         placeholder="5451 9515 7492 5480"
                         placeholderTextColor={colors.textMuted}
@@ -190,6 +194,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
                     <View style={fieldWrapperStyle}>
                         <TextInput
                             value={expiry}
+                            editable={!disabled}
                             onChangeText={handleExpiryChange}
                             placeholder="12/28"
                             placeholderTextColor={colors.textMuted}
@@ -205,6 +210,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
                     <View style={fieldWrapperStyle}>
                         <TextInput
                             value={cvv}
+                            editable={!disabled}
                             onChangeText={(t) => setCvv(t.replace(/\D/g, '').substring(0, 4))}
                             placeholder="123"
                             placeholderTextColor={colors.textMuted}
@@ -221,8 +227,8 @@ export function KushkiPaymentForm({ amount, onSuccess, onError }: Props) {
             <Button
                 label={`Pagar $${(amount / 100).toFixed(2)}`}
                 onPress={handleSubmit}
-                disabled={!isValid || processing}
-                loading={processing}
+                disabled={!isValid || processing || disabled}
+                loading={processing || disabled}
             />
         </View>
     );
