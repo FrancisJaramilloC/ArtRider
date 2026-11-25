@@ -246,16 +246,18 @@ Las crea `kushki-charge` (sin `booking_id`). No bloquean nada en la app; se revi
 SELECT id, kushki_ticket, right(kushki_ticket, 4) AS ticket_last4, amount_cents, status, kushki_message, created_at, updated_at
 FROM public.payment_refunds
 WHERE reason = 'CHARGE_VOID'
-  AND status IN ('FAILED', 'UNKNOWN')   -- SUCCEEDED no requiere acción
+  AND status IN ('PENDING', 'FAILED', 'UNKNOWN')   -- SUCCEEDED no requiere acción; MANUAL_REQUIRED va en §4.3
   AND updated_at < now() - interval '10 minutes'
 ORDER BY created_at;
 ```
+
+`PENDING` con `kushki_message = 'ANULACION_EN_CURSO'` y más de 10 minutos: la función escribió la fila antes de llamar a Kushki (M2), pero murió o no pudo cerrarla. Se trata igual que `UNKNOWN`.
 
 El Rider ve el mensaje "…Referencia: …XXXX" con los últimos 4 caracteres del ticket: buscar por `ticket_last4`.
 
 ### 4.2 Procesar
 
-- `UNKNOWN`: verificar en la consola (§1). Si ya está anulado → `SUCCEEDED`. Si no → anularlo/reembolsarlo en la consola y luego `SUCCEEDED`.
+- `UNKNOWN` o `PENDING`: verificar en la consola (§1). Si ya está anulado → `SUCCEEDED`. Si no → anularlo/reembolsarlo en la consola y luego `SUCCEEDED`.
 - `FAILED`: Kushki rechazó la anulación; anular/reembolsar a mano en la consola y luego `SUCCEEDED`. Si no se puede, escalar a Emilio y a soporte de Kushki.
 - En todos los casos, avisar al Rider.
 
@@ -270,7 +272,7 @@ BEGIN
       updated_at = now()
   WHERE id = '<payment_refunds.id>'
     AND reason = 'CHARGE_VOID'
-    AND status IN ('FAILED', 'UNKNOWN');
+    AND status IN ('PENDING', 'FAILED', 'UNKNOWN');
   GET DIAGNOSTICS v_rows = ROW_COUNT;
   IF v_rows <> 1 THEN
     RAISE EXCEPTION 'Se esperaba actualizar 1 fila y se actualizaron %. No se guardó nada.', v_rows;
@@ -287,10 +289,32 @@ WHERE id = '<payment_refunds.id>';
 -- Esperado: 1 fila con status SUCCEEDED.
 ```
 
+### 4.3 `CHARGE_VOID` en `MANUAL_REQUIRED` (cobro aprobado que el sistema NO anuló a propósito)
+
+`kushki-charge` no anula a ciegas cuando no sabe si la reserva existe. Deja una fila `MANUAL_REQUIRED` con uno de estos prefijos fijos en `kushki_message`:
+
+| Prefijo | Qué pasó |
+|---|---|
+| `COBRO_SIN_CONFIRMAR` | Kushki devolvió ticket pero sin `transactionStatus` (o 408/5xx con ticket). |
+| `RPC_SIN_RESPUESTA` | Cobro aprobado y la creación de la reserva no respondió (timeout/red) o no se pudo buscar la reserva. |
+| `ERROR_TRAS_COBRO` | Error inesperado de la función después de recibir el ticket. |
+
+```sql
+SELECT id, right(kushki_ticket, 4) AS ticket_last4, amount_cents, left(kushki_message, 20) AS prefijo, created_at
+FROM public.payment_refunds
+WHERE reason = 'CHARGE_VOID' AND status = 'MANUAL_REQUIRED'
+ORDER BY created_at;
+```
+
+Para cada fila:
+1. Buscar la reserva con ese ticket: `SELECT id, status FROM public.bookings WHERE kushki_ticket = (SELECT kushki_ticket FROM public.payment_refunds WHERE id = '<payment_refunds.id>');`.
+2. **Si la reserva existe:** el cobro es correcto. **No anular.** Cerrar la fila con `SUCCEEDED` y un `kushki_message` del tipo "Reserva <id> existe; cobro válido, no se anula" (misma plantilla `DO $$` de §4.2, cambiando `status IN (...)` por `status = 'MANUAL_REQUIRED'`).
+3. **Si no existe:** verificar el cobro en la consola de Kushki (§1). Si está aprobado, anularlo/reembolsarlo allí, avisar al Rider y cerrar como `SUCCEEDED`. Si Kushki dice que no hubo cobro, cerrar como `FAILED` con ese motivo.
+
 ---
 
 ## 5. Cobros sin confirmar (`CHARGE_UNKNOWN`)
 
 > **Activo solo desde el despliegue de `kushki-charge` en el bloque 2.** La versión desplegada hoy no devuelve `CHARGE_UNKNOWN` ni escribe el log `COBRO SIN CONFIRMAR`.
 
-No dejan fila en `payment_refunds` (el ticket no se conoce). Se detectan en los logs de la Edge Function `kushki-charge` con el texto `COBRO SIN CONFIRMAR` (incluye `clientId`, motivo, tipo, ids de listing/paquete y total en centavos). Buscar en la consola de Kushki un cobro de ese monto a esa hora; si existe y el Rider no tiene reserva, reembolsarlo en la consola y avisar al Rider. Si no se puede identificar el cobro con certeza, escalar a Emilio.
+Si Kushki devolvió ticket, hay fila `MANUAL_REQUIRED` (§4.3). Los casos **sin ticket** (timeout o red al cobrar, cuerpo ilegible, sin ticket) no dejan fila en `payment_refunds`. Se detectan en los logs de la Edge Function `kushki-charge` con el texto `COBRO SIN CONFIRMAR` (incluye `clientId`, motivo, tipo, ids de listing/paquete y total en centavos). Buscar en la consola de Kushki un cobro de ese monto a esa hora; si existe y el Rider no tiene reserva, reembolsarlo en la consola y avisar al Rider. Si no se puede identificar el cobro con certeza, escalar a Emilio.
