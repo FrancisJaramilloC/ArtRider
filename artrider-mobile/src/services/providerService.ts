@@ -209,7 +209,7 @@ export async function getProviderBookings(): Promise<ProviderBooking[]> {
 export async function respondToBooking(
     bookingId: string,
     action: 'accept' | 'reject'
-): Promise<{ error?: string; refunded?: boolean }> {
+): Promise<{ error?: string; refunded?: boolean; notice?: string }> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return { error: 'No autenticado' };
     const res = await fetch(`${SUPABASE_URL}/functions/v1/provider-respond-booking`, {
@@ -218,11 +218,13 @@ export async function respondToBooking(
         body: JSON.stringify({ bookingId, action }),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    // Los códigos REFUND_IN_PROGRESS, REFUND_FAILED y REFUND_UNKNOWN llegan con su mensaje claro en `error`.
     if (!res.ok || data.error) {
         return { error: data.error ?? 'No se pudo procesar la solicitud' };
     }
-    return { refunded: data.refunded };
+    // MANUAL_REQUIRED: la reserva quedó cancelada y ArtRider procesa el reembolso a mano (mensaje que manda el servidor).
+    return { refunded: data.refunded, notice: data.manualRefund ? data.message : undefined };
 }
 /** Marca la reserva como terminada y opcionalmente califica al cliente en el mismo paso. */
 export async function finalizeBooking(
@@ -238,6 +240,8 @@ export async function finalizeBooking(
 
     if (error) {
         console.error('[providerService] finalizeBooking:', error.message);
+        // El servidor bloquea finalizar antes del end_date con un mensaje claro («Solo puedes finalizar esta reserva desde el …»).
+        if (error.message.startsWith('Solo puedes finalizar')) return { error: error.message };
         return { error: 'No se pudo finalizar la reserva.' };
     }
     return {};

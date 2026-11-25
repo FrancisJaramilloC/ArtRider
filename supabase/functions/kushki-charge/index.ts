@@ -20,15 +20,14 @@
 //     cobro y la reserva, el RPC aborta y el cobro se anula.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getPublishableKey, getServiceKey } from '../_shared/keys.ts';
+import { isUncertainHttpStatus, KUSHKI_BASE_URL, KUSHKI_TIMEOUT_MS } from '../_shared/refunds.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Kushki en ambiente de pruebas (UAT). Para producción cambiar a https://api.kushkipagos.com y usar la llave privada de producción.
-const KUSHKI_BASE_URL = 'https://api-uat.kushkipagos.com';
 
 /** Máximo de unidades de un mismo equipo por reserva (igual que la validación de la migración de checkout multi-Partner). */
 const MAX_QUANTITY = 20;
@@ -174,7 +173,8 @@ Deno.serve(async (req: Request) => {
     const chargedAmount = Number((quote.total / 100).toFixed(2));
 
     let kushkiData: any;
-    let kushkiOk = false;
+    let kushkiStatus = 0;
+    let kushkiBodyRead = false;
     try {
       const kushkiRes = await fetch(`${KUSHKI_BASE_URL}/card/v1/charges`, {
         method: 'POST',
@@ -191,21 +191,41 @@ Deno.serve(async (req: Request) => {
             lastName: 'ArtRider',
           },
         }),
+        signal: AbortSignal.timeout(KUSHKI_TIMEOUT_MS),
       });
-      kushkiData = await kushkiRes.json().catch(() => ({}));
-      kushkiOk = kushkiRes.ok;
+      kushkiStatus = kushkiRes.status;
+      // El timeout también cubre la lectura del cuerpo: si falla, no se sabe si Kushki cobró.
+      kushkiData = await kushkiRes.json().then(
+        (parsed: unknown) => {
+          kushkiBodyRead = true;
+          return parsed;
+        },
+        () => ({}),
+      );
     } catch (error) {
-      console.error('[kushki-charge] No se pudo contactar a Kushki:', error);
-      return json(502, { error: 'No pudimos contactar a la pasarela de pago. No se te cobró nada. Inténtalo de nuevo.', code: 'GATEWAY_UNREACHABLE' });
+      // Timeout o red: Kushki pudo haber cobrado. No hay ticket conocido, así que no se intenta anular nada.
+      const reason = error instanceof Error && error.name === 'TimeoutError' ? 'timeout' : 'red';
+      return chargeUnknown(reason, { clientId, cart, listingId, packageId, total: quote.total });
     }
 
-    const approved = kushkiOk && kushkiData?.ticketNumber && kushkiData?.details?.transactionStatus === 'APPROVAL';
-    if (!approved) {
-      return json(402, {
+    // Clasificación de la respuesta del cobro. PAYMENT_DECLINED SOLO ante un rechazo explícito (4xx distinto de 408, o
+    // transactionStatus presente y distinto de APPROVAL). Todo lo demás es incierto: el cobro pudo hacerse.
+    const unknownCtx = { clientId, cart, listingId, packageId, total: quote.total };
+    const declined = () =>
+      json(402, {
         error: kushkiData?.message || kushkiData?.details?.responseText || 'El pago fue rechazado por el banco',
         code: 'PAYMENT_DECLINED',
       });
+
+    if (kushkiStatus < 200 || kushkiStatus >= 300) {
+      return isUncertainHttpStatus(kushkiStatus) ? chargeUnknown(`http_${kushkiStatus}`, unknownCtx) : declined();
     }
+    // 2xx: hace falta cuerpo legible, ticket y un transactionStatus explícito para decidir.
+    if (!kushkiBodyRead) return chargeUnknown('cuerpo_ilegible', unknownCtx);
+    if (!kushkiData?.ticketNumber) return chargeUnknown('sin_ticket', unknownCtx);
+    const transactionStatus = kushkiData?.details?.transactionStatus;
+    if (typeof transactionStatus !== 'string' || !transactionStatus) return chargeUnknown('sin_transaction_status', unknownCtx);
+    if (transactionStatus !== 'APPROVAL') return declined();
     const ticket: string = kushkiData.ticketNumber;
 
     // ── Paso 2: crear la(s) reserva(s) con el ticket y el MISMO total cobrado ─────
@@ -246,8 +266,9 @@ Deno.serve(async (req: Request) => {
       // (No debería ocurrir: el ticket lo acaba de generar Kushki en este cobro.)
       const ticketAlreadyUsed = message.includes('TICKET_YA_USADO');
       // El pago ya se cobró pero la reserva falló: se anula el cobro.
-      const voided = ticketAlreadyUsed ? false : await voidCharge(privateKey, ticket, chargedAmount);
-      console.error('[kushki-charge] Reserva fallida tras el cobro:', message, '· cobro anulado:', voided);
+      const voidResult: VoidResult | null = ticketAlreadyUsed ? null : await voidCharge(admin, privateKey, ticket, quote.total);
+      const voided = voidResult === 'SUCCEEDED';
+      console.error('[kushki-charge] Reserva fallida tras el cobro:', message, '· anulación:', voidResult ?? 'no intentada');
 
       const mapped = message.includes('PRECIO_CAMBIO')
         ? new ApiError(409, 'Los precios cambiaron mientras pagabas. No se te cobró nada; revisa el nuevo total.', 'PRICE_CHANGED')
@@ -260,6 +281,15 @@ Deno.serve(async (req: Request) => {
           const fresh = await getQuote(supabase, { listingId, packageId, cart: cart === true, startDate, endDate, qty });
           extra.quote = { subtotal: fresh.subtotal, serviceFee: fresh.serviceFee, total: fresh.total, days: fresh.days };
         } catch { /* sin desglose: la app recargará los precios */ }
+      }
+      if (voidResult === 'UNKNOWN') {
+        // Timeout, red o HTTP 408/5xx al anular: puede que sí se haya anulado. No se afirma que el cobro siga en pie.
+        // En el texto solo van los últimos 4 caracteres del ticket como referencia para soporte.
+        return json(500, {
+          error: `No pudimos confirmar la anulación del cobro; lo revisaremos y te avisaremos. Referencia: …${ticket.slice(-4)}`,
+          code: 'CHARGE_VOID_FAILED',
+          ticketNumber: ticket,
+        });
       }
       if (!voided && !ticketAlreadyUsed) {
         // Caso grave: hay un cobro sin reserva y no se pudo anular. Se avisa con el ticket para soporte.
@@ -311,17 +341,83 @@ async function getQuote(
   return toQuote((result.data as Record<string, unknown>[] | null)?.[0]);
 }
 
-/** Anula un cobro ya aprobado. Devuelve true si Kushki confirma la anulación. */
-async function voidCharge(privateKey: string, ticket: string, amount: number): Promise<boolean> {
+/** Deja constancia de la anulación en payment_refunds (sin reserva: reason CHARGE_VOID). Nunca lanza: es solo registro. */
+async function recordChargeVoid(
+  admin: SupabaseClient,
+  ticket: string,
+  amountCents: number,
+  status: 'SUCCEEDED' | 'FAILED' | 'UNKNOWN',
+  message: string | null,
+): Promise<void> {
+  const { error } = await admin.from('payment_refunds').insert({
+    booking_id: null,
+    order_id: null,
+    kushki_ticket: ticket,
+    amount_cents: amountCents,
+    reason: 'CHARGE_VOID',
+    status,
+    kushki_message: message,
+  });
+  if (error) {
+    // Solo los últimos 4 caracteres del ticket: suficiente para cruzarlo en la consola sin dejarlo completo en los logs.
+    console.error('[kushki-charge] no se pudo registrar la anulación', { ticketLast4: ticket.slice(-4), status, error: error.message });
+  }
+}
+
+type VoidResult = 'SUCCEEDED' | 'FAILED' | 'UNKNOWN';
+
+/** Respuesta cuando no se sabe si Kushki cobró (timeout, red o respuesta OK sin ticket legible). Nunca afirma "no se cobró". */
+function chargeUnknown(
+  reason: string,
+  ctx: { clientId: string; cart: unknown; listingId: unknown; packageId: unknown; total: number },
+): Response {
+  // Aún no existe pedido/reserva (se crean después del cobro): se registra el contexto disponible, sin tarjeta ni llaves.
+  console.error('[kushki-charge] COBRO SIN CONFIRMAR', {
+    reason,
+    clientId: ctx.clientId,
+    kind: ctx.cart === true ? 'cart' : ctx.packageId ? 'package' : 'listing',
+    listingId: ctx.listingId ?? null,
+    packageId: ctx.packageId ?? null,
+    total: ctx.total,
+  });
+  return json(502, {
+    error: 'No pudimos confirmar tu pago. No lo repitas todavía: revisa tus reservas en unos minutos o escríbenos.',
+    code: 'CHARGE_UNKNOWN',
+  });
+}
+
+/** Anula un cobro ya aprobado y lo registra. SUCCEEDED si Kushki lo confirma, FAILED si lo rechaza con un 4xx, UNKNOWN si timeout/red/408/5xx. */
+async function voidCharge(admin: SupabaseClient, privateKey: string, ticket: string, amountCents: number): Promise<VoidResult> {
   try {
-    const res = await fetch(`${KUSHKI_BASE_URL}/v1/charges/${ticket}`, {
+    const res = await fetch(`${KUSHKI_BASE_URL}/v1/charges/${encodeURIComponent(ticket)}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', 'Private-Merchant-Id': privateKey },
-      body: JSON.stringify({ fullResponse: 'v2', amount: { subtotalIva: 0, subtotalIva0: amount, ice: 0, iva: 0, currency: 'USD' } }),
+      body: JSON.stringify({
+        fullResponse: 'v2',
+        amount: { subtotalIva: 0, subtotalIva0: Number((amountCents / 100).toFixed(2)), ice: 0, iva: 0, currency: 'USD' },
+      }),
+      signal: AbortSignal.timeout(KUSHKI_TIMEOUT_MS),
     });
-    return res.ok;
+    if (res.ok) {
+      await recordChargeVoid(admin, ticket, amountCents, 'SUCCEEDED', null);
+      return 'SUCCEEDED';
+    }
+    const data = await res.json().catch(() => ({}));
+    if (isUncertainHttpStatus(res.status)) {
+      // 408/5xx: Kushki pudo haber anulado. Igual que un timeout: UNKNOWN, sin reintento.
+      console.error('[kushki-charge] respuesta incierta al anular el cobro', { status: res.status });
+      await recordChargeVoid(admin, ticket, amountCents, 'UNKNOWN', `Kushki respondió ${res.status}; verificar en la consola de Kushki.`);
+      return 'UNKNOWN';
+    }
+    // 4xx explícito: Kushki rechazó la anulación.
+    const message = typeof data?.message === 'string' ? data.message : `Kushki respondió ${res.status}`;
+    await recordChargeVoid(admin, ticket, amountCents, 'FAILED', message);
+    return 'FAILED';
   } catch (error) {
-    console.error('[kushki-charge] No se pudo anular el cobro:', error);
-    return false;
+    // Timeout o red: puede haberse anulado. Queda UNKNOWN para revisarlo en la consola de Kushki.
+    // Solo error.name: el message puede incluir la URL con el ticket completo.
+    console.error('[kushki-charge] No se pudo anular el cobro', { reason: error instanceof Error ? error.name : 'desconocido' });
+    await recordChargeVoid(admin, ticket, amountCents, 'UNKNOWN', 'Timeout o error de red; verificar en la consola de Kushki.');
+    return 'UNKNOWN';
   }
 }

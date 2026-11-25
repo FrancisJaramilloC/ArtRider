@@ -68,8 +68,11 @@ export async function cancelBooking(bookingId: string): Promise<{ error?: string
       body: JSON.stringify({ bookingId }),
     });
     const data = (await res.json().catch(() => ({}))) as { success?: boolean; error?: string; code?: string };
+    // manualRefund (MANUAL_REQUIRED) también es éxito: la reserva queda cancelada y ArtRider procesa el reembolso a mano.
     if (res.ok && data.success) return {};
     if (data.code === 'NOT_CANCELLABLE') return { error: 'Esta reserva ya no se puede cancelar.' };
+    if (data.code === 'REFUND_IN_PROGRESS') return { error: 'Ya hay un reembolso en curso para esta reserva.' };
+    if (data.code === 'REFUND_UNKNOWN') return { error: 'Estamos verificando el reembolso; no lo intentes de nuevo.' };
     console.error('[bookingsService] cancelBooking:', res.status, data.code ?? '', data.error ?? '');
     return { error: CANCEL_FAILED_MESSAGE };
   } catch (e) {
