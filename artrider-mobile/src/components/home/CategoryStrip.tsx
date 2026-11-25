@@ -21,9 +21,10 @@ export function CategoryStrip({
         <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            // flexGrow 0: el contenedor mide lo que miden las chips (sin recortes ni huecos).
-            style={{ flexGrow: 0 }}
-            contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, alignItems: 'center' }}
+            // flexGrow y flexShrink 0: el contenedor mide lo que miden las chips. Sin flexShrink 0, la lista de abajo
+            // lo comprime (ScrollView trae flexShrink 1) y se recorta el borde inferior de las chips.
+            style={{ flexGrow: 0, flexShrink: 0 }}
+            contentContainerStyle={{ gap: Spacing.two, paddingHorizontal: gutter, paddingBottom: Spacing.snug, alignItems: 'center' }}
         >
             {CATEGORIES.map(({ id, label, icon }) => (
                 <Chip key={id} label={label} icon={icon as IconName} active={activeCategory === id} onPress={() => onSelect(id)} />
