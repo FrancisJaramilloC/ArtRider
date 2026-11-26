@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install)",
+      "Bash(pnpm exec tsc *)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm typecheck *)",
+      "PowerShell(pnpm install)",
+      "PowerShell(pnpm exec tsc *)",
+      "PowerShell(pnpm lint *)",
+      "PowerShell(pnpm test *)",
+      "PowerShell(pnpm typecheck *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git switch *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git pull *)",
+      "Bash(git fetch *)",
+      "Bash(git push *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr comment *)",
+      "PowerShell(git status *)",
+      "PowerShell(git diff *)",
+      "PowerShell(git log *)",
+      "PowerShell(git switch *)",
+      "PowerShell(git add *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git pull *)",
+      "PowerShell(git fetch *)",
+      "PowerShell(git push *)",
+      "PowerShell(gh pr create *)",
+      "PowerShell(gh pr view *)",
+      "PowerShell(gh pr comment *)"
+    ],
+    "ask": [
+      "Bash(git push * develop)",
+      "Bash(git push * develop *)",
+      "Bash(git push *:develop*)",
+      "Bash(git push *refs/heads/develop*)",
+      "PowerShell(git push * develop)",
+      "PowerShell(git push * develop *)",
+      "PowerShell(git push *:develop*)",
+      "PowerShell(git push *refs/heads/develop*)",
+      "Read(//**/.env)",
+      "Read(//**/.env.*)",
+      "Read(//**/*.env)",
+      "Bash(pnpm dlx *)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm remove *)",
+      "Bash(git clean *)",
+      "Bash(git worktree remove --force *)",
+      "Bash(git worktree remove -f *)",
+      "Bash(git worktree remove * --force)",
+      "Bash(git worktree remove * -f)",
+      "PowerShell(pnpm dlx *)",
+      "PowerShell(pnpm add *)",
+      "PowerShell(pnpm remove *)",
+      "PowerShell(git clean *)",
+      "PowerShell(git worktree remove --force *)",
+      "PowerShell(git worktree remove -f *)",
+      "PowerShell(git worktree remove * --force)",
+      "PowerShell(git worktree remove * -f)"
+    ],
+    "deny": [
+      "Read(//c/dev/_privado/**)",
+      "Edit(//c/dev/_privado/**)",
+      "Bash(*_privado*)",
+      "PowerShell(*_privado*)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard *)",
+      "Bash(supabase db push *)",
+      "PowerShell(git push --force *)",
+      "PowerShell(git push -f *)",
+      "PowerShell(git reset --hard *)",
+      "PowerShell(supabase db push *)",
+      "Edit(/.claude/settings.json)",
+      "Edit(/.claude/settings.local.json)",
+      "Edit(/.claude/hooks/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard.mjs"
+            ],
+            "timeout": 60,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell|Monitor",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PROJECT_DIR}/.claude/hooks/pre-commit-tsc.mjs"
+            ],
+            "timeout": 600,
+            "onFailure": "block",
+            "statusMessage": "Comprobando TypeScript antes del commit"
+          }
+        ]
+      }
+    ]
+  }
+}
