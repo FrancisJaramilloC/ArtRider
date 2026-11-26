@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, TextInput } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
@@ -41,6 +41,9 @@ const KUSHKI_HTML = `
 </html>
 `;
 
+/** Tiempo máximo para que el WebView devuelva el token de la tarjeta. */
+const TOKEN_TIMEOUT_MS = 30_000;
+
 type Props = {
     amount: number; // en centavos
     onSuccess: (token: string) => void;
@@ -62,6 +65,18 @@ export function KushkiPaymentForm({ amount, onSuccess, onError, disabled = false
     // Candado síncrono: `processing` es estado y no se ve hasta el siguiente render, así que un doble toque rápido pediría dos
     // tokens. Con el ref solo se pide uno por envío, y un mensaje del WebView que no corresponde a un envío se descarta.
     const submittingRef = useRef(false);
+    // Si el WebView nunca contesta (script de Kushki sin cargar, sin red, callback que no llega), el envío caduca y se libera.
+    const tokenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    function clearTokenTimer() {
+        if (tokenTimerRef.current) {
+            clearTimeout(tokenTimerRef.current);
+            tokenTimerRef.current = null;
+        }
+    }
+
+    // Al desmontar no debe quedar ningún temporizador vivo.
+    useEffect(() => clearTokenTimer, []);
 
     function handleCardNumberChange(text: string) {
         const digits = text.replace(/\D/g, '');
@@ -84,6 +99,16 @@ export function KushkiPaymentForm({ amount, onSuccess, onError, disabled = false
         if (!isValid) return;
         submittingRef.current = true;
         setProcessing(true);
+        // Sin token no hay cobro: si no llega respuesta en TOKEN_TIMEOUT_MS, se libera el envío y se puede reintentar.
+        // Un token que llegue después se descarta (submittingRef ya es false).
+        clearTokenTimer();
+        tokenTimerRef.current = setTimeout(() => {
+            tokenTimerRef.current = null;
+            if (!submittingRef.current) return;
+            submittingRef.current = false;
+            setProcessing(false);
+            onError('No pudimos validar tu tarjeta. Inténtalo de nuevo.');
+        }, TOKEN_TIMEOUT_MS);
 
         const [month, year] = expiry.split('/');
         const cleanCardNumber = cardNumber.replace(/\D/g, '');
@@ -104,6 +129,7 @@ export function KushkiPaymentForm({ amount, onSuccess, onError, disabled = false
     }
 
     function handleWebViewMessage(event: WebViewMessageEvent) {
+        clearTokenTimer();
         setProcessing(false);
         // Token que no pidió ningún envío en curso (p. ej. un segundo token tras un error reintentable): no lanza otro cobro.
         if (!submittingRef.current) return;

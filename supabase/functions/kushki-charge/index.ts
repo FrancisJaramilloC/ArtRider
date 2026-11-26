@@ -315,13 +315,22 @@ Deno.serve(async (req: Request) => {
       json(200, { success: true, ...ids, subtotal: quote.subtotal, serviceFee: quote.serviceFee, total: quote.total });
 
     if (cart === true) {
-      // Rama carrito sin cambios (se elimina en otro bloque): sin timeout propio ni búsqueda por ticket.
-      const { data, error } = await admin.rpc('create_cart_order_for', {
-        p_client_id: clientId, p_kushki_ticket: ticket, p_expected_total: quote.total,
-      });
-      rpcError = error;
-      orderId = data?.[0]?.order_id;
-      rpcOutcome = rpcError || !orderId ? 'EXPLICIT_ERROR' : 'OK';
+      // Rama carrito (se elimina en otro bloque): timeout propio y la misma clasificación que listing/package, pero SIN búsqueda
+      // por ticket. Un resultado incierto nunca se anula (decideAfterRpc con lookup = null → MANUAL_REQUIRED); solo un error
+      // explícito anula.
+      try {
+        const res = await admin
+          .rpc('create_cart_order_for', {
+            p_client_id: clientId, p_kushki_ticket: ticket, p_expected_total: quote.total,
+          })
+          .abortSignal(AbortSignal.timeout(RPC_TIMEOUT_MS));
+        rpcError = res.error;
+        orderId = res.data?.[0]?.order_id;
+        rpcOutcome = classifyRpcOutcome({ status: res.status, error: res.error, bookingId: orderId });
+      } catch (e) {
+        console.error('[kushki-charge] el RPC del carrito lanzó', { reason: e instanceof Error ? e.name : 'desconocido' });
+        rpcOutcome = classifyRpcOutcome({ threw: true });
+      }
     } else {
       // Timeout propio (plan §3.3). Abortar NO cancela la transacción: por eso un resultado incierto nunca se anula a ciegas.
       try {
@@ -354,7 +363,7 @@ Deno.serve(async (req: Request) => {
       const ticketAlreadyUsed = message.includes('TICKET_YA_USADO');
 
       // Respuesta del RPC perdida o TICKET_YA_USADO (plan §3.4, §10): antes de decidir se busca la reserva por
-      // bookings.kushki_ticket + client_id. La rama carrito no busca (sin cambios en este bloque).
+      // bookings.kushki_ticket + client_id. La rama carrito no busca (se elimina en otro bloque; ver plan §11).
       const lookup = cart === true ? null : await findBookingByTicket(admin, ticket, clientId);
       const decision = decideAfterRpc(rpcOutcome, lookup, ticketAlreadyUsed);
       // Solo el código y el mensaje truncado: nunca el detalle completo del error.

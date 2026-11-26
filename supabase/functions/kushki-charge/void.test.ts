@@ -32,14 +32,25 @@ type EqCall = { table: string; op: Op; column: string; value: unknown };
  * - `eq`: cada filtro .eq(columna, valor) con su tabla y operación.
  */
 function fakeAdmin(script: { insert?: Step[]; update?: Step[]; select?: Step[] }, events: string[] = []) {
-  const calls = { insert: [] as Record<string, unknown>[], update: [] as Record<string, unknown>[], eq: [] as EqCall[], selectColumns: [] as string[] };
+  const calls = {
+    insert: [] as Record<string, unknown>[],
+    update: [] as Record<string, unknown>[],
+    eq: [] as EqCall[],
+    selectColumns: [] as string[],
+    /** Cada operación que llamó a .abortSignal() con una AbortSignal real (tabla + operación). */
+    abortSignals: [] as Array<{ table: string; op: Op }>,
+  };
   const next = (kind: Op) => (): Promise<unknown> => {
     const step = script[kind]?.shift() ?? { data: null, error: { code: 'SIN_GUION' } };
     return step === 'throw' ? Promise.reject(new TypeError('fallo de red simulado')) : Promise.resolve({ data: null, error: null, ...step });
   };
   const chain = (table: string, op: Op, run: () => Promise<unknown>) => {
     const self: Record<string, unknown> = {};
-    for (const m of ['single', 'limit', 'abortSignal']) self[m] = () => self;
+    for (const m of ['single', 'limit']) self[m] = () => self;
+    self.abortSignal = (signal: unknown) => {
+      if (signal instanceof AbortSignal) calls.abortSignals.push({ table, op });
+      return self;
+    };
     self.select = (cols: string) => {
       if (op === 'select') calls.selectColumns.push(cols);
       return self;
@@ -307,4 +318,57 @@ Deno.test('TICKET_YA_USADO nunca produce VOID, con cualquier combinación', () =
       assertFalse(decideAfterRpc(rpc, lookup, true).action === 'VOID', `${rpc} · ${lookup?.status ?? 'sin búsqueda'}`);
     }
   }
+});
+
+// ── Límites de tiempo y exhaustividad de la decisión (revisión de f20c8b4) ───────────────────────────────────────────
+
+Deno.test('Cada lectura/escritura de void.ts usa abortSignal (INSERT PENDING, UPDATE, comprobación, respaldo, búsqueda)', async () => {
+  // Camino con UPDATE: INSERT PENDING + UPDATE.
+  const a = fakeAdmin({ insert: [{ data: { id: 'r1' } }], update: [{ data: [{ id: 'r1' }] }] });
+  await withFetch(ok200, [], async () => {
+    await voidCharge(a.admin, 'pk', TICKET, 604);
+  });
+  assertEquals(a.calls.abortSignals, [{ table: 'payment_refunds', op: 'insert' }, { table: 'payment_refunds', op: 'update' }]);
+
+  // Camino de respaldo: INSERT PENDING fallido + comprobación previa + INSERT de respaldo.
+  const b = fakeAdmin({ insert: [{ error: { code: '42501' } }, { data: { id: 'r2' } }], select: [{ data: [] }] });
+  await withFetch(ok200, [], async () => {
+    await voidCharge(b.admin, 'pk', TICKET, 604);
+  });
+  assertEquals(b.calls.abortSignals, [
+    { table: 'payment_refunds', op: 'insert' },
+    { table: 'payment_refunds', op: 'select' },
+    { table: 'payment_refunds', op: 'insert' },
+  ]);
+
+  // Búsqueda por ticket.
+  const c = fakeAdmin({ select: [{ data: [] }] });
+  await findBookingByTicket(c.admin, TICKET, 'c1');
+  assertEquals(c.calls.abortSignals, [{ table: 'bookings', op: 'select' }]);
+});
+
+Deno.test('decideAfterRpc: en las 30 combinaciones, VOID sale exactamente en las 2 que define el plan', () => {
+  const rpcs: RpcOutcome[] = ['OK', 'EXPLICIT_ERROR', 'UNCERTAIN'];
+  const lookups: Array<BookingLookup | null> = [
+    null,
+    { status: 'NOT_FOUND' },
+    { status: 'ERROR' },
+    { status: 'FOUND', bookingId: 'b' },
+    { status: 'FOUND_INACTIVE', bookingId: 'b', bookingStatus: 'CANCELLED' },
+  ];
+  const voids: string[] = [];
+  let total = 0;
+  for (const rpc of rpcs) {
+    for (const lookup of lookups) {
+      for (const used of [false, true]) {
+        total++;
+        const decision = decideAfterRpc(rpc, lookup, used);
+        assert(['SUCCESS', 'VOID', 'MANUAL_REQUIRED'].includes(decision.action));
+        if (decision.action === 'VOID') voids.push(`${rpc}|${lookup?.status ?? 'sin_busqueda'}|${used}`);
+      }
+    }
+  }
+  assertEquals(total, 30);
+  // Plan §10: solo se anula con error explícito del RPC, sin reserva (no encontrada o carrito sin búsqueda) y sin TICKET_YA_USADO.
+  assertEquals(voids.sort(), ['EXPLICIT_ERROR|NOT_FOUND|false', 'EXPLICIT_ERROR|sin_busqueda|false']);
 });

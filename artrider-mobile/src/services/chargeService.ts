@@ -25,10 +25,11 @@ export type ChargePayload =
     | { kind: 'cart' };
 
 /**
- * Tiempo máximo de espera de la app. Mayor que el peor caso del servidor (≈ 75 s: cobro 25 s + reserva 15 s + búsqueda 5 s +
- * anulación 25 s) y menor que el límite de la Edge Function (150 s): la app corta antes que la plataforma y muestra SU mensaje.
+ * Tiempo máximo de espera de la app. Mayor que el peor caso del servidor (≈ 115 s, plan §10: plazo previo 25 s + cobro 25 s +
+ * reserva 15 s + búsqueda 5 s + anulación con registro 45 s) con 20 s de margen para red y arranque en frío, y 15 s por debajo del
+ * límite de la Edge Function (150 s): la app corta antes que la plataforma y muestra SU mensaje.
  */
-export const CHARGE_CLIENT_TIMEOUT_MS = 120_000;
+export const CHARGE_CLIENT_TIMEOUT_MS = 135_000;
 
 /** El cobro pudo hacerse: no se debe pagar de nuevo. TICKET_ALREADY_USED llega después de un cobro aprobado que no se anula. */
 const UNCERTAIN_CODES = new Set(['CHARGE_TIMEOUT', 'NETWORK', 'CHARGE_UNKNOWN', 'CHARGE_VOID_FAILED', 'UNEXPECTED', 'TICKET_ALREADY_USED']);

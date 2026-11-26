@@ -22,7 +22,7 @@
 | 4 · Rastro de cobro sin confirmar | Reutilizar `reason = 'CHARGE_VOID'` + `status = 'MANUAL_REQUIRED'` + **mensaje fijo**, sin SQL. |
 | 5 · Ticket en la respuesta | El ticket **completo** (`ticketNumber`) va al cliente **solo si no se pudo guardar el rastro** en `payment_refunds`. En los demás casos, solo `Referencia …XXXX` (últimos 4), en el texto y sin campo `ticketNumber`. |
 | 6 · Búsqueda por ticket | Solo listing y package. |
-| 7 · Límite de tiempo | Peor caso del servidor ≈ 115 s con todos los pasos acotados y plazo previo al cobro de 25 s (cálculo en §10), por debajo de los 120 s del cliente (§4.2). |
+| 7 · Límite de tiempo | Peor caso del servidor ≈ 115 s con todos los pasos acotados y plazo previo al cobro de 25 s (cálculo en §10), por debajo de los 135 s del cliente (§4.2, §11). |
 | 1 · Significado de D/E/F | **Confirmada:** D/E/F = la anulación terminó en SUCCEEDED (D) / FAILED (E) / UNKNOWN (F) pero falló el INSERT de la fila `CHARGE_VOID`. |
 
 ---
@@ -182,9 +182,9 @@ Cambio mínimo y compartido: sin rediseñar el carrito ni tocar el WebView de Ku
 
 ### 4.2 Timeout del `fetch` en `chargeService.ts` (d)
 
-- `AbortController` con **`CHARGE_CLIENT_TIMEOUT_MS = 120_000`** (120 s):
-  - es mayor que el peor caso del servidor (≈ 115 s, cálculo en §10) con ≈ 5 s de margen para red y arranque en frío;
-  - es menor que el límite de 150 s de la Edge Function, así que la app corta antes que la plataforma y siempre muestra **nuestro** mensaje.
+- `AbortController` con **`CHARGE_CLIENT_TIMEOUT_MS = 135_000`** (135 s; era 120 s, ver §11):
+  - es mayor que el peor caso del servidor (≈ 115 s, cálculo en §10) con ≈ 20 s de margen para red y arranque en frío;
+  - es 15 s menor que el límite de 150 s de la Edge Function, así que la app corta antes que la plataforma y siempre muestra **nuestro** mensaje.
 - Al cortar (`AbortError`), devuelve `{ code: 'CHARGE_TIMEOUT', error: copy.paymentUncertain }`. Es un mensaje de cobro incierto ("No pagues de nuevo; revisa tus reservas"), no un error genérico.
 - El `catch` de red actual (`NETWORK`) usa el mismo texto incierto y deja de pedir "antes de volver a intentarlo".
 - **Respuesta no JSON o 5xx sin `code`** (p. ej. 504/546 de la plataforma): hoy cae en el genérico "No se pudo procesar el pago". Se trata como incierta (`code: 'CHARGE_UNKNOWN'`, `copy.paymentUncertain`), porque el servidor pudo haber cobrado.
@@ -243,7 +243,7 @@ Cambio mínimo y compartido: sin rediseñar el carrito ni tocar el WebView de Ku
 
 **Cliente** (commit aparte, después del servidor):
 
-11. `chargeService.ts`: timeout de 120 s, `isUncertainChargeCode` y 5xx inciertos; textos en `copy.ts`.
+11. `chargeService.ts`: timeout de 120 s (luego 135 s, §11), `isUncertainChargeCode` y 5xx inciertos; textos en `copy.ts`.
 12. `usePaymentGuard` + prop `disabled` en `KushkiPaymentForm`.
 13. Las 3 pantallas: `disabled`, bloqueo tras incierto, "Ver mis reservas", desbloqueo al salir.
 
@@ -270,8 +270,8 @@ Nada de §3 ni de §4 necesita SQL. Opcional para más adelante, en `docs/sql/`:
 | **Producción: `contactDetails` va fijo** en `kushki-charge` (email `test@artrider.com`, documento `1700000000`, nombre de prueba) | Aceptable en UAT. Antes de pasar a producción hay que enviar los datos reales del Rider (email y documento del perfil). No se cambia en este bloque. |
 | RPC abortado que hace COMMIT después de la búsqueda | No se anula si el resultado es UNCERTAIN (§3.4). |
 | Más filas `MANUAL_REQUIRED`/`PENDING` que revisar a mano | Se filtran por prefijo en el runbook. Volumen esperado: casi cero. |
-| Tiempo: peor caso ≈ 115 s (cálculo en §10) | Cliente a 120 s, límite de plataforma 150 s. El margen sobre el cliente es corto (≈ 5 s): un arranque en frío lento puede hacer que la app corte antes y muestre "incierto"; el servidor deja igual su rastro. |
-| El cliente corta a 120 s mientras el servidor sigue | Solo pasa si el servidor supera su propio peor caso. El mensaje es "incierto, no pagues de nuevo" y el rastro lo deja el servidor. |
+| Tiempo: peor caso ≈ 115 s (cálculo en §10) | Cliente a 135 s (≈ 20 s de margen), límite de plataforma 150 s (15 s por encima del cliente). Si aun así la app corta antes, muestra "incierto" y el servidor deja igual su rastro. |
+| El cliente corta a 135 s mientras el servidor sigue | Solo pasa si el servidor supera su propio peor caso. El mensaje es "incierto, no pagues de nuevo" y el rastro lo deja el servidor. |
 | Rider bloqueado tras un incierto que en realidad fue bien | Solo puede ir a "Ver mis reservas", donde verá la reserva. Se desbloquea al salir de la pantalla. |
 | Cambiar el orden altera los TS2345 de la línea base | `deno check` en cada commit: deben seguir siendo 4 TS2345 equivalentes. |
 | `.abortSignal()` en `rpc()` con `esm.sh/@supabase/supabase-js@2` sin fijar | Confirmar con `deno check`. Si no existe: `Promise.race` + timeout. |
@@ -303,7 +303,7 @@ Nada de §3 ni de §4 necesita SQL. Opcional para más adelante, en `docs/sql/`:
 | **Doble toque rápido en "Pagar" → un solo cobro** (g) | **Sí** | Ver abajo. |
 | Botón desactivado durante el cobro | **Sí** | Tras tocar "Pagar", el botón y los campos quedan grises hasta la respuesta. |
 | Bloqueo tras incierto | **Parcial** | Activar el modo avión justo después de tocar "Pagar" (→ `NETWORK`). Debe quedar solo "Ver mis reservas"; al salir y volver, el formulario se desbloquea. ⚠️ El servidor puede haber cobrado: revisar en la consola UAT. |
-| Timeout de 120 s del cliente | **No** a voluntad | Solo con `deno test`/simulación, o bajando la constante temporalmente en un build de desarrollo. |
+| Timeout de 135 s del cliente | **No** a voluntad | Solo con `deno test`/simulación, o bajando la constante temporalmente en un build de desarrollo. |
 | Anulación real (RPC falla tras cobrar) | **Difícil** | Solo por carrera: dos iPhones pagando la última unidad. No es reproducible a voluntad. |
 | `PAYMENT_CONFIG`, timeout/5xx de Kushki, `sin_transaction_status`, RPC perdido, fallo de INSERT/UPDATE (D/E/F), `catch` con bandera | **No** | Solo revisión de código + `deno test` con dobles. |
 
@@ -377,6 +377,42 @@ Ninguna abierta. Todas las decisiones están en la tabla "Decisiones tomadas" de
 | **Total** | **≈ 115 s** |
 
 - La otra rama (`MANUAL_REQUIRED`) suma 25 + 15 + 5 + 5 = 50 s después del plazo previo. El rastro del `catch` exterior (5 s) sustituye a los pasos que faltaban, no se suma al final.
-- 115 s < 120 s del cliente < 150 s de la plataforma. El margen de ≈ 5 s cubre la red y el arranque en frío, que no cuentan en el reloj del servidor.
-- Se eligió un plazo previo de **25 s** (no 30 s): con 30 s el total llegaría a 120 s, igual al timeout del cliente.
-- Las filas `TICKET_YA_USADO` y `RESERVA_NO_ACTIVA` aparecen en la consulta general de `MANUAL_REQUIRED` del runbook §4.3. Su tabla de prefijos aún no las nombra.
+- 115 s < 120 s (objetivo original del cliente) < 135 s (timeout actual del cliente, §11) < 150 s de la plataforma.
+- Se eligió un plazo previo de **25 s** (no 30 s): con 30 s el total llegaría a 120 s, el timeout original del cliente.
+- Las filas `TICKET_YA_USADO` y `RESERVA_NO_ACTIVA` aparecen en la consulta general de `MANUAL_REQUIRED` del runbook §4.3. Su tabla de prefijos aún no las nombra (deuda, §11).
+
+---
+
+## 11. Segunda revisión (commit f20c8b4): correcciones y deuda
+
+### Aplicado
+
+| # | Cambio | Dónde |
+|---|---|---|
+| 1 | Rama carrito: `create_cart_order_for` con timeout propio (15 s) y `classifyRpcOutcome`. Un resultado incierto (timeout, status 0, 408, 5xx sin SQLSTATE) **no se anula**: `decideAfterRpc` con `lookup = null` da `MANUAL_REQUIRED` (`RPC_SIN_RESPUESTA`) + `CHARGE_UNKNOWN`. Solo un error explícito anula. **No se busca el pedido por ticket** (`orders.kushki_ticket`): el carrito se elimina en otro bloque. | `index.ts` |
+| 2 | Tests: el doble registra cada `.abortSignal()` real; test exhaustivo de `decideAfterRpc` (30 combinaciones, VOID solo en 2). | `void.test.ts` |
+| 3 | `KushkiPaymentForm`: si el WebView no responde en 30 s, se libera el envío y se muestra "No pudimos validar tu tarjeta. Inténtalo de nuevo." (sin token no hay cobro). El temporizador se limpia con cualquier mensaje y al desmontar. Un token que llegue después se descarta. | app |
+| 4 | `CHARGE_CLIENT_TIMEOUT_MS` = **135 s** (antes 120 s). | `chargeService.ts` |
+
+### Tiempos con el carrito acotado y el cliente a 135 s
+
+| Camino | Peor caso del servidor |
+|---|---|
+| Listing/package, rama de anulación | 25 (plazo previo) + 25 (cobro) + 15 (RPC) + 5 (búsqueda) + 45 (anulación con registro y cotización) = **≈ 115 s** |
+| Listing/package, `MANUAL_REQUIRED` | 25 + 25 + 15 + 5 + 5 = ≈ 75 s |
+| Carrito, rama de anulación (sin búsqueda) | 25 + 25 + 15 + 45 = ≈ 110 s |
+| Carrito, `MANUAL_REQUIRED` | 25 + 25 + 15 + 5 = ≈ 70 s |
+| Cobro sin confirmar (con ticket) | 25 + 25 + 5 = ≈ 55 s |
+
+- Margen del cliente sobre el peor caso del servidor: 135 − 115 = **≈ 20 s**, para la red de ida y vuelta y el arranque en frío, que no cuentan en el reloj del servidor.
+- Margen de la plataforma sobre el cliente: 150 − 135 = **15 s**. La app corta antes que la plataforma y siempre muestra su propio mensaje (incierto, "No pagues de nuevo").
+
+### Deuda registrada (NO implementada)
+
+| Id | Deuda | Por qué no ahora |
+|---|---|---|
+| m-a | **Token tardío de un envío anterior:** si el envío A caduca (30 s) y el Rider reintenta (C), un token tardío de A puede llegar antes que el de C y aceptarse como el de C; el de C se descarta. Sigue habiendo un solo cobro, pero con el token de A (que pudo pedirse con otro importe). | Arreglarlo exige numerar los envíos y devolver el número desde el HTML del WebView, y CLAUDE.md prohíbe tocar su comportamiento. |
+| m-b | **La búsqueda por ticket acepta cualquier reserva activa del Rider con ese ticket**, sin comprobar `listing_id`/`package_id` ni fechas. Con `TICKET_YA_USADO`, en teoría podría responder éxito con una reserva de otra compra. | Requiere que Kushki repita un ticket: no es realista. |
+| m-c | **Si la fila ya existía antes del INSERT de respaldo, se queda en `PENDING`** aunque ya se sepa el resultado de Kushki. `chargeEventExists` debería devolver el `id` para cerrarla con `finishChargeEvent`. | El runbook §4.1 la recoge a los 10 min; es solo trabajo manual extra. |
+| runbook | **El runbook §4.3 no nombra los prefijos `TICKET_YA_USADO` ni `RESERVA_NO_ACTIVA`**. Las filas sí salen en su consulta general de `MANUAL_REQUIRED`. | Fuera de la lista de este commit. |
+| carrito | **El carrito no busca su pedido por ticket** (`orders.kushki_ticket`) antes de decidir. | La rama del carrito se elimina en otro bloque. |
