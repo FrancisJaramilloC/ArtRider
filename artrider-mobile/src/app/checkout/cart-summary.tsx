@@ -21,6 +21,9 @@ import { formatShortDate } from '@/utils/format';
 import { goToReservationsAfterPayment } from '@/utils/navigation';
 import { usePricing } from '@/contexts/PricingContext';
 import { usePriceChange } from '@/hooks/usePriceChange';
+import { usePaymentGuard } from '@/hooks/usePaymentGuard';
+import { COPY } from '@/constants/copy';
+import { formatChargeError } from '@/services/chargeService';
 
 function formatDateRange(start: string, end: string): string {
     return `${formatShortDate(start)} – ${formatShortDate(end)}`;
@@ -33,7 +36,7 @@ export default function CartSummaryScreen() {
     const router = useRouter();
     const colors = useTheme();
 
-    const [confirming, setConfirming] = useState(false);
+    const guard = usePaymentGuard();
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
@@ -107,26 +110,33 @@ export default function CartSummaryScreen() {
                 />
             </SummaryCard>
 
-            {error && <ErrorBanner message={error} />}
+            {(error ?? (guard.locked ? COPY.paymentUncertain : null)) && <ErrorBanner message={error ?? COPY.paymentUncertain} />}
 
             <View>
-                <KushkiPaymentForm
-                    amount={total}
-                    onError={(err) => setError(err)}
-                    onSuccess={async (kushkiToken) => {
-                        setError(null);
-                        setConfirming(true);
-                        const result = await chargeAndCreateCartOrder(kushkiToken, total);
-                        setConfirming(false);
+                {guard.locked ? (
+                    // Cobro incierto: no se puede volver a pagar aquí; se desbloquea al salir de la pantalla.
+                    <Button label={COPY.paymentSeeReservations} onPress={() => goToReservationsAfterPayment(router)} />
+                ) : (
+                    <KushkiPaymentForm
+                        amount={total}
+                        disabled={guard.inFlight}
+                        onError={(err) => setError(err)}
+                        onSuccess={async (kushkiToken) => {
+                            const result = await guard.run(() => {
+                                setError(null);
+                                return chargeAndCreateCartOrder(kushkiToken, total);
+                            });
+                            if (!result) return;
 
-                        if (result.error) {
-                            setError(priceChange.handle(result) ?? result.error);
-                            return;
-                        }
-                        setSuccess(true);
-                    }}
-                />
-                {confirming && (
+                            if (result.error) {
+                                setError(priceChange.handle(result) ?? formatChargeError(result));
+                                return;
+                            }
+                            setSuccess(true);
+                        }}
+                    />
+                )}
+                {guard.inFlight && (
                     <View style={{ marginTop: Spacing.two, alignItems: 'center' }}>
                         <Text variant="caption" color="textSecondary">
                             Creando tus reservas...

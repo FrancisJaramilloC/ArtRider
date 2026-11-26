@@ -100,8 +100,8 @@ export async function chargeAndCreateCartOrder(
     kushkiToken: string,
     /** Total (centavos) que el Rider tiene en pantalla: el servidor lo compara con el oficial. */
     expectedTotal: number,
-): Promise<{ orderId?: string; total?: number; error?: string; code?: string; quote?: ChargeQuote }> {
+): Promise<{ orderId?: string; total?: number; error?: string; code?: string; quote?: ChargeQuote; ticketNumber?: string; uncertain?: boolean }> {
     const result = await chargeWithKushki(kushkiToken, { kind: 'cart' }, expectedTotal);
-    if (result.error) return { error: result.error, code: result.code, quote: result.quote };
+    if (result.error) return { error: result.error, code: result.code, quote: result.quote, ticketNumber: result.ticketNumber, uncertain: result.uncertain };
     return { orderId: result.orderId, total: result.total };
 }

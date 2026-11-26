@@ -11,14 +11,19 @@ import { Spacing } from '@/constants/theme';
 import { getPackageById, type PackageWithItems } from '@/services/packagesService';
 import { chargeAndCreatePackageBooking } from '@/services/bookingsService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
+import { Button } from '@/components/ui/Button';
+import { COPY } from '@/constants/copy';
 import { usePricing } from '@/contexts/PricingContext';
+import { usePaymentGuard } from '@/hooks/usePaymentGuard';
 import { usePriceChange } from '@/hooks/usePriceChange';
+import { formatChargeError } from '@/services/chargeService';
+import { goToReservationsAfterPayment } from '@/utils/navigation';
 
 export default function PackageCheckoutSummaryScreen() {
     const { id, from, to } = useLocalSearchParams<{ id: string; from: string; to: string }>();
     const router = useRouter();
 
-    const [confirming, setConfirming] = useState(false);
+    const guard = usePaymentGuard();
     const [error, setError] = useState<string | null>(null);
 
     const { status, data: pkg, error: loadError, reload } = useAsyncData<PackageWithItems | null>(() => getPackageById(id), { enabled: !!id, deps: [id] });
@@ -49,30 +54,37 @@ export default function PackageCheckoutSummaryScreen() {
                 />
             </SummaryCard>
 
-            {error && <ErrorBanner message={error} />}
+            {(error ?? (guard.locked ? COPY.paymentUncertain : null)) && <ErrorBanner message={error ?? COPY.paymentUncertain} />}
 
             <View>
-                <KushkiPaymentForm
-                    amount={total}
-                    onError={(err) => setError(err)}
-                    onSuccess={async (kushkiToken) => {
-                        setError(null);
-                        setConfirming(true);
-                        const result = await chargeAndCreatePackageBooking(kushkiToken, id, from, to, total);
-                        setConfirming(false);
+                {guard.locked ? (
+                    // Cobro incierto: no se puede volver a pagar aquí; se desbloquea al salir de la pantalla.
+                    <Button label={COPY.paymentSeeReservations} onPress={() => goToReservationsAfterPayment(router)} />
+                ) : (
+                    <KushkiPaymentForm
+                        amount={total}
+                        disabled={guard.inFlight}
+                        onError={(err) => setError(err)}
+                        onSuccess={async (kushkiToken) => {
+                            const result = await guard.run(() => {
+                                setError(null);
+                                return chargeAndCreatePackageBooking(kushkiToken, id, from, to, total);
+                            });
+                            if (!result) return;
 
-                        if (result.error) {
-                            setError(priceChange.handle(result) ?? result.error);
-                            return;
-                        }
+                            if (result.error) {
+                                setError(priceChange.handle(result) ?? formatChargeError(result));
+                                return;
+                            }
 
-                        router.replace({
-                            pathname: '/checkout/success/[id]',
-                            params: { id: result.bookingId!, listingTitle: pkg.title, from, to, total: String(result.total ?? total) },
-                        } as never);
-                    }}
-                />
-                {confirming && (
+                            router.replace({
+                                pathname: '/checkout/success/[id]',
+                                params: { id: result.bookingId!, listingTitle: pkg.title, from, to, total: String(result.total ?? total) },
+                            } as never);
+                        }}
+                    />
+                )}
+                {guard.inFlight && (
                     <View style={{ marginTop: Spacing.two, alignItems: 'center' }}>
                         <Text variant="caption" color="textSecondary">
                             Creando tu reserva...

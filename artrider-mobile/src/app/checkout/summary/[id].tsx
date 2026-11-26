@@ -11,15 +11,20 @@ import { Spacing } from '@/constants/theme';
 import { getListingById, type Listing } from '@/services/catalogService';
 import { chargeAndCreateBooking } from '@/services/bookingsService';
 import { KushkiPaymentForm } from '@/components/payment/KushkiPaymentForm';
+import { Button } from '@/components/ui/Button';
+import { COPY } from '@/constants/copy';
 import { usePricing } from '@/contexts/PricingContext';
+import { usePaymentGuard } from '@/hooks/usePaymentGuard';
 import { usePriceChange } from '@/hooks/usePriceChange';
+import { formatChargeError } from '@/services/chargeService';
+import { goToReservationsAfterPayment } from '@/utils/navigation';
 
 export default function CheckoutSummaryScreen() {
     const { id, from, to, quantity: quantityParam } = useLocalSearchParams<{ id: string; from: string; to: string; quantity?: string }>();
     const router = useRouter();
     const quantity = Number(quantityParam ?? '1') || 1;
 
-    const [confirming, setConfirming] = useState(false);
+    const guard = usePaymentGuard();
     const [error, setError] = useState<string | null>(null);
 
     const { status, data: listing, error: loadError, reload } = useAsyncData<Listing | null>(() => getListingById(id), { enabled: !!id, deps: [id] });
@@ -56,30 +61,37 @@ export default function CheckoutSummaryScreen() {
                 />
             </SummaryCard>
 
-            {error && <ErrorBanner message={error} />}
+            {(error ?? (guard.locked ? COPY.paymentUncertain : null)) && <ErrorBanner message={error ?? COPY.paymentUncertain} />}
 
             <View>
-                <KushkiPaymentForm
-                    amount={total}
-                    onError={(err) => setError(err)}
-                    onSuccess={async (kushkiToken) => {
-                        setError(null);
-                        setConfirming(true);
-                        const result = await chargeAndCreateBooking(kushkiToken, id, from, to, quantity, total);
-                        setConfirming(false);
+                {guard.locked ? (
+                    // Cobro incierto: no se puede volver a pagar aquí; se desbloquea al salir de la pantalla.
+                    <Button label={COPY.paymentSeeReservations} onPress={() => goToReservationsAfterPayment(router)} />
+                ) : (
+                    <KushkiPaymentForm
+                        amount={total}
+                        disabled={guard.inFlight}
+                        onError={(err) => setError(err)}
+                        onSuccess={async (kushkiToken) => {
+                            const result = await guard.run(() => {
+                                setError(null);
+                                return chargeAndCreateBooking(kushkiToken, id, from, to, quantity, total);
+                            });
+                            if (!result) return;
 
-                        if (result.error) {
-                            setError(priceChange.handle(result) ?? result.error);
-                            return;
-                        }
+                            if (result.error) {
+                                setError(priceChange.handle(result) ?? formatChargeError(result));
+                                return;
+                            }
 
-                        router.replace({
-                            pathname: '/checkout/success/[id]',
-                            params: { id: result.bookingId!, listingTitle: listing.title ?? 'Equipo', from, to, total: String(result.total ?? total) },
-                        } as never);
-                    }}
-                />
-                {confirming && (
+                            router.replace({
+                                pathname: '/checkout/success/[id]',
+                                params: { id: result.bookingId!, listingTitle: listing.title ?? 'Equipo', from, to, total: String(result.total ?? total) },
+                            } as never);
+                        }}
+                    />
+                )}
+                {guard.inFlight && (
                     <View style={{ marginTop: Spacing.two, alignItems: 'center' }}>
                         <Text variant="caption" color="textSecondary">
                             Creando tu reserva...

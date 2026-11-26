@@ -12,6 +12,10 @@ export type CreateBookingResult = {
   /** `PRICE_CHANGED`: los precios cambiaron y no se cobró nada (ver chargeService). */
   code?: string;
   quote?: ChargeQuote;
+  /** Solo si el servidor no pudo guardar el rastro del cobro (ver chargeService). */
+  ticketNumber?: string;
+  /** No sabemos si se cobró: la pantalla bloquea "Pagar" (ver chargeService). */
+  uncertain?: boolean;
 };
 
 export type BookingStatus =
@@ -96,7 +100,7 @@ export async function chargeAndCreateBooking(
   expectedTotal: number,
 ): Promise<CreateBookingResult> {
   const result = await chargeWithKushki(kushkiToken, { kind: 'listing', listingId, startDate, endDate, quantity }, expectedTotal);
-  if (result.error) return { error: result.error, code: result.code, quote: result.quote };
+  if (result.error) return { error: result.error, code: result.code, quote: result.quote, ticketNumber: result.ticketNumber, uncertain: result.uncertain };
   return { bookingId: result.bookingId, total: result.total };
 }
 /**
@@ -112,7 +116,7 @@ export async function chargeAndCreatePackageBooking(
   expectedTotal: number,
 ): Promise<CreateBookingResult> {
   const result = await chargeWithKushki(kushkiToken, { kind: 'package', packageId, startDate, endDate }, expectedTotal);
-  if (result.error) return { error: result.error, code: result.code, quote: result.quote };
+  if (result.error) return { error: result.error, code: result.code, quote: result.quote, ticketNumber: result.ticketNumber, uncertain: result.uncertain };
   return { bookingId: result.bookingId, total: result.total };
 }
 export async function submitReview(bookingId: string, rating: number, comment: string): Promise<{ error?: string }> {
