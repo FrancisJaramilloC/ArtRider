@@ -59,6 +59,9 @@ export function KushkiPaymentForm({ amount, onSuccess, onError, disabled = false
     const [expiry, setExpiry] = useState('');
     const [cvv, setCvv] = useState('');
     const [processing, setProcessing] = useState(false);
+    // Candado síncrono: `processing` es estado y no se ve hasta el siguiente render, así que un doble toque rápido pediría dos
+    // tokens. Con el ref solo se pide uno por envío, y un mensaje del WebView que no corresponde a un envío se descarta.
+    const submittingRef = useRef(false);
 
     function handleCardNumberChange(text: string) {
         const digits = text.replace(/\D/g, '');
@@ -77,7 +80,9 @@ export function KushkiPaymentForm({ amount, onSuccess, onError, disabled = false
     const isValid = name.length > 0 && cardNumber.replace(/\s/g, '').length >= 15 && expiry.length === 5 && cvv.length >= 3;
 
     function handleSubmit() {
+        if (submittingRef.current || disabled) return;
         if (!isValid) return;
+        submittingRef.current = true;
         setProcessing(true);
 
         const [month, year] = expiry.split('/');
@@ -100,6 +105,9 @@ export function KushkiPaymentForm({ amount, onSuccess, onError, disabled = false
 
     function handleWebViewMessage(event: WebViewMessageEvent) {
         setProcessing(false);
+        // Token que no pidió ningún envío en curso (p. ej. un segundo token tras un error reintentable): no lanza otro cobro.
+        if (!submittingRef.current) return;
+        submittingRef.current = false;
         try {
             const data = JSON.parse(event.nativeEvent.data);
             if (data.code) {

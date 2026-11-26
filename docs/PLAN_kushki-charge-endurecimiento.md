@@ -22,7 +22,7 @@
 | 4 · Rastro de cobro sin confirmar | Reutilizar `reason = 'CHARGE_VOID'` + `status = 'MANUAL_REQUIRED'` + **mensaje fijo**, sin SQL. |
 | 5 · Ticket en la respuesta | El ticket **completo** (`ticketNumber`) va al cliente **solo si no se pudo guardar el rastro** en `payment_refunds`. En los demás casos, solo `Referencia …XXXX` (últimos 4), en el texto y sin campo `ticketNumber`. |
 | 6 · Búsqueda por ticket | Solo listing y package. |
-| 7 · Límite de tiempo | Peor caso del servidor ≈ 75 s, con el control de tiempo del cliente de §4.2. |
+| 7 · Límite de tiempo | Peor caso del servidor ≈ 115 s con todos los pasos acotados y plazo previo al cobro de 25 s (cálculo en §10), por debajo de los 120 s del cliente (§4.2). |
 | 1 · Significado de D/E/F | **Confirmada:** D/E/F = la anulación terminó en SUCCEEDED (D) / FAILED (E) / UNKNOWN (F) pero falló el INSERT de la fila `CHARGE_VOID`. |
 
 ---
@@ -183,7 +183,7 @@ Cambio mínimo y compartido: sin rediseñar el carrito ni tocar el WebView de Ku
 ### 4.2 Timeout del `fetch` en `chargeService.ts` (d)
 
 - `AbortController` con **`CHARGE_CLIENT_TIMEOUT_MS = 120_000`** (120 s):
-  - es mayor que el peor caso del servidor (≈ 75 s) con 45 s de margen para red móvil, arranque en frío y latencia de Supabase;
+  - es mayor que el peor caso del servidor (≈ 115 s, cálculo en §10) con ≈ 5 s de margen para red y arranque en frío;
   - es menor que el límite de 150 s de la Edge Function, así que la app corta antes que la plataforma y siempre muestra **nuestro** mensaje.
 - Al cortar (`AbortError`), devuelve `{ code: 'CHARGE_TIMEOUT', error: copy.paymentUncertain }`. Es un mensaje de cobro incierto ("No pagues de nuevo; revisa tus reservas"), no un error genérico.
 - El `catch` de red actual (`NETWORK`) usa el mismo texto incierto y deja de pedir "antes de volver a intentarlo".
@@ -270,7 +270,7 @@ Nada de §3 ni de §4 necesita SQL. Opcional para más adelante, en `docs/sql/`:
 | **Producción: `contactDetails` va fijo** en `kushki-charge` (email `test@artrider.com`, documento `1700000000`, nombre de prueba) | Aceptable en UAT. Antes de pasar a producción hay que enviar los datos reales del Rider (email y documento del perfil). No se cambia en este bloque. |
 | RPC abortado que hace COMMIT después de la búsqueda | No se anula si el resultado es UNCERTAIN (§3.4). |
 | Más filas `MANUAL_REQUIRED`/`PENDING` que revisar a mano | Se filtran por prefijo en el runbook. Volumen esperado: casi cero. |
-| Tiempo: 25 s cobro + 15 s RPC + 5 s búsqueda + 25 s anulación + escrituras ≈ 75 s | Cliente a 120 s, límite de plataforma 150 s. |
+| Tiempo: peor caso ≈ 115 s (cálculo en §10) | Cliente a 120 s, límite de plataforma 150 s. El margen sobre el cliente es corto (≈ 5 s): un arranque en frío lento puede hacer que la app corte antes y muestre "incierto"; el servidor deja igual su rastro. |
 | El cliente corta a 120 s mientras el servidor sigue | Solo pasa si el servidor supera su propio peor caso. El mensaje es "incierto, no pagues de nuevo" y el rastro lo deja el servidor. |
 | Rider bloqueado tras un incierto que en realidad fue bien | Solo puede ir a "Ver mis reservas", donde verá la reserva. Se desbloquea al salir de la pantalla. |
 | Cambiar el orden altera los TS2345 de la línea base | `deno check` en cada commit: deben seguir siendo 4 TS2345 equivalentes. |
@@ -334,3 +334,49 @@ Nada de §3 ni de §4 necesita SQL. Opcional para más adelante, en `docs/sql/`:
 ## 9. Dudas
 
 Ninguna abierta. Todas las decisiones están en la tabla "Decisiones tomadas" del principio.
+
+---
+
+## 10. Correcciones de la revisión independiente (2026-11-25)
+
+| # | Corrección | Dónde |
+|---|---|---|
+| 1 | El ticket se valida con la MISMA condición que activa la bandera (string no vacío). Otro tipo = `sin_ticket` → cobro sin confirmar. | `index.ts` |
+| 2 | `TICKET_YA_USADO`: búsqueda por `client_id` + `kushki_ticket`; reserva activa del Rider → éxito; si no → `MANUAL_REQUIRED` (`TICKET_YA_USADO: …`) + `CHARGE_UNKNOWN`. Nunca se anula (tampoco en carrito, que no busca). | `index.ts`, `void.ts` |
+| 3 | Timeouts en todos los pasos (tabla abajo) y plazo previo al cobro de 25 s: si se supera, NO se cobra y se responde 408 `PRECHARGE_TIMEOUT` (reintentable). | `index.ts`, `void.ts` |
+| 4 | La búsqueda lee `status`: solo `AWAITING_SIGNATURES`/`PAID`/`ACTIVE` cuentan como éxito; otro estado → `MANUAL_REQUIRED` (`RESERVA_NO_ACTIVA: …`). | `void.ts` |
+| 5 | Un 408 del RPC es incierto (igual que `isUncertainHttpStatus`). | `void.ts` |
+| 6 | Antes del INSERT de respaldo se comprueba si ya hay una fila `CHARGE_VOID` con ese ticket; si existe, no se inserta otra. | `void.ts` |
+| 7 | Log del error del RPC: solo `code` y el mensaje truncado a 80 caracteres. | `index.ts` |
+| 8 | Texto de `UNEXPECTED`: "No pudimos procesar el pago. Revisa tus reservas antes de intentarlo de nuevo." | `index.ts` |
+| 9 | `decideAfterRpc(rpcOutcome, lookup, ticketAlreadyUsed)`: función pura con la tabla de decisiones. | `void.ts` |
+| 10 | Tests: orden de eventos, filtros `.eq()`, UPDATE con `status='PENDING'`, tabla completa de `decideAfterRpc`, búsqueda por estado y `TICKET_YA_USADO`. | `void.test.ts` |
+| 11 | `KushkiPaymentForm`: `submittingRef` (un solo token por envío; los mensajes no pedidos se descartan). | app |
+
+**Tabla de `decideAfterRpc`** (la búsqueda solo se hace en listing/package; en carrito `lookup = null`):
+
+| Resultado del RPC | Búsqueda | TICKET_YA_USADO | Acción |
+|---|---|---|---|
+| OK | — | — | éxito |
+| cualquiera | encontrada y activa | cualquiera | éxito (no se anula) |
+| cualquiera | encontrada, no activa | cualquiera | `MANUAL_REQUIRED` · `RESERVA_NO_ACTIVA` |
+| cualquiera | error | cualquiera | `MANUAL_REQUIRED` · `RPC_SIN_RESPUESTA` |
+| cualquiera | no encontrada / sin búsqueda | sí | `MANUAL_REQUIRED` · `TICKET_YA_USADO` |
+| incierto | no encontrada / sin búsqueda | no | `MANUAL_REQUIRED` · `RPC_SIN_RESPUESTA` |
+| error explícito | no encontrada / sin búsqueda | no | **anular** |
+
+**Peor caso total (todos los pasos acotados):**
+
+| Tramo | Límite |
+|---|---|
+| Antes del cobro (`getUser` 5 s + cotización 5 s + lectura del cuerpo): si al llegar al cobro pasaron más de **25 s**, no se cobra | ≤ 25 s |
+| Cobro en Kushki (conexión + cuerpo) | 25 s |
+| RPC de reserva | 15 s |
+| Búsqueda por ticket | 5 s |
+| Rama más larga tras la búsqueda — anular: INSERT PENDING 5 s + DELETE Kushki 25 s + (UPDATE 5 s, o comprobación 5 s + INSERT de respaldo 5 s) + cotización de `PRICE_CHANGED` 5 s | 45 s |
+| **Total** | **≈ 115 s** |
+
+- La otra rama (`MANUAL_REQUIRED`) suma 25 + 15 + 5 + 5 = 50 s después del plazo previo. El rastro del `catch` exterior (5 s) sustituye a los pasos que faltaban, no se suma al final.
+- 115 s < 120 s del cliente < 150 s de la plataforma. El margen de ≈ 5 s cubre la red y el arranque en frío, que no cuentan en el reloj del servidor.
+- Se eligió un plazo previo de **25 s** (no 30 s): con 30 s el total llegaría a 120 s, igual al timeout del cliente.
+- Las filas `TICKET_YA_USADO` y `RESERVA_NO_ACTIVA` aparecen en la consulta general de `MANUAL_REQUIRED` del runbook §4.3. Su tabla de prefijos aún no las nombra.
