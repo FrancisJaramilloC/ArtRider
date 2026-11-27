@@ -20,5 +20,6 @@ Comandos puntuales: `pnpm exec <bin>` en lugar de npx y `pnpm dlx <paquete>` par
 - **Un dueño por zona:** `art-rider/` (web), `artrider-mobile/` (móvil) y `supabase/` (funciones y SQL). Solo un agente toca `supabase/`, migraciones o propuestas SQL. Nadie edita archivos de otra zona sin acordarlo por mensaje.
 - **Ramas:** cada agente en su propia rama cortada de `develop` actualizada (una por bloque de trabajo). Nunca trabajar ni commitear en `develop`. `main` no se toca nunca.
 - **Revisor:** antes de cada PR a `develop`, un agente que no escribió el código revisa el diff contra las skills (diseño y seguridad) y este archivo, y corre `pnpm exec tsc --noEmit` y los tests de la zona. Emilio aprueba cada merge; los agentes no mezclan a `develop` sin su permiso.
-- **Piden permiso a Emilio cada vez:** push a `develop`, merge, leer `.env`, desplegar funciones y ejecutar SQL.
+- **Piden permiso a Emilio cada vez:** push a `develop`, merge, leer `.env` y desplegar funciones.
+- **SQL:** los agentes nunca lo ejecutan; lo proponen en un archivo y Emilio lo corre en el SQL Editor.
 - Si dos agentes no se ponen de acuerdo, el líder para y le pregunta a Emilio.
