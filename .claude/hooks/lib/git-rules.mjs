@@ -85,7 +85,24 @@ function checkRefMove({ sub, args }) {
   return moves[sub]?.() ? deny(`git ${sub} que modifica main está prohibido.`) : null;
 }
 
-const GIT_RULES = { push: checkPush, merge: checkMerge, pull: checkPull, rebase: checkRebase, reset: checkReset };
+function checkCommit({ branches }) {
+  return branches.some((b) => b === "develop" || b === "main")
+    ? deny("No se commitea en develop ni en main: crea una rama desde develop") : null;
+}
+
+/** gh api: solo las lecturas (GET sin campos) pasan sin preguntar. */
+function checkGhApi(args) {
+  const writes = ask("gh api que puede escribir o mezclar.");
+  if (args.some((a) => a.includes("$"))) return ask("gh api con variables: no se puede verificar.");
+  for (let i = 0; i < args.length; i += 1) {
+    const method = args[i].match(/^(?:-X|--method)=?(.*)$/);
+    if (method && (method[1] || args[i + 1] || "").toUpperCase() !== "GET") return writes;
+    if (/^(-[fF]|--field|--raw-field|--input)(=|$)/.test(args[i]) || /^-[fF]./.test(args[i])) return writes;
+  }
+  return args.some((a) => /\/merges?(\/|\?|$)/i.test(a)) ? writes : null;
+}
+
+const GIT_RULES = { commit: checkCommit, push: checkPush, merge: checkMerge, pull: checkPull, rebase: checkRebase, reset: checkReset };
 
 export function checkGit(call) {
   if (call.inlineAlias) return deny("git -c alias.* oculta el subcomando.");
@@ -95,6 +112,7 @@ export function checkGit(call) {
 
 export function checkGh({ args, cwd }, run = spawnSync) {
   const [group, action, ...rest] = args;
+  if (group === "api") return checkGhApi(args.slice(1));
   if (group !== "pr" || action !== "merge") return null;
   const selector = positionals(rest, ["-R", "--repo", "-b", "--body", "-t", "--subject", "-F", "--body-file"])[0];
   const repoAt = rest.findIndex((a) => a === "-R" || a === "--repo");

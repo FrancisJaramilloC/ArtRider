@@ -222,3 +222,34 @@ test("proceso real: exit 2 al bloquear, JSON al preguntar, bloqueo si la entrada
   assert.equal(run(event("git status")).stdout, "");
   assert.equal(run("no es json").status, 2);
 });
+
+test("commit y commit --amend bloqueados en develop y main", () => {
+  for (const command of ['git commit -m "x"', "git commit --amend --no-edit"]) {
+    for (const cwd of [onDevelop, onMain]) {
+      const result = guard({ tool_name: "Bash", tool_input: { command }, cwd });
+      assert.equal(result?.decision, "deny", command);
+      assert.equal(result.reason, "No se commitea en develop ni en main: crea una rama desde develop");
+    }
+    assert.equal(verdict(command, onFeature), "pass", command);
+  }
+  assert.equal(verdict('git commit -m "x"', onDevelop, "PowerShell"), "deny");
+  assert.equal(verdict('git switch develop && git commit -m "x"', onFeature), "deny");
+  assert.equal(verdict('git switch -c feat/y && git commit -m "x"', onDevelop), "pass");
+});
+
+test("gh api: escrituras y merges piden permiso; lecturas pasan", () => {
+  const asks = [
+    "gh api -X POST repos/o/r/pulls/1/reviews", "gh api --method PUT repos/o/r/pulls/1/merge",
+    "gh api --method=patch repos/o/r/pulls/1", "gh api -XDELETE repos/o/r/git/refs/heads/x",
+    "gh api repos/o/r/issues/1/comments -f body=hola", "gh api graphql -F query=@q.graphql",
+    "gh api repos/o/r/pulls --input pr.json", "gh api repos/o/r/pulls/1/merge", "gh api repos/o/r/merges",
+    "gh api repos/o/r/pulls/$N",
+  ];
+  const passes = [
+    "gh api repos/o/r/pulls/1", "gh api -X GET repos/o/r/pulls", "gh api --method GET repos/o/r/commits",
+    "gh api repos/o/r/pulls --jq '.[0].number'", "gh api user", "gh pr view 20",
+  ];
+  for (const command of asks) assert.equal(verdict(command, onFeature), "ask", command);
+  for (const command of passes) assert.equal(verdict(command, onFeature), "pass", command);
+  assert.equal(verdict("gh api -X POST repos/o/r/merges", onFeature, "PowerShell"), "ask");
+});
